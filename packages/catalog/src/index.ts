@@ -14,6 +14,22 @@ export {
     weekdayOf,
 } from './date';
 export { NEUTRAL_THEME, type ShowTheme } from './showTheme';
+export {
+    ACCENT_TEXT_MIN_CONTRAST,
+    checkThemeContrast,
+    contrastRatio,
+    relativeLuminance,
+    TEXT_MIN_CONTRAST,
+    type ContrastTheme,
+    type ContrastWarning,
+} from './theme/contrast';
+export {
+    ASSET_DIMENSIONS,
+    ASSET_MAX_BYTES,
+    type AssetSize,
+    type AssetSlot,
+    type IconSlot,
+} from './assets/dimensions';
 export type {
     ArcAvailability,
     DailyEpisode,
@@ -29,6 +45,8 @@ export { dailyEpisodeId, EPISODE_ID_KIND, seriesEpisodeId, showEpisodeId } from 
 export { foldersFromGlobs, type Folder, type FolderSource } from './core/folderSource';
 export { compareOrderThenId, type Ordered } from './core/ordering';
 export { ID_PATTERN, SchemaError, type ParseContext } from './core/reader';
+export { HEX_COLOUR_PATTERN } from './core/hexColour';
+export { THEME_COLOUR_KEYS } from './core/themeSchema';
 
 export {
     CATALOG_SCHEMA_VERSION,
@@ -36,10 +54,23 @@ export {
     documentSource,
     isCatalogImageUrl,
     parseCatalogDocument,
+    type AssetRef,
+    type CatalogBanner,
     type CatalogDocument,
     type CatalogEntry,
     type CatalogKind,
 } from './document/document';
+export {
+    BRANDING_DESCRIPTION_MAX_LENGTH,
+    BRANDING_NAME_MAX_LENGTH,
+    BRANDING_SHORT_NAME_MAX_LENGTH,
+    ICON_IMAGE_KEYS,
+    parseCatalogText,
+    type CatalogBranding,
+    type CatalogIcon,
+    type CatalogText,
+    type IconImageKey,
+} from './document/branding';
 export { localizeDocument } from './document/localize';
 
 export {

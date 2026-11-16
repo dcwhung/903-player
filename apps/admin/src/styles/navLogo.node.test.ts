@@ -24,6 +24,8 @@ describe('collapsed nav app icon', () => {
         const body = bodyOf('.shell.mini .nav .logo-mini');
         expect(body).toMatch(/padding:\s*0/);
         expect(body).toMatch(/background:\s*none/);
+        // W-741：icon 係 button，要蓋走全域 button 嘅 1px inset 框
+        expect(body).toMatch(/box-shadow:\s*none/);
         expect(body).toMatch(/overflow:\s*visible/);
         expect(body).not.toMatch(/border-radius:\s*50%/);
     });

@@ -108,7 +108,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--arc", action="append", default=[], help="未有碟面嘅短篇：「短篇名=slug」，可以重複"
     )
     parser.add_argument("--force", action="store_true", help="已經有都重新下載")
-    parser.add_argument("--repo", type=Path, default=APP_ROOT, help=argparse.SUPPRESS)
+    # 指 apps/player（app root，唔係 git repo root）；--repo 係舊名，保留做 alias（S-862）
+    parser.add_argument(
+        "--app-root", "--repo", dest="app_root", type=Path, default=APP_ROOT, help=argparse.SUPPRESS
+    )
     args = parser.parse_args(argv)
     check_slug(args.drama, "劇集 id", reserved=frozenset())
     return args
@@ -127,7 +130,11 @@ def fetch_all(args: argparse.Namespace, data: dict, run: Runner) -> int:
 
 def main(argv: list[str], run: Runner = subprocess.run) -> int:
     args = parse_args(argv)
-    data = json.loads((args.repo / "src" / "catalog" / "dramas" / "library" / args.drama / "drama.json").read_text(encoding="utf-8"))
+    data = json.loads(
+        (args.app_root / "src" / "catalog" / "dramas" / "library" / args.drama / "drama.json").read_text(
+            encoding="utf-8"
+        )
+    )
     if data["audio"].get("host") != "r2":
         print(f"error: {args.drama} 唔係放喺 R2（audio.host = {data['audio'].get('host')}）", file=sys.stderr)
         return EXIT_MISSING

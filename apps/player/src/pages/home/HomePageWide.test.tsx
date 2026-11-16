@@ -11,9 +11,10 @@ import { restoreMiniPlayer } from '../../hooks/miniPlayerDismissed';
 import { usePlayer } from '../../player/usePlayer';
 import { dailyNewestFirst, episodesInArc } from '../../selectors/dramas';
 import type { Track } from '../../types/track';
+import { t } from '../../i18n/t';
 import { HomePage } from './HomePage';
 
-const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
+const BANNER_ALT = t('home.bannerAlt');
 const SHOW_CARD = '正在播放（今日節目）';
 const DRAMA_CARD = '正在播放（廣播劇）';
 /** 卡角 ✕：同 mini player 左滑關閉一樣（停播） */

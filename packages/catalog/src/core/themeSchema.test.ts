@@ -1,3 +1,4 @@
+import { NEUTRAL_THEME, THEME_COLOUR_KEYS } from '../index';
 import { readTheme } from './themeSchema';
 
 const ctx = { id: 'x', source: 'x.json', files: new Set<string>() };
@@ -120,5 +121,12 @@ describe('readTheme', () => {
                 'theme.titleFont must be',
             );
         });
+    });
+});
+
+describe('THEME_COLOUR_KEYS', () => {
+    it('should be covered by NEUTRAL_THEME when exported from the public API (S-916)', () => {
+        expect(THEME_COLOUR_KEYS).toHaveLength(10);
+        expect(THEME_COLOUR_KEYS.filter((key) => !(key in NEUTRAL_THEME))).toEqual([]);
     });
 });

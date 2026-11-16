@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { cssPx } from '../../../../utils/cssLength';
-import { fillRows, GRID_COLUMNS, shrunkGridWidth } from './showGridPages';
+import { fillRows, shrunkGridWidth } from './showGridPages';
 
 /** 指示點嗰行嘅高（PageDots 每粒撳得到範圍），由 CSS token 讀 */
 const DOTS_HEIGHT_VAR = '--touch-target-min';
@@ -37,9 +37,15 @@ const measureGrid = (viewport: HTMLElement, grid: HTMLElement) => {
 };
 
 /** 唔收窄（成個分頁容器咁闊）時：每頁幾多行、每行幾高、使唔使收窄 */
-const layoutFor = (viewport: HTMLElement, grid: HTMLElement, totalRows: number): GridLayout => {
+const layoutFor = (
+    viewport: HTMLElement,
+    grid: HTMLElement,
+    totalRows: number,
+    columns: number,
+): GridLayout => {
     const { paddingPx, columnGapPx, gutterPx, tileRatio, ...sizes } = measureGrid(viewport, grid);
-    const columnPx = (viewport.clientWidth - 2 * gutterPx - columnGapPx) / GRID_COLUMNS;
+    // 一欄就冇欄距，欄闊 = 成個內容闊
+    const columnPx = (viewport.clientWidth - 2 * gutterPx - (columns - 1) * columnGapPx) / columns;
     const availablePx = viewport.clientHeight - paddingPx;
     const fill = fillRows({ ...sizes, availablePx, columnPx, tileRatio, totalRows });
     // 要分頁就扣走指示點；一格放得落就唔使收窄
@@ -47,7 +53,13 @@ const layoutFor = (viewport: HTMLElement, grid: HTMLElement, totalRows: number):
     if (fill.rowPx === undefined || columnPx * tileRatio <= roomPx) return fill;
     return {
         ...fill,
-        maxWidthPx: shrunkGridWidth({ heightPx: roomPx, tileRatio, columnGapPx, gutterPx }),
+        maxWidthPx: shrunkGridWidth({
+            heightPx: roomPx,
+            tileRatio,
+            columnGapPx,
+            gutterPx,
+            columns,
+        }),
     };
 };
 
@@ -60,12 +72,13 @@ const sameLayout = (a: GridLayout, b: GridLayout): boolean =>
  * 收窄咗再量都係同一個答案，唔會來回跳。
  * 容器尺寸變咗（ResizeObserver，例如轉向、iOS 工具列）就重新計；
  * 冇 ResizeObserver（jsdom）就只計一次，量唔到（0）就全部一頁。
+ * columns：直版幾多欄（portraitColumns）。
  * paged = false（橫版：節目格排成幾欄 × 兩行填滿）就唔量、唔分頁
  */
-export const useRowsPerPage = (count: number, paged = true) => {
+export const useRowsPerPage = (count: number, columns: number, paged = true) => {
     const viewportRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<HTMLDivElement>(null);
-    const totalRows = Math.ceil(count / GRID_COLUMNS);
+    const totalRows = Math.ceil(count / columns);
     const [layout, setLayout] = useState<GridLayout>({ rows: totalRows });
 
     useLayoutEffect(() => {
@@ -73,14 +86,14 @@ export const useRowsPerPage = (count: number, paged = true) => {
         const grid = gridRef.current;
         if (!paged || !viewport || !grid) return;
         const measure = () => {
-            const next = layoutFor(viewport, grid, totalRows);
+            const next = layoutFor(viewport, grid, totalRows, columns);
             setLayout((prev) => (sameLayout(prev, next) ? prev : next));
         };
         measure();
         const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
         observer?.observe(viewport);
         return () => observer?.disconnect();
-    }, [totalRows, paged]);
+    }, [totalRows, columns, paged]);
 
     // 唔分頁（橫版）：全部一頁、唔收窄；轉返直版再量
     return { viewportRef, gridRef, ...(paged ? layout : { rows: totalRows }) };

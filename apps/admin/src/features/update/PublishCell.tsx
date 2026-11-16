@@ -1,0 +1,50 @@
+/*
+ * 待辦矩陣最後一欄「發佈」（mockup: _mockups_/admin-selective-publish/index.html#a）：
+ * selectable = 勾選框（預設勾）；incomplete = 淨係「未完成」（冇勾選框，tooltip 寫欠咩設定）；always = 「一併發佈」（新集數）/ –（資料夾不見）。
+ * 勾選框包喺 label 入面：撳格唔會觸發成行跳去編輯頁（rowClick 略過 label / input）
+ */
+import { Minus } from 'lucide-react';
+import type { TodoRow } from '../../api/types';
+import { t } from '../../i18n/t';
+import { incompleteText, splitName } from './todoModel';
+
+interface PublishCellProps {
+    row: TodoRow;
+    picked: boolean;
+    onToggle: (key: string) => void;
+}
+
+export function PublishCell({ row, picked, onToggle }: PublishCellProps) {
+    const { title } = splitName(row);
+    if (row.publish === 'selectable')
+        return (
+            <td className="pick-cell">
+                <label>
+                    <input
+                        type="checkbox"
+                        className="pick"
+                        checked={picked}
+                        onChange={() => onToggle(row.key)}
+                        aria-label={t('update.pickLabel', { name: title })}
+                    />
+                </label>
+            </td>
+        );
+    if (row.publish === 'incomplete')
+        return (
+            <td className="pick-cell">
+                <span className="lock" title={incompleteText(title, row)}>
+                    {t('update.incomplete')}
+                    {/* S-989：title 唔讀、亦冇 focus，screen reader 靠呢段知欠咩設定 */}
+                    <span className="sr-only">：{incompleteText(title, row)}</span>
+                </span>
+            </td>
+        );
+    if (row.kind === 'missingFolder')
+        return (
+            <td className="na">
+                <Minus aria-label={`${title}：${t('update.colPublish')} ${t('update.naCell')}`} />
+            </td>
+        );
+    return <td className="pick-cell muted small">{t('update.always')}</td>;
+}

@@ -25,7 +25,12 @@ export interface ArcScan {
     rawName: string;
     name: string;
     audio: string[];
+    /** 全部圖（包括 cdCover / coverPhoto） */
     covers: string[];
+    /** 「cd cover.<圖副檔名>」（唔分大細楷，原始名）：admin 封面編輯器 disc 嘅 R2 原圖 */
+    cdCover?: string;
+    /** 「cover photo.<圖副檔名>」（唔分大細楷，原始名）：tile 嘅 R2 原圖（disc 冇 cd cover 時都用） */
+    coverPhoto?: string;
     ignored: string[];
 }
 

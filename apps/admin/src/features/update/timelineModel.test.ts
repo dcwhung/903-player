@@ -1,5 +1,5 @@
 import type { ChangeSummary } from '@903-player/catalog';
-import { countPills, itemName, itemRange, whenLabel } from './timelineModel';
+import { itemName, itemRange, publishStats, whenLabel } from './timelineModel';
 
 /** shortDate 跨年會加年份（S-830）：固定「今日」喺 2026，唔跟真實時鐘 */
 beforeEach(() => {
@@ -39,14 +39,6 @@ const SUMMARY = {
 } as unknown as ChangeSummary;
 
 describe('timelineModel', () => {
-    it('should count new dramas, arcs and episodes for the pills', () => {
-        expect(countPills(SUMMARY).map((p) => p.label)).toEqual([
-            '＋1 廣播劇',
-            '＋1 短篇',
-            '＋2 集',
-        ]);
-    });
-
     it('should label the timeline', () => {
         expect(whenLabel('now')).toBe('即時上線');
         expect(whenLabel('2026-11-16')).toBe('16/11 一');
@@ -61,5 +53,22 @@ describe('timelineModel', () => {
     it('should name rollbacks by the restored publish', () => {
         const item = { kind: 'rollback', when: 'now', detail: { publishId: 1 } } as const;
         expect(itemName(item)).toBe('還原至 #1');
+    });
+
+    it('should name a reorder by its list, with no entry (#6)', () => {
+        expect(itemName({ kind: 'reorder', when: 'now', detail: { list: 'shows' } })).toBe(
+            '節目排序已更改',
+        );
+        expect(itemName({ kind: 'reorder', when: 'now', detail: { list: 'dramas' } })).toBe(
+            '廣播劇排序已更改',
+        );
+    });
+
+    it('should count a reorder as one edit, so a reorder alone still shows a change (#6)', () => {
+        const summary: ChangeSummary = {
+            items: [{ kind: 'reorder', when: 'now', detail: { list: 'shows' } }],
+            timeline: [],
+        };
+        expect(publishStats(summary)).toEqual({ added: 0, episodes: 0, edits: 1, unlists: 0 });
     });
 });

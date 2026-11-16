@@ -1,114 +1,130 @@
 /*
  * 更新 · 確認發佈：Design Origin: mockup: _mockups_/admin/index.html#u3（結構）+
- * mockup: _mockups_/admin-style/index.html#a（漸變統計卡）。
- * 統計卡 + 數量 pill + 驗證 ✓ pill（hover 睇數字）+ 時間線 + 大「發佈」掣；409 → 擋住清單（#s9）
+ * mockup: _mockups_/admin-style/index.html#a（漸變統計卡）+
+ * mockup: _mockups_/admin-selective-publish/index.html#b（選擇發佈）+
+ * mockup: _mockups_/admin-publish-summary/index.html（B v2 方案 1：四格數字 → 時間線 → 發佈；
+ * App 外觀卡寫重新部署說明，未完成項目排時間線最尾「不會在本次發佈」）。
+ * 409 → 擋住清單（#s9）；驗證錯誤 / 配色警告（admin-phase4 #f）；422 未知 key → 頁面過時（重新載入）
  */
-import { CirclePlus, EyeOff, ListPlus, PencilLine } from 'lucide-react';
-import { useEffect } from 'react';
-import type { ChangesResponse, Validation } from '../../api/types';
+import { useCallback, useEffect, useState } from 'react';
+import type { ChangesResponse, LoadedEntry, PublishSelection, TodoRow } from '../../api/types';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
-import { Pill } from '../../ui/Pill';
 import { PublishActions } from './PublishActions';
+import { PublishHead } from './PublishHead';
+import { publishedAppearance } from './selectionModel';
+import { skippedRows } from './skipModel';
+import { StaleNotice } from './StaleNotice';
 import { Stepper } from './Stepper';
 import { Timeline } from './Timeline';
-import { StatCards, type Stat } from '../../ui/StatCards';
-import { countPills, publishStats } from './timelineModel';
 import { usePublish } from './usePublish';
+import { usePublishTarget, useSelectedChanges } from './useSelectedChanges';
 
-function ValidationPill({ validation }: { validation: Validation }) {
-    if (validation.ok)
-        return (
-            <Pill tone="ok" title={t('publish.validTitle', { count: validation.episodeCount })}>
-                {t('publish.validOk')}
-            </Pill>
-        );
-    return (
-        <Pill tone="bad" title={validation.error}>
-            {t('publish.validBad')}
-        </Pill>
-    );
-}
-
-const statsOf = (data: ChangesResponse): Stat[] => {
-    const counts = publishStats(data.changes);
-    return [
-        {
-            key: 'added',
-            tone: 'sky',
-            icon: CirclePlus,
-            value: counts.added,
-            label: t('publish.statNew'),
-        },
-        {
-            key: 'episodes',
-            tone: 'green',
-            icon: ListPlus,
-            value: counts.episodes,
-            label: t('publish.statEpisodes'),
-        },
-        {
-            key: 'edits',
-            tone: 'orange',
-            icon: PencilLine,
-            value: counts.edits,
-            label: t('publish.statEdits'),
-        },
-        {
-            key: 'unlists',
-            tone: 'red',
-            icon: EyeOff,
-            value: counts.unlists,
-            label: t('publish.statUnlists'),
-        },
-    ];
+const emptyText = (loading: boolean, bannerChanged: boolean, brandingChanged: boolean) => {
+    if (loading) return t('app.loading');
+    if (brandingChanged) return t('publish.brandingOnly');
+    return t(bannerChanged ? 'publish.bannerOnly' : 'publish.nothing');
 };
 
-function PublishHead({ data }: { data: ChangesResponse }) {
+/** 首頁 Banner / App 外觀（草稿）改咗都算有嘢發佈；照選擇計會 unchanged 就唔准 */
+const canPublishOf = (data: ChangesResponse | undefined): boolean => {
+    if (!data?.validation.ok || data.unchanged === true) return false;
     return (
-        <>
-            {data.changes.items.length > 0 && (
-                <StatCards stats={statsOf(data)} label={t('publish.statsLabel')} />
+        data.changes.items.length > 0 ||
+        data.bannerChanged === true ||
+        data.brandingChanged === true
+    );
+};
+
+interface ChangesCardProps {
+    data: ChangesResponse | undefined;
+    selection: PublishSelection | undefined;
+    entries: readonly LoadedEntry[];
+    skipped: readonly TodoRow[];
+    loading: boolean;
+    onReverted: () => Promise<unknown>;
+}
+
+/**
+ * 時間線（內容 + 今次發佈嘅 App 外觀 + 不會在本次發佈）；冇內容就講只改咗 Banner / App 外觀
+ * （或者冇嘢發佈），有未完成項目照出「不會在本次發佈」
+ */
+function ChangesCard({ data, selection, entries, skipped, loading, onReverted }: ChangesCardProps) {
+    const appearance = data && selection ? publishedAppearance(data, selection) : [];
+    const hasContent = (data?.changes.timeline.length ?? 0) > 0 || appearance.length > 0;
+    return (
+        <section className="card" aria-label={t('publish.timelineLabel')}>
+            {!(data && hasContent) && (
+                <p className="muted">
+                    {emptyText(
+                        loading,
+                        data?.bannerChanged === true,
+                        data?.brandingChanged === true,
+                    )}
+                </p>
             )}
-            <div className="pub-head">
-                <div className="pills">
-                    {countPills(data.changes).map((pill) => (
-                        <Pill key={pill.kind} tone="ok">
-                            {pill.label}
-                        </Pill>
-                    ))}
-                </div>
-                <ValidationPill validation={data.validation} />
-            </div>
-            {!data.validation.ok && <p className="note bad">{data.validation.error}</p>}
-        </>
+            {data && (hasContent || skipped.length > 0) && (
+                <Timeline
+                    groups={data.changes.timeline}
+                    entries={entries}
+                    appearance={appearance}
+                    skipped={skipped}
+                    onReverted={onReverted}
+                />
+            )}
+        </section>
     );
 }
 
+/** 還原咗未發佈改動：admin 資料（待辦、entry、變更）+ 呢頁照選擇計嘅變更都重讀 */
+const useRevertRefresh = () => {
+    const { refresh } = useAdminData();
+    const [revision, setRevision] = useState(0);
+    const onReverted = useCallback(async () => {
+        await refresh();
+        setRevision((r) => r + 1);
+    }, [refresh]);
+    return { revision, onReverted };
+};
+
 export function PublishPage() {
-    const { changes, entries } = useAdminData();
-    const { state, run } = usePublish();
+    const { changes, entries, todos } = useAdminData();
     const { reload } = changes;
     useEffect(() => void reload(), [reload]);
-    const data = changes.data;
-    const canPublish = data?.validation.ok === true && data.changes.items.length > 0;
+    const selection = usePublishTarget();
+    const { revision, onReverted } = useRevertRefresh();
+    const selected = useSelectedChanges(selection, revision);
+    const { state, run } = usePublish(selection);
+    const data = selected.data;
+    const stale = selected.stale || state.status === 'stale';
+    const loadError = selected.error && !selected.stale ? selected.error : undefined;
     return (
         <>
             <div className="title-row">
                 <h1>{t('update.title')}</h1>
             </div>
             <Stepper current={3} />
-            {data && <PublishHead data={data} />}
-            <div className="card">
-                {data && data.changes.timeline.length > 0 ? (
-                    <Timeline groups={data.changes.timeline} entries={entries.data ?? []} />
-                ) : (
-                    <p className="muted">
-                        {changes.loading ? t('app.loading') : t('publish.nothing')}
-                    </p>
-                )}
-            </div>
-            <PublishActions state={state} canPublish={canPublish} onPublish={() => void run()} />
+            {stale && <StaleNotice />}
+            {loadError && (
+                <p className="note bad">{t('app.loadFailed', { error: loadError.message })}</p>
+            )}
+            {data && <PublishHead data={data} entries={entries.data ?? []} />}
+            {/* 過時：唔顯示「沒有需要發佈的變更」，免得誤會 */}
+            {!stale && (
+                <ChangesCard
+                    data={data}
+                    selection={selection}
+                    entries={entries.data ?? []}
+                    skipped={skippedRows(todos.data?.rows ?? [], data)}
+                    loading={selected.loading}
+                    onReverted={onReverted}
+                />
+            )}
+            <PublishActions
+                state={state}
+                canPublish={canPublishOf(data) && !selected.loading && !stale}
+                onPublish={() => void run()}
+            />
         </>
     );
 }

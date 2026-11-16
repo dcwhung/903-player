@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>選擇發佈預覽</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            /*
+             * 選擇發佈 preview：更新頁加 App 外觀 section + 新內容「發佈」勾選欄，未完成嘅項目唔阻發佈。
+             * 樣式抄自 _mockups_/admin-phase4（admin-style v3 token）。
+             * Token 抄自 apps/admin/src/styles/tokens.css（admin-style v3）；元件樣式跟 theme.css（.card / .btn / .img-slot / .crop）。
+             * 動畫全部包喺 prefers-reduced-motion: no-preference（.claude/CLAUDE.md「Motion」）。
+             */
+            :root {
+                --sky: #53a9e3;
+                --primary: #1e7bc0;
+                --primary-hover: #155f96;
+                --on-primary: #ffffff;
+                --nav-bg: #1e7bc0;
+                --on-nav: #ffffff;
+                --bg: #eef3f8;
+                --panel: #f7f9fc;
+                --surface: #ffffff;
+                --surface-2: #f1f5f9;
+                --ink: #16212e;
+                --muted: #5e6b7a;
+                --line: #dbe3ec;
+                --media-border: #7d8fa3;
+                --accent: #1e7bc0;
+                --accent-soft: #e6f3fc;
+                --accent-ink: #155f96;
+                --ok: #23935c;
+                --ok-ink: #1a7349;
+                --ok-bg: #e3f5ec;
+                --warn: #d97706;
+                --warn-bg: #fff3df;
+                --warn-ink: #9a5800;
+                --danger: #d9363e;
+                --danger-ink: #b3262d;
+                --danger-bg: #fdebec;
+                --on-danger: #ffffff;
+                --brand-admin: #c2410c;
+                --crop-frame: #ffffff;
+                --disc-blank: #0a0a0a;
+                --shadow: 0 6px 20px rgb(30 70 120 / 0.08), 0 1px 3px rgb(30 70 120 / 0.06);
+                --shadow-btn: 0 2px 6px rgb(30 123 192 / 0.3);
+                --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.18);
+                --card-border: transparent;
+                --r-panel: 24px;
+                --r-card: 20px;
+                --r-btn: 10px;
+                --font:
+                    'Poppins', 'Noto Sans TC', 'PingFang HK', -apple-system, 'Segoe UI', sans-serif;
+                --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+                --motion-fast: 150ms;
+                --motion-base: 200ms;
+                --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+                --motion-spin: 800ms;
+                color-scheme: light dark;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #0f1620;
+                    --panel: #141d29;
+                    --surface: #1b2635;
+                    --surface-2: #223043;
+                    --ink: #e8eef5;
+                    --muted: #9aabbd;
+                    --line: #2c3b4f;
+                    --media-border: #6b7f98;
+                    --accent: #7cc2f0;
+                    --accent-soft: #1c3349;
+                    --accent-ink: #9fd2f6;
+                    --ok: #6fc28f;
+                    --ok-ink: #8fd6a9;
+                    --ok-bg: #133524;
+                    --warn: #f2a93b;
+                    --warn-bg: #3a2a10;
+                    --warn-ink: #f2c27a;
+                    --danger: #f28b82;
+                    --danger-ink: #f6a9a2;
+                    --danger-bg: #3b1619;
+                    --on-danger: #2b0d0b;
+                    --shadow: none;
+                    --shadow-btn: none;
+                    --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
+                    --card-border: #2c3b4f;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #0f1620;
+                --panel: #141d29;
+                --surface: #1b2635;
+                --surface-2: #223043;
+                --ink: #e8eef5;
+                --muted: #9aabbd;
+                --line: #2c3b4f;
+                --media-border: #6b7f98;
+                --accent: #7cc2f0;
+                --accent-soft: #1c3349;
+                --accent-ink: #9fd2f6;
+                --ok: #6fc28f;
+                --ok-ink: #8fd6a9;
+                --ok-bg: #133524;
+                --warn: #f2a93b;
+                --warn-bg: #3a2a10;
+                --warn-ink: #f2c27a;
+                --danger: #f28b82;
+                --danger-ink: #f6a9a2;
+                --danger-bg: #3b1619;
+                --on-danger: #2b0d0b;
+                --shadow: none;
+                --shadow-btn: none;
+                --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
+                --card-border: #2c3b4f;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+            [hidden] {
+                display: none !important;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--ink);
+                font: 15px/1.55 var(--font);
+            }
+            h1,
+            h2,
+            h3,
+            p {
+                margin: 0;
+            }
+            .page {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 24px 16px 64px;
+                display: grid;
+                gap: 40px;
+            }
+            .intro {
+                display: grid;
+                gap: 8px;
+            }
+            .intro h1 {
+                font-size: 22px;
+                font-weight: 600;
+            }
+            .intro p,
+            .state-label {
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .decisions {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+                background: var(--surface);
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            .decisions th,
+            .decisions td {
+                padding: 6px 10px;
+                border-bottom: 1px solid var(--line);
+                text-align: left;
+                vertical-align: top;
+            }
+            .decisions th {
+                color: var(--muted);
+                font-weight: 500;
+            }
+            .decisions td:first-child {
+                white-space: nowrap;
+                color: var(--muted);
+            }
+            .jump {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px 14px;
+                font-size: 13px;
+            }
+            .jump a {
+                color: var(--accent);
+            }
+            section {
+                display: grid;
+                gap: 14px;
+            }
+            section > h2 {
+                font-size: 18px;
+                font-weight: 600;
+            }
+            .frame {
+                padding: 24px 28px;
+                border-radius: var(--r-panel);
+                background: var(--panel);
+                box-shadow: 0 8px 30px rgb(0 0 0 / 0.08);
+                display: grid;
+                gap: 18px;
+                min-width: 0;
+            }
+            .q {
+                padding: 12px 16px;
+                border-left: 4px solid var(--warn);
+                border-radius: 12px;
+                background: var(--warn-bg);
+                color: var(--ink);
+                font-size: 14px;
+            }
+            .q strong {
+                color: var(--warn-ink);
+            }
+            .q ul {
+                margin: 6px 0 0;
+                padding-left: 20px;
+            }
+            .row {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 10px;
+            }
+            .grid2 {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
+            svg.i {
+                width: 18px;
+                height: 18px;
+                flex: none;
+                stroke: currentColor;
+                fill: none;
+                stroke-width: 2;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            /* ---------- card / btn / pill（跟 apps/admin theme.css） ---------- */
+            .card {
+                display: grid;
+                gap: 14px;
+                padding: 18px 20px;
+                border: 1px solid var(--card-border);
+                border-radius: var(--r-card);
+                background: var(--surface);
+                box-shadow: var(--shadow);
+                min-width: 0;
+            }
+            .card h3 {
+                font-size: 16px;
+                font-weight: 600;
+            }
+            button,
+            .btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 8px 16px;
+                border: 0;
+                border-radius: var(--r-btn);
+                background: var(--surface);
+                color: var(--ink);
+                box-shadow: inset 0 0 0 1px var(--line);
+                font: 500 14px var(--font);
+                cursor: pointer;
+            }
+            button:hover:not(:disabled) {
+                background: var(--surface-2);
+            }
+            button.primary {
+                background: var(--primary);
+                color: var(--on-primary);
+                box-shadow: var(--shadow-btn);
+            }
+            button.primary:hover:not(:disabled) {
+                background: var(--primary-hover);
+            }
+            button.ghost-danger {
+                color: var(--danger-ink);
+            }
+            button.link {
+                padding: 0;
+                background: none;
+                box-shadow: none;
+                color: var(--accent);
+                text-decoration: underline;
+                font-size: 13px;
+            }
+            button.link:hover:not(:disabled) {
+                background: none;
+            }
+            button:disabled {
+                opacity: 0.45;
+                cursor: default;
+            }
+            button:focus-visible,
+            input:focus-visible,
+            select:focus-visible {
+                outline: 2px solid var(--primary);
+                outline-offset: 2px;
+            }
+            input[type='text'],
+            select {
+                padding: 7px 10px;
+                border: 1.5px solid var(--line);
+                border-radius: 10px;
+                background: var(--surface);
+                color: var(--ink);
+                font: 14px var(--font);
+            }
+            .pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 1px 9px;
+                border-radius: 999px;
+                background: var(--surface-2);
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            .pill.ok {
+                background: var(--ok-bg);
+                color: var(--ok-ink);
+            }
+            .pill.bad {
+                background: var(--danger-bg);
+                color: var(--danger-ink);
+            }
+            .pill.warn {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .pill.info {
+                background: var(--accent-soft);
+                color: var(--accent-ink);
+            }
+            .note {
+                display: flex;
+                gap: 10px;
+                align-items: flex-start;
+                padding: 10px 14px;
+                border-radius: 12px;
+                font-size: 14px;
+            }
+            .note.warn {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .note.bad {
+                background: var(--danger-bg);
+                color: var(--danger-ink);
+            }
+            .note.info {
+                background: var(--accent-soft);
+                color: var(--accent-ink);
+            }
+            .muted {
+                color: var(--muted);
+            }
+            .small {
+                font-size: 12px;
+            }
+            .mono {
+                font-family: var(--mono);
+                font-size: 13px;
+            }
+
+            /* ---------- 圖片 slot（跟 .img-slot） ---------- */
+            .media {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 28px;
+                align-items: flex-start;
+            }
+            .slot {
+                position: relative;
+                display: grid;
+                justify-items: center;
+                gap: 8px;
+            }
+            .img-slot {
+                position: relative;
+                width: 192px;
+                height: 192px;
+                padding: 0;
+                border: 2px dashed var(--media-border);
+                border-radius: 50%;
+                background: var(--surface-2);
+                box-shadow: none;
+            }
+            .img-slot.tile {
+                width: 340px;
+                height: 192px;
+                border-radius: 16px;
+            }
+            .img-slot.banner-std {
+                width: 340px;
+                height: calc(340px * 517 / 1200);
+                border-radius: 12px;
+            }
+            .img-slot.banner-long {
+                width: 340px;
+                height: calc(340px * 400 / 2000);
+                border-radius: 10px;
+            }
+            .img-slot .thumb {
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                background: center / cover no-repeat;
+            }
+            .slot-btn {
+                position: absolute;
+                right: 6px;
+                bottom: 6px;
+                display: grid;
+                place-items: center;
+                width: 36px;
+                height: 36px;
+                border: 3px solid var(--surface);
+                border-radius: 50%;
+                background: var(--primary);
+                color: var(--on-primary);
+            }
+            .img-slot:not(.disc-slot) .slot-btn {
+                right: -10px;
+                bottom: -10px;
+            }
+            .slot-cap {
+                display: grid;
+                justify-items: center;
+                gap: 2px;
+                text-align: center;
+            }
+            .slot-cap .cap {
+                font-weight: 600;
+            }
+            .slot-cap .hint {
+                font-size: 12px;
+                color: var(--muted);
+                max-width: 340px;
+            }
+            .menu {
+                position: absolute;
+                top: calc(100% + 6px);
+                left: 50%;
+                z-index: 2;
+                translate: -50% 0;
+                display: grid;
+                min-width: 250px;
+                padding: 6px;
+                border-radius: 14px;
+                background: var(--surface);
+                box-shadow: var(--shadow-pop);
+                border: 1px solid var(--line);
+            }
+            .menu button {
+                justify-content: flex-start;
+                box-shadow: none;
+                text-align: left;
+            }
+            .menu button small {
+                display: block;
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 400;
+            }
+
+            /* ---------- dialog（scrim + card） ---------- */
+            .scrim {
+                position: relative;
+                display: grid;
+                place-items: center;
+                padding: 28px 12px;
+                border-radius: var(--r-panel);
+                background: rgb(10 20 35 / 0.45);
+            }
+            .scrim.fixed {
+                position: fixed;
+                inset: 0;
+                z-index: 50;
+                border-radius: 0;
+                overflow: auto;
+            }
+            .scrim[hidden] {
+                display: none;
+            }
+            .dialog {
+                width: min(920px, 100%);
+                border-radius: 22px;
+                padding: 22px 24px;
+                gap: 16px;
+                box-shadow: 0 20px 50px rgb(0 0 0 / 0.25);
+            }
+            .dialog.narrow {
+                width: min(520px, 100%);
+            }
+            .dialog header {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            .dialog footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .spinner {
+                width: 18px;
+                height: 18px;
+                border: 2.5px solid currentColor;
+                border-right-color: transparent;
+                border-radius: 50%;
+            }
+            @media (prefers-reduced-motion: no-preference) {
+                .scrim.fixed:not([hidden]) .dialog {
+                    animation: dialog-in var(--motion-base) var(--motion-ease);
+                }
+                .spinner {
+                    animation: spin var(--motion-spin) linear infinite;
+                }
+                .cand,
+                .seg button {
+                    transition:
+                        box-shadow var(--motion-fast) var(--motion-ease),
+                        background var(--motion-fast) var(--motion-ease);
+                }
+            }
+            @keyframes dialog-in {
+                from {
+                    opacity: 0;
+                    scale: 0.97;
+                }
+            }
+            @keyframes spin {
+                to {
+                    rotate: 360deg;
+                }
+            }
+
+            /* ---------- 裁切編輯器 ---------- */
+            .editor {
+                display: grid;
+                grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+                gap: 20px;
+                align-items: start;
+            }
+            .pane {
+                display: grid;
+                gap: 10px;
+                margin: 0;
+                min-width: 0;
+            }
+            .pane > .label {
+                font-weight: 600;
+            }
+            .src-frame {
+                display: grid;
+                place-items: center;
+                aspect-ratio: 4 / 3;
+                padding: 10px;
+                border: 2px dashed var(--media-border);
+                border-radius: 12px;
+                background: var(--surface-2);
+                overflow: hidden;
+            }
+            .src {
+                position: relative;
+                max-width: 100%;
+                max-height: 100%;
+                line-height: 0;
+                user-select: none;
+                touch-action: none;
+            }
+            .src img {
+                display: block;
+                max-width: 100%;
+                max-height: 280px;
+                -webkit-user-drag: none;
+            }
+            .box {
+                position: absolute;
+                border: 2px solid var(--crop-frame);
+                border-radius: 6px;
+                box-shadow: 0 0 0 999px rgb(0 0 0 / 0.45);
+                cursor: move;
+            }
+            .box.circle {
+                border-radius: 50%;
+            }
+            .box.locked {
+                cursor: default;
+                border-style: dashed;
+                box-shadow: none;
+            }
+            .box .grip {
+                position: absolute;
+                right: -9px;
+                bottom: -9px;
+                width: 18px;
+                height: 18px;
+                border: 2px solid var(--primary);
+                border-radius: 50%;
+                background: var(--crop-frame);
+                cursor: nwse-resize;
+            }
+            .box.locked .grip {
+                display: none;
+            }
+            .cands {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 10px;
+            }
+            .cand {
+                display: grid;
+                gap: 6px;
+                padding: 8px;
+                border-radius: 14px;
+                background: var(--surface);
+                box-shadow: inset 0 0 0 1px var(--line);
+                text-align: center;
+                font-size: 13px;
+            }
+            .cand[aria-pressed='true'] {
+                background: var(--accent-soft);
+                box-shadow: inset 0 0 0 2px var(--primary);
+                color: var(--accent-ink);
+                font-weight: 600;
+            }
+            .cand canvas {
+                width: 100%;
+                height: auto;
+                border-radius: 6px;
+                background: var(--disc-blank);
+            }
+            .cand.disc canvas {
+                border-radius: 50%;
+                width: 72%;
+                justify-self: center;
+            }
+            .meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px 12px;
+                font-size: 13px;
+                color: var(--muted);
+            }
+
+            /* player 樣式 preview（跟 apps/player Disc.module.css / tokens.css） */
+            .pv {
+                --theme-bg: #f3efde;
+                --theme-surface: #faf7ec;
+                --theme-track: #e0d6b8;
+                --theme-accent: #d45f32;
+                --theme-on-accent: #ffffff;
+                --theme-title: #a8401a;
+                --theme-text: #33281d;
+                --theme-muted: #6b5a47;
+                --theme-shadow-dark: #dcd3b8;
+                --theme-shadow-light: #ffffff;
+                --theme-accent-text: #a8401a;
+                --theme-status-bar: #a8401a;
+                --theme-header-rule: none;
+                --theme-title-font: var(--font);
+                display: grid;
+                place-items: center;
+                gap: 12px;
+                padding: 22px 14px;
+                border-radius: 16px;
+                background: var(--theme-bg);
+                color: var(--theme-text);
+            }
+            .pdisc {
+                position: relative;
+                width: 66%;
+                aspect-ratio: 1;
+                border-radius: 50%;
+                overflow: hidden;
+                background: var(--theme-shadow-dark);
+                box-shadow:
+                    0 0 0 8px var(--theme-surface),
+                    0 16px 30px rgb(0 0 0 / 0.4);
+            }
+            .pdisc canvas,
+            .pdisc img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .pdisc::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                z-index: 1;
+                border-radius: 50%;
+                background:
+                    radial-gradient(circle, transparent 55%, rgb(0 0 0 / 0.45) 100%),
+                    repeating-radial-gradient(
+                        circle,
+                        transparent 0 6px,
+                        rgb(255 255 255 / 0.14) 6px 7px
+                    );
+                mix-blend-mode: normal;
+            }
+            .pdisc::after {
+                content: '';
+                position: absolute;
+                z-index: 2;
+                left: 50%;
+                top: 50%;
+                width: 16%;
+                aspect-ratio: 1;
+                translate: -50% -50%;
+                border-radius: 50%;
+                background: var(--theme-surface);
+                box-shadow: 0 0 0 3px rgb(0 0 0 / 0.5);
+            }
+            .ptile {
+                width: 100%;
+                display: grid;
+                gap: 8px;
+            }
+            .ptile canvas {
+                width: 100%;
+                height: auto;
+                border-radius: 16px;
+                box-shadow:
+                    6px 6px 14px var(--theme-shadow-dark),
+                    -4px -4px 10px var(--theme-shadow-light);
+            }
+            .ptile b {
+                color: var(--theme-title);
+            }
+            .pbanner {
+                width: 100%;
+            }
+            .pbanner canvas {
+                width: 100%;
+                height: auto;
+                border-radius: 14px;
+            }
+
+            /* ---------- Theme 編輯器 ---------- */
+            .theme-layout {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 320px;
+                gap: 20px;
+                align-items: start;
+            }
+            .seg {
+                display: inline-flex;
+                padding: 3px;
+                border-radius: 999px;
+                background: var(--surface-2);
+                box-shadow: inset 0 0 0 1px var(--line);
+            }
+            .seg button {
+                padding: 5px 14px;
+                border-radius: 999px;
+                background: transparent;
+                box-shadow: none;
+            }
+            .seg button[aria-pressed='true'] {
+                background: var(--primary);
+                color: var(--on-primary);
+            }
+
+            /* ---------- Theme 候選卡（每張係細版 player 頁） ---------- */
+            .tgrid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+                gap: 12px;
+            }
+            /* button 入面用 block 排（grid 喺 button 入面會縮成內容闊度） */
+            .tcard {
+                display: block;
+                padding: 8px 8px 10px;
+                border-radius: 16px;
+                background: var(--surface);
+                box-shadow: inset 0 0 0 1px var(--line);
+                font-size: 13px;
+                text-align: left;
+            }
+            .tcard > * {
+                width: 100%;
+            }
+            .tcard > * + * {
+                margin-top: 8px;
+            }
+            .tcard[aria-pressed='true'] {
+                background: var(--accent-soft);
+                box-shadow: inset 0 0 0 2px var(--primary);
+            }
+            .tcard .lbl {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 6px;
+                font-weight: 600;
+            }
+            .tphone {
+                display: grid;
+                gap: 8px;
+                padding-bottom: 10px;
+                border-radius: 14px;
+                overflow: hidden;
+                background: var(--theme-bg);
+                color: var(--theme-text);
+            }
+            .tphone .sb {
+                height: 8px;
+                background: var(--theme-status-bar);
+            }
+            .tphone .hd {
+                position: relative;
+                display: grid;
+                padding: 2px 10px 8px;
+            }
+            .tphone .hd::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: var(--theme-header-rule);
+            }
+            .tphone .hd b {
+                color: var(--theme-title);
+                font: 700 15px/1.3 var(--theme-title-font);
+            }
+            .tphone .hd small {
+                color: var(--theme-muted);
+                font-size: 11px;
+            }
+            .tphone .pdisc.sm {
+                width: 52%;
+                justify-self: center;
+                box-shadow:
+                    0 0 0 5px var(--theme-surface),
+                    0 8px 16px rgb(0 0 0 / 0.35);
+            }
+            .tphone .bar {
+                margin: 4px 12px 0;
+                height: 3px;
+                border-radius: 2px;
+                background: linear-gradient(90deg, var(--theme-accent) 40%, var(--theme-track) 40%);
+            }
+            .tphone .ctl {
+                display: flex;
+                justify-content: center;
+            }
+            .tphone .play {
+                display: grid;
+                place-items: center;
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                background: var(--theme-accent);
+                color: var(--theme-on-accent);
+                font-size: 13px;
+            }
+            .tphone .li {
+                display: flex;
+                justify-content: space-between;
+                margin: 0 8px;
+                padding: 5px 8px;
+                border-radius: 8px;
+                background: var(--theme-surface);
+                font-size: 11px;
+            }
+            .tphone .li small {
+                color: var(--theme-muted);
+            }
+            .tphone .li.on {
+                color: var(--theme-accent-text);
+                font-weight: 600;
+            }
+
+            /* ---------- Publish ---------- */
+            .issues {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: grid;
+                gap: 8px;
+            }
+            .issues li {
+                display: grid;
+                grid-template-columns: auto minmax(0, 1fr) auto;
+                gap: 10px;
+                align-items: center;
+                padding: 10px 14px;
+                border-radius: 12px;
+                font-size: 14px;
+            }
+            .issues.bad li {
+                background: var(--danger-bg);
+                color: var(--danger-ink);
+            }
+            .issues.warn li {
+                background: var(--warn-bg);
+                color: var(--warn-ink);
+            }
+            .issues li small {
+                display: block;
+                font-size: 12px;
+                opacity: 0.9;
+            }
+
+            @media (max-width: 860px) {
+                .editor,
+                .theme-layout {
+                    grid-template-columns: 1fr;
+                }
+                .frame {
+                    padding: 16px;
+                }
+            }
+            @media (max-width: 420px) {
+                .img-slot.tile,
+                .img-slot.banner-std,
+                .img-slot.banner-long {
+                    width: 280px;
+                }
+                .img-slot.banner-std {
+                    height: calc(280px * 517 / 1200);
+                }
+                .img-slot.banner-long {
+                    height: calc(280px * 400 / 2000);
+                }
+                .img-slot.tile {
+                    height: calc(280px * 192 / 340);
+                }
+            }
+
+            /* ---------- 選擇發佈 ---------- */
+            .steps {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                margin: 8px 0 18px;
+                font-weight: 600;
+                color: var(--muted);
+            }
+            .steps .st {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .steps .n {
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                border: 2px solid var(--line);
+                font-size: 14px;
+            }
+            .steps .done .n {
+                background: var(--ok);
+                border-color: var(--ok);
+                color: #fff;
+            }
+            .steps .done {
+                color: var(--ok-ink);
+            }
+            .steps .cur .n {
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+            .steps .cur {
+                color: var(--ink);
+            }
+            .steps .bar {
+                width: 48px;
+                height: 2px;
+                background: var(--line);
+            }
+            .sec-title {
+                font-size: 16px;
+                font-weight: 700;
+                margin: 0 0 10px;
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+            .sec-title .hint {
+                font-weight: 400;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            table.mx {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            table.mx th,
+            table.mx td {
+                padding: 12px 10px;
+                border-bottom: 1px solid var(--line);
+                text-align: center;
+                font-size: 14px;
+            }
+            table.mx th {
+                color: var(--muted);
+                font-weight: 600;
+                font-size: 13px;
+            }
+            table.mx th:first-child,
+            table.mx td:first-child {
+                text-align: left;
+            }
+            table.mx td .meta {
+                display: block;
+                color: var(--muted);
+                font-size: 12px;
+                margin-top: 2px;
+            }
+            table.mx tr.blocked td:first-child b {
+                color: var(--ink);
+            }
+            table.mx tr.off td:first-child b {
+                color: var(--muted);
+            }
+            .ok-mark {
+                color: var(--ok);
+                font-weight: 700;
+            }
+            .must {
+                display: inline-block;
+                background: var(--danger);
+                color: #fff;
+                border-radius: 8px;
+                padding: 4px 12px;
+                font-weight: 700;
+                font-size: 13px;
+            }
+            .opt {
+                display: inline-block;
+                border: 1.5px dashed var(--line);
+                border-radius: 8px;
+                padding: 2px 12px;
+                color: var(--muted);
+            }
+            .pick {
+                width: 20px;
+                height: 20px;
+                accent-color: var(--primary);
+                cursor: pointer;
+            }
+            .lock {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--danger-ink);
+            }
+            .foot {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+                margin-top: 14px;
+            }
+            .foot .sum {
+                color: var(--muted);
+                font-size: 14px;
+            }
+            .foot .sum b {
+                color: var(--ink);
+            }
+            .chips {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            ul.plain {
+                margin: 6px 0 0 18px;
+                line-height: 1.9;
+            }
+            .stack {
+                display: grid;
+                gap: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+            <symbol id="i-pencil" viewBox="0 0 24 24">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </symbol>
+            <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+            <symbol id="i-upload" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <path d="m17 8-5-5-5 5M12 3v12" />
+            </symbol>
+            <symbol id="i-cloud" viewBox="0 0 24 24">
+                <path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 6 17.5" />
+                <path d="M12 12v9m-3-3 3 3 3-3" />
+            </symbol>
+            <symbol id="i-alert" viewBox="0 0 24 24">
+                <path
+                    d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"
+                />
+                <path d="M12 9v4M12 17h.01" />
+            </symbol>
+            <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></symbol>
+            <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+            <symbol id="i-lock" viewBox="0 0 24 24">
+                <rect x="4" y="11" width="16" height="10" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </symbol>
+            <symbol id="i-undo" viewBox="0 0 24 24">
+                <path d="M3 7v6h6" />
+                <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
+            </symbol>
+            <symbol id="i-wand" viewBox="0 0 24 24">
+                <path d="m15 4 5 5L9 20H4v-5Z" />
+                <path d="M19 2v4M17 4h4" />
+            </symbol>
+            <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8Z" /></symbol>
+            <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 4v16l10-8Z M19 4v16" /></symbol>
+            <symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12H5m7-7-7 7 7 7" /></symbol>
+            <symbol id="i-right" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7" /></symbol>
+            <symbol id="i-refresh" viewBox="0 0 24 24">
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                <path d="M21 3v5h-5M3 21v-5h5" />
+            </symbol>
+            <symbol id="i-send" viewBox="0 0 24 24">
+                <path d="m22 2-7 20-4-9-9-4Z" />
+                <path d="M22 2 11 13" />
+            </symbol>
+        </svg>
+
+        <main class="page">
+            <div class="frame intro">
+                <h1>選擇發佈預覽</h1>
+                <p class="state-label">
+                    用戶 2026-11-13：「更新」頁有「必須處理」待辦時唔應該擋住淨改 App
+                    外觀嘅發佈。改做：更新頁加「App 外觀」section；新內容表加「發佈」勾選欄，
+                    設定好晒（冇必須處理）嘅可以揀今次發佈，未設定好嘅唔可以揀、亦唔會阻發佈。
+                </p>
+                <table class="decisions">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>問題</th>
+                            <th>建議</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Q1 ✓</td>
+                            <td>預設勾唔勾</td>
+                            <td>設定好晒嘅新內容同有改動嘅 App 外觀項目預設勾選；你可以剔走</td>
+                        </tr>
+                        <tr>
+                            <td>Q2 ✓</td>
+                            <td>未勾 / 未完成嘅新內容發佈後點</td>
+                            <td>完全唔入今次 catalog（播放器見唔到），admin 設定照留，下次再揀</td>
+                        </tr>
+                        <tr>
+                            <td>Q3 ✓</td>
+                            <td>其他改動（例如改節目簡介、改配色、上下架）</td>
+                            <td>今次照舊全部一齊發佈（唔做逐項勾選），喺確認發佈頁列出</td>
+                        </tr>
+                        <tr>
+                            <td>Q4 ✓</td>
+                            <td>一項都冇揀</td>
+                            <td>「下一步」灰色，提示「未選擇任何內容」</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <nav class="jump" aria-label="跳去">
+                    <a href="#a">① 更新頁（可以玩）</a>
+                    <a href="#b">② 確認發佈</a>
+                </nav>
+            </div>
+
+            <section id="a">
+                <h2>① 更新頁 · 處理待辦（可以剔）</h2>
+                <div class="frame stack">
+                    <div class="steps" aria-label="步驟">
+                        <span class="st done"><span class="n">✓</span>掃描 R2（自動）</span
+                        ><span class="bar"></span>
+                        <span class="st cur"><span class="n">2</span>處理待辦</span
+                        ><span class="bar"></span>
+                        <span class="st"><span class="n">3</span>確認發佈</span>
+                    </div>
+
+                    <div class="card">
+                        <p class="sec-title">
+                            App 外觀 <span class="hint">已儲存、未發佈的改動</span>
+                        </p>
+                        <table class="mx">
+                            <thead>
+                                <tr>
+                                    <th>項目</th>
+                                    <th>狀態</th>
+                                    <th style="width: 70px">發佈</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <b>名稱與簡介</b
+                                        ><span class="meta"
+                                            >簡介已更改 · 發佈後會自動重新部署播放器</span
+                                        >
+                                    </td>
+                                    <td><span class="pill ok">自訂 · 未發佈</span></td>
+                                    <td>
+                                        <input
+                                            class="pick"
+                                            type="checkbox"
+                                            checked
+                                            data-k="app"
+                                            aria-label="發佈名稱與簡介"
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="card">
+                        <p class="sec-title">
+                            新內容 <span class="hint">只可以揀已經設定好的項目</span>
+                        </p>
+                        <table class="mx">
+                            <thead>
+                                <tr>
+                                    <th>新內容</th>
+                                    <th>資料夾</th>
+                                    <th>ID</th>
+                                    <th>圖片</th>
+                                    <th>排期</th>
+                                    <th>簡介</th>
+                                    <th style="width: 70px">發佈</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <b>戀愛後二分一</b
+                                        ><span class="meta">蘭茜夫人劇場 · 新短篇 · 20 集</span>
+                                    </td>
+                                    <td class="ok-mark">✓</td>
+                                    <td class="ok-mark">✓</td>
+                                    <td class="ok-mark">✓</td>
+                                    <td class="ok-mark">✓</td>
+                                    <td class="ok-mark">✓</td>
+                                    <td>
+                                        <input
+                                            class="pick"
+                                            type="checkbox"
+                                            checked
+                                            data-k="content"
+                                            aria-label="發佈戀愛後二分一"
+                                        />
+                                    </td>
+                                </tr>
+                                <tr class="blocked">
+                                    <td>
+                                        <b>大衛營</b
+                                        ><span class="meta">森美小儀系列 · 新短篇 · 20 集</span>
+                                    </td>
+                                    <td class="ok-mark">✓</td>
+                                    <td class="ok-mark">✓</td>
+                                    <td class="ok-mark">✓</td>
+                                    <td><span class="must">設定</span></td>
+                                    <td><span class="opt">＋</span></td>
+                                    <td>
+                                        <span class="lock" title="大衛營（尚未設定排期）"
+                                            >未完成</span
+                                        >
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="foot">
+                        <span class="sum" id="sum"></span>
+                        <button type="button" class="primary" id="next">
+                            <svg class="i"><use href="#i-send" /></svg>下一步：確認發佈
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="b">
+                <h2>② 確認發佈</h2>
+                <div class="frame">
+                    <div class="card">
+                        <h3>本次發佈</h3>
+                        <ul class="plain">
+                            <li>新短篇 · 蘭茜夫人劇場 › 戀愛後二分一（20 集）</li>
+                            <li>App 外觀 · 名稱與簡介</li>
+                            <li>其他已儲存的改動（如有）</li>
+                        </ul>
+                        <div
+                            class="note"
+                            style="
+                                margin-top: 12px;
+                                background: var(--surface-2);
+                                color: var(--muted);
+                            "
+                        >
+                            <svg class="i"><use href="#i-alert" /></svg>
+                            以下項目尚未完成，不會在本次發佈：森美小儀系列 ›
+                            大衛營（尚未設定排期）。
+                        </div>
+                        <div
+                            class="note"
+                            style="
+                                margin-top: 10px;
+                                background: var(--accent-soft);
+                                color: var(--accent-ink);
+                            "
+                        >
+                            <svg class="i"><use href="#i-refresh" /></svg>
+                            圖示、名稱及簡介須重新部署播放器方會生效，發佈後會自動開始（約 5
+                            分鐘）。
+                        </div>
+                        <div class="foot">
+                            <span></span
+                            ><button type="button" class="primary">
+                                <svg class="i"><use href="#i-send" /></svg>發佈
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <script>
+            const picks = [...document.querySelectorAll('.pick')];
+            const render = () => {
+                const n = picks.filter((p) => p.checked).length;
+                document.querySelector('#sum').innerHTML = n
+                    ? `已選擇 <b>${n}</b> 項發佈 · 1 項未完成（不會發佈）`
+                    : '未選擇任何內容';
+                document.querySelector('#next').disabled = n === 0;
+            };
+            picks.forEach((p) => p.addEventListener('change', render));
+            render();
+        </script>
+    </body>
+</html>

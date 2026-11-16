@@ -1,10 +1,12 @@
 /* 每個 admin API endpoint 一個 function（形狀見 types.ts） */
 import type { ScheduleRule } from '@903-player/catalog';
-import { ApiError, request } from './client';
+import { ApiError, errorOf, readJson, request } from './client';
 import type {
-    ChangesResponse,
+    BannerImages,
+    BannerResponse,
     DramaScanResponse,
-    EntryDetail,
+    DramaSources,
+    EntryResponse,
     EntryKind,
     EntrySummary,
     ImageMap,
@@ -19,7 +21,8 @@ import type {
 
 const NOT_FOUND = 404;
 
-const entryPath = (kind: EntryKind, id: string) => `/api/entries/${kind}/${encodeURIComponent(id)}`;
+export const entryPath = (kind: EntryKind, id: string) =>
+    `/api/entries/${kind}/${encodeURIComponent(id)}`;
 const schedulePath = (dramaId: string, arcId: string) =>
     `/api/dramas/${encodeURIComponent(dramaId)}/arcs/${encodeURIComponent(arcId)}/schedule`;
 
@@ -35,9 +38,11 @@ export const getTodos = async () => (await request<TodosResponse>('/api/todos'))
 export const listEntries = async () =>
     (await request<{ entries: EntrySummary[] }>('/api/entries')).data.entries;
 
+/** published（api 0.11.0）改名 publishedVersion：列表併入嘅 published（有冇上過架）唔會蓋走佢 */
 export const getEntry = async (kind: EntryKind, id: string): Promise<LoadedEntry> => {
-    const { data, etag } = await request<EntryDetail>(entryPath(kind, id));
-    return { ...data, kind, id, etag };
+    const { data, etag } = await request<EntryResponse>(entryPath(kind, id));
+    const { published, ...detail } = data;
+    return { ...detail, kind, id, etag, ...(published ? { publishedVersion: published } : {}) };
 };
 
 export interface EntryWrite {
@@ -93,15 +98,6 @@ export const rescanDrama = async (id: string) =>
 export const putOrder = (kind: EntryKind, ids: string[]) =>
     request(`/api/order/${kind}`, { method: 'PUT', body: { ids } });
 
-export const getChanges = async () => (await request<ChangesResponse>('/api/changes')).data;
-
-export const publish = async () =>
-    (
-        await request<{ unchanged?: boolean; publish: PublishSummary }>('/api/publish', {
-            method: 'POST',
-        })
-    ).data;
-
 export const listPublishes = async () =>
     (await request<{ publishes: PublishSummary[] }>('/api/publishes')).data.publishes;
 
@@ -140,14 +136,37 @@ export const putSchedule = (
 export const deleteSchedule = (dramaId: string, arcId: string) =>
     request(schedulePath(dramaId, arcId), { method: 'DELETE' });
 
-export const uploadAsset = async (file: Blob) =>
+/** 封面 / Banner = WebP；App 圖示 = PNG（api 0.9.0） */
+export const uploadAsset = async (file: Blob, contentType = 'image/webp') =>
     (
         await request<{ name: string }>('/api/assets', {
             method: 'PUT',
             raw: file,
-            contentType: 'image/webp',
+            contentType,
         })
     ).data;
 
 /** 圖片 URL（Worker 代出 catalog 圖） */
 export const imageUrl = (name: string) => `/catalog/v1/img/${encodeURIComponent(name)}`;
+
+/** R2 資料夾嘅封面原圖（cd cover / cover photo）；audio.host 唔係 r2 → 422 */
+export const getDramaSources = async (id: string) =>
+    (await request<DramaSources>(`/api/dramas/${encodeURIComponent(id)}/sources`)).data;
+
+/** R2 原圖 bytes（Content-Type 跟副檔名）；冇原圖 404、> 20 MB 413、唔係圖 415 */
+export const fetchR2Source = async (key: string): Promise<Blob> => {
+    const response = await fetch(`/api/r2-source?key=${encodeURIComponent(key)}`, {
+        credentials: 'same-origin',
+    });
+    if (!response.ok) throw errorOf(response.status, await readJson(response));
+    return response.blob();
+};
+
+export const getBanner = async () => (await request<BannerResponse>('/api/banner')).data;
+
+/** 兩張一齊換（草稿，publish 先上線） */
+export const putBanner = async (banner: BannerImages) =>
+    (await request<BannerResponse>('/api/banner', { method: 'PUT', body: banner })).data;
+
+/** 還原預設（冇 banner 都 204） */
+export const deleteBanner = () => request('/api/banner', { method: 'DELETE' });

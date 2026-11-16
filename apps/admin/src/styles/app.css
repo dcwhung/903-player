@@ -61,6 +61,17 @@ svg.lucide {
     display: block;
 }
 
+/* 左上 banner / icon 係收合 / 展開掣（button）：拎走全域 button 嘅框、底色（連 hover）同字距 */
+.nav .brand-link,
+.nav .logo-mini,
+.nav .brand-link:hover:not(:disabled),
+.nav .logo-mini:hover:not(:disabled) {
+    width: 100%;
+    border: 0;
+    background: none;
+    white-space: normal;
+}
+
 .content {
     overflow-y: auto;
     min-width: 0;

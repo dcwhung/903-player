@@ -1,4 +1,4 @@
-import { parseWebp, WebpError } from '../src/assets/webp';
+import { parseWebp, parseWebpHeader, WEBP_HEADER_BYTES, WebpError } from '../src/assets/webp';
 import {
     chunk,
     riffOf,
@@ -92,5 +92,47 @@ describe('parseWebp', () => {
         const long = chunk('VP8 ', vp8Payload(600, 600));
         long[4] = 0xff;
         expect(() => parseWebp(riffOf([header, long]))).toThrow(WebpError);
+    });
+});
+
+describe('parseWebpHeader (S-901: only the first WEBP_HEADER_BYTES bytes)', () => {
+    const head = (bytes: Uint8Array) => bytes.subarray(0, WEBP_HEADER_BYTES);
+    /** 圖像資料好長：淨係頭幾十 byte parseWebp 會當截短，parseWebpHeader 要讀到 */
+    const padded = (payload: number[]) => [...payload, ...new Array<number>(1000).fill(0)];
+
+    it('should read VP8 / VP8L / VP8X sizes from a header-only prefix', () => {
+        expect(
+            parseWebpHeader(head(riffOf([chunk('VP8 ', padded(vp8Payload(1200, 517)))]))),
+        ).toEqual({
+            width: 1200,
+            height: 517,
+        });
+        expect(
+            parseWebpHeader(head(riffOf([chunk('VP8L', padded(vp8lPayload(2000, 400)))]))),
+        ).toEqual({
+            width: 2000,
+            height: 400,
+        });
+        expect(parseWebpHeader(head(webpVp8x(2000, 400)))).toEqual({ width: 2000, height: 400 });
+    });
+
+    it('should read a whole small file too', () => {
+        expect(parseWebpHeader(webpVp8(600, 600))).toEqual({ width: 600, height: 600 });
+        expect(parseWebpHeader(webpVp8l(10, 20))).toEqual({ width: 10, height: 20 });
+    });
+
+    it('should reject a prefix that is not a WebP header', () => {
+        expect(() => parseWebpHeader(ascii('<html>not an image at all</html>'))).toThrow(WebpError);
+        expect(() => parseWebpHeader(head(webpVp8(600, 600)).subarray(0, 12))).toThrow(WebpError);
+        expect(() => parseWebpHeader(head(riffOf([chunk('ALPH', padded([]))])))).toThrow(WebpError);
+        expect(() =>
+            parseWebpHeader(head(riffOf([chunk('VP8 ', [0x30, 0x01, 0x00, 0, 0, 0, 1, 0, 1, 0])]))),
+        ).toThrow(WebpError);
+    });
+
+    it('should reject a VP8 chunk cut short inside the header', () => {
+        expect(() =>
+            parseWebpHeader(head(webpVp8(600, 600)).subarray(0, WEBP_HEADER_BYTES - 6)),
+        ).toThrow(WebpError);
     });
 });

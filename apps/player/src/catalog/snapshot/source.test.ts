@@ -61,6 +61,27 @@ describe('loadSnapshot', () => {
         expect(doc?.dramas.map((d) => d.id)).toEqual(['snapshot-drama']);
     });
 
+    it('should point the banner at the bundled URLs (Phase 4 L3)', () => {
+        const withBanner = { ...SNAPSHOT_JSON, banner: { standard: TILE, long: DISC } };
+        const doc = loadSnapshot({ './data/catalog.json': withBanner }, IMAGES);
+        expect(doc?.banner).toEqual({
+            standard: `/903-player/assets/${TILE}`,
+            long: `/903-player/assets/${DISC}`,
+        });
+    });
+
+    it('should drop the whole snapshot when a banner image was not bundled', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const withBanner = { ...SNAPSHOT_JSON, banner: { standard: TILE, long: 'missing.webp' } };
+        expect(loadSnapshot({ './data/catalog.json': withBanner }, IMAGES)).toBeUndefined();
+        expect(warn).toHaveBeenCalledTimes(1);
+        warn.mockRestore();
+    });
+
+    it('should keep a snapshot without a banner banner-less', () => {
+        expect(loadSnapshot(DOCUMENTS, IMAGES)?.banner).toBeUndefined();
+    });
+
     it('should warn and answer undefined when an image is missing or the document is broken', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
         expect(loadSnapshot(DOCUMENTS, { [`./data/img/${TILE}`]: '/a.webp' })).toBeUndefined();

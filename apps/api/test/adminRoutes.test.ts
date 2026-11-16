@@ -50,6 +50,7 @@ describe('GET /api/todos', () => {
         expect(body.blocking).toBe(1);
         expect(body.rows).toEqual([
             {
+                key: 'newDrama/drama-01',
                 kind: 'newDrama',
                 findingIds: [1],
                 dramaId: 'drama-01',
@@ -62,6 +63,7 @@ describe('GET /api/todos', () => {
                     schedule: { state: 'must', target: '/dramas/drama-01/schedule' },
                     summary: { state: 'optional', target: '/dramas/drama-01' },
                 },
+                publish: 'incomplete',
             },
         ]);
     });

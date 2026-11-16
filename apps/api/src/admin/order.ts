@@ -13,7 +13,7 @@ import { errorResponse, readJsonObject, type Json } from '../content/http';
 
 export const orderRoutes = new Hono<AppEnv>();
 
-const KINDS: readonly string[] = ['shows', 'dramas'] satisfies readonly CatalogKind[];
+export const ORDER_KINDS: readonly string[] = ['shows', 'dramas'] satisfies readonly CatalogKind[];
 /** 第一個 order（主頁次序細嘅排先） */
 const FIRST_ORDER = 1;
 
@@ -36,12 +36,17 @@ const sameSet = (a: readonly string[], b: readonly string[]): boolean =>
  *   toISOString 格式（YYYY-MM-DDTHH:MM:SS.sssZ），strftime('%f') 出同一格式，字串比較 = 時間比較；
  *   現行值 parse 唔到（strftime 回 NULL）就用新值
  */
-const orderStatement = (db: D1Database, entry: StoredEntry, order: number) =>
+/** S-799 嘅 updated_at（param = 由讀取時計嘅新值嘅 placeholder）；排序還原（orderRevert.ts）共用 */
+export const bumpedUpdatedAt = (param: string) =>
+    `max(${param}, coalesce(strftime('%Y-%m-%dT%H:%M:%fZ', updated_at, '+0.001 seconds'), ''))`;
+
+/** order 已經係呢個值就唔郁（連 updated_at）；排序還原共用 */
+export const orderStatement = (db: D1Database, entry: StoredEntry, order: number) =>
     db
         .prepare(
             `UPDATE entries
              SET definition = json_set(definition, '$.order', CAST(?1 AS INTEGER)),
-                 updated_at = max(?2, coalesce(strftime('%Y-%m-%dT%H:%M:%fZ', updated_at, '+0.001 seconds'), ''))
+                 updated_at = ${bumpedUpdatedAt('?2')}
              WHERE kind = ?3 AND id = ?4 AND json_extract(definition, '$.order') IS NOT CAST(?1 AS INTEGER)`,
         )
         .bind(order, nextUpdatedAt(entry.updated_at), entry.kind, entry.id);
@@ -69,7 +74,7 @@ const writeOrder = async (
 
 orderRoutes.put('/order/:kind', async (c) => {
     const kind = c.req.param('kind');
-    if (!KINDS.includes(kind))
+    if (!ORDER_KINDS.includes(kind))
         return errorResponse(c, HTTP_STATUS.badRequest, 'kind must be shows / dramas');
     const ids = await readIds(c);
     if (!ids) return errorResponse(c, HTTP_STATUS.badRequest, 'body must be { ids: string[] }');

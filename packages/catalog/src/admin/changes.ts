@@ -1,6 +1,6 @@
 /*
  * 兩份 catalog document 嘅變更摘要（admin 確認發佈時間線 + 上下架記錄共用）：
- * 新節目 / 新劇 / 新短篇 / 新集數（按上架日分組）、落架（停用、刪除、下架日）、其他改動（列出欄位）。
+ * 新節目 / 新劇 / 新短篇 / 新集數（按上架日分組）、落架（停用、刪除、下架日）、排序（整個列表）、其他改動（列出欄位）。
  * definition 唔 parse（唔合格嘅 document 都要比較得），規則同 player 一樣：節目 enabled 冇 = 上架，
  * 劇集 enabled 要係 true，短篇 enabled 冇 = 上架
  */
@@ -13,16 +13,26 @@ import type {
     ChangeTimelineGroup,
     SummarizeOptions,
 } from './changeTypes';
+import { editItemsFor, imageEditFields } from './editChanges';
 import { arcEditFields, seriesArcChanges } from './seriesChanges';
-import { changedKeys, nameOf, sameJson, stringField, whenOf, type RawJson } from './rawDefinition';
+import {
+    changedKeys,
+    isEntryListed,
+    nameOf,
+    stringField,
+    whenOf,
+    type RawJson,
+} from './rawDefinition';
+import { reorderItems } from './reorderChanges';
 
 const NOW = 'now';
-/** 頂層 edit 唔計嘅欄位：上下架 / 集數另外有自己嘅 item */
+/** 頂層 edit 唔計嘅欄位：上下架 / 集數 / 排序（#6：整個列表一個 reorder）另外有自己嘅 item */
 const ENTRY_HANDLED_KEYS: ReadonlySet<string> = new Set([
     'enabled',
     'removedAt',
     'arcs',
     'episodes',
+    'order',
 ]);
 
 interface EntryPair {
@@ -32,21 +42,16 @@ interface EntryPair {
     today: string;
 }
 
-const isListed = (kind: CatalogKind, definition: RawJson | undefined): boolean => {
-    if (definition === undefined) return false;
-    return kind === 'shows' ? definition.enabled !== false : definition.enabled === true;
-};
-
 const refOf = (kind: CatalogKind, entry: CatalogEntry): ChangeEntryRef => ({
     kind,
     id: entry.id,
     name: nameOf(entry.definition, entry.id),
 });
 
-/** 頂層欄位 + 圖有冇改 */
+/** 頂層欄位 + 換咗邊張圖（editChanges.ts） */
 const editedFields = (prev: CatalogEntry, next: CatalogEntry): string[] => [
     ...changedKeys(prev.definition, next.definition, ENTRY_HANDLED_KEYS),
-    ...(sameJson(prev.images, next.images) ? [] : ['images']),
+    ...imageEditFields(prev, next),
 ];
 
 const newEntryItem = ({ kind, next, today }: EntryPair, entry: CatalogEntry): ChangeItem => ({
@@ -85,7 +90,7 @@ const dailyItems = (pair: EntryPair, entry: CatalogEntry): ChangeItem[] => {
         Array.isArray(e?.definition.episodes)
             ? (e.definition.episodes as RawJson[]).flatMap((ep) => stringField(ep, 'date') ?? [])
             : [];
-    const old = new Set(isListed(pair.kind, pair.prev?.definition) ? datesOf(pair.prev) : []);
+    const old = new Set(isEntryListed(pair.kind, pair.prev?.definition) ? datesOf(pair.prev) : []);
     const dates = datesOf(entry)
         .filter((d) => !old.has(d))
         .sort();
@@ -95,7 +100,7 @@ const dailyItems = (pair: EntryPair, entry: CatalogEntry): ChangeItem[] => {
 
 /** 上架緊（今次 listed）嘅劇集 / 節目：新、下架日、集數、改動 */
 const listedItems = (pair: EntryPair, entry: CatalogEntry): ChangeItem[] => {
-    const wasListed = isListed(pair.kind, pair.prev?.definition);
+    const wasListed = isEntryListed(pair.kind, pair.prev?.definition);
     const head = wasListed ? [] : [newEntryItem(pair, entry)];
     if (pair.kind === 'shows') return head;
     const prev = wasListed ? pair.prev : undefined;
@@ -109,21 +114,20 @@ const listedItems = (pair: EntryPair, entry: CatalogEntry): ChangeItem[] => {
 
 const editItems = (pair: EntryPair): ChangeItem[] => {
     const { prev, next } = pair;
-    if (!prev || !next || !isListed(pair.kind, prev.definition)) return [];
-    if (!isListed(pair.kind, next.definition)) return [];
+    if (!prev || !next || !isEntryListed(pair.kind, prev.definition)) return [];
+    if (!isEntryListed(pair.kind, next.definition)) return [];
     const fields = [
         ...editedFields(prev, next),
         ...(pair.kind === 'dramas' ? arcEditFields(prev.definition, next.definition) : []),
     ];
-    if (fields.length === 0) return [];
-    return [{ kind: 'edit', when: NOW, entry: refOf(pair.kind, next), detail: { fields } }];
+    return editItemsFor(refOf(pair.kind, next), next.definition, fields);
 };
 
 const entryItems = (pair: EntryPair): ChangeItem[] => {
     const { prev, next } = pair;
-    if (next && isListed(pair.kind, next.definition))
+    if (next && isEntryListed(pair.kind, next.definition))
         return [...listedItems(pair, next), ...editItems(pair)];
-    if (prev && isListed(pair.kind, prev.definition)) return [unlistItem(pair, prev)];
+    if (prev && isEntryListed(pair.kind, prev.definition)) return [unlistItem(pair, prev)];
     return [];
 };
 
@@ -161,6 +165,7 @@ export const summarizeChanges = (
             : [{ kind: 'rollback', when: NOW, detail: { publishId: options.rollbackOf } }];
     const items = [
         ...rollback,
+        ...reorderItems(prev, next),
         ...(['shows', 'dramas'] as const).flatMap((kind) =>
             pairsOf(kind, prev, next, today).flatMap(entryItems),
         ),

@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fakeData, mockApi, renderAt, resource } from '../../../tests/renderApp';
 import { ShowEditorPage } from './ShowEditor';
@@ -39,6 +39,28 @@ describe('ShowEditor', () => {
         );
         expect(await screen.findByText('未上架', { selector: '.pill' })).toHaveClass('unlisted');
     });
+
+    it.each([
+        [false, true],
+        [true, false],
+    ])(
+        'should offer 刪除 only when the show was never listed (published = %s → deletable = %s)',
+        async (published, deletable) => {
+            // 以下架入過最新 document：changes 冇「新節目」，要靠 GET /api/entries 嘅 published
+            const off = { ...SHOW, definition: { ...SHOW.definition, enabled: false } };
+            mockApi({ 'GET /api/entries/shows/waves': () => ({ body: off, etag: '"v1"' }) });
+            const summary = { ...off, kind: 'shows' as const, id: 'waves', etag: '"v1"' };
+            renderAt(
+                '/shows/waves',
+                '/shows/:id',
+                <ShowEditorPage />,
+                fakeData({ entries: resource([{ ...summary, published }]) }),
+            );
+            await screen.findByRole('button', { name: '儲存' });
+            expect(screen.queryByRole('button', { name: '刪除' }) !== null).toBe(deletable);
+            expect(screen.queryByText('已發佈的項目不可刪除。') !== null).toBe(!deletable);
+        },
+    );
 
     it('should save with If-Match and show the dirty field', async () => {
         const api = mockApi({
@@ -121,6 +143,8 @@ describe('ShowEditor', () => {
             }),
         });
         const row = {
+            key: 'newDrama/waves',
+            publish: 'incomplete' as const,
             kind: 'newDrama' as const,
             findingIds: [1],
             dramaId: 'waves',
@@ -194,5 +218,40 @@ describe('ShowEditor', () => {
         await waitFor(() => expect(api.mock.calls.some(([, i]) => i?.method === 'PUT')).toBe(true));
         const put = api.mock.calls.find(([, init]) => init?.method === 'PUT');
         expect(JSON.parse(String(put?.[1]?.body)).definition).not.toHaveProperty('airTime');
+    });
+
+    it('should split 基本資料 and 配色 into tabs, with no theme on the basic tab', async () => {
+        mockApi({ 'GET /api/entries/shows/waves': load });
+        renderAt('/shows/waves', '/shows/:id', <ShowEditorPage />);
+        const tabs = await screen.findByRole('navigation', { name: '節目分頁' });
+        expect(within(tabs).getByRole('link', { name: '基本資料' })).toHaveAttribute(
+            'aria-current',
+            'page',
+        );
+        expect(within(tabs).getByRole('link', { name: '配色' })).toHaveAttribute(
+            'href',
+            '/shows/waves/theme',
+        );
+        expect(
+            screen.queryByRole('region', { name: '口水多過浪花 · 配色' }),
+        ).not.toBeInTheDocument();
+    });
+
+    it('should show only the theme picker on the 配色 tab, without a visible title', async () => {
+        mockApi({ 'GET /api/entries/shows/waves': load });
+        renderAt('/shows/waves/theme', '/shows/:id/theme', <ShowEditorPage tab="theme" />);
+        expect(
+            await screen.findByRole('region', { name: '口水多過浪花 · 配色' }),
+        ).toBeInTheDocument();
+        expect(
+            screen.queryByRole('heading', { name: '口水多過浪花 · 配色' }),
+        ).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: '儲存' })).not.toBeInTheDocument();
+    });
+
+    it('should not show tabs for a new show', async () => {
+        renderAt('/shows/new', '/shows/new', <ShowEditorPage />, fakeData({}));
+        expect(await screen.findByRole('button', { name: '儲存' })).toBeInTheDocument();
+        expect(screen.queryByRole('navigation', { name: '節目分頁' })).not.toBeInTheDocument();
     });
 });

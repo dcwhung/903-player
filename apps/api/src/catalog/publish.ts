@@ -2,6 +2,7 @@
  * Publish：D1 entries → CatalogDocument → packages/catalog 同一套 validator → ID 守衛 → R2 + publishes 記錄。
  * 最高原則：episode ID 唔准無聲無息消失（用戶進度 / 收藏靠佢），所以上次有、今次冇就拒絕，要 force 先得
  */
+import { hashOfImageName } from '../assets/imageName';
 import {
     buildRegistry,
     buildShowRegistry,
@@ -14,11 +15,17 @@ import {
 import {
     CATALOG_IMAGE_PATH,
     CATALOG_JSON_KEY,
+    ICON_FILE_PATTERN,
     IMAGE_FILE_PATTERN,
     VALIDATION_BUILD_OPTIONS,
 } from '../config';
+import type { BannerImages } from '../banner/store';
+import { brandingDocument, type IconUrls } from '../branding/document';
+import type { BrandingDraft } from '../branding/store';
+import { deployAfterPublish, type DeployEnv } from '../deploy/afterPublish';
 import { sha256Hex } from '../lib/crypto';
 import { purgeCatalogCache } from './serve';
+import { publishWarnings, type PublishWarning } from './warnings';
 import {
     deletePublish,
     insertPublish,
@@ -42,6 +49,8 @@ export interface ValidatedDocument {
     episodeIds: string[];
     /** player 睇到嘅 episode ID（劇 enabled、短篇冇下架）：上過架先鎖入守衛（W-707） */
     listedEpisodeIds: string[];
+    /** 唔阻 publish 嘅警告（theme contrast、未設定配色） */
+    warnings: PublishWarning[];
 }
 
 export type PublishOutcome =
@@ -65,16 +74,20 @@ const parseJson = (text: string, what: string): Record<string, unknown> => {
 export const resolveImages = (
     files: Readonly<Record<string, unknown>>,
     where: string,
-    { origin, assets }: { origin: string; assets: ReadonlySet<string> },
+    {
+        origin,
+        assets,
+        pattern = IMAGE_FILE_PATTERN,
+    }: { origin: string; assets: ReadonlySet<string>; pattern?: RegExp },
 ): Record<string, string> =>
     Object.fromEntries(
         Object.entries(files).map(([file, value]) => {
             const name = String(value);
-            if (!IMAGE_FILE_PATTERN.test(name))
+            if (!pattern.test(name))
                 throw new PublishValidationError(
                     `${where}: image ${file} → ${name} is not <hash>.<ext>`,
                 );
-            if (!assets.has(name.split('.')[0] ?? ''))
+            if (!assets.has(hashOfImageName(name)))
                 throw new PublishValidationError(`${where}: image ${file} → ${name} not uploaded`);
             return [file, `${origin}${CATALOG_IMAGE_PATH}${name}`];
         }),
@@ -85,14 +98,41 @@ const imageUrls = (row: EntryRow, origin: string, assets: ReadonlySet<string>) =
     return resolveImages(parseJson(row.images, `${where} images`), where, { origin, assets });
 };
 
-/** D1 rows → catalog.json 內容（未驗證） */
+export interface DocumentContext {
+    origin: string;
+    assets: ReadonlySet<string>;
+    generatedAt: string;
+    /** D1 banner（null = 還原預設，catalog.json 冇 banner）；必填，免得有 caller 漏咗 */
+    banner: BannerImages | null;
+    /** D1 branding 草稿（兩部分都 null = catalog.json 冇 branding）；必填，理由同 banner */
+    branding: BrandingDraft;
+}
+
+/** branding.icon 五張圖 → Worker 圖 URL（<hash>.png，要已上載） */
+const checkedIconUrls =
+    (context: { origin: string; assets: ReadonlySet<string> }): IconUrls =>
+    (files) =>
+        resolveImages(files, 'branding.icon', { ...context, pattern: ICON_FILE_PATTERN });
+
+/** banner 兩張圖 → Worker 圖 URL（同 entries 圖一樣要已上載） */
+const bannerUrls = (
+    banner: BannerImages | null,
+    context: { origin: string; assets: ReadonlySet<string> },
+) =>
+    banner === null
+        ? {}
+        : {
+              banner: resolveImages(
+                  { standard: banner.standard, long: banner.long },
+                  'banner',
+                  context,
+              ),
+          };
+
+/** D1 rows（+ banner、branding）→ catalog.json 內容（未驗證） */
 export const documentFromEntries = (
     rows: readonly EntryRow[],
-    {
-        origin,
-        assets,
-        generatedAt,
-    }: { origin: string; assets: ReadonlySet<string>; generatedAt: string },
+    { origin, assets, generatedAt, banner, branding }: DocumentContext,
 ): unknown => {
     const entriesOf = (kind: EntryRow['kind']): CatalogEntry[] =>
         rows
@@ -107,6 +147,8 @@ export const documentFromEntries = (
         generatedAt,
         shows: entriesOf('shows'),
         dramas: entriesOf('dramas'),
+        ...bannerUrls(banner, { origin, assets }),
+        ...brandingDocument(branding, checkedIconUrls({ origin, assets })),
     };
 };
 
@@ -145,7 +187,13 @@ export const validateDocument = (value: unknown): ValidatedDocument => {
         const episodeIds = dramas.dramas.flatMap((d) =>
             dramas.catalogEpisodesOf(d.id).map((e) => e.id),
         );
-        return { doc, json: JSON.stringify(value), episodeIds, listedEpisodeIds: listedIdsOf(doc) };
+        return {
+            doc,
+            json: JSON.stringify(value),
+            episodeIds,
+            listedEpisodeIds: listedIdsOf(doc),
+            warnings: publishWarnings(doc),
+        };
     } catch (error) {
         if (error instanceof PublishValidationError) throw error;
         throw new PublishValidationError(error instanceof Error ? error.message : String(error));
@@ -162,13 +210,14 @@ export const missingEpisodeIds = (
 };
 
 /** 除 generatedAt 外完全一樣（document 都係由同一個 builder JSON.stringify，key 次序穩定） */
-const sameContent = (previous: string, next: string): boolean => {
+export const sameContent = (previous: string, next: string): boolean => {
     const strip = (json: string) =>
         JSON.stringify({ ...(JSON.parse(json) as Record<string, unknown>), generatedAt: null });
     return strip(previous) === strip(next);
 };
 
-type PublishEnv = { DB: D1Database; CATALOG: R2Bucket; WORKER_ORIGIN: string };
+/** 部署 secret 選填（App 外觀：改咗 branding 先觸發重新部署 player） */
+export type PublishEnv = DeployEnv & { CATALOG: R2Bucket; WORKER_ORIGIN: string };
 
 /**
  * R2 寫失敗後收拾嗰行：刪走（S-767）；連刪都失敗就標 failed（S-786），
@@ -258,7 +307,7 @@ const purgeAfterWrite = async (origin: string, publishId: number): Promise<void>
 
 /**
  * 驗過嘅 document 寫 R2 + 記 publishes。冇 force 時：ID 守衛唔過就乜都唔寫；
- * 內容同最新一次一樣就回 unchanged（唔開新行、唔寫 R2）
+ * 內容同最新一次一樣就回 unchanged（唔開新行、唔寫 R2）。branding 有改就觸發重新部署（唔會 throw）
  */
 export const commitPublish = async (
     env: PublishEnv,
@@ -275,5 +324,9 @@ export const commitPublish = async (
     const locked = lockedEpisodeIds(latest, validated);
     const publish = await writePublish(env, validated, { createdBy, rollbackOf, locked });
     await purgeAfterWrite(env.WORKER_ORIGIN, publish.id);
-    return { kind: 'published', publish };
+    const deployed = await deployAfterPublish(env, publish, {
+        before: latest?.document,
+        after: validated.json,
+    });
+    return { kind: 'published', publish: deployed };
 };

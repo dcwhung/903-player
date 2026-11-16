@@ -1,3 +1,4 @@
+import type { ChangeItem } from '@903-player/catalog';
 import { render, screen } from '@testing-library/react';
 import { HistoryRow } from './HistoryRow';
 
@@ -17,7 +18,15 @@ const row = {
 
 describe('HistoryRow', () => {
     it('should put the publish time and the admin on separate lines', () => {
-        render(<HistoryRow row={row} servingId={3} entries={[]} onRollback={vi.fn()} />);
+        render(
+            <HistoryRow
+                row={row}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
         expect(screen.getByText('admin')).toHaveClass('who');
         expect(screen.getByText('admin').previousElementSibling).toHaveClass('when');
         expect(screen.getByRole('button', { name: '還原至 #3' })).toBeInTheDocument();
@@ -30,6 +39,7 @@ describe('HistoryRow', () => {
                 servingId={3}
                 entries={[]}
                 onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
             />,
         );
         const pill = screen.getByText('使用中');
@@ -44,15 +54,197 @@ describe('HistoryRow', () => {
                 servingId={2}
                 entries={[]}
                 onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
             />,
         );
         expect(screen.getByText('失敗').closest('.ver')).not.toBeNull();
-        rerender(<HistoryRow row={row} servingId={3} entries={[]} onRollback={vi.fn()} />);
+        rerender(
+            <HistoryRow
+                row={row}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
         expect(screen.queryByText('使用中')).not.toBeInTheDocument();
         // 還原掣喺版本欄最底（冇「操作」欄）
         const rollback = screen.getByRole('button', { name: '還原至 #3' });
         expect(rollback.closest('.ver')).not.toBeNull();
         expect(rollback.closest('.ver')?.lastElementChild).toBe(rollback);
         expect(document.querySelector('.action')).toBeNull();
+    });
+
+    it('should show 更換首頁 Banner instead of 沒有內容變更 when only the banner changed', () => {
+        render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [], timeline: [], bannerChanged: true } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
+        expect(screen.queryByText('沒有內容變更')).not.toBeInTheDocument();
+        const name = screen.getByText('首頁 Banner');
+        expect(name).toHaveClass('name');
+        expect(name.previousElementSibling?.previousElementSibling).toHaveTextContent('更換');
+    });
+
+    it('should list the banner change after the other changes when both changed', () => {
+        const item = {
+            kind: 'unlist',
+            when: 'now',
+            entry: { kind: 'dramas', id: 'golden', name: '黃金少年' },
+            detail: {},
+        } as const;
+        render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [item], timeline: [], bannerChanged: true } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
+        const names = [...document.querySelectorAll('.changes .name')].map((el) => el.textContent);
+        expect(names).toEqual(['黃金少年', '首頁 Banner']);
+    });
+
+    it('should still say 沒有內容變更 when the banner did not change or the field is missing', () => {
+        const { rerender } = render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [], timeline: [], bannerChanged: false } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
+        expect(screen.getByText('沒有內容變更')).toBeInTheDocument();
+        rerender(
+            <HistoryRow
+                row={{ ...row, changes: { items: [], timeline: [] } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
+        expect(screen.getByText('沒有內容變更')).toBeInTheDocument();
+        expect(screen.queryByText('首頁 Banner')).not.toBeInTheDocument();
+    });
+
+    describe('stats line', () => {
+        const STATS = '1 節目 · 2 劇 · 30 集';
+        const item = {
+            kind: 'unlist',
+            when: 'now',
+            entry: { kind: 'dramas', id: 'golden', name: '黃金少年' },
+            detail: {},
+        } as const;
+        const renderRow = (changes: Record<string, unknown>) =>
+            render(
+                <HistoryRow
+                    row={{ ...row, changes: { items: [], timeline: [], ...changes } }}
+                    servingId={3}
+                    entries={[]}
+                    onRollback={vi.fn()}
+                    onRedeploy={vi.fn()}
+                />,
+            );
+
+        it('should show the stats when shows / dramas changed', () => {
+            renderRow({ items: [item], bannerChanged: true });
+            expect(screen.getByText(STATS)).toBeInTheDocument();
+        });
+
+        it.each([
+            ['banner-only', { bannerChanged: true }],
+            ['branding-only', { brandingChanged: true }],
+        ])('should hide the stats for a %s publish', (_label, changes) => {
+            renderRow(changes);
+            expect(screen.queryByText(STATS)).not.toBeInTheDocument();
+        });
+
+        it('should still show the error of a failed banner-only publish', () => {
+            render(
+                <HistoryRow
+                    row={{
+                        ...row,
+                        status: 'failed',
+                        error: 'R2 down',
+                        changes: { items: [], timeline: [], bannerChanged: true },
+                    }}
+                    servingId={2}
+                    entries={[]}
+                    onRollback={vi.fn()}
+                    onRedeploy={vi.fn()}
+                />,
+            );
+            expect(screen.getByText(/R2 down/)).toBeInTheDocument();
+        });
+    });
+
+    it('should say which fields a 修改 changed, like the publish page', () => {
+        const edit = {
+            kind: 'edit',
+            when: 'now',
+            entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
+            detail: { fields: ['theme', 'summary'] },
+        } satisfies ChangeItem;
+        render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [edit], timeline: [] } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
+        // 狀態 pill 用編輯頁標籤（之前係原本 key「theme」）
+        expect(document.querySelector('.changes .name')).toHaveTextContent('蘭茜夫人劇場');
+        expect(screen.getByText('配色、簡介')).toBeInTheDocument();
+        expect(screen.queryByText(/theme/)).not.toBeInTheDocument();
+    });
+
+    it('should show a reorder as one line named by its list, with no entry or thumbnail (#6)', () => {
+        const reorder = {
+            kind: 'reorder',
+            when: 'now',
+            detail: { list: 'shows' },
+        } satisfies ChangeItem;
+        render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [reorder], timeline: [] } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
+        expect(document.querySelector('.changes .kind')).toHaveTextContent('修改');
+        expect(document.querySelector('.changes .name')).toHaveTextContent(/^節目排序$/);
+        expect(document.querySelector('.changes .thumb')).toBeNull();
+        expect(screen.queryByText('已上架')).not.toBeInTheDocument();
+    });
+
+    it('should keep the 圖片 label for old records that reported images', () => {
+        const edit = {
+            kind: 'edit',
+            when: 'now',
+            entry: { kind: 'dramas', id: 'lancy', name: '蘭茜夫人劇場' },
+            detail: { fields: ['images'] },
+        } satisfies ChangeItem;
+        render(
+            <HistoryRow
+                row={{ ...row, changes: { items: [edit], timeline: [] } }}
+                servingId={3}
+                entries={[]}
+                onRollback={vi.fn()}
+                onRedeploy={vi.fn()}
+            />,
+        );
+        expect(screen.getByText('圖片')).toBeInTheDocument();
     });
 });

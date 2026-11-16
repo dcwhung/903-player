@@ -1,5 +1,5 @@
 /*
- * 縮圖（碟面圓形 / Banner 長方）+ 右上角主項狀態點（mockup .thumb.st-*）。
+ * 縮圖（碟面圓形 / 橫圖長方）+ 右上角主項狀態點（mockup .thumb.st-*）。
  * 碟面冇圖 = player 預設黑碟（apps/player Disc .blank：#0a0a0a 碟 + #1e1e1e 碟邊 / 碟心，同 token 值）
  */
 import type { Dot } from '../model/status';

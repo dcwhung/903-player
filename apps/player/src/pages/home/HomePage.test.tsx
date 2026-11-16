@@ -12,12 +12,13 @@ import { addBookmark } from '../../services/bookmarkStore';
 import { saveProgress } from '../../services/progressStore';
 import type { Recording } from '../../types/recording';
 import type { Track } from '../../types/track';
+import { t } from '../../i18n/t';
 import { HomePage } from './HomePage';
 import { ShowPage } from '../show/ShowPage';
 
 const rowOpenOf = (name: RegExp) => screen.getByRole('button', { name });
 
-const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
+const BANNER_ALT = t('home.bannerAlt');
 
 const RECORDINGS = [
     recording('gongzi', '2026-10-10'),

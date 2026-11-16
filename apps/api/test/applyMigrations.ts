@@ -4,7 +4,17 @@ import { applyD1Migrations, env } from 'cloudflare:test';
 import { beforeEach } from 'vitest';
 import { purgeCatalogCache } from '../src/catalog/serve';
 
-const TABLES = ['sessions', 'scan_findings', 'publishes', 'entries', 'assets', 'schedules'];
+const TABLES = [
+    'sessions',
+    'scan_findings',
+    'publishes',
+    'entries',
+    'assets',
+    'schedules',
+    'banner',
+    'branding_icon',
+    'branding_text',
+];
 
 await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
 

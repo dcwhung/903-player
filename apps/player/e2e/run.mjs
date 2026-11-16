@@ -15,9 +15,11 @@ import { runHomeWideChecks } from './homeWide.mjs';
 import { runItemInfoChecks } from './itemInfo.mjs';
 import { runPwaUpdateChecks } from './pwaUpdate.mjs';
 import { runRemoteCatalogChecks } from './remoteCatalog.mjs';
+import { runShowGridCountChecks } from './showGridCounts.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
 import {
     AUDIO_HOST,
+    BANNER_ALT,
     PROBE_STORAGE_KEY,
     SHOT,
     ensurePlaying,
@@ -87,7 +89,8 @@ const startPreview = async () => {
     const viteBin = new URL('bin/vite.js', import.meta.resolve('vite/package.json')).pathname;
     const server = spawn(
         process.execPath,
-        [viteBin, 'preview', '--port', String(PORT), '--strictPort'],
+        // --mode e2e：同 build 一樣，vite.config.ts 先會對 e2e-catalog/ 答 404、唔做 SPA fallback（S-765）
+        [viteBin, 'preview', '--mode', 'e2e', '--port', String(PORT), '--strictPort'],
         // stderr 照出：vite 起唔到（例如撞 port）時睇到原因（S-850）
         { stdio: ['ignore', 'ignore', 'inherit'] },
     );
@@ -111,8 +114,6 @@ const startPreview = async () => {
     server.kill();
     throw new Error('vite preview did not start');
 };
-
-const BANNER_ALT = '903 叱咤 Player：隨時隨地，音樂・節目・一click 即聽';
 
 /** index.html 嘅啟動畫面：顯示 package.json 版本，app render 完之後淡出再由 DOM 移走 */
 const checkSplashRemoved = async (p) => {
@@ -1687,6 +1688,9 @@ try {
 
     // 節目 / 劇集資料（P9.5 #12）：remote catalog 加示範資料，節目頁 / 全集 sheet / 今日節目表
     await runItemInfoChecks({ browser, base: BASE, errors, log });
+
+    // 直版節目格動態欄數（_mockups_/dynamic-show-grid）：唔同節目數（remote catalog route 隔離）嘅欄數、今日節目橫跨、置頂 / 分頁
+    await runShowGridCountChecks({ browser, base: BASE, errors, log });
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
     await section('廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));

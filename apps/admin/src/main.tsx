@@ -6,6 +6,11 @@ import './styles/tokens.css';
 import './styles/mockup.css';
 import './styles/app.css';
 import './styles/theme.css';
+import './styles/phase4.css';
+import './styles/selective.css';
+import './styles/publish.css';
+import './styles/publishCards.css';
+import './styles/revert.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('#root missing in index.html');

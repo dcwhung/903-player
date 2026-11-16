@@ -9,9 +9,11 @@ import { savedDiscOf } from '../../model/thumbs';
 import { Pill } from '../../ui/Pill';
 import { EditorHeader } from '../editor/EditorHeader';
 import { EditorNotices } from '../editor/EditorNotices';
+import { NameRevert } from '../revert/NameRevert';
 import { ArcsTab } from './ArcsTab';
 import { BasicTab } from './BasicTab';
 import { DramaTabs, type DramaTab } from './DramaTabs';
+import { DramaThemeTab } from './DramaThemeTab';
 import { ScheduleTab } from './ScheduleTab';
 import { useDramaEditor } from './useDramaEditor';
 import { arcIdOf } from './dramaModel';
@@ -48,10 +50,13 @@ function DramaEditor({ id, tab }: { id: string; tab: DramaTab }) {
                 onRename={state.rename}
                 disc={savedDiscOf(editor.entry)}
                 pills={
-                    <StatusPill
-                        neverPublished={state.neverPublished}
-                        pending={state.pendingPublish}
-                    />
+                    <>
+                        <StatusPill
+                            neverPublished={state.neverPublished}
+                            pending={state.pendingPublish}
+                        />
+                        <NameRevert editor={editor} />
+                    </>
                 }
             />
             <DramaTabs id={id} tab={tab} arcCount={arcIds.length} arc={memory.arc} />
@@ -64,6 +69,7 @@ function DramaEditor({ id, tab }: { id: string; tab: DramaTab }) {
             {tab === 'arcs' && (
                 <ArcsTab state={state} openArc={memory.arc} onPick={memory.remember} />
             )}
+            {tab === 'theme' && <DramaThemeTab state={state} />}
             {tab === 'schedule' && (
                 <ScheduleTab state={state} initialArc={memory.arc} onPick={memory.remember} />
             )}

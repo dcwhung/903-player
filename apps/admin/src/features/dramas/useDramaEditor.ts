@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAdminData } from '../../data/AdminData';
 import { useToast } from '../../ui/Toast';
 import { changeFlagsOf } from '../../model/listModel';
+import { renamedDramaPath } from '../../model/paths';
 import { arcPublishedIn } from '../../model/raw';
 import { idProblem } from '../editor/IdField';
 import { useEditorOrigin } from '../editor/useEditorOrigin';
@@ -14,12 +15,9 @@ import { useEntryEditor, type EntryEditor } from '../editor/useEntryEditor';
 import { useImageSave } from '../editor/useImageSave';
 import { useRenameEntry } from '../editor/useRenameEntry';
 import { PLACEHOLDER_ID } from './dramaModel';
+import { useR2AutoCrop } from './useR2AutoCrop';
 import { useRescan } from './useRescan';
 import { confirmAll, useUnconfirmedIds, type IdConfirm } from './idConfirm';
-
-/** 改 ID 之後：同一個 tab / query 換新 ID */
-const renamedPath = (pathname: string, search: string, from: string, to: string) =>
-    `${pathname.replace(`/dramas/${from}`, `/dramas/${to}`)}${search}`;
 
 /** 從未發佈（可改 ID / 類型 / 刪除）、資料夾唔見咗、短篇有冇上過架（未上架 / 已下架） */
 const useDramaFlags = (id: string, editor: EntryEditor) => {
@@ -71,17 +69,19 @@ export const useDramaEditor = (id: string) => {
         if (!saved) return;
         await confirmAll(saved.id, confirm).catch((error: unknown) => toast(errorMessage(error)));
         if (saved.id !== id && !origin.fromTodos)
-            navigate(renamedPath(pathname, search, id, saved.id), { replace: true });
+            navigate(`${renamedDramaPath(pathname, id, saved.id)}${search}`, { replace: true });
         await origin.afterSave();
     };
     const parts = { id, editor, origin, newId, setNewId, save, ...errors };
+    const autoCrop = useR2AutoCrop(id, editor);
     return {
         ...parts,
         ...useDramaFlags(id, editor),
         ...useUnconfirmedIds(id),
         saveImage: useImageSave(editor),
         rename: useRenameEntry(editor, origin.afterSave),
-        rescan: useRescan(id, editor),
+        rescan: useRescan(id, editor, autoCrop.retry),
+        autoCrop,
     };
 };
 

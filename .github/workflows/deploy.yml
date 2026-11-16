@@ -4,6 +4,9 @@ on:
     push:
         branches: [main]
     workflow_dispatch:
+    # apps/api publish 改咗 catalog.branding 就 dispatch 呢個，重 build 套用新 App 圖示 / 名稱
+    repository_dispatch:
+        types: [catalog-branding]
 
 permissions:
     contents: read

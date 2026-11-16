@@ -70,17 +70,21 @@ jobs:
             # 包括 apps/admin（jsdom）同 apps/api（Worker test 喺 miniflare / workerd 跑，唔使 Cloudflare 帳戶）
             - run: npm test
 
-            # Production build（CI 冇 VITE_CATALOG_URL = runtime catalog flag off，同未設 repo variable 嘅 deploy 一樣）
+            # Production build，刻意唔設 VITE_CATALOG_URL = runtime catalog flag off：即係 repo variable 未設 / 被清走時
+            # deploy 會出嘅 fallback 設定。真 production（deploy.yml 帶 vars.VITE_CATALOG_URL = flag 開 + prebuild snapshot）
+            # 唔喺 CI build：snapshot 要喺 build 時連 production Worker，CI 唔掂 production；分工見 e2e job 嘅 smoke 注釋（S-852）
             - run: npm run build
 
             # S-766：e2e job 用呢份 dist 做 production smoke（e2e 自己會 build 一份 e2e mode 覆蓋）
+            # S-853：保留 7 日。e2e 被 cancel / fail 之後「Re-run failed jobs」唔會重跑 check job，
+            # artifact 過期 e2e 就會喺 download 嗰步 fail；超過 7 日要用「Re-run all jobs」
             - name: Upload production build
               uses: actions/upload-artifact@v5
               with:
                   name: player-dist-production
                   path: apps/player/dist
                   if-no-files-found: error
-                  retention-days: 1
+                  retention-days: 7
 
             # Admin SPA（Worker static assets 出）
             - run: npm run build:admin
@@ -104,9 +108,13 @@ jobs:
             - name: Install Playwright Chromium
               run: npx playwright install --with-deps chromium
 
-            # S-766：e2e build 預設設咗 catalog URL（行「flag 開 + 404 → fallback」），呢步補 production 真正 flag off 路徑：
-            # check job 嗰份 production dist → sw.js 冇 catalog route → vite preview 開一次：splash 移走、版本號出到、
-            # 0 個 catalog.json request、0 pageerror。用 4174 避開 e2e 嘅 4173
+            # S-766 / S-852 分工（CI 唔連 production Worker，所以冇一步係「真 production 設定」）：
+            # - 呢步：production mode + flag off（repo variable 未設時 deploy 出嘅 fallback 設定）。check job 嗰份 dist →
+            #   sw.js 冇 catalog route → vite preview 開一次：splash 移走、版本號出到、0 個 catalog.json request、0 pageerror
+            # - npm run e2e：flag 開（同 origin e2e-catalog/）嘅 runtime 路徑：正常 / 壞 JSON / 慢 / 離線 SW cache / 404 fallback
+            # - prebuild snapshot（flag 開 production build 先有）：apps/player/scripts/catalogSnapshot.test.ts unit test
+            # 真 Worker + snapshot 一齊嘅 production bundle 只喺 deploy.yml build，CI 冇 smoke（見 backlog S-867）
+            # 用 4174 避開 e2e 嘅 4173
             - name: Download production build
               uses: actions/download-artifact@v5
               with:
@@ -132,6 +140,12 @@ jobs:
                       curl -sf "http://localhost:$SMOKE_PORT/903-player/" > /dev/null && break
                       sleep 1
                   done
+                  # S-854：等夠 30 秒都未起到就印 preview log 再 fail，唔好留畀 page.goto ECONNREFUSED 先爆
+                  if ! curl -sf "http://localhost:$SMOKE_PORT/903-player/" > /dev/null; then
+                      echo "::error::vite preview did not start on port $SMOKE_PORT within 30s"
+                      cat "$RUNNER_TEMP/preview.log"
+                      exit 1
+                  fi
                   node --input-type=module <<'EOF'
                   import { readFileSync } from 'node:fs';
                   import { chromium } from 'playwright';

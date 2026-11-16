@@ -28,6 +28,7 @@ import {
     isInIndex,
     type PublishedIndex,
 } from './published';
+import { loadPublishedSource } from './publishedVersion';
 import {
     badTarget,
     errorResponse,
@@ -78,11 +79,17 @@ entryRoutes.get('/entries', async (c) => {
 entryRoutes.get('/entries/:kind/:id', async (c) => {
     const target = targetOf(c);
     if (!target) return badTarget(c);
-    const row = await getEntry(c.env.DB, target.kind, target.id);
+    const [row, published] = await Promise.all([
+        getEntry(c.env.DB, target.kind, target.id),
+        loadPublishedSource(c.env.DB, target.kind, target.id),
+    ]);
     if (!row) return errorResponse(c, HTTP_STATUS.notFound, 'no such entry');
+    // published（0.11.0）：最新 ok publish 嘅版本，admin「已修改 / 還原」用；冇 = null
     const body = {
         definition: JSON.parse(row.definition) as Json,
         images: JSON.parse(row.images) as Json,
+        // 淨係 entry：unresolvedImages 係還原內部用（S-1009），唔入 response
+        published: published?.entry ?? null,
     };
     return c.json({ ...body, draft: row.draft === 1, updatedAt: row.updated_at }, HTTP_STATUS.ok, {
         etag: etagOf(row.updated_at),
@@ -216,6 +223,29 @@ const save = async (
     return result.meta.changes > 0 ? updatedAt : undefined;
 };
 
+/**
+ * PUT 同還原（revert.ts）共用嘅寫入路徑：排程短篇 ID 守衛（S-804）→ 驗證（checkedEntry，draft 照舊）→
+ * 樂觀鎖寫入；existing = null 即係新增（201）。回 { updatedAt, draft, warnings } + ETag
+ */
+export const writeEntry = async (
+    c: Context<AppEnv>,
+    entry: EntryInput,
+    existing: StoredEntry | null,
+) => {
+    const scheduledArc = existing
+        ? await droppedScheduledArc(c.env.DB, existing, entry.definition)
+        : undefined;
+    if (scheduledArc !== undefined) return arcScheduled(c, scheduledArc);
+    // 新增：上架嘅完整驗證；下架嘅圖未齊照存做 draft（admin 新建節目 / 劇）
+    const checked = await checkedEntry(c, entry, existing?.draft === 1);
+    if (checked instanceof Response) return checked;
+    const { warnings, draft } = checked;
+    const updatedAt = await save(c, entry, { existing, draft });
+    if (!updatedAt) return preconditionFailed(c);
+    const status = existing ? HTTP_STATUS.ok : HTTP_STATUS.created;
+    return c.json({ updatedAt, draft, warnings }, status, { etag: etagOf(updatedAt) });
+};
+
 entryRoutes.put('/entries/:kind/:id', async (c) => {
     const target = targetOf(c);
     if (!target) return badTarget(c);
@@ -225,22 +255,7 @@ entryRoutes.put('/entries/:kind/:id', async (c) => {
     const existing = await getEntry(c.env.DB, target.kind, target.id);
     const mode = writeMode(c, existing);
     if (!mode) return preconditionFailed(c);
-    const scheduledArc =
-        mode === 'update' && existing
-            ? await droppedScheduledArc(c.env.DB, existing, entry.definition)
-            : undefined;
-    if (scheduledArc !== undefined) return arcScheduled(c, scheduledArc);
-    // 新增：上架嘅完整驗證；下架嘅圖未齊照存做 draft（admin 新建節目 / 劇）
-    const checked = await checkedEntry(c, entry, mode === 'update' && existing?.draft === 1);
-    if (checked instanceof Response) return checked;
-    const { warnings, draft } = checked;
-    const updatedAt = await save(c, entry, {
-        existing: mode === 'update' ? existing : null,
-        draft,
-    });
-    if (!updatedAt) return preconditionFailed(c);
-    const status = mode === 'create' ? HTTP_STATUS.created : HTTP_STATUS.ok;
-    return c.json({ updatedAt, draft, warnings }, status, { etag: etagOf(updatedAt) });
+    return writeEntry(c, entry, mode === 'update' ? existing : null);
 });
 
 /** 最新 publish 有冇用緊：劇集睇 episode ID，節目睇 document 有冇佢 */
@@ -252,6 +267,19 @@ const isPublished = async (db: D1Database, kind: EntryInput['kind'], id: string)
     return documentShowIds(latest.document)?.has(id) ?? true;
 };
 
+/**
+ * DELETE 守衛：劇照舊睇最新 publish 嘅鎖住 episode ID；節目改為「曾經以上架狀態發佈過」
+ * （同列表「未上架 / 已下架」一致）：淨係以下架入過 document 嘅節目播放器從未顯示，刪得。
+ * 最新 document 讀唔到照拒絕（fail closed，S-844）
+ */
+const blocksDelete = async (db: D1Database, kind: EntryInput['kind'], id: string) => {
+    if (kind === 'dramas') return isPublished(db, kind, id);
+    const latest = await latestPublish(db);
+    if (!latest) return false;
+    if (documentShowIds(latest.document) === null) return true;
+    return isInIndex(indexOfFacts(await publishedFacts(db)), kind, id);
+};
+
 entryRoutes.delete('/entries/:kind/:id', async (c) => {
     const target = targetOf(c);
     if (!target) return badTarget(c);
@@ -259,7 +287,7 @@ entryRoutes.delete('/entries/:kind/:id', async (c) => {
     if (!existing) return errorResponse(c, HTTP_STATUS.notFound, 'no such entry');
     const expected = expectedVersion(c.req.header('if-match'));
     if (expected !== null && expected !== existing.updated_at) return preconditionFailed(c);
-    if (await isPublished(c.env.DB, target.kind, target.id))
+    if (await blocksDelete(c.env.DB, target.kind, target.id))
         return errorResponse(
             c,
             HTTP_STATUS.conflict,

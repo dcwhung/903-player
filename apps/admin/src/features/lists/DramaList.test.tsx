@@ -29,6 +29,13 @@ describe('DramaList', () => {
         expect(screen.getByTestId('location')).toHaveTextContent(/^\/dramas\/lancy$/);
     });
 
+    it('should encode the drama ID in the editor path (S-857)', async () => {
+        const odd = { ...drama, id: 'a b' };
+        renderAt('/dramas', '/dramas', <DramaList />, fakeData({ entries: resource([odd]) }));
+        await userEvent.click(screen.getByText('短篇集 · 30 集'));
+        expect(screen.getByTestId('location')).toHaveTextContent(/^\/dramas\/a%20b$/);
+    });
+
     it('should open the arc in the arcs tab when its name is clicked, not the drama editor', async () => {
         renderAt('/dramas', '/dramas', <DramaList />, fakeData({ entries: resource([drama]) }));
         const arc = screen.getByRole('link', { name: '戀愛二分一' });

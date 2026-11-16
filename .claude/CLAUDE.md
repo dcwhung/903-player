@@ -23,7 +23,14 @@
 - Branch merge `main` 撞 `.proj-docs/qa/verification-ledger.tsv`：喺 repo root 跑 `node scripts/qa/ledger-merge.mjs`（預設 ours = HEAD、theirs = MERGE_HEAD），逐行（chain + stage + path）三方合併；exit 1 會列出兩邊都改咗、又對唔上而家個檔嘅行，嗰啲先要重新驗收再 freeze
 - ❌ 唔好用 `git checkout --theirs` 之後 `qa-ledger.sh freeze <chain> <stage> … <淨係改咗嘅檔>`：freeze 會刪走同一個 chain + stage 嘅全部行，條鏈會截短（2026-11-12 PR #210 中過）
 - 要 freeze 就要畀晒成條 chain + stage 嘅檔（`awk -F'\t' '$1=="<chain>" && $2=="<stage>"{print $3}'` 由 ledger 攞）
+- ⚠️ `ledger-merge.mjs` exit 1 列出嘅行**唔會寫入**合併結果；freeze 時檔案清單 = ledger 現有嗰條 chain + stage 嘅行 **加返** script 列出嘅 path，否則嗰行會無聲無息消失（2026-11-12 #225 漏咗 coming-soon / repo-tooling 嘅 `package-lock.json`，#226 merge 補返）。Freeze 完同兩邊 parent 比對 chain + stage + path 冇少行先 commit
 - Parallel lane：每個 PR merge 完，下一個先 merge `main` + 跑 script，等 CI 綠先 merge
+
+## Parallel lane backlog（用戶 2026-11-12 決定）
+
+- Lane（包括 Code Reviewer / QA）產生嘅 backlog item 要喺**同一個 session 清晒**：lane 自己喺 PR 內修（re-review 確認），或者由 main agent 開清理 lane；唔帶去下個 session
+- 真係要用戶決定嘅先問；用戶話唔做 / 唔使落 backlog 嘅就唔記錄
+- Lane 照舊唔改 `backlog.md`、只用預分配 ID 範圍；main agent 統一更新 backlog
 
 ## 淨改文件嘅 push（用戶 2026-11-06 決定）
 
@@ -43,6 +50,12 @@
 - 新動畫一律跟 app 現有統一做法：CSS 動畫放喺 `@media (prefers-reduced-motion: no-preference)`（或者用 `reduce` 關掉），設定一改即刻生效；JS 喺動畫開始嗰刻先叫 `prefersReducedMotion()`（`apps/player/src/utils/motion.ts`），唔 cache 之前 render 嘅值
 - 減少動態 = 唔播動畫、直接切換；唔可以因為等 `animationend` 而令元素卡住
 - 時間 / easing 用 `tokens.css` 現有過場 token（`--view-transition-*`）
+
+## Admin 介面文字（用戶 2026-11-13 決定）
+
+- Admin 介面所有文字（`apps/admin/src/i18n/zh-HK.ts`、aria-label、tooltip、dialog、toast）一律用**書面語**，唔准廣東話口語（嘅 / 咗 / 唔 / 喺 / 撳 / 嚟 / 冇 等）；`apps/admin/src/i18n/writtenChinese.test.ts` 鎖住
+- `_mockups_/` 入面 admin 畫面嘅介面文字都要書面語；mockup 嘅說明（state-label、問題表）可以照用廣東話
+- 掣字盡量短（「更換」「還原」），要分辨就用 aria-label 寫明對象（例如「更換首頁 Banner」）
 
 ## 回覆語言（用戶 2026-11-04 決定）
 

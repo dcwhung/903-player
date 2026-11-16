@@ -63,6 +63,20 @@ describe('dateFieldModel', () => {
         expect(placementOf(field(300), 300, { top: 0, bottom: 500 })).toBe('up');
     });
 
+    it('should keep the current side near the edge so scrolling does not flip it (S-859)', () => {
+        const view = { top: 0, bottom: 800 };
+        const field = (top: number) => ({ top, bottom: top + 30 });
+        // 臨界位附近：而家向邊就留喺邊
+        expect(placementOf(field(460), 300, view, 'up')).toBe('up');
+        expect(placementOf(field(470), 300, view, 'down')).toBe('down');
+        // 過咗緩衝先換
+        expect(placementOf(field(500), 300, view, 'down')).toBe('up');
+        expect(placementOf(field(420), 300, view, 'up')).toBe('down');
+        // 啱啱打開（未有方向）：唔加緩衝
+        expect(placementOf(field(460), 300, view)).toBe('down');
+        expect(placementOf(field(470), 300, view)).toBe('up');
+    });
+
     it('should take the later of two optional dates for min', () => {
         expect(latestOf('2026-11-12', '2026-11-09')).toBe('2026-11-12');
         expect(latestOf('2026-11-12', '2026-11-20')).toBe('2026-11-20');

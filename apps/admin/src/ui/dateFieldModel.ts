@@ -86,12 +86,31 @@ interface Span {
     bottom: number;
 }
 
+export type Placement = 'down' | 'up';
+
+/**
+ * 已經打開咗嘅月曆要換方向，要過咗臨界位呢個距離先換（S-859）：
+ * 喺臨界位附近捲動唔會 up / down 咁閃
+ */
+const PLACEMENT_HYSTERESIS = 24;
+/** 向上 = 正（留喺上面易啲）；向下 = 負（要更逼先向上） */
+const PLACEMENT_BIAS: Record<Placement, number> = {
+    up: PLACEMENT_HYSTERESIS,
+    down: -PLACEMENT_HYSTERESIS,
+};
+
 /**
  * 月曆向下定向上開：下面唔夠位（viewport 同捲動容器取細）而上面又多過下面先向上
- * （用戶 2026-11-12）
+ * （用戶 2026-11-12）。`current` = 而家嘅方向（啱啱打開 = 冇）：有就加緩衝，偏向留喺原位
  */
-export const placementOf = (field: Span, popHeight: number, view: Span): 'down' | 'up' => {
+export const placementOf = (
+    field: Span,
+    popHeight: number,
+    view: Span,
+    current?: Placement,
+): Placement => {
     const below = view.bottom - field.bottom;
     const above = field.top - view.top;
-    return below < popHeight + POP_GAP && above > below ? 'up' : 'down';
+    const bias = current === undefined ? 0 : PLACEMENT_BIAS[current];
+    return below < popHeight + POP_GAP + bias && above > below - bias ? 'up' : 'down';
 };

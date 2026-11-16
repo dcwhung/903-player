@@ -5,6 +5,7 @@
  * glob pattern 一定要係 literal，所以寫喺呢度。
  */
 import {
+    CatalogDocumentError,
     documentSource,
     localizeDocument,
     parseCatalogDocument,
@@ -29,6 +30,31 @@ const LIBRARY_ONLY_MODES: readonly string[] = ['test', 'e2e'];
 
 const fileNameOf = (path: string) => path.slice(path.lastIndexOf('/') + 1);
 
+const bundledUrl = (urlByFile: Readonly<Record<string, string>>, name: string, slot: string) => {
+    const url = urlByFile[name];
+    if (url === undefined)
+        throw new CatalogDocumentError(`snapshot: banner.${slot} → ${name} was not bundled`);
+    return url;
+};
+
+/**
+ * banner 值（圖檔名，Phase 4）→ bundle URL：localizeDocument 只換 shows / dramas 嘅 images，
+ * banner 喺 player 呢度換；搵唔到就 throw（同 entry 圖一樣，成份 snapshot 唔用）
+ */
+const localizeBanner = (
+    doc: CatalogDocument,
+    urlByFile: Readonly<Record<string, string>>,
+): CatalogDocument =>
+    doc.banner
+        ? {
+              ...doc,
+              banner: {
+                  standard: bundledUrl(urlByFile, doc.banner.standard, 'standard'),
+                  long: bundledUrl(urlByFile, doc.banner.long, 'long'),
+              },
+          }
+        : doc;
+
 /** glob 結果 → 驗過嘅 snapshot（圖指去 bundle URL）；冇 snapshot → undefined；壞咗 → warn + undefined */
 export const loadSnapshot = (
     globbedDocuments: Readonly<Record<string, unknown>>,
@@ -40,7 +66,8 @@ export const loadSnapshot = (
         Object.entries(globbedImages).map(([path, url]) => [fileNameOf(path), url]),
     );
     try {
-        return parseCatalogDocument(localizeDocument(raw as CatalogDocument, urlByFile));
+        const localized = localizeDocument(raw as CatalogDocument, urlByFile);
+        return parseCatalogDocument(localizeBanner(localized, urlByFile));
     } catch (error) {
         console.warn('[catalog] bundled snapshot unusable, using the repo library', error);
         return undefined;

@@ -51,6 +51,8 @@ body {
     padding: 0;
     border-radius: 0;
     background: none;
+    /* W-741：icon 係收合 / 展開 button，蓋走全域 button 嘅 1px inset 框 */
+    box-shadow: none;
     overflow: visible;
 }
 
@@ -346,8 +348,16 @@ button.danger {
     box-shadow: none;
 }
 
+/* 刪除掣同「還原」掣（revert.css）一樣：淺紅底 + 紅字（mockup admin-revert） */
 button.ghost-danger {
+    background: var(--danger-bg);
     color: var(--danger-ink);
+    box-shadow: none;
+}
+
+button.ghost-danger:hover:not(:disabled) {
+    background: var(--danger-bg);
+    box-shadow: inset 0 0 0 1px var(--danger-ink);
 }
 
 button:disabled {
@@ -828,103 +838,7 @@ textarea.autosize {
 }
 
 .scrim .card.crop-dialog {
-    max-width: 640px;
-}
-
-/* 原圖 | 裁切後：兩格並排，每格有邊框，說明喺各自圖下面 */
-.crop {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-    gap: 16px;
-}
-
-.crop .pane {
-    display: grid;
-    gap: 10px;
-    margin: 0;
-}
-
-.crop .frame {
-    display: grid;
-    place-items: center;
-    aspect-ratio: 4 / 3;
-    padding: 10px;
-    border: 2px dashed var(--media-border);
-    border-radius: 12px;
-    background: var(--surface-2);
-    overflow: hidden;
-}
-
-.crop figcaption {
-    display: grid;
-    justify-items: center;
-    gap: 2px;
-    text-align: center;
-    font-size: 13px;
-    color: var(--muted);
-    overflow-wrap: anywhere;
-}
-
-.crop figcaption strong {
-    font-size: 15px;
-    color: var(--ink);
-}
-
-.crop .src {
-    position: relative;
-    max-width: 100%;
-    max-height: 100%;
-    line-height: 0;
-}
-
-.crop .src img {
-    display: block;
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-}
-
-.crop .box {
-    position: absolute;
-    border: 2px solid var(--crop-frame);
-    border-radius: 6px;
-    box-shadow: 0 0 0 999px rgb(0 0 0 / 0.35);
-}
-
-.crop .out {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: cover;
-}
-
-/* 碟面裁切後係圓形：唔要長方形框同底色，淨係圓框 */
-.crop .frame.bare {
-    border-color: transparent;
-    background: transparent;
-}
-
-.crop .out.disc {
-    /* 4:3 格入面（扣 padding）放得落嘅最大圓 */
-    width: 64%;
-    height: auto;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    border: 2px dashed var(--media-border);
-}
-
-.crop .out.tile {
-    width: 100%;
-    aspect-ratio: 1216 / 684;
-    height: auto;
-    border-radius: 8px;
-}
-
-@media (max-width: 560px) {
-    .crop {
-        grid-template-columns: 1fr;
-    }
+    max-width: 920px;
 }
 
 /* ---------- 上下架記錄：變更欄用晒欄闊、版本資訊兩行 ---------- */
@@ -933,17 +847,20 @@ textarea.autosize {
     grid-template-columns: 170px minmax(0, 1fr);
 }
 
-/* 還原掣喺版本欄最底 */
+/* 還原掣喺版本欄最底；樣式跟統一還原掣（revert.css .revert-btn 淺紅底） */
 .hist-row .ver > button {
     justify-self: start;
     margin-top: 6px;
-    padding: 2px 10px;
-    font-size: 12px;
-    border-radius: 999px;
 }
 
 .hist-row .changes {
     grid-template-columns: 56px 28px minmax(0, 1fr) auto;
+}
+
+/* 修改 pill 列晒改了哪些欄位，可能好長：換行，唔好逼窄名欄或者溢出（S-996） */
+.hist-row .changes .pill {
+    max-width: 40ch;
+    white-space: normal;
 }
 
 .hist-row .ver .when,
@@ -982,6 +899,8 @@ textarea.autosize {
     font-size: 13px;
     font-weight: 400;
     line-height: 1.45;
+    /* 多行提示（圖片 slot：名 / 輸出 / 上限）用 \n 分行 */
+    white-space: pre-line;
     box-shadow: 0 6px 18px rgb(0 0 0 / 0.2);
     pointer-events: none;
 }
@@ -1156,21 +1075,6 @@ textarea.autosize {
     color: var(--on-primary);
     font-size: 13px;
     font-weight: 600;
-}
-
-/* 確認發佈時間線：日期、綠點同第一行（縮圖高度）垂直置中 */
-.timeline {
-    --timeline-row: 32px;
-}
-.timeline .when,
-.timeline .what {
-    display: flex;
-    align-items: center;
-    min-height: var(--timeline-row);
-}
-.timeline li::before {
-    /* li padding-top 8px + 半行高 − 半粒點（12px） */
-    top: calc(8px + var(--timeline-row) / 2 - 6px);
 }
 
 /* ---------- 排程：下架又冇排程 = 未上架（唔出灰 ✓） ---------- */

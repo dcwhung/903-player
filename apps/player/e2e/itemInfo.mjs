@@ -76,7 +76,7 @@ const infoDocument = (base) => {
 };
 
 const open = (env, json, contextOptions) =>
-    openWithCatalog(env, { catalogBody: json }, contextOptions);
+    openWithCatalog(env, { catalogBody: json, contextOptions });
 
 const infoSheet = (p, name) => p.getByRole('dialog', { name });
 const viewportWidth = (p) => p.viewportSize().width;

@@ -18,6 +18,8 @@ interface ConfirmDialogProps {
     /** 預設「取消」；淨係解釋嘅對話框用「關閉」 */
     cancelLabel?: string;
     danger?: boolean;
+    /** 確認掣 class（蓋過 danger / primary），例如還原掣用 `revert-btn dialog-revert` */
+    confirmClassName?: string;
     onConfirm: () => void;
     onCancel: () => void;
 }
@@ -30,6 +32,7 @@ export function ConfirmDialog({
     confirmIcon,
     cancelLabel = t('editor.cancel'),
     danger = false,
+    confirmClassName,
     onConfirm,
     onCancel,
 }: ConfirmDialogProps) {
@@ -49,7 +52,7 @@ export function ConfirmDialog({
                     <button
                         type="button"
                         ref={confirmRef}
-                        className={danger ? 'danger' : 'primary'}
+                        className={confirmClassName ?? (danger ? 'danger' : 'primary')}
                         onClick={onConfirm}
                     >
                         {confirmIcon}

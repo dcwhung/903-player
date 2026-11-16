@@ -78,7 +78,7 @@ const headersOf = (options: RequestOptions): Headers => {
     return headers;
 };
 
-const readJson = async (response: Response): Promise<Json> => {
+export const readJson = async (response: Response): Promise<Json> => {
     try {
         const value: unknown = await response.json();
         return typeof value === 'object' && value !== null ? (value as Json) : {};
@@ -87,7 +87,7 @@ const readJson = async (response: Response): Promise<Json> => {
     }
 };
 
-const errorOf = (status: number, body: Json): ApiError => {
+export const errorOf = (status: number, body: Json): ApiError => {
     const message = typeof body.error === 'string' ? body.error : `HTTP ${status}`;
     if (status === HTTP.unauthorized) return new UnauthorizedError(status, message, body);
     if (status === HTTP.preconditionFailed) return new VersionConflictError(status, message, body);

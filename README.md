@@ -71,8 +71,8 @@ D1（`apps/api`）已經係內容 SSoT，repo `library/` 只係 fallback。Produ
 
 1. 清走舊 `src/catalog/snapshot/data/`（gitignored；每次 build 都清，唔會用本機殘留）
 2. Fetch 最新 publish 嘅 `catalog.json`（timeout `SNAPSHOT_FETCH_TIMEOUT_MS`）→ 用 player runtime 同一套 validator 驗（`parseCatalogDocument` + 兩個 registry）
-3. 下載全部圖（同時最多 `SNAPSHOT_IMAGE_CONCURRENCY` 張），sha256 前 16 hex 一定要等於檔名
-4. `images` 改寫做檔名 → 先寫 `data.tmp/`，全部成功先 rename 做 `data/`
+3. 下載全部圖（同時最多 `SNAPSHOT_IMAGE_CONCURRENCY` 張；包括首頁 `banner` 兩張），sha256 前 16 hex 一定要等於檔名
+4. `images` 同 `banner` 改寫做檔名 → 先寫 `data.tmp/`，全部成功先 rename 做 `data/`
 5. Build log 印 `[catalog-snapshot] hash … · generatedAt … · N images`（hash = publish hash，可以同 admin 上下架記錄對）
 
 `src/catalog/snapshot/source.ts` 用 `import.meta.glob` 包入 bundle（圖經 Vite hash 入 `dist/assets/`，PWA 自動 precache），`dramas` / `shows` 嘅 `bundledSource` 有 snapshot 就用 snapshot，冇就用 `library/`。
@@ -81,6 +81,21 @@ D1（`apps/api`）已經係內容 SSoT，repo `library/` 只係 fallback。Produ
 - 唔會 fetch：`vite` dev server、`--mode e2e`（e2e 照用 `library/` + 測試劇）、冇 `VITE_CATALOG_URL`（CI）
 - Unit test 永遠用 `library/`（本機 build 過留低嘅 snapshot 唔影響）
 - Publish 之後唔會自動 rebuild：snapshot 跟下次 deploy 更新；想即時更新就手動跑 Deploy workflow
+
+首頁橫額（Phase 4，v1.34.0）：`catalog.json` 選填 `banner`（`standard` 1200×517 + `long` 2000×400，尺寸鎖死）。
+`src/catalog/runtime.ts` 嘅 `activeBanner()` 跟同一個 source：用緊 runtime catalog 就跟佢（冇 `banner` = 內建圖，唔退去 snapshot），
+fallback 就跟 prebuild snapshot 嘅 `banner`，都冇就用 `src/assets/banner.webp` / `banner-wide.webp`（`bannerImages()`）。
+橫額 `<img>` 同邊色 canvas 一律 CORS 載入（R2 圖唔會 taint canvas）；SW 照用 catalog 圖嘅 CacheFirst（banner 圖同其他圖喺同一個 `img/` folder）
+
+### App 外觀 branding（build 時套用，v1.36.0）
+
+`catalog.json` 選填 `branding`（admin「App 外觀」頁出）：App 圖示 + 名稱 / 簡介，production build（`VITE_CATALOG_URL` 有設定）時喺 `vite.config.ts` 讀：
+
+- `branding.text` → manifest `name` / `short_name`（冇 `shortName` 就用 `name`）/ `description`；`index.html` 嘅 `<title>`、`meta description`、`og:title` / `og:site_name` / `og:description`（`scripts/brandingConfig.ts`，值做 HTML escape）。冇就保持寫死嘅 `903 Player` / `903 叱咤 Player`
+- `branding.icon` → 下載五張 PNG（`favicon` / `appleTouch` / `icon192` / `icon512` / `maskable`，驗 PNG magic bytes + sha256 檔名）覆蓋 `public/` 內建嗰五張，寫去 branded public 副本（gitignored）再改 `publicDir`（`scripts/brandingIcons.ts`）。下載失敗 / 唔係 PNG / hash 唔啱 → 用全套內建 icon，build 唔會失敗
+- 唔改 runtime 行為：只係 build 時嘅值。已安裝 app 嘅圖示 / 名稱要重裝先更新
+- `vite.config.ts` 自己 fetch catalog 讀 branding（唔靠 `catalogSnapshot` 喺 `buildStart` 寫嘅檔——snapshot 喺 `configResolved` 之後先行，manifest / `publicDir` 要更早定）；e2e / 冇 `VITE_CATALOG_URL` / 任何失敗 → 用內建值
+- apps/api publish 改咗 `branding` 會向呢個 repo dispatch `catalog-branding`（`.github/workflows/deploy.yml` 收），重 build 套用
 
 ### 由本機 folder 生成 drama.json（`apps/player/scripts/dramaFromFolder.ts`）
 
@@ -157,7 +172,8 @@ npm workspaces monorepo：app 喺 `apps/player/`（version 嘅唯一來源係 `a
 劇集 / 節目資料嘅純邏輯喺 `packages/catalog/`（`@903-player/catalog`，直接 export TS source，冇 build step；JSON Schema 喺 `packages/catalog/schemas/`）。
 Catalog backend（Cloudflare Worker + D1 + R2）喺 `apps/api/`（version 喺 `apps/api/package.json`；runbook 見 `apps/api/README.md`）；
 Admin SPA（React，由同一個 Worker 出）喺 `apps/admin/`（版本 pill 用 api version；`npm run dev:admin` / `npm run build:admin` / `npm run e2e:admin`）。
-下面指令全部喺 repo 根跑（root scripts 轉發去 `apps/player`；`npm test` 用 root `vitest.config.ts` 嘅 projects 一次過跑 player + admin + catalog + api；
+下面指令全部喺 repo 根跑（`dev` / `build` / `e2e` 等 root scripts 轉發去 `apps/player`；`npm test` 用 root `vitest.config.ts` 嘅 projects 一次過跑 player + admin + catalog + api，
+`npm run coverage` 用同一份 root 設定只跑 player + catalog 兩個 project；
 `npm run lint` 用 root 嘅 ESLint / Prettier 設定檢查成個 repo；`npx tsc -b` 用 root `tsconfig.json` 覆蓋全部 workspace）。
 下面提到嘅 `src/`、`e2e/`、`scripts/`、`public/` 都喺 `apps/player/` 入面。
 
@@ -165,7 +181,7 @@ Admin SPA（React，由同一個 Worker 出）喺 `apps/admin/`（版本 pill �
 npm install
 npm run dev        # 本地開發
 npm test           # Vitest
-npm run coverage   # 覆蓋率
+npm run coverage   # 覆蓋率（root vitest：player + catalog）
 npm run lint       # ESLint + Prettier
 npm run e2e        # Playwright 端對端測試（假錄音寫入 localStorage + 模擬 audio server）
 npm run build      # 輸出 apps/player/dist/

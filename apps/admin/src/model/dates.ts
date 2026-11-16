@@ -39,6 +39,17 @@ export const longDate = (isoDate: string): string => {
     return t('dates.long', { month, day });
 };
 
+/** YYYY-MM-DD → 「11 月 16 日」；唔係今年（香港時間）就加年份「2027 年 1 月 3 日」 */
+export const fullDate = (isoDate: string, today: string = hkToday()): string => {
+    const { year, month, day } = partsOf(isoDate);
+    return yearOf(isoDate) === yearOf(today)
+        ? t('dates.long', { month, day })
+        : t('dates.longYear', { year, month, day });
+};
+
+/** YYYY-MM-DD → 星期幾嘅單字（「一」） */
+export const weekdayName = (isoDate: string): string => WEEKDAYS[weekdayOf(isoDate)] ?? '';
+
 /** ISO timestamp → 香港時間「09:41」 */
 export const clockTime = (iso: string): string => timeFormatter.format(new Date(iso));
 

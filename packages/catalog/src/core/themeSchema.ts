@@ -12,7 +12,8 @@ import {
 
 export type ThemeDefinition = Omit<ShowTheme, 'art'>;
 
-const COLOUR_KEYS = [
+/** ShowTheme 必填 10 色（art 係圖，唔係色）；admin 等用家經 public API 共用呢份清單（S-916） */
+export const THEME_COLOUR_KEYS = [
     'bg',
     'surface',
     'track',
@@ -51,13 +52,13 @@ const TEXT_PATTERNS = {
     titleFont: { pattern: new RegExp(FONT_FAMILY_PATTERN_SOURCE, 'u'), what: 'a CSS font-family' },
 } as const;
 const OPTIONAL_TEXT_KEYS = ['titleFont', 'headerRule'] as const;
-type ColourKey = (typeof COLOUR_KEYS)[number];
+type ColourKey = (typeof THEME_COLOUR_KEYS)[number];
 
 /** raw[key] 必須係 object，入面 10 個必填色 + optional 嘅 statusBar / accentText / titleFont / headerRule / scheme */
 export const readTheme = (ctx: ParseContext, raw: Raw, key = 'theme'): ThemeDefinition => {
     const theme = readRecord(ctx, raw[key], key);
     const colours = Object.fromEntries(
-        COLOUR_KEYS.map((k) => [k, readHex(ctx, theme, k, `${key}.${k}`)]),
+        THEME_COLOUR_KEYS.map((k) => [k, readHex(ctx, theme, k, `${key}.${k}`)]),
     ) as Record<ColourKey, string>;
     const optional: Partial<ThemeDefinition> = {};
     OPTIONAL_COLOUR_KEYS.forEach((k) => {

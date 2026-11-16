@@ -5,6 +5,8 @@ name: Deploy API
 # 再 apply D1 migration（未 apply 嘅先會跑），檢查 admin build 真係有 index.html，再 deploy Worker（S-808）。
 # Secrets：CLOUDFLARE_API_TOKEN（Workers Scripts / D1 / Workers R2 Storage：Edit，1 年到期）、CLOUDFLARE_ACCOUNT_ID。
 # Worker 自己嘅 secret（GOOGLE_CLIENT_SECRET、SESSION_SECRET）喺 Cloudflare dashboard 設，唔經 CI（見 apps/api/README.md）
+# 例外：重新部署 player 嘅兩個選填 secret 由 GitHub secret 同步（DEPLOY_GITHUB_TOKEN → Worker GITHUB_DEPLOY_TOKEN、
+# VERCEL_DEPLOY_HOOK_URL）；GitHub secret 名唔准 GITHUB_ 開頭，所以 token 喺 GitHub 叫 DEPLOY_GITHUB_TOKEN。未設 = 跳過
 # S-769：Cloudflare secret 只畀 wrangler 兩步（npm ci 嘅 lifecycle script、npm test、admin build 攞唔到）；
 # workflow_dispatch 揀非 main ref 第一步就 fail（同 import-catalog.yml 一樣，只防手滑；真邊界係 GitHub Environment，S-781）
 on:
@@ -75,3 +77,25 @@ jobs:
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+            # 選填（App 外觀）：有設先 `wrangler secret bulk`，兩個都冇就跳過（publish 照成功，deploy: skipped）。
+            # 值只經 env → node 寫入 RUNNER_TEMP 嘅 JSON（600）→ wrangler，唔會出現喺 command line / log；用完即刪
+            - name: Sync optional deploy secrets
+              run: |
+                  file="$RUNNER_TEMP/deploy-secrets.json"
+                  trap 'rm -f "$file"' EXIT
+                  node -e '
+                      const pairs = [
+                          ["GITHUB_DEPLOY_TOKEN", process.env.DEPLOY_GITHUB_TOKEN],
+                          ["VERCEL_DEPLOY_HOOK_URL", process.env.VERCEL_DEPLOY_HOOK_URL],
+                      ].filter(([, value]) => value);
+                      require("fs").writeFileSync(process.argv[1], JSON.stringify(Object.fromEntries(pairs)), { mode: 0o600 });
+                      console.log(`deploy secrets to sync: ${pairs.map(([name]) => name).join(", ") || "none"}`);
+                  ' "$file"
+                  if [ "$(cat "$file")" = "{}" ]; then exit 0; fi
+                  npx wrangler secret bulk "$file"
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  DEPLOY_GITHUB_TOKEN: ${{ secrets.DEPLOY_GITHUB_TOKEN }}
+                  VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}

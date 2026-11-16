@@ -12,6 +12,16 @@ export type Json = Record<string, unknown>;
 export const isRecord = (value: unknown): value is Json =>
     typeof value === 'object' && value !== null && !Array.isArray(value);
 
+/** JSON 文字 → object（壞咗 / 唔係 object 當 {}；變更比較、選擇發佈讀已發佈 catalog.json 用） */
+export const parseJsonObject = (text: string): Json => {
+    try {
+        const value: unknown = JSON.parse(text);
+        return isRecord(value) ? value : {};
+    } catch {
+        return {};
+    }
+};
+
 /** kind / id 合規先回（id 同 folder 名一樣：細楷英數同連字號） */
 export const targetOf = (c: Context<AppEnv>): { kind: CatalogKind; id: string } | undefined => {
     // /dramas/:id/… 冇 :kind

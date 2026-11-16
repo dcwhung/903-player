@@ -151,19 +151,21 @@ class MainTest(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         root = Path(self._tmp.name)
-        self.repo = root / "repo"
+        self.app_root = root / "app"
         self.work = root / "work"
         for drama, data in (("lancy", LANCY), ("c18", {**LANCY, "audio": {"host": "app", "folder": "c18"}})):
-            (self.repo / "src" / "catalog" / "dramas" / "library" / drama).mkdir(parents=True)
+            (self.app_root / "src" / "catalog" / "dramas" / "library" / drama).mkdir(parents=True)
             text = json.dumps(data, ensure_ascii=False)
-            (self.repo / "src" / "catalog" / "dramas" / "library" / drama / "drama.json").write_text(text, encoding="utf-8")
+            (self.app_root / "src" / "catalog" / "dramas" / "library" / drama / "drama.json").write_text(
+                text, encoding="utf-8"
+            )
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
 
     def _main(self, *argv: str, run: FakeCurl) -> tuple[int, str, str]:
         out, err = io.StringIO(), io.StringIO()
-        args = [*argv, "--work", str(self.work), "--repo", str(self.repo)]
+        args = [*argv, "--work", str(self.work), "--app-root", str(self.app_root)]
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             code = fetch_sources.main(args, run=run)
         return code, out.getvalue(), err.getvalue()
@@ -190,6 +192,13 @@ class MainTest(unittest.TestCase):
         code, _, err = self._main("c18", run=FakeCurl())
         self.assertEqual(code, EXIT_MISSING)
         self.assertIn("R2", err)
+
+    def test_repo_flag_should_stay_an_alias_of_app_root(self) -> None:
+        # S-862：flag 改名 --app-root，舊 --repo 照用
+        for flag in ("--app-root", "--repo"):
+            with self.subTest(flag=flag):
+                args = fetch_sources.parse_args(["lancy", flag, str(self.app_root)])
+                self.assertEqual(args.app_root, self.app_root)
 
     def test_unsafe_drama_id_should_be_rejected(self) -> None:
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):

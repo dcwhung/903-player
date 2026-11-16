@@ -2,9 +2,12 @@ import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { loadEnv, type Plugin } from 'vite';
-import { defineConfig } from 'vitest/config';
+import { defineConfig, type ViteUserConfig } from 'vitest/config';
+import { resolveBuildBranding } from './scripts/brandingBuild.ts';
+import { injectBrandingText, manifestText } from './scripts/brandingConfig.ts';
 import { catalogRuntimeCaching } from './scripts/catalogCaching.ts';
 import { catalogSnapshot } from './scripts/catalogSnapshot.ts';
+import { e2eCatalogNotFound } from './scripts/e2eCatalogNotFound.ts';
 import { buildSocialTags, resolveSiteUrl } from './scripts/socialMeta.ts';
 import { episodeOptionsFor } from './src/catalog/dramas/lib/episodeOptionsFor.ts';
 import { LAUNCH_THEME_COLOR } from './src/config/launchTheme.ts';
@@ -53,9 +56,12 @@ const catalogUrlFor = (mode: string): string =>
  */
 const SNAPSHOT_DIR = new URL('./src/catalog/snapshot/data', import.meta.url).pathname;
 
-export default defineConfig(({ mode }) => {
+// Branding（App 外觀 plan 2026-11-13）：catalog.branding 嘅 text / icon，詳見 scripts/brandingBuild.ts
+export default defineConfig(async ({ command, mode }): Promise<ViteUserConfig> => {
     const catalogUrl = catalogUrlFor(mode);
+    const branding = await resolveBuildBranding({ command, mode, catalogUrl });
     return {
+        ...(branding.publicDir ? { publicDir: branding.publicDir } : {}),
         base: BASE_PATH,
         // Vitest 共用呢份 config，所以測試都睇到同一個 define
         define: {
@@ -66,6 +72,8 @@ export default defineConfig(({ mode }) => {
             react(),
             injectAppVersion(),
             injectSocialTags(),
+            injectBrandingText(branding.text),
+            mode === E2E_MODE && catalogUrl.startsWith('/') && e2eCatalogNotFound(catalogUrl),
             catalogSnapshot({
                 url: catalogUrl,
                 dir: SNAPSHOT_DIR,
@@ -77,8 +85,7 @@ export default defineConfig(({ mode }) => {
                 registerType: 'prompt',
                 includeAssets: ['favicon.png', 'apple-touch-icon.png'],
                 manifest: {
-                    name: '903 Player',
-                    short_name: '903 Player',
+                    ...manifestText(branding.text),
                     lang: 'zh-HK',
                     start_url: BASE_PATH,
                     scope: BASE_PATH,

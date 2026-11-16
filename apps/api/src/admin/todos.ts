@@ -7,6 +7,7 @@ import type { AppEnv } from '../app';
 import { listStoredEntries, type StoredEntry } from '../catalog/store';
 import { isRecord, type Json } from '../content/http';
 import { openFindings, resolveFindings, type FindingKind, type FindingRow } from './findings';
+import { publishModeOf, todoKey, type PublishMode } from './todoSelection';
 
 export const todoRoutes = new Hono<AppEnv>();
 
@@ -21,12 +22,16 @@ export interface TodoCell {
 export type TodoColumn = 'folder' | 'id' | 'images' | 'schedule' | 'summary';
 
 export interface TodoRow {
+    /** 穩定 key（selection.content 用）：`<kind>/<劇 ID>[/<短篇 ID>]` */
+    key: string;
     kind: FindingKind;
     findingIds: number[];
     dramaId: string;
     arcId: string | null;
     name: string;
     cells: Record<TodoColumn, TodoCell>;
+    /** 選擇發佈：可以揀 / 未完成（唔發佈）/ 一定跟其他改動發佈 */
+    publish: PublishMode;
 }
 
 /** 掃描派嘅劇 ID（drama-01）：admin 確認（confirm-id）或者改咗名先算搞掂 */
@@ -171,14 +176,27 @@ export const arcOfFinding = (finding: FindingRow, definition: Json): Json | unde
 export const isIdConfirmed = (finding: FindingRow): boolean =>
     (JSON.parse(finding.detail) as Json).idConfirmed === true;
 
+const hasMust = (cells: Record<TodoColumn, TodoCell>): boolean =>
+    Object.values(cells).some((x) => x.state === 'must');
+
 const rowOf = (finding: FindingRow, base: TodoContext): TodoRow | undefined => {
     const ctx = { ...base, idConfirmed: isIdConfirmed(finding) };
     const arc = arcOfFinding(finding, ctx.definition);
     const arcId = typeof arc?.id === 'string' ? arc.id : finding.arc_id;
     const cells = cellsOf(finding, ctx, arc, arcId);
     if (!cells) return undefined;
-    const row = { kind: finding.kind, findingIds: [finding.id], dramaId: finding.drama_id };
-    return { ...row, arcId, name: nameOf(ctx.definition, arc), cells };
+    const { kind, drama_id: dramaId } = finding;
+    const blocking = hasMust(cells);
+    return {
+        key: todoKey(kind, dramaId, arcId),
+        kind,
+        findingIds: [finding.id],
+        dramaId,
+        arcId,
+        name: nameOf(ctx.definition, arc),
+        cells,
+        publish: publishModeOf(kind, { blocking, draft: ctx.entry.draft === 1 }),
+    };
 };
 
 /** 同一套劇 + 短篇 + kind 嘅 findings 合做一行；劇 / 短篇已經冇咗嘅行唔出 */
@@ -191,10 +209,9 @@ const toRows = (
         const ctx = contexts.get(finding.drama_id);
         const row = ctx && rowOf(finding, ctx);
         if (!row) return;
-        const key = `${row.kind}:${row.dramaId}:${row.arcId ?? ''}`;
-        const existing = rows.get(key);
+        const existing = rows.get(row.key);
         if (existing) existing.findingIds.push(finding.id);
-        else rows.set(key, row);
+        else rows.set(row.key, row);
     });
     return [...rows.values()];
 };
@@ -229,8 +246,7 @@ const contextsOf = async (db: D1Database): Promise<Map<string, TodoContext>> => 
     );
 };
 
-const isBlocking = (row: TodoRow): boolean =>
-    Object.values(row.cells).some((x) => x.state === 'must');
+export const isBlocking = (row: TodoRow): boolean => hasMust(row.cells);
 
 /** 未解決 findings 嘅待辦行（GET /api/todos、發佈後標 resolved 共用） */
 export const loadTodoRows = async (db: D1Database): Promise<TodoRow[]> => {
@@ -238,9 +254,16 @@ export const loadTodoRows = async (db: D1Database): Promise<TodoRow[]> => {
     return toRows(findings, contexts);
 };
 
-/** 發佈成功之後：冇「必須」格嘅行嘅 findings 標 resolved（仲有必須嘅留低繼續做） */
-export const resolveDoneFindings = async (db: D1Database, publishId: number): Promise<void> => {
-    const done = (await loadTodoRows(db)).filter((row) => !isBlocking(row));
+/**
+ * 發佈成功之後：冇「必須」格、而且今次真係發佈咗（published；冇 selection = 全部）嘅行嘅 findings
+ * 標 resolved；仲有必須 / 冇揀嘅留低繼續做
+ */
+export const resolveDoneFindings = async (
+    db: D1Database,
+    publishId: number,
+    published: (row: TodoRow) => boolean = () => true,
+): Promise<void> => {
+    const done = (await loadTodoRows(db)).filter((row) => !isBlocking(row) && published(row));
     await resolveFindings(
         db,
         publishId,

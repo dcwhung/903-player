@@ -4,12 +4,17 @@
  */
 import { exampleFileName } from '@903-player/catalog';
 import type { RawDefinition } from '../../api/types';
+import { nameOf } from '../../model/raw';
+import { previewInfoOf } from '../../model/theme';
 import { t } from '../../i18n/t';
 import { DeleteEntry } from '../editor/DeleteEntry';
 import { dirtyLabels } from '../editor/entryDraft';
 import { IdField } from '../editor/IdField';
 import { MediaAside } from '../editor/MediaAside';
 import { SummaryField } from '../editor/SummaryField';
+import { OtherRevert } from '../revert/FieldRevert';
+import { DRAMA_PLACED } from '../revert/placedFields';
+import { useEntryRevert, type EntryRevert } from '../revert/useEntryRevert';
 import { SaveBar } from '../../ui/SaveBar';
 import { BasicFields } from './BasicFields';
 import { r2FolderOf, r2TemplateOf } from './dramaModel';
@@ -57,26 +62,41 @@ function R2Fields({ state }: { state: DramaEditorState }) {
     );
 }
 
+/** 劇集碟面 / 橫圖（R2 原圖自動裁切狀態喺 slot 下面） */
+function DramaMedia({ state, revert }: { state: DramaEditorState; revert: EntryRevert }) {
+    const { draft } = state.editor;
+    if (!draft) return null;
+    return (
+        <MediaAside
+            id="images"
+            target={draft.definition}
+            images={draft.images}
+            preview={previewInfoOf(draft.definition, nameOf(draft.definition, state.id))}
+            auto={state.autoCrop.statusOf()}
+            onUploaded={state.saveImage}
+            revert={revert}
+        />
+    );
+}
+
+/** ID ⓘ：掃描自動派未確認 / 未發佈可改 / 已發佈鎖住 */
+const idTipOf = (unconfirmed: boolean, neverPublished: boolean) => {
+    if (unconfirmed) return t('editor.idDramaAutoTip');
+    return t(neverPublished ? 'editor.idNewTip' : 'editor.idLockedTip');
+};
+
 export function BasicTab({ state }: { state: DramaEditorState }) {
     const { editor, neverPublished } = state;
     const { draft, entry } = editor;
+    const revert = useEntryRevert(editor);
     if (!draft) return null;
     const unconfirmed = state.dramaIdUnconfirmed && neverPublished;
-    const tip = unconfirmed
-        ? t('editor.idDramaAutoTip')
-        : neverPublished
-          ? t('editor.idNewTip')
-          : t('editor.idLockedTip');
+    const tip = idTipOf(unconfirmed, neverPublished);
     // 冇改 ID 就儲存 = 確認掃描派嘅 drama-NN（改咗名 server 當已確認）
     const confirmDrama = unconfirmed && state.newId === state.id;
     return (
         <div className="card with-media">
-            <MediaAside
-                id="images"
-                target={draft.definition}
-                images={draft.images}
-                onUploaded={state.saveImage}
-            />
+            <DramaMedia state={state} revert={revert} />
             <div className="form">
                 <IdField
                     value={state.newId}
@@ -85,13 +105,19 @@ export function BasicTab({ state }: { state: DramaEditorState }) {
                     unconfirmed={confirmDrama}
                     onChange={state.setNewId}
                 />
-                <SummaryField target={draft.definition} onChange={editor.setDefinition} />
+                <SummaryField
+                    target={draft.definition}
+                    onChange={editor.setDefinition}
+                    revert={revert}
+                />
                 <BasicFields
                     definition={draft.definition}
                     kindLocked={!neverPublished}
                     onChange={editor.setDefinition}
+                    revert={revert}
                 />
                 <R2Fields state={state} />
+                <OtherRevert revert={revert} placed={DRAMA_PLACED} />
             </div>
             <SaveBar
                 dirtyFields={dirtyLabels([
