@@ -160,6 +160,14 @@ const checkShowLandscape = async (env, json) => {
         .click();
     const closed = !(await isShown(sheet, { timeout: ABSENT_WAIT_MS }));
     env.log(closed, '節目資料橫版：撳左欄掣，右欄 sheet 自動閂');
+    // ⓘ 離畫面右邊同直版一樣計法：同頁頭返回掣離左邊一樣（--space-3 × --ui-scale），唔再讓開把手預留位
+    const info = await p.getByRole('button', { name: '節目資料' }).boundingBox();
+    const back = await p.getByRole('button', { name: '返回主頁' }).first().boundingBox();
+    const gap = info ? viewportWidth(p) - (info.x + info.width) : -1;
+    env.log(
+        back !== null && Math.abs(gap - back.x) <= GAP_TOLERANCE_PX,
+        `節目資料橫版：ⓘ 離右邊 ${gap.toFixed(1)}px（返回掣離左邊 ${back?.x.toFixed(1)}px）`,
+    );
 };
 
 /**

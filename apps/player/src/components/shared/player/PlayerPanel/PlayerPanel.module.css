@@ -150,7 +150,11 @@
 .info {
     position: absolute;
     top: 0;
-    right: var(--space-3);
+    /*
+     * 離畫面右邊 --space-3（同頁頭返回掣離左邊一樣）：闊橫版右欄右邊預留咗把手位（Page.module.css
+     * --page-edge-reserve），扣返佢先係量畫面邊；直版 / 手機打橫冇預留位
+     */
+    right: calc(var(--space-3) - var(--page-edge-reserve, 0px));
     display: flex;
     align-items: center;
     justify-content: center;

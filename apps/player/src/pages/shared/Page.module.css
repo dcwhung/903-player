@@ -221,6 +221,8 @@
 @media (orientation: landscape) and (min-width: 640px) and (min-height: 562px) {
     .fixed {
         padding-right: calc(env(safe-area-inset-right) + var(--home-handle-reserve));
+        /* 右欄右邊同畫面右邊之間嘅把手預留位：ⓘ（GaugeInfoRow）伸返出去，離畫面右邊同直版一樣 */
+        --page-edge-reserve: var(--home-handle-reserve);
     }
 }
 
