@@ -78,8 +78,8 @@
     --today-row-gap: calc(14px * var(--ui-scale));
     --today-row-icon: calc(22px * var(--ui-scale));
     --today-row-height: calc(64px * var(--ui-scale));
-    /* 同 Disc size="small" 預設大細一樣（Disc.module.css .small） */
-    --today-row-disc: calc(40px * var(--ui-scale));
+    /* S-1016：行碟（Disc size="small"）同資料區縮入共用一個大細，Disc 跟呢度，唔使抄 Disc 預設 */
+    --disc-small-size: calc(40px * var(--ui-scale));
 }
 
 /* 展開資料（P9.5 #12）：左邊條拉長到行高約八成、上下置中 */
@@ -94,7 +94,7 @@
             var(--space-2) + var(--today-row-icon) + 2 * var(--today-row-gap) +
                 var(--episode-bookmark-size)
         )
-        0 calc(var(--list-row-pad-start) + var(--today-row-disc) + var(--today-row-gap));
+        0 calc(var(--list-row-pad-start) + var(--disc-small-size) + var(--today-row-gap));
 }
 
 /* 收藏掣：行入面留一格（播放掣左邊），星疊喺上面（_mockups_/bookmark P2） */
