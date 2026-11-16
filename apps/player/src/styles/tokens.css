@@ -417,10 +417,7 @@
         0px,
         calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))
     );
-    --mini-player-offset-bottom: calc(
-        max(0px, calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))) +
-            var(--space-2)
-    );
+    --mini-player-offset-bottom: calc(var(--safe-area-bottom-visible) + var(--space-2));
     --shadow-clay-tile: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
     /* 主頁節目格「New」標籤：輕輕浮起，同節目圖分開 */
     --shadow-new-badge: 0 2px 6px rgb(0 0 0 / 35%);
