@@ -161,3 +161,36 @@ next_agent: quality-assurance
 branch: "feature/catalog/item-info"
 context: "merge delta e7dbb9f 100/100 pass；衝突解決正確（openWithCatalog 新簽名、CATALOG_DIR/FOLDER export、run.mjs 兩 section、1.37.0 + lock 一行），冇 semantic conflict（InfoBanner 已有 CORS crossOrigin）；ledger 28 行交 QA 重驗；integration branch = main"
 ```
+
+## Merge delta 3 — S-743（`120b0f8` merge `origin/main` 22356c3 + `a812b16` + `19e4b92`，2026-11-16）
+
+- 範圍：`git show 120b0f8 --remerge-diff`（衝突：`DailyDramaPage.tsx`、`useDramaPage.ts`、`apps/player/package.json`、`package-lock.json`；`useShowPage.ts` 自動合併後改名）、`a812b16`（test）、`19e4b92`（刪一行空行）；`.proj-docs/qa/` 同 ledger 歸 QA，冇郁
+- Hard gates：all pass —— `npx tsc -b` exit 0；`npm run lint` exit 0；`npx vitest related useDramaPage / DailyDramaPage / SeriesDramaPage / useShowPage / ShowPage / useEpisodeFocus / useSeriesInfo / useDailyInfo / useShowInfo --run`：16 files / 210 tests 全綠
+- 新 finding：冇（下一個 ID 照舊 C-024 / W-749 / S-1058）
+- 分數：**100 / 100（✅ pass）**
+
+| 檢查                             | 結果 | 證據                                                                                                                                                                                                                                                                             |
+| -------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-743 focusKey 捲動              | ✅   | 三頁都由 `focusKeyOf(episodes, focusId)` 出 `focusKey`：`useShowPage.ts:191`、`useDailyDramaPage`（`DailyDramaPage.tsx:87` 用 `view.focusKey`）、`useSeriesDramaPage` `listActions(rows, focusKeyOf(...))`（`SeriesDramaPage.tsx:107` 用 `view.focusKey`）；同 main 22356c3 一致 |
+| 我哋嘅自動彈判斷                 | ✅   | `useShowInfo(show, focusId !== undefined)`、`useDailyInfo(drama, focusId !== undefined)`、`useFirstVisitOnEntry(drama, focusId !== undefined)`；`rg focusUrl apps/player/src` 淨係出 `useEpisodeFocus` 嘅「舊 state 唔認」註釋同 test                                            |
+| 全集 sheet / G1 / ⓘ / 短篇 sheet | ✅   | `useSeriesDramaPage` 保留 `useSeriesSheetView`（`sheet.banner`、`info`、`openSheet`、`gaugeInfo`、`infoSheet`、`pickArc`）；main 嗰邊嘅 `sheet: { open, groups, … }` 冇覆蓋返；`listActions` 同 `useSeriesSheetView` 冇重複 key                                                  |
+| Test 有冇咬力                    | ✅   | 臨時 mutation（三處判斷改做 `false`，已還原）：`ShowPageInfo`「由我的收藏入唔彈」、`DailyDramaPageInfo`「focusId 唔彈」、`SeriesDramaPageInfo`「focusId 唔開全集」**3 個全部 fail**，還原後綠                                                                                    |
+| Version / lock                   | ✅   | 1.37.0（main 1.36.3）；`git diff 22356c3 HEAD -- apps/player/package.json package-lock.json` 淨係兩行 version                                                                                                                                                                    |
+| `19e4b92`                        | ✅   | 淨係刪 `useShowPage.ts` 一行空行（max-lines-per-function），冇行為改動                                                                                                                                                                                                           |
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/catalog/item-info"
+context: "merge delta 3（S-743，120b0f8 / a812b16 / 19e4b92）100/100 pass；focusId + focusKeyOf 捲動同 item info 自動彈判斷兩邊都保留，全集 sheet / G1 / ⓘ / 短篇 sheet 冇被覆蓋；3 個「由收藏入唔彈」test mutation 證實有咬力；1.37.0 + lock 一行；integration branch = main"
+```
