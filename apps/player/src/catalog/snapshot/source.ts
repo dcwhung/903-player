@@ -28,6 +28,13 @@ const images = import.meta.glob<string>('./data/img/*.{webp,jpg}', {
 /** unit test 測 library（本機 build 過留低嘅 snapshot 唔好影響）；e2e 用 library + 測試劇 */
 const LIBRARY_ONLY_MODES: readonly string[] = ['test', 'e2e'];
 
+/**
+ * 呢個 build / server 用唔用 data/ snapshot。dev server（DEV）一律用 library：plugin 只喺 build 清 / 寫 data/，
+ * dev 讀到嘅只會係本機上次 production build 嘅殘留，改 library 會睇唔到（S-796）。Production build 嘅 DEV 係 false，行為不變
+ */
+export const usesBundledSnapshot = (env: Pick<ImportMetaEnv, 'DEV' | 'MODE'>): boolean =>
+    !env.DEV && !LIBRARY_ONLY_MODES.includes(env.MODE);
+
 const fileNameOf = (path: string) => path.slice(path.lastIndexOf('/') + 1);
 
 const bundledUrl = (urlByFile: Readonly<Record<string, string>>, name: string, slot: string) => {
@@ -74,11 +81,9 @@ export const loadSnapshot = (
     }
 };
 
-export const snapshotDocument: CatalogDocument | undefined = LIBRARY_ONLY_MODES.includes(
-    import.meta.env.MODE,
-)
-    ? undefined
-    : loadSnapshot(documents, images);
+export const snapshotDocument: CatalogDocument | undefined = usesBundledSnapshot(import.meta.env)
+    ? loadSnapshot(documents, images)
+    : undefined;
 
 /** 有 snapshot 就用 snapshot 嗰類，冇就用 repo library */
 export const preferSnapshot = (

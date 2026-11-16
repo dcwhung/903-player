@@ -1,5 +1,5 @@
 import { buildShowRegistry, foldersFromGlobs, type FolderSource } from '@903-player/catalog';
-import { loadSnapshot, preferSnapshot, snapshotDocument } from './source';
+import { loadSnapshot, preferSnapshot, snapshotDocument, usesBundledSnapshot } from './source';
 
 const TILE = '0123456789abcdef.webp';
 const DISC = 'fedcba9876543210.webp';
@@ -109,5 +109,20 @@ describe('preferSnapshot', () => {
 describe('snapshotDocument', () => {
     it('should stay off in unit tests, so library tests keep testing the library', () => {
         expect(snapshotDocument).toBeUndefined();
+    });
+});
+
+describe('usesBundledSnapshot', () => {
+    it('should use the snapshot in a production build', () => {
+        expect(usesBundledSnapshot({ DEV: false, MODE: 'production' })).toBe(true);
+    });
+
+    it('should use the library when the dev server serves the app, even with a leftover snapshot (S-796)', () => {
+        expect(usesBundledSnapshot({ DEV: true, MODE: 'development' })).toBe(false);
+    });
+
+    it('should use the library in unit tests and e2e builds', () => {
+        expect(usesBundledSnapshot({ DEV: true, MODE: 'test' })).toBe(false);
+        expect(usesBundledSnapshot({ DEV: false, MODE: 'e2e' })).toBe(false);
     });
 });

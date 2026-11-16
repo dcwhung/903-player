@@ -79,7 +79,7 @@ D1（`apps/api`）已經係內容 SSoT，repo `library/` 只係 fallback。Produ
 
 - 任何一步失敗（fetch 唔到、驗唔過、圖 hash 唔啱）→ `console.warn` + 清走暫存，build 照行，用 `library/`
 - 唔會 fetch：`vite` dev server、`--mode e2e`（e2e 照用 `library/` + 測試劇）、冇 `VITE_CATALOG_URL`（CI）
-- Unit test 永遠用 `library/`（本機 build 過留低嘅 snapshot 唔影響）
+- `vite` dev server 同 unit test 永遠用 `library/`（本機 build 過留低嘅 `data/` 唔影響，改 library 喺 dev 即刻睇到）
 - Publish 之後唔會自動 rebuild：snapshot 跟下次 deploy 更新；想即時更新就手動跑 Deploy workflow
 
 首頁橫額（Phase 4，v1.34.0）：`catalog.json` 選填 `banner`（`standard` 1200×517 + `long` 2000×400，尺寸鎖死）。
