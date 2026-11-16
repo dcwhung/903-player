@@ -1,10 +1,10 @@
-# QA — P9.5 #12 節目資料（item info，player 1.34.0）— 2026-11-16 — S1
+# QA — P9.5 #12 節目資料（item info，player 1.34.0 → merge main 後 1.37.0）— 2026-11-16 — S1
 
 - Tier: T2（MINOR、跨模組：catalog registry、PlayerPanel、ArcSheet、今日節目表、Sheet 抽出共用）| Branch: `feature/catalog/item-info` | Commit: `f47d174`（code）/ `22e69ba`（HEAD，之後淨 docs）| Verdict: ✅ pass
 - Ledger（`impact --since "$(git merge-base HEAD origin/main)"` = `713cb85`）: SKIP 2（admin、api）/ REVERIFY 12 / UNCOVERED 153（新 code / test 51 + `_mockups_/catalog-item-info/` 102）/ IGNORED 3
     - 主鏈：catalog-data、drama、show-today-page；其餘 9 條（bookmark、card-zoom、coming-soon、home、mini-player、player-core、pwa-shell、repo-tooling、ui-foundation）係共用檔被改（`useDramaPage`、`ShowPage`、`tokens.css`、`i18n`、`constants`、ArcSheet `sheetDrag` 等 → `Sheet/` 改名、version bump）→ 按各自 plan 重驗
     - UNCOVERED 歸鏈：ItemInfo / Sheet / `useItemInfoSheet` / `dragVelocity` / `selectors/itemInfo` / mockup / `e2e/itemInfo.mjs` → show-today-page（+ drama 共用嗰啲）；ArcSheet 新檔、`useSeriesInfo` / `useDailyInfo` / `seriesPageLabels` / `e2e/arcSheet.mjs` → drama；`selectors/itemInfo*` → catalog-data（1-hop）
-- SSoT: `.proj-docs/plans/2026-11-16_plan_item-info.md`；review `.proj-docs/reviews/2026-11-16_review_item-info-rereview.md`（100/100 pass）；plans 更新 `plans/{catalog-data,drama,show-today-page}.md`（加 AC、scope、commands），其餘 9 份沿用
+- SSoT: `.proj-docs/plans/2026-11-16_plan_item-info.md`；review `.proj-docs/reviews/2026-11-16_review_item-info-rereview.md`（100/100 pass）；plans 更新 `plans/{catalog-data,drama,show-today-page}.md`（加 AC：catalog-data AC-11、drama AC-11（merge main 後由 AC-7 / AC-10 改號）、show-today-page AC-5；scope、commands），其餘 9 份沿用
 
 ## Runs
 
@@ -21,6 +21,16 @@
     - 節目頁 `#/show/gongzi`：撳 sheet 入面（banner、主持 chip、簡介、空白位）唔閂；撳 ⓘ 本身（連撳兩次）唔閂；撳右欄碟面非掣位置唔閂；撳左欄集數掣即閂；✕ / Escape 閂，ⓘ 再開
     - 短篇劇 `#/drama/lancy`：全集 sheet 入面撳「劇集資料」箭咀唔閂；揀「戀愛二分一」→ 獨立 sheet；撳 sheet 入面（簡介、聲演 chip）、撳 ⓘ 唔閂；撳左欄「全集」→ 資料 sheet 閂、全集 sheet 出
 - 未跑：repo-tooling plan 嘅全部 `npm test`（今次指示唔跑 full suite；淨 version bump，由 push 後 CI 同 SHA 證）；PWA gate（`sw.js` / manifest / 更新邏輯 / build config 冇改，PWA 換版 e2e 照 PASS）
+
+## Delta：merge `origin/main`（`48dfb14`，1.36.0）→ `e7dbb9f`（1.37.0）
+
+- 新 base = `git merge-base HEAD origin/main` = `48dfb14`；`impact`：SKIP 8 / REVERIFY 6（catalog-data、drama、home、pwa-shell、show-today-page、ui-foundation）/ UNCOVERED 12（`ledger-merge.mjs` exit 1 冇寫入嘅 28 行 + 改名前舊 ArcSheet path）
+    - S1 層面：drama / show-today-page 因 `e2e/itemInfo.mjs`（跟 main 嘅 `openWithCatalog({ contextOptions })` 新簽名）STALE；其餘 REVERIFY 係 S3 行
+- Merge 解衝突嘅 code：`itemInfo.mjs` 簽名、`remoteCatalog.mjs` export `CATALOG_DIR` / `CATALOG_FOLDER`、`run.mjs`（main 嘅 S-1017 `data-role="today-list"` + itemInfo section）、`packages/catalog/src/index.ts`（加 `type ArcInfo`）、version 1.37.0（`package.json` / lock 各 1 行）
+- item-info 52 個改動 .ts / .tsx：`git diff 22e69ba e7dbb9f` 淨 `packages/catalog/src/index.ts` 有改（main 嘅 export + `type ArcInfo`）→ coverage 證據沿用
+- `npm test -- <11 份 plan（merge 後版本）npm test path 聯集，162 個>`：297 files / 3459 tests pass（102 s）
+- e2e 引用 Developer @`e7dbb9f`（log 11:20，commit 11:06，working tree clean）：912 PASS / 0 FAIL「All E2E checks passed」，`節目資料：…` 25 個 PASS；tsc 0、lint pass（Developer 同 SHA）
+- Freeze @`3018e14`（code = `e7dbb9f`，之後淨 re-review 報告）：catalog-data / coming-soon / drama / home / player-core / repo-tooling / show-today-page S1 = ledger 現有行 + 28 行（ArcSheet 嗰批用 `shared/common/Sheet/` 新 path）；同兩個 parent（`1f4a4b6`、`48dfb14`）比 chain + stage + path 冇少行（`1f4a4b6` 嘅 admin `ImagePreviewDialog.test.tsx` 行唔喺度 = main 已刪該檔，非今次鏈）
 
 ## Hard Gates
 
@@ -39,11 +49,11 @@ all pass（Coverage：改動檔 52 個全部 ≥ 80%；PWA：n/a；Security / Da
 protocol: 1
 status: pass
 stage: S1
-ledger: "FROZEN S1 @22e69ba: catalog-data / drama / show-today-page (plans updated) + bookmark / card-zoom / coming-soon / home / mini-player / player-core / pwa-shell / repo-tooling / ui-foundation (plans unchanged); SKIP admin, api; UNCOVERED 153 assigned to show-today-page / drama / catalog-data"
+ledger: "delta @3018e14 (code e7dbb9f, base 48dfb14): FROZEN S1 catalog-data / coming-soon / drama / home / player-core / repo-tooling / show-today-page (+28 ledger-merge rows, no row lost vs both parents); earlier FROZEN S1 @22e69ba: catalog-data / drama / show-today-page (plans updated) + bookmark / card-zoom / coming-soon / home / mini-player / player-core / pwa-shell / repo-tooling / ui-foundation (plans unchanged); SKIP admin, api; UNCOVERED 153 assigned to show-today-page / drama / catalog-data"
 hard_gates: { tests: pass, coverage: pass, no_blocking: pass, pwa: n/a, security: n/a, performance: n/a }
 tickets: []
 next_action: merge_main
 next_agent: main
 branch: "feature/catalog/item-info"
-context: "item-info S1 pass; unit 275 files / 3199 tests (12 plan path union, not full npm test); coverage 52 changed files >=80%; lint pass; e2e 823/0 @22e69ba; landscape right-column sheet manual check: inside sheet / info button do not close, left-column buttons close; report + ledger + 3 plans committed locally, not pushed; CI (incl. full npm test) must be green on push before merge"
+context: "item-info S1 pass; delta after merging main (e7dbb9f, 1.37.0): unit 297 files / 3459 tests, e2e 912/0 cited from developer @e7dbb9f; unit 275 files / 3199 tests (12 plan path union, not full npm test); coverage 52 changed files >=80%; lint pass; e2e 823/0 @22e69ba; landscape right-column sheet manual check: inside sheet / info button do not close, left-column buttons close; report + ledger + 3 plans committed locally, not pushed; CI (incl. full npm test) must be green on push before merge"
 ```
