@@ -100,3 +100,52 @@ handoff-receipt:
     next_action: invoke_developer_fix
     context: 'Lane C（T6）warn：W-777 拉走後 closing 中再開表會隱形；W-778 admin + player 冇 bump version。Lane A / B pass。修完 re-review 只驗 W-777 / W-778；S-1092..1094 按 project 規定同一 session 清或者問用戶。報告只 commit 未 push。'
 ```
+
+---
+
+# Re-review — 2026-11-16 — `de1bbdf..0c6f5a9`
+
+- 範圍：只驗上一輪 W-777 / W-778 嘅修正，同埋 S-1092..1094 嘅 diff（`dfe9fba` `6595786` `5c7ed02` `9cf8037` `0c6f5a9`）
+- Hard gates：all pass（`npm run lint`（eslint + prettier）、`tsc -b` player / admin、diff 相關 unit：Sheet / ItemInfo / ArcSheet / miniPlayerShadow / admin `features/update` 30 files 249 tests 綠）
+- 評分：100 / 100（W-777、W-778 已修，冇新 🔴 / 🟡）
+- **結果：✅ pass**（附一個 S-1094 處理建議，見下）
+
+| ID     | 驗證                                                                                                                                                                                                                                                                                          | 結論        |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| W-777  | `useSheetDrag` 喺 `open` 變 true 嘅 layout effect 叫 `clearLeftovers`（清 `data-dragging` / `data-closing`、表 `transform`、遮罩 `opacity`）；閂嗰陣唔清，`sheet-out` 由拉到嘅位繼續落。L2：暫時拎走呢個 effect，ItemInfoSheet + ArcSheet 兩個新 W-777 test 都 fail，還原後綠（工作樹已還原） | ✅ resolved |
+| W-778  | admin 0.8.2 → 0.8.3、player 1.37.0 → 1.37.1，`package-lock.json` 同步；admin CHANGELOG 加 0.8.3。上輪建議 admin minor，用戶 fix-only 政策 → patch，接受                                                                                                                                       | ✅ resolved |
+| S-1092 | `--mini-player-offset-bottom: calc(var(--safe-area-bottom-visible) + var(--space-2))`，node test 跟住改                                                                                                                                                                                       | ✅          |
+| S-1093 | `SelectionFooter` 收 `usePublishPlan.path`，`disabled={path === undefined}`；`path` 本身已包「未載入 / 失敗 / 冇嘢揀」，同 Stepper 同一來源；新 `SelectionFooter.test.tsx` 兩個 case                                                                                                          | ✅          |
+| S-1094 | 見下                                                                                                                                                                                                                                                                                          | 建議 revert |
+
+### S-1094 判斷：唔接受 latch 寫法，建議 revert `9cf8037`，S-1094 以 Observation（不修）結案
+
+- 功能上啱：latch 只喺開住嘅 commit 寫，閂嗰次 render 讀到嘅一定係上次 commit 嘅值；新 test 喺舊寫法會數到 4 次 render，係真 RED
+- 但 `createLatch` 實際係「render 期間讀 mutable 值」嘅 ref，包一層就避開 `react-hooks/refs` / `immutability`；lint 綠唔代表守咗 render 純度，下一個人會以為係 lint-clean 嘅純寫法
+- 重複咗現有 `hooks/useBox.ts`（同一個 useState box 模式）；而 `hooks/useRefreshedOn.ts` 明文揀 render 期間 derive state（React 文檔做法、唔使 eslint-disable），原本寫法同 codebase 慣例一致
+- 得益細：render 期間 setState 只會即刻重跑呢個 hook 所屬嘅 component（未落 children），每秒一次，S-1094 本身都未量度
+- 做法：`git revert 9cf8037`（連 test 一齊走）；player 1.37.1 照留（W-777 仲喺度）。用戶想保留優化先考慮改用 `useBox` + 註明點解 render 讀得，唔好新增另一個 box 抽象
+
+### Observation
+
+- admin CHANGELOG 冇 0.8.2 段（`c92203c` 之前已經冇，唔屬今次範圍）；0.8.3 段寫埋 T1–T5，可接受
+
+```yaml
+handoff-receipt:
+    agent: code-reviewer
+    scope: re-review（W-777 / W-778 + S-1092..1094，branch claude/admin-player-fixes-6fzdtw @ 0c6f5a9）
+    status: pass
+    score: 100
+    hard_gates:
+        {
+            lint: pass,
+            type_check: pass,
+            tests: pass,
+            coverage: pass,
+            no_critical: pass,
+            security_scan: n/a,
+        }
+    findings: { critical: [], warning: [], suggestion: [S-1094] }
+    next_action: invoke_qa
+    context: 'W-777 / W-778 resolved（L2：拎走 clearLeftovers 兩個 W-777 test fail）；S-1092 / S-1093 accepted。S-1094 latch 唔接受：建議 git revert 9cf8037、S-1094 以 Observation 不修結案（同 session 清，main agent 決定或問用戶）。報告只 commit 未 push。'
+```
