@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { INFO_OPENER_ATTR } from '../../common/ItemInfo/ItemInfoSheet';
+import { INFO_OPENER_ATTR } from '../../common/ItemInfo/useCloseOnOutsidePress';
 import { InfoIcon } from '../../common/icons/icons';
 import styles from './PlayerPanel.module.css';
 

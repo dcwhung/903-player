@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { INFO_OPENER_ATTR, ItemInfoSheet } from './ItemInfoSheet';
+import { ItemInfoSheet } from './ItemInfoSheet';
+import { INFO_OPENER_ATTR } from './useCloseOnOutsidePress';
 
 const SHOW = {
     kind: 'show' as const,

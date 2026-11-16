@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef } from 'react';
 import { t } from '../../../../i18n/t';
 import type { ItemInfoSection } from '../../../../selectors/itemInfo';
 import { useSheetBehaviour } from '../Sheet/useSheetBehaviour';
 import { CloseIcon } from '../icons/icons';
 import { ItemInfoFields } from './ItemInfoFields';
+import { useCloseOnOutsidePress } from './useCloseOnOutsidePress';
 import styles from './ItemInfoSheet.module.css';
 
 interface ItemInfoSheetProps {
@@ -18,37 +18,6 @@ interface ItemInfoSheetProps {
 }
 
 const CLOSE_ICON_SIZE = 20;
-
-/** 打開資料 sheet 嗰粒 ⓘ（GaugeInfoRow）：橫版撳佢唔當「撳咗左欄」 */
-export const INFO_OPENER_ATTR = 'data-info-opener';
-/** 撳落呢啲先當「撳咗左欄嘅掣」；撳空白位 / 純文字唔閂 */
-const PRESSABLE_SELECTOR =
-    'button, a[href], [role="button"], [role="link"], [role="tab"], [role="option"], input, select, textarea, label, summary';
-
-/**
- * 橫版右欄 sheet 冇遮罩：sheet 開住時撳左欄任何掣（集數播放 / 收藏、日子條、短篇 chip、全集、返回…）就閂。
- * 用 capture：掣自己 stopPropagation 都收到；撳 sheet 入面同 ⓘ 唔理
- */
-const useCloseOnOutsidePress = (enabled: boolean, onClose: () => void) => {
-    const sheetRef = useRef<HTMLElement | null>(null);
-    // 同 W-747 一樣：caller 每秒 re-render 傳新 onClose，唔好因此重掛 listener
-    const onCloseRef = useRef(onClose);
-    useEffect(() => {
-        onCloseRef.current = onClose;
-    }, [onClose]);
-    useEffect(() => {
-        if (!enabled) return undefined;
-        const onPointerDown = (event: PointerEvent) => {
-            const target = event.target instanceof Element ? event.target : null;
-            if (!target || sheetRef.current?.contains(target)) return;
-            if (target.closest(`[${INFO_OPENER_ATTR}]`)) return;
-            if (target.closest(PRESSABLE_SELECTOR)) onCloseRef.current();
-        };
-        document.addEventListener('pointerdown', onPointerDown, true);
-        return () => document.removeEventListener('pointerdown', onPointerDown, true);
-    }, [enabled]);
-    return sheetRef;
-};
 
 /** 一段（節目 / 劇集 / 短篇）：data-kind 畀 CSS 揀標題大細（短篇細過劇集名） */
 const InfoSection = ({ section }: { section: ItemInfoSection }) => (
@@ -72,15 +41,7 @@ export const ItemInfoSheet = ({
     onClose,
 }: ItemInfoSheetProps) => {
     const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(open, onClose);
-    const outsideRef = useCloseOnOutsidePress(open && docked, onClose);
-    // 穩定 callback ref：播放時每秒 re-render 唔可以令 useSheetDrag 重掛
-    const bindSheet = useCallback(
-        (el: HTMLElement | null) => {
-            setSheet(el);
-            outsideRef.current = el;
-        },
-        [setSheet, outsideRef],
-    );
+    const bindSheet = useCloseOnOutsidePress(open && docked, onClose, setSheet);
     if (!open) return null;
     return (
         <div className={`${styles.overlay} ${docked ? styles.docked : ''}`} data-info-sheet="">
