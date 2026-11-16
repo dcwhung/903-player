@@ -164,3 +164,13 @@
     background: transparent;
     color: var(--color-accent-text);
 }
+
+/*
+ * 橫版（LANDSCAPE_QUERY，T7）：右欄好闊，ⓘ 貼住欄邊就離唱片好遠；改為貼住唱片格（.gauge，喺 .infoRow 正中、
+ * 闊 --player-disc-size）右上角，圓形弧之外嘅角位。欄窄過唱片格時都唔會出咗欄
+ */
+@media (orientation: landscape) and (min-width: 640px) {
+    .info {
+        right: max(0px, calc(50% - var(--player-disc-size) / 2));
+    }
+}

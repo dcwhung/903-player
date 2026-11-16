@@ -161,13 +161,14 @@ const checkShowLandscape = async (env, json) => {
     // 收埋動畫（T6）完先 unmount：等佢走，唔係即刻當冇
     const closed = await succeeds(sheet.waitFor({ state: 'detached', timeout: WAIT_MS }));
     env.log(closed, '節目資料橫版：撳左欄掣，右欄 sheet 自動閂');
-    // ⓘ 離畫面右邊同直版一樣計法：同頁頭返回掣離左邊一樣（--space-3 × --ui-scale），唔再讓開把手預留位
+    // T7：ⓘ 貼住唱片格右上角（唔再去到闊欄嘅右邊，離唱片好遠）
     const info = await p.getByRole('button', { name: '節目資料' }).boundingBox();
-    const back = await p.getByRole('button', { name: '返回主頁' }).first().boundingBox();
-    const gap = info ? viewportWidth(p) - (info.x + info.width) : -1;
+    const gauge = await p.locator('[data-player-gauge]').first().boundingBox();
+    const offRight = info && gauge ? gauge.x + gauge.width - (info.x + info.width) : -1;
+    const offTop = info && gauge ? info.y - gauge.y : -1;
     env.log(
-        back !== null && Math.abs(gap - back.x) <= GAP_TOLERANCE_PX,
-        `節目資料橫版：ⓘ 離右邊 ${gap.toFixed(1)}px（返回掣離左邊 ${back?.x.toFixed(1)}px）`,
+        Math.abs(offRight) <= GAP_TOLERANCE_PX && Math.abs(offTop) <= GAP_TOLERANCE_PX,
+        `節目資料橫版：ⓘ 貼住唱片格右上角（右邊差 ${offRight.toFixed(1)}px、頂差 ${offTop.toFixed(1)}px）`,
     );
 };
 
