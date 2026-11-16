@@ -108,6 +108,17 @@ export const latestPublish = async (db: D1Database): Promise<LatestPublish | nul
     return { row: summary, episodeIds: JSON.parse(ids) as string[], document };
 };
 
+/**
+ * 最新 ok publish 嘅鎖住 episode ID（同 latestPublish 同一行），唔讀 document 全文（S-788：
+ * PUT warnings / 劇嘅 DELETE 守衛淨係要 ID）；未 publish 過 → null
+ */
+export const latestEpisodeIds = async (db: D1Database): Promise<string[] | null> => {
+    const row = await db
+        .prepare("SELECT episode_ids FROM publishes WHERE status = 'ok' ORDER BY id DESC LIMIT 1")
+        .first<{ episode_ids: string }>();
+    return row ? (JSON.parse(row.episode_ids) as string[]) : null;
+};
+
 /** 最新 ok publish 嘅 id + hash（唔讀 document 全文；S-1006 cache key）；未 publish 過 → null */
 export const latestPublishKey = async (
     db: D1Database,
