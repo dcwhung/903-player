@@ -35,7 +35,7 @@ const fakeEnv = (bytes = 10, type = 'image/png') => {
 };
 
 describe('renderIcons', () => {
-    it("should draw each PNG from its own device's box, the maskable one inside the safe zone", async () => {
+    it("should draw each PNG from its own device's box, the maskable one full-bleed over its background", async () => {
         const { env, drawn } = fakeEnv();
         const blobs = await renderIcons(LOADED, BOXES, '#f39200', env);
         expect(Object.keys(blobs)).toEqual([
@@ -53,14 +53,8 @@ describe('renderIcons', () => {
             [512, 2],
         ]);
         expect(drawn.map(({ fill }) => fill)).toEqual([null, null, null, null, '#f39200']);
-        // maskable：圖畫喺中間 80%（51.2 → 460.8）
-        const [x = 0, y = 0, width = 0, height = 0] = drawn[4]?.args.slice(4) ?? [];
-        expect([x, y, width, height].map((n) => n.toFixed(1))).toEqual([
-            '51.2',
-            '51.2',
-            '409.6',
-            '409.6',
-        ]);
+        // maskable：裁切框 = 成張 canvas（實線圈 = 遮罩邊界），底色只係透明位後面（用戶 2026-11-16）
+        expect(drawn[4]?.args.slice(4)).toEqual([0, 0, 512, 512]);
         expect(drawn[3]?.args.slice(4)).toEqual([0, 0, 512, 512]);
     });
 

@@ -36,6 +36,14 @@ describe('icon preview row', () => {
         }
     });
 
+    it('should let the Android maskable preview fill its round / square mask (full-bleed)', () => {
+        // 用戶 2026-11-16：maskable PNG 已經畫滿，預覽唔可以再縮細留白
+        for (const selector of ['.icon-prev .android img', '.icon-prev .android canvas']) {
+            expect(bodyOf(selector)).toMatch(/width:\s*100%/);
+            expect(bodyOf(selector)).not.toMatch(/width:\s*82%/);
+        }
+    });
+
     it('should keep the browser tab inside its column and truncate the title', () => {
         expect(bodyOf('.icon-prev .tab')).toMatch(/max-width:\s*100%/);
         expect(bodyOf('.icon-prev .tab-title')).toMatch(/text-overflow:\s*ellipsis/);

@@ -705,6 +705,7 @@
     border-radius: 24px;
 }
 
+/* Android maskable 圖本身已畫滿（裁切框 = 成張圖），預覽同樣填滿遮罩，唔再縮細留白（用戶 2026-11-16） */
 .icon-prev .ios img,
 .icon-prev .ios canvas,
 .icon-prev .android img,
@@ -712,12 +713,6 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-}
-
-.icon-prev .android img,
-.icon-prev .android canvas {
-    width: 82%;
-    height: 82%;
 }
 
 .icon-prev .tab {
@@ -817,6 +812,28 @@
     max-width: 100%;
     max-height: 300px;
     -webkit-user-drag: none;
+}
+
+/* 框外暗位：只喺原圖入面（.dim 裁走圖外），框自己唔畫陰影；拉柄喺 .dim 外面，唔會俾裁走 */
+.icon-crop .dim {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.icon-crop .dim-hole {
+    position: absolute;
+    border-radius: 6px;
+    box-shadow: 0 0 0 999px var(--crop-mask);
+}
+
+.icon-crop .dim-hole.circle {
+    border-radius: 50%;
+}
+
+.icon-crop .box {
+    box-shadow: none;
 }
 
 .icon-crop .safe {

@@ -4,7 +4,6 @@ import {
     cropView,
     initialCrop,
     isSmallIconSource,
-    safeRect,
     withSwatch,
 } from './iconModel';
 
@@ -23,15 +22,6 @@ describe('iconModel', () => {
         expect(ICON_OUTPUTS.filter((output) => output.maskable).map(({ key }) => key)).toEqual([
             'maskable',
         ]);
-    });
-
-    it('should put the maskable safe zone in the middle 80%', () => {
-        expect(safeRect({ width: 500, height: 500 })).toEqual({
-            x: 50,
-            y: 50,
-            width: 400,
-            height: 400,
-        });
     });
 
     it('should warn when the source is smaller than 512 on either side', () => {

@@ -1,6 +1,8 @@
 /*
  * 更換 App 圖示左邊：原圖 + 正方形裁切框（拖曳移位、拖右下角縮放）。Android / 同一裁切顯示安全區虛線圈，
- * Android 單獨調時框係圓形。拖曳 / 鍵盤同封面一樣（useCropDrag）
+ * Android 單獨調時框係圓形。拖曳 / 鍵盤同封面一樣（useCropDrag）。
+ * 框外暗位另外畫喺 .dim 層（CSS 裁走原圖以外），唔用框自己嘅陰影：否則成個 dialog 變暗、圓框陰影出大弧；
+ * 框同拉柄喺暗層上面、唔受裁切，拉柄貼住圖邊都撳得到
  * Design Origin: mockup: _mockups_/admin-appearance/index.html#b（.crop-box / .crop-frame / .safe）
  */
 import { t } from '../../i18n/t';
@@ -31,7 +33,9 @@ export function IconCropSource({ ready, box, view, locked, onBox }: IconCropSour
     const { boxHandlers, gripHandlers } = useCropDrag(shaped, ICON_SQUARE, locked, (choice) =>
         onBox(choice.box),
     );
-    const boxClass = ['box', view.round ? 'circle' : '', locked ? 'locked' : ''];
+    const shape = view.round ? 'circle' : '';
+    const boxClass = ['box', shape, locked ? 'locked' : ''];
+    const boxStyle = cropBoxStyle(ready.loaded.source, box);
     return (
         <div className="icon-crop">
             <p className="state-label" id="icon-crop-cap">
@@ -39,9 +43,14 @@ export function IconCropSource({ ready, box, view, locked, onBox }: IconCropSour
             </p>
             <div className="src">
                 <img src={ready.sourceUrl} alt={t('images.previewSourceAlt')} draggable={false} />
+                {!locked && (
+                    <span className="dim" aria-hidden="true">
+                        <span className={['dim-hole', shape].join(' ').trim()} style={boxStyle} />
+                    </span>
+                )}
                 <span
                     className={boxClass.filter(Boolean).join(' ')}
-                    style={cropBoxStyle(ready.loaded.source, box)}
+                    style={boxStyle}
                     role="group"
                     tabIndex={0}
                     aria-label={t('images.cropBox')}

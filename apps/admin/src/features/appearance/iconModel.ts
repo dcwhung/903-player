@@ -22,7 +22,7 @@ export interface IconOutput {
     key: IconKey;
     device: IconDevice;
     size: Size;
-    /** maskable：圖縮入安全區、四周填遮罩底色 */
+    /** maskable：裁切框畫滿成張圖，透明位填遮罩底色；安全區 = 中間 80% 圓（編輯器虛線圈） */
     maskable: boolean;
 }
 
@@ -38,20 +38,11 @@ export const ICON_OUTPUTS: readonly IconOutput[] = [
 /** 裁切框比例（正方形）：用最大嗰張 */
 export const ICON_SQUARE: Size = ASSET_DIMENSIONS.icon512;
 
-/** Maskable 安全區：中間 80%（W3C maskable icon 規格） */
-export const MASKABLE_SAFE_RATIO = 0.8;
-
 /** 原圖短邊細過呢個數（= 最大輸出 512）就黃色警告 */
 export const ICON_SOURCE_MIN_PX = ASSET_DIMENSIONS.icon512.width;
 
 export const isSmallIconSource = ({ width, height }: Size) =>
     Math.min(width, height) < ICON_SOURCE_MIN_PX;
-
-/** 安全區喺 size 入面嘅位置（置中） */
-export const safeRect = ({ width, height }: Size): CropRect => {
-    const inner = { width: width * MASKABLE_SAFE_RATIO, height: height * MASKABLE_SAFE_RATIO };
-    return { x: (width - inner.width) / 2, y: (height - inner.height) / 2, ...inner };
-};
 
 export type IconBoxes = Record<IconDevice, CropRect>;
 

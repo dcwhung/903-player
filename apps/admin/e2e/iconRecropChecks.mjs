@@ -10,6 +10,29 @@ const assertPressed = async (button, what) => {
         throw new Error(`${what} should be the chosen device`);
 };
 
+/**
+ * 裁切框外暗位只喺原圖入面（用戶 2026-11-16：撳裝置分頁後成個 dialog 變暗、Android 圓框出大弧）：
+ * 暗層同原圖一樣大、裁走圖外，框本身冇陰影；拉柄喺框角、唔俾裁走
+ */
+const assertDimClipped = async (dialog) => {
+    const found = await dialog.locator('.icon-crop .src').evaluate((src) => {
+        const rect = (el) => el?.getBoundingClientRect().toJSON();
+        const dim = src.querySelector(':scope > .dim');
+        return {
+            img: rect(src.querySelector('img')),
+            dim: rect(dim),
+            overflow: dim && getComputedStyle(dim).overflow,
+            boxShadow: getComputedStyle(src.querySelector(':scope > .box')).boxShadow,
+            gripVisible: src.querySelector('.grip')?.checkVisibility() ?? false,
+        };
+    });
+    const same = ['x', 'y', 'width', 'height'].every(
+        (key) => Math.abs((found.img?.[key] ?? 0) - (found.dim?.[key] ?? -99)) < 1,
+    );
+    if (!same || found.overflow !== 'hidden' || found.boxShadow !== 'none' || !found.gripVisible)
+        throw new Error(`crop dim not clipped to the source image: ${JSON.stringify(found)}`);
+};
+
 export const iconRecropChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
     /** 更換時連原圖 + 框一齊存；撳 iPhone 預覽 → 只郁 iPhone 嘅框，Android / 分頁照舊，原圖唔再上載 */
     const iconRecropCheck = (browser) =>
@@ -64,6 +87,7 @@ export const iconRecropChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
                 const builtIn = page.getByRole('dialog', { name: '調整 App 圖示' });
                 await builtIn.getByText('app-icon.png').waitFor();
                 await assertPressed(builtIn.getByRole('button', { name: 'Android' }), 'Android');
+                await assertDimClipped(builtIn);
                 await builtIn.getByRole('button', { name: '取消' }).click();
                 await builtIn.waitFor({ state: 'detached' });
                 await page.close();
