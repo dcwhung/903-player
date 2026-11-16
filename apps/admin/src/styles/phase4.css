@@ -819,6 +819,28 @@
     -webkit-user-drag: none;
 }
 
+/* 框外暗位：只喺原圖入面（.dim 裁走圖外），框自己唔畫陰影；拉柄喺 .dim 外面，唔會俾裁走 */
+.icon-crop .dim {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.icon-crop .dim-hole {
+    position: absolute;
+    border-radius: 6px;
+    box-shadow: 0 0 0 999px var(--crop-mask);
+}
+
+.icon-crop .dim-hole.circle {
+    border-radius: 50%;
+}
+
+.icon-crop .box {
+    box-shadow: none;
+}
+
 .icon-crop .safe {
     position: absolute;
     inset: 10%;
