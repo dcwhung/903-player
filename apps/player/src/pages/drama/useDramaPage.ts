@@ -8,6 +8,7 @@ import {
 import { stripDays } from '../../components/shared/player/DateStrip/dateStrip';
 import { dailyEpisodesOf, dramaEpisodeTheme, seriesEpisodesOf } from '../../catalog/dramas';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
+import { focusKeyOf } from '../../hooks/useEpisodeFocus';
 import { useEpisodePress } from '../../hooks/useEpisodePress';
 import { useHkToday } from '../../hooks/useHkToday';
 import { useRefreshedOn } from '../../hooks/useRefreshedOn';
@@ -116,17 +117,17 @@ const usePlaybackRows = (
  */
 const focusedEpisode = <T extends DramaEpisode>(
     episodes: readonly T[],
-    focusUrl: string | undefined,
+    focusId: string | undefined,
     loaded: T | null,
-): T | undefined => (loaded ? undefined : episodes.find((e) => e.url === focusUrl));
+): T | undefined => (loaded ? undefined : episodes.find((e) => e.id === focusId));
 
-/** 每日劇集頁（例如 18 樓 C 座）：同節目頁一樣，唱片 + 日子條 + 集數清單；focusUrl 見 useEpisodeFocus */
-export const useDailyDramaPage = (drama: DramaConfig, focusUrl?: string) => {
+/** 每日劇集頁（例如 18 樓 C 座）：同節目頁一樣，唱片 + 日子條 + 集數清單；focusId 見 useEpisodeFocus */
+export const useDailyDramaPage = (drama: DramaConfig, focusId?: string) => {
     const episodes = useTodaysEpisodes(drama, dailyNewestFirstOf);
     const loaded = useLoadedEpisode(drama, 'daily');
     const startDrama = useStartDrama();
-    useAutoplayDaily(drama, loaded !== null, startDrama, focusUrl !== undefined);
-    const focused = focusedEpisode(episodes, focusUrl, loaded);
+    useAutoplayDaily(drama, loaded !== null, startDrama, focusId !== undefined);
+    const focused = focusedEpisode(episodes, focusId, loaded);
     const { load } = usePlayer();
     const standby = useStandbyStart(loaded !== null, () => startDrama(drama));
     const start = focused ? () => void load(focused, { autoplay: true }) : standby;
@@ -143,6 +144,7 @@ export const useDailyDramaPage = (drama: DramaConfig, focusUrl?: string) => {
         start,
         strip,
         items: toDailyItems(episodes, ctx),
+        focusKey: focusKeyOf(episodes, focusId),
         selectEpisode,
         pressEpisode,
     };
@@ -355,16 +357,22 @@ const sheetAvailability = (availability: SeriesAvailabilityView) => ({
     notesOf: availability.notesOf,
 });
 
+/** 集數清單要嘅：撳日子 / 撳行，加埋由收藏入嚟要捲去嗰行（focusKey） */
+const listActions = (
+    rows: Pick<ReturnType<typeof usePlaybackRows>, 'selectEpisode' | 'pressEpisode'>,
+    focusKey: string | undefined,
+) => ({ selectEpisode: rows.selectEpisode, pressEpisode: rows.pressEpisode, focusKey });
+
 /**
- * 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 全集 / 短篇 chips + 嗰個短篇嘅集數；focusUrl 見 useEpisodeFocus。
+ * 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 全集 / 短篇 chips + 嗰個短篇嘅集數；focusId 見 useEpisodeFocus。
  * 第一次入：一入嚟就開全集表，等用戶揀短篇
  */
-export const useSeriesDramaPage = (drama: DramaConfig, focusUrl?: string) => {
+export const useSeriesDramaPage = (drama: DramaConfig, focusId?: string) => {
     const episodes = useTodaysEpisodes(drama, seriesEpisodesOf);
     const loaded = useLoadedEpisode(drama, 'series');
-    const firstVisit = useFirstVisitOnEntry(drama, focusUrl !== undefined);
+    const firstVisit = useFirstVisitOnEntry(drama, focusId !== undefined);
     const { sheetOpen, setSheetOpen, progressMap } = useSeriesSheet(firstVisit, loaded?.url);
-    const focused = focusedEpisode(episodes, focusUrl, loaded);
+    const focused = focusedEpisode(episodes, focusId, loaded);
     const current = loaded ?? focused ?? pickSeriesStart(episodes, progressMap);
     const rows = usePlaybackRows(episodes, current, !!loaded);
     const arcs = useSeriesArcs(episodes, progressMap, current, loaded, { focused, drama });
@@ -384,8 +392,7 @@ export const useSeriesDramaPage = (drama: DramaConfig, focusUrl?: string) => {
         arc: arcs.arc,
         pickArc,
         items: availability.listItems(arcs.arc, toSeriesItems(arcs.shown, rows.ctx), arcs.shown),
-        selectEpisode: rows.selectEpisode,
-        pressEpisode: rows.pressEpisode,
+        ...listActions(rows, focusKeyOf(episodes, focusId)),
         sheet: { open: sheetOpen, groups, ...sheetAvailability(availability), ...sheetActions },
     };
 };

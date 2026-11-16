@@ -49,11 +49,11 @@ export const useKnownBookmarks = (): readonly Bookmark[] => {
     return useMemo(() => all.filter(isKnownBookmark), [all]);
 };
 
-/** 撳行 / 最近收聽：入嗰集節目頁 / 劇集頁（唔播），由嗰行 zoom 入頁，帶 focusUrl 捲去嗰集 */
+/** 撳行 / 最近收聽：入嗰集節目頁 / 劇集頁（唔播），由嗰行 zoom 入頁，帶 focusId 捲去嗰集 */
 const useOpenEpisode = (right: HomeRight) => {
     const open = useTileOpen(right);
-    return (url: string, target: EpisodePage) =>
-        open({ key: zoomKey.episode(url), ...target, starts: false, state: { focusUrl: url } });
+    return (id: string, target: EpisodePage) =>
+        open({ key: zoomKey.episode(id), ...target, starts: false, state: { focusId: id } });
 };
 
 interface RowContext {
@@ -75,14 +75,14 @@ const rowView = (b: Bookmark, name: string, ctx: RowContext): SavedRowView => {
     const status = savedRowStatus({ loaded, isPlaying: player.isPlaying, live, progress });
     const track = bookmarkTrack(b, ctx.recordings);
     return {
-        key: b.url,
+        key: b.id,
         label: bookmarkLabel(b),
         spokenLabel: bookmarkSpokenLabel(b),
         name,
         ...status,
         status: status.text,
-        zoomKey: zoomKey.episode(b.url),
-        onOpen: () => ctx.openEpisode(b.url, bookmarkPage(b)),
+        zoomKey: zoomKey.episode(b.id),
+        onOpen: () => ctx.openEpisode(b.id, bookmarkPage(b)),
         onPlay: () => void (loaded ? player.toggle() : player.load(track, { autoplay: true })),
         onRemove: () => removeBookmark(b.id),
         ...bookmarkAvailability(b, ctx.today),
@@ -161,12 +161,12 @@ export const useSavedView = (layout: SavedLayout, right: HomeRight): SavedTabVie
     const today = hkToday();
     const ctx: RowContext = { recordings, progressMap, player, openEpisode, today };
     const recent = useRecentTracks(bookmarks, progressMap).map((track): RecentRowView => ({
-        key: track.url,
+        key: track.id,
         ...recentText(track),
         art: trackArt(track),
         track,
         leaving: trackLeaving(track, today),
-        onOpen: () => openEpisode(track.url, trackPage(track)),
+        onOpen: () => openEpisode(track.id, trackPage(track)),
     }));
     const hasRecent = recent.length > 0;
     const grid = savedGrid({ layout, boxCount: groups.length, hasRecent });
