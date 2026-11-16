@@ -16,8 +16,8 @@ import {
 } from './harness.mjs';
 import { checkStorage, seedV1 } from './storageMigration.mjs';
 
-const CATALOG_DIR = new URL('../src/catalog/', import.meta.url);
-const CATALOG_FOLDER = 'e2e-catalog/';
+export const CATALOG_DIR = new URL('../src/catalog/', import.meta.url);
+export const CATALOG_FOLDER = 'e2e-catalog/';
 const SHELF = '廣播劇';
 const WAIT_MS = 5000;
 /** 唔應該出現嘅嘢：等呢個耐都冇就當冇 */
@@ -84,8 +84,9 @@ const catalogRoute =
             .catch(() => undefined); // page 已經放棄（timeout）就唔使答
     };
 
-const openWithCatalog = async (env, routeOptions) => {
-    const { ctx, p } = await newE2EPage(env.browser, env.errors);
+/** contextOptions：例如 viewport、reducedMotion（itemInfo.mjs） */
+export const openWithCatalog = async (env, routeOptions, contextOptions = {}) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, contextOptions);
     const allowOrigin = new URL(env.base).origin;
     await ctx.route(E2E_CATALOG_GLOB, catalogRoute({ ...routeOptions, allowOrigin }));
     await ctx.route(CROSS_ORIGIN_GLOB, (route) => serveImage(route, allowOrigin));

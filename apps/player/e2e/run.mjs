@@ -12,6 +12,7 @@ import { runCardZoomChecks } from './cardZoom.mjs';
 import { runComingSoonChecks } from './comingSoon.mjs';
 import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runHomeWideChecks } from './homeWide.mjs';
+import { runItemInfoChecks } from './itemInfo.mjs';
 import { runPwaUpdateChecks } from './pwaUpdate.mjs';
 import { runRemoteCatalogChecks } from './remoteCatalog.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
@@ -1674,6 +1675,9 @@ try {
 
     // runtime catalog.json（Backend Phase 1）：正常 / 壞資料 / 慢 / 離線 SW cache / v1 進度升級
     await runRemoteCatalogChecks({ browser, base: BASE, errors, log });
+
+    // 節目 / 劇集資料（P9.5 #12）：remote catalog 加示範資料，節目頁 / 全集 sheet / 今日節目表
+    await runItemInfoChecks({ browser, base: BASE, errors, log });
 
     // 廣播劇：書架次序、短篇劇集頁第一次入嘅黑碟（同今日節目未上架一樣）、冇由頭播放
     await section('廣播劇', () => runDramaPageChecks({ browser, base: BASE, errors, log }));
