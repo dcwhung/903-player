@@ -85,6 +85,12 @@ describe('SeriesDramaPage item info（P9.5 #12）', () => {
             .map((h) => h.textContent);
         expect(headings).toEqual(['芝See菇Bi Family', ARC_WITH_INFO]);
         expect(within(dialog).getByText('短篇示範簡介')).toBeInTheDocument();
+        // v3：劇集有簡介 = 劇集 banner + 細字（最新上架 / 短篇數），短篇段有碟面
+        const banner = within(dialog).getByTestId('info-banner');
+        expect(within(banner).getByRole('heading')).toHaveTextContent('芝See菇Bi Family');
+        expect(banner).toHaveTextContent(/最新上架：|\d+ 個短篇/);
+        const arcPart = within(dialog).getByRole('heading', { name: ARC_WITH_INFO });
+        expect(arcPart.closest('section')?.querySelector('img')).not.toBeNull();
     });
 
     it('should not pop the info sheet for an arc without info', async () => {
@@ -112,6 +118,11 @@ describe('SeriesDramaPage item info（P9.5 #12）', () => {
                 .getAllByRole('heading')
                 .map((h) => h.textContent),
         ).toEqual([ARC_WITH_INFO]);
+        // 劇集冇簡介：banner 改用短篇（大字短篇名、細字劇集名），下面唔再出短篇標題 / 碟面
+        const banner = within(dialog).getByTestId('info-banner');
+        expect(within(banner).getByRole('heading')).toHaveTextContent(ARC_WITH_INFO);
+        expect(banner).toHaveTextContent('芝See菇Bi Family');
+        expect(dialog.querySelectorAll('section[data-kind="arc"] img')).toHaveLength(0);
     });
 
     it('should dock the arc info sheet in the player column in landscape', async () => {

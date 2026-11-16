@@ -248,6 +248,9 @@ export const zhHK = {
         showInfo: '節目資料',
         dramaInfo: '劇集資料',
         close: '關閉',
+        // 短篇劇資料 sheet banner 細字（P9.5 #12 v3）：最新上架嘅短篇；冇上架日就講短篇數
+        latestArc: '最新上架：{name}',
+        arcCount: '{count} 個短篇',
     },
     // 即將上架 / 快將下架（P8 #6，_mockups_/coming-soon）。文案決定：copy decisions 2026-11-05（D2–G3）
     availability: {

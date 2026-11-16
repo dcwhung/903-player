@@ -4,6 +4,7 @@
  */
 import {
     EPISODE_ID_KIND,
+    type ArcAvailability,
     formatAirDays,
     type AirTime,
     type ArcInfo,
@@ -29,6 +30,8 @@ export type ItemInfoSectionKind = 'show' | 'drama' | 'arc';
 export interface ItemInfoSection {
     kind: ItemInfoSectionKind;
     title: string;
+    /** 短篇碟面（短篇冇自己碟面就係劇集碟面）：短篇名前面 */
+    art?: string;
     /** 播放時間顯示字（formatPlayTime） */
     airTime?: string;
     hosts?: readonly string[];
@@ -97,9 +100,9 @@ export const arcInlineInfo = (arc: ArcInfo | undefined): InlineInfo => ({
     ...field('summary', arc?.summary || undefined),
 });
 
-const SECTION_HEAD_KEYS: ReadonlySet<string> = new Set(['kind', 'title']);
+const SECTION_HEAD_KEYS: ReadonlySet<string> = new Set(['kind', 'title', 'art']);
 
-/** 除咗類型同標題仲有其他欄位先算一段 */
+/** 除咗類型、標題、碟面仲有其他欄位先算一段 */
 const sectionsOf = (...sections: ItemInfoSection[]): ItemInfoSection[] =>
     sections.filter((section) => Object.keys(section).some((key) => !SECTION_HEAD_KEYS.has(key)));
 
@@ -123,8 +126,80 @@ export const arcInfoSections = (
     drama: Drama,
     arcLabel: string,
     arc: ArcInfo | undefined,
+    art?: string,
 ): ItemInfoSection[] =>
-    sectionsOf(dramaSection(drama), { kind: 'arc', title: arcLabel, ...arcInlineInfo(arc) });
+    sectionsOf(dramaSection(drama), {
+        kind: 'arc',
+        title: arcLabel,
+        ...field('art', art || undefined),
+        ...arcInlineInfo(arc),
+    });
+
+/**
+ * 獨立資料 sheet 頂部 banner（P9.5 #12 v3）：主頁橫圖 + 疊喺左下角嘅名同細字。
+ * kind = banner 代替咗邊段嘅標題（嗰段唔再出標題 / 碟面；節目段唔再出播放時間，因為細字就係播放時間）
+ */
+export interface InfoBanner {
+    kind: ItemInfoSectionKind;
+    art: string;
+    title: string;
+    subtitle?: string;
+}
+
+/** 冇圖（理論上必有）就冇 banner，sheet 用返原本標題 */
+const bannerOf = (
+    kind: ItemInfoSectionKind,
+    art: string | undefined,
+    title: string,
+    subtitle?: string,
+): InfoBanner | undefined =>
+    art ? { kind, art, title, ...field('subtitle', subtitle) } : undefined;
+
+/** 節目：細字 = 播放時間 */
+export const showInfoBanner = (show: ShowConfig): InfoBanner | undefined =>
+    bannerOf('show', show.tileArt, show.name, formatPlayTime(show.airDays, show.airTime));
+
+/** 每日劇：冇細字 */
+export const dailyInfoBanner = (drama: Drama): InfoBanner | undefined =>
+    bannerOf('drama', drama.tileArt, drama.name);
+
+export interface SeriesBannerInput {
+    drama: Drama;
+    arcLabel: string;
+    /** 短篇長方形圖（arcTileFor），冇就用劇集圖 */
+    arcTile: string | undefined;
+    /** 劇集 banner 細字：「最新上架：…」或者「N 個短篇」 */
+    dramaSubtitle: string;
+}
+
+/**
+ * 短篇劇已揀短篇：劇集有簡介 = 劇集 banner（下面劇集簡介 + 短篇段）；
+ * 冇簡介（sheet 淨係短篇）= 短篇 banner，細字係劇集名
+ */
+export const seriesInfoBanner = ({
+    drama,
+    arcLabel,
+    arcTile,
+    dramaSubtitle,
+}: SeriesBannerInput): InfoBanner | undefined =>
+    drama.summary
+        ? bannerOf('drama', drama.tileArt, drama.name, dramaSubtitle)
+        : bannerOf('arc', arcTile || drama.tileArt, arcLabel, drama.name);
+
+/** 已上架短篇入面上架日最遲嗰個（YYYY-MM-DD 字串比較）；全部冇上架日就 undefined */
+export const latestArcOf = (
+    available: readonly string[],
+    availability: readonly Pick<ArcAvailability, 'arc' | 'addedAt'>[],
+): string | undefined => {
+    const shown = new Set(available);
+    const dated = availability.filter(
+        (a): a is { arc: string; addedAt: string } => shown.has(a.arc) && a.addedAt !== undefined,
+    );
+    return dated.reduce<(typeof dated)[number] | undefined>(
+        (latest, a) => (latest === undefined || a.addedAt > latest.addedAt ? a : latest),
+        undefined,
+    )?.arc;
+};
 
 /** 成套短篇劇（劇集 + 全部短篇）有冇資料：冇就唔出全集箭咀、唱片圈 ⓘ */
 export const seriesHasInfo = (drama: Drama, arcs: readonly (ArcInfo | undefined)[]): boolean =>

@@ -80,6 +80,7 @@ const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayer
                 open={view.infoSheet.open}
                 docked={landscape}
                 sections={view.infoSheet.sections}
+                banner={view.infoSheet.banner}
                 label={t('info.dramaInfo')}
                 onClose={view.infoSheet.close}
             />

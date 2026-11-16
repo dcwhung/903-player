@@ -3,7 +3,12 @@ import type { ShowConfig } from '@903-player/catalog';
 import { useItemInfoSheet } from '../../hooks/useItemInfoSheet';
 import { t } from '../../i18n/t';
 import { usePlayer } from '../../player/usePlayer';
-import { hasNoItemProgress, shouldAutoOpenInfo, showInfoSections } from '../../selectors/itemInfo';
+import {
+    hasNoItemProgress,
+    shouldAutoOpenInfo,
+    showInfoBanner,
+    showInfoSections,
+} from '../../selectors/itemInfo';
 import { getProgressMap } from '../../services/progressStore';
 import { asShowRecording } from '../../types/track';
 
@@ -24,5 +29,6 @@ export const useShowInfo = (show: ShowConfig | undefined, focused: boolean) => {
                 focused,
             }),
     );
-    return useItemInfoSheet(sections, autoOpen, t('info.showInfo'));
+    const banner = useMemo(() => (show ? showInfoBanner(show) : undefined), [show]);
+    return useItemInfoSheet(sections, autoOpen, t('info.showInfo'), banner);
 };

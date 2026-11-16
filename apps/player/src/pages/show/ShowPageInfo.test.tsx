@@ -44,7 +44,10 @@ describe('ShowPage item info（P9.5 #12）', () => {
         renderWithProviders(<ShowPage />, ROUTE);
         const sheet = await infoSheet();
         expect(within(sheet).getByRole('heading', { name: '公子會' })).toBeInTheDocument();
-        expect(within(sheet).getByText('逢星期六（22:00 - 23:45）播放')).toBeInTheDocument();
+        // v3：播放時間做 banner 細字，下面唔再出「播放時間」段
+        const banner = within(sheet).getByTestId('info-banner');
+        expect(within(banner).getByText('逢星期六（22:00 - 23:45）播放')).toBeInTheDocument();
+        expect(within(sheet).queryByText('播放時間')).not.toBeInTheDocument();
         expect(within(sheet).getByRole('list', { name: '主持' })).toHaveTextContent('主持甲');
         expect(within(sheet).getByText('節目示範簡介')).toBeInTheDocument();
     });

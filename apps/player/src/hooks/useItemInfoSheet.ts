@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ItemInfoSection } from '../selectors/itemInfo';
+import type { InfoBanner, ItemInfoSection } from '../selectors/itemInfo';
 
 /**
  * 節目頁 / 每日劇頁嘅獨立資料 sheet（P9.5 #12）：autoOpenOnEntry = 第一次入要自動彈（入頁嗰下判斷一次）；
@@ -9,11 +9,19 @@ export const useItemInfoSheet = (
     sections: readonly ItemInfoSection[],
     autoOpenOnEntry: boolean,
     infoLabel: string,
+    /** 頂部 banner（P9.5 #12 v3）；冇圖就冇 */
+    banner?: InfoBanner,
 ) => {
     const [open, setOpen] = useState(autoOpenOnEntry);
     const hasInfo = sections.length > 0;
     return {
-        sheet: { open: open && hasInfo, sections, label: infoLabel, close: () => setOpen(false) },
+        sheet: {
+            open: open && hasInfo,
+            sections,
+            banner,
+            label: infoLabel,
+            close: () => setOpen(false),
+        },
         gaugeInfo: hasInfo ? { onInfo: () => setOpen(true), infoLabel } : undefined,
     };
 };

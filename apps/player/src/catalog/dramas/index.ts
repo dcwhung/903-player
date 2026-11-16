@@ -55,3 +55,7 @@ export const arcLabelFor = (dramaId: string, arc: string): string => {
     const episode = catalogEpisodesOf(dramaId).find((e) => e.kind === 'series' && e.arc === arc);
     return episode?.kind === 'series' ? arcLabelOf(episode) : arc;
 };
+
+/** 短篇碟面（冇自己碟面就劇集碟面）：即將上架嘅短篇未有集數，用短篇名搵（假集數，id / url 唔會用到） */
+export const arcCoverFor = (dramaId: string, arc: string): string =>
+    dramaArtFor({ kind: 'series', dramaId, id: '', url: '', arc, no: 0 });

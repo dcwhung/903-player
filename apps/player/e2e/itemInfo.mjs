@@ -15,6 +15,8 @@ const LANDSCAPE = { viewport: { width: 1280, height: 800 } };
 /** ⓘ 離畫面右邊（同頁頭返回掣離左邊一樣，--space-3 × --ui-scale；直版 ui-scale 1） */
 const INFO_RIGHT_GAP_PX = 12;
 const GAP_TOLERANCE_PX = 2;
+const BANNER_RATIO = 16 / 9;
+const BANNER_RATIO_TOLERANCE = 0.02;
 
 const SHOW_AIR_TIME = '逢星期六（23:00 - 23:45）播放';
 const SHOW_SUMMARY = '（e2e 示範簡介）公子會節目簡介';
@@ -78,6 +80,23 @@ const open = (env, json, contextOptions) =>
 const infoSheet = (p, name) => p.getByRole('dialog', { name });
 const viewportWidth = (p) => p.viewportSize().width;
 
+/** banner 16:9 貼 sheet 頂、左右貼邊；名疊喺 banner 入面 */
+const checkBanner = async (env, sheet, label) => {
+    const banner = sheet.getByTestId('info-banner');
+    const [b, s] = await Promise.all([banner.boundingBox(), sheet.boundingBox()]);
+    const flush =
+        b !== null &&
+        s !== null &&
+        Math.abs(b.y - s.y) <= GAP_TOLERANCE_PX &&
+        Math.abs(b.x - s.x) <= GAP_TOLERANCE_PX &&
+        Math.abs(b.x + b.width - (s.x + s.width)) <= GAP_TOLERANCE_PX;
+    const ratio = b ? b.width / b.height : 0;
+    env.log(
+        flush && Math.abs(ratio - BANNER_RATIO) < BANNER_RATIO_TOLERANCE,
+        `${label}：banner 貼 sheet 頂、左右貼邊、16:9（${ratio.toFixed(2)}）`,
+    );
+};
+
 /** 節目頁直版：第一次入自動彈、內容、ⓘ 位置、閂咗撳 ⓘ 開返 */
 const checkShowPortrait = async (env, json) => {
     const { log } = env;
@@ -91,6 +110,8 @@ const checkShowPortrait = async (env, json) => {
         text.includes(SHOW_AIR_TIME) && text.includes('主持甲') && text.includes(SHOW_SUMMARY),
         `節目資料：sheet 有播放時間、主持、簡介（${text.replaceAll('\n', ' / ')}）`,
     );
+    log(!text.includes('播放時間'), '節目資料：播放時間喺 banner 細字，唔再出「播放時間」段');
+    await checkBanner(env, sheet, '節目資料');
     await sheet.getByRole('button', { name: '關閉' }).click();
     const info = p.getByRole('button', { name: '節目資料' });
     const box = await info.boundingBox();
@@ -119,6 +140,15 @@ const checkShowLandscape = async (env, json) => {
         timeout: ABSENT_WAIT_MS,
     });
     env.log(!backdrop, '節目資料橫版：冇遮罩，左欄清單照撳得');
+    await checkBanner(env, sheet, '節目資料橫版');
+    // 撳左欄任何掣（呢度：第一個集數收藏星）右欄 sheet 自動閂
+    await p
+        .getByRole('region', { name: '集數' })
+        .getByRole('button', { name: /收藏/ })
+        .first()
+        .click();
+    const closed = !(await isShown(sheet, { timeout: ABSENT_WAIT_MS }));
+    env.log(closed, '節目資料橫版：撳左欄掣，右欄 sheet 自動閂');
 };
 
 /**
@@ -217,6 +247,14 @@ const checkArcPick = async (env, json) => {
         text.includes(ARC_WITH_INFO) && text.includes(ARC_SUMMARY) && text.includes('聲演甲'),
         `劇集資料：揀未聽短篇彈短篇 sheet（${text.replaceAll('\n', ' / ')}）`,
     );
+    if (shown) {
+        const banner = await sheet.getByTestId('info-banner').innerText();
+        env.log(
+            /最新上架：|\d+ 個短篇/.test(banner),
+            `劇集資料：banner 細字（${banner.replaceAll('\n', ' / ')}）`,
+        );
+        await checkBanner(env, sheet, '劇集資料');
+    }
 };
 
 const todayToggle = (p) =>

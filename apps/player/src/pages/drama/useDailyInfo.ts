@@ -4,7 +4,12 @@ import { useItemInfoSheet } from '../../hooks/useItemInfoSheet';
 import { t } from '../../i18n/t';
 import { usePlayer } from '../../player/usePlayer';
 import { isEpisodeOfDrama } from '../../selectors/dramas';
-import { dailyInfoSections, hasNoItemProgress, shouldAutoOpenInfo } from '../../selectors/itemInfo';
+import {
+    dailyInfoBanner,
+    dailyInfoSections,
+    hasNoItemProgress,
+    shouldAutoOpenInfo,
+} from '../../selectors/itemInfo';
 import { getProgressMap } from '../../services/progressStore';
 
 /**
@@ -22,5 +27,6 @@ export const useDailyInfo = (drama: DramaConfig, focused: boolean) => {
             focused,
         }),
     );
-    return useItemInfoSheet(sections, autoOpen, t('info.dramaInfo'));
+    const banner = useMemo(() => dailyInfoBanner(drama), [drama]);
+    return useItemInfoSheet(sections, autoOpen, t('info.dramaInfo'), banner);
 };

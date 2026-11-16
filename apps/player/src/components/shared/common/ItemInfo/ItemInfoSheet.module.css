@@ -24,7 +24,7 @@
     max-width: var(--page-max-width);
     max-height: var(--arc-sheet-max-height);
     margin: 0 auto;
-    padding: var(--space-2) var(--space-6) 0;
+    padding: var(--space-2) var(--info-sheet-pad-x) 0;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     background: var(--color-bg);
     box-shadow: var(--shadow-floating);
@@ -142,4 +142,45 @@
 /* 短篇標題細過劇集名（V4，_mockups_/catalog-item-info a2-n-series-full：劇集 20px、短篇 17px） */
 .section[data-kind='arc'] .title {
     font-size: var(--info-sheet-arc-title-size);
+}
+
+/* 短篇碟面 + 短篇名（P9.5 #12 v3）：碟面圓形、track 色外框 */
+.titleRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.titleDisc {
+    display: flex;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    box-shadow: 0 0 0 var(--info-arc-disc-ring) var(--color-track);
+    --disc-small-size: var(--info-arc-disc-size);
+}
+
+/*
+ * 有 banner：banner 貼 sheet 頂，grab bar 同 ✕ 疊喺圖上面（白色；✕ 冇底色，用 drop-shadow 喺淺色圖都睇得清，
+ * 撳得到範圍照 --touch-target）
+ */
+.sheet[data-banner='true'] {
+    padding-top: 0;
+}
+
+.sheet[data-banner='true'] .grab {
+    position: absolute;
+    top: var(--space-2);
+    left: 50%;
+    background: var(--info-banner-grab);
+    transform: translateX(-50%);
+}
+
+.sheet[data-banner='true'] .close {
+    color: var(--info-banner-text);
+    filter: var(--info-banner-icon-shadow);
+}
+
+/* banner 底同第一段之間收窄一半（sheet gap + 呢度 = 原本 gap + --space-4 嘅一半） */
+.sheet[data-banner='true'] .section:first-child {
+    padding-top: var(--space-1);
 }

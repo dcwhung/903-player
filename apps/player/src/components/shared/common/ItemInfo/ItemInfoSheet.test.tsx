@@ -240,4 +240,108 @@ describe('ItemInfoSheet', () => {
             expect(onClose).not.toHaveBeenCalled();
         });
     });
+
+    describe('banner', () => {
+        const banner = {
+            kind: 'show' as const,
+            art: 'tile.webp',
+            title: '公子會',
+            subtitle: '逢星期六（22:00 - 23:45）播放',
+        };
+
+        it('should put the tile, name and subtitle on the banner and drop the air time part', () => {
+            render(
+                <ItemInfoSheet
+                    open
+                    banner={banner}
+                    sections={[SHOW]}
+                    label="節目資料"
+                    onClose={vi.fn()}
+                />,
+            );
+            const dialog = screen.getByRole('dialog', { name: '節目資料' });
+            const top = within(dialog).getByTestId('info-banner');
+            expect(top.querySelector('img')).toHaveAttribute('src', 'tile.webp');
+            expect(within(top).getByRole('heading', { name: '公子會' })).toBeInTheDocument();
+            expect(within(top).getByText('逢星期六（22:00 - 23:45）播放')).toBeInTheDocument();
+            expect(screen.getAllByRole('heading')).toHaveLength(1);
+            expect(screen.queryByText('播放時間')).not.toBeInTheDocument();
+            expect(within(dialog).getByText('節目簡介')).toBeInTheDocument();
+        });
+
+        it('should keep the close button on top of the banner', () => {
+            render(
+                <ItemInfoSheet
+                    open
+                    banner={banner}
+                    sections={[SHOW]}
+                    label="節目資料"
+                    onClose={vi.fn()}
+                />,
+            );
+            expect(screen.getByRole('dialog')).toHaveAttribute('data-banner', 'true');
+            expect(screen.getByRole('button', { name: '關閉' })).toBeInTheDocument();
+        });
+
+        it('should keep the arc title with its disc under a drama banner', () => {
+            render(
+                <ItemInfoSheet
+                    open
+                    banner={{ kind: 'drama', art: 'd.webp', title: '蘭茜夫人劇場' }}
+                    sections={[
+                        { kind: 'drama', title: '蘭茜夫人劇場', summary: '劇集簡介' },
+                        { kind: 'arc', title: '初戀無限次', art: 'arc.webp', summary: '短篇簡介' },
+                    ]}
+                    label="劇集資料"
+                    onClose={vi.fn()}
+                />,
+            );
+            expect(screen.getAllByRole('heading').map((h) => h.textContent)).toEqual([
+                '蘭茜夫人劇場',
+                '初戀無限次',
+            ]);
+            const arc = screen.getByRole('heading', { name: '初戀無限次' }).closest('section');
+            expect(arc?.querySelector('img')).toHaveAttribute('src', 'arc.webp');
+        });
+
+        it('should drop the arc title and disc when the banner is the arc', () => {
+            render(
+                <ItemInfoSheet
+                    open
+                    banner={{
+                        kind: 'arc',
+                        art: 'arc-tile.webp',
+                        title: '初戀無限次',
+                        subtitle: '蘭茜夫人劇場',
+                    }}
+                    sections={[
+                        { kind: 'arc', title: '初戀無限次', art: 'arc.webp', cast: ['聲演甲'] },
+                    ]}
+                    label="劇集資料"
+                    onClose={vi.fn()}
+                />,
+            );
+            expect(screen.getAllByRole('heading').map((h) => h.textContent)).toEqual([
+                '初戀無限次',
+            ]);
+            expect(screen.getByText('蘭茜夫人劇場')).toBeInTheDocument();
+            expect(document.querySelector('img[src="arc.webp"]')).toBeNull();
+            expect(screen.getByRole('list', { name: '聲演' })).toHaveTextContent('聲演甲');
+        });
+
+        it('should show the arc disc without a banner too', () => {
+            render(
+                <ItemInfoSheet
+                    open
+                    sections={[
+                        { kind: 'arc', title: '初戀無限次', art: 'arc.webp', summary: '短' },
+                    ]}
+                    label="劇集資料"
+                    onClose={vi.fn()}
+                />,
+            );
+            expect(screen.queryByTestId('info-banner')).not.toBeInTheDocument();
+            expect(document.querySelector('img[src="arc.webp"]')).not.toBeNull();
+        });
+    });
 });

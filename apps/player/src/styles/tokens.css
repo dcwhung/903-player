@@ -156,6 +156,19 @@
      */
     --info-sheet-title-size: calc(20px * var(--ui-scale));
     --info-sheet-arc-title-size: calc(17px * var(--ui-scale));
+    /* 資料 sheet 左右留白（banner 用負 margin 貼返邊） */
+    --info-sheet-pad-x: var(--space-6);
+    /* 資料 sheet banner（P9.5 #12 v3）：名 28px、細字 14px，底部漸變 62% 黑；grab bar / ✕ 疊喺圖上 */
+    --info-banner-title-size: calc(28px * var(--ui-scale));
+    --info-banner-title-line: 1.2;
+    --info-banner-subtitle-size: calc(14px * var(--ui-scale));
+    --info-banner-scrim: rgb(0 0 0 / 62%);
+    --info-banner-text: #ffffff;
+    --info-banner-grab: rgb(255 255 255 / 60%);
+    --info-banner-icon-shadow: drop-shadow(0 1px 2px rgb(0 0 0 / 60%));
+    /* 短篇段標題前面嘅短篇碟面 */
+    --info-arc-disc-size: calc(44px * var(--ui-scale));
+    --info-arc-disc-ring: 2px;
     --info-sheet-chip-line: calc(30px * var(--ui-scale));
     /*
      * 列表行展開資料（InlineItemInfo：全集 sheet 短篇行、今日節目行）嘅字同 chip：刻意唔跟 --ui-scale。

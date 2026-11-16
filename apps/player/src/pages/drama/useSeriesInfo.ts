@@ -1,12 +1,20 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { DramaConfig, SeriesEpisode } from '@903-player/catalog';
-import { arcInfoFor, arcLabelFor } from '../../catalog/dramas';
+import {
+    arcAvailabilityOf,
+    arcCoverFor,
+    arcInfoFor,
+    arcLabelFor,
+    arcTileFor,
+} from '../../catalog/dramas';
 import { t } from '../../i18n/t';
 import type { ArcSummary } from '../../selectors/arcProgress';
 import {
     arcInfoSections,
     arcInlineInfo,
+    latestArcOf,
     seriesHasInfo,
+    seriesInfoBanner,
     shouldAutoOpenArcInfo,
     type InlineInfo,
 } from '../../selectors/itemInfo';
@@ -65,6 +73,24 @@ const useSheetInfo = (
     return { hasInfo, sheetInfo, openAll };
 };
 
+/** 劇集 banner 細字：已上架短篇入面最新上架嗰個；冇上架日就講已上架短篇數 */
+const dramaSubtitleOf = (dramaId: string, summaries: readonly ArcSummary[]): string => {
+    const available = summaries.map((s) => s.arc);
+    const latest = latestArcOf(available, arcAvailabilityOf(dramaId));
+    return latest === undefined
+        ? t('info.arcCount', { count: available.length })
+        : t('info.latestArc', { name: arcLabelFor(dramaId, latest) });
+};
+
+/** 某短篇獨立 sheet 嘅 banner：劇集有簡介 = 劇集 banner；冇 = 短篇 banner（見 seriesInfoBanner） */
+const arcBannerOf = (drama: DramaConfig, summaries: readonly ArcSummary[], arc: string) =>
+    seriesInfoBanner({
+        drama,
+        arcLabel: arcLabelFor(drama.id, arc),
+        arcTile: arcTileFor(drama.id, arc),
+        dramaSubtitle: dramaSubtitleOf(drama.id, summaries),
+    });
+
 /** 短篇獨立資料 sheet：揀未聽過（new）又有資料嘅短篇自動彈 */
 const useArcInfoSheet = (
     drama: DramaConfig,
@@ -74,13 +100,19 @@ const useArcInfoSheet = (
     const [infoArc, setInfoArc] = useState<string | null>(null);
     const arcInfoOf = useArcInfoOf(drama.id);
     const sectionsOf = (arc: string) =>
-        arcInfoSections(drama, arcLabelFor(drama.id, arc), arcInfoFor(drama.id, arc));
+        arcInfoSections(
+            drama,
+            arcLabelFor(drama.id, arc),
+            arcInfoFor(drama.id, arc),
+            arcCoverFor(drama.id, arc),
+        );
     return {
         sectionsOf,
         openArc: setInfoArc,
         infoSheet: {
             open: infoArc !== null,
             sections: infoArc === null ? [] : sectionsOf(infoArc),
+            banner: infoArc === null ? undefined : arcBannerOf(drama, summaries, infoArc),
             close: () => setInfoArc(null),
         },
         pickArc: (arc: string) => {
