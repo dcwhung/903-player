@@ -178,7 +178,6 @@ export const useShowPage = (showId: string, focusId?: string) => {
         currentUrl,
         playing !== null,
     );
-
     // 集數清單：撳播緊嗰集就暫停（掣係暫停樣），其他同日子條一樣播嗰集
     const press = useEpisodePress(episodes, currentUrl, isPlayingCurrent);
     return {
