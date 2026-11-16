@@ -127,9 +127,7 @@ export { NAME_LIST_MAX_ITEMS, NAME_MAX_LENGTH, SUMMARY_MAX_LENGTH } from './core
 
 export {
     byteOrder,
-    coverUrls,
     DAILY_TEMPLATE,
-    episodeUrls,
     exampleFileName,
     findSuspicious,
     generateDraft,
@@ -149,7 +147,6 @@ export {
     type FolderListing,
     type Issue,
     type IssueLevel,
-    type ScanSource,
     type ParsedEpisodeFile,
 } from './scan';
 

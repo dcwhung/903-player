@@ -35,4 +35,4 @@
     - Snapshot build（AC-5，配 api 鏈本機 Worker）：`NODE_EXTRA_CA_CERTS=<proxy CA + wrangler cert> VITE_CATALOG_URL=https://localhost:8787/catalog/v1/catalog.json npm run build -w apps/player`（log hash vs publish、dist / `sw.js` 圖、vite preview 擋 runtime fetch 睇 snapshot 圖）；URL 唔通、`--mode e2e`、冇 URL 各 build 一次；完咗刪 `src/catalog/snapshot/data*`
     - e2e 入口只有 `npm run e2e`（build + node e2e/run.mjs，跑晒所有 section）；未有單 section runner
 - PWA gate: no
-- Out of scope: scripts/dramaFromFolder.ts + `packages/catalog/src/scan/*`（CLI / 掃描核心，屬 drama 鏈）；`packages/catalog/src/schedule/*`（屬 api 鏈）；`src/services/storageMigration*`、`packages/catalog/src/core/episodeId*`（屬 player-core）
+- Out of scope: `packages/catalog/src/scan/*`（掃描核心，屬 drama 鏈；CLI `scripts/dramaFromFolder.ts` 2026-11-16 已刪）；`packages/catalog/src/schedule/*`（屬 api 鏈）；`src/services/storageMigration*`、`packages/catalog/src/core/episodeId*`（屬 player-core）

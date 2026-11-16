@@ -1,4 +1,4 @@
-/* 劇集 folder 掃描：FolderListing（本機 fs / R2 list）→ drama.json 草稿 + 問題清單 */
+/* 劇集 folder 掃描：FolderListing（R2 list）→ drama.json 草稿 + 問題清單 */
 export { generateDraft } from './draft';
 export { scanListing } from './listing';
 export {
@@ -11,7 +11,6 @@ export {
 export { exampleFileName } from './example';
 export { isPlaceholderArcId } from './merge';
 export { DAILY_TEMPLATE, SERIES_TEMPLATES } from './shared';
-export { coverUrls, episodeUrls } from './urls';
 export type {
     ArcScan,
     ArcSummary,
@@ -24,5 +23,4 @@ export type {
     FolderListing,
     Issue,
     IssueLevel,
-    ScanSource,
 } from './types';
