@@ -11,6 +11,7 @@ import {
     deleteEntry,
     getEntry,
     insertEntryStatement,
+    latestEpisodeIds,
     latestPublish,
     listAssetHashes,
     listScheduledArcIds,
@@ -104,7 +105,8 @@ export const disappearingIds = async (
 ) => {
     if (entry.kind !== 'dramas') return [];
     const prefix = `drama:${entry.id}:`;
-    const published = (await latestPublish(db))?.episodeIds ?? [];
+    // 淨讀 episode_ids，唔使拉成份 document（S-788）
+    const published = (await latestEpisodeIds(db)) ?? [];
     return missingEpisodeIds(
         published.filter((id) => id.startsWith(prefix)),
         ids,
@@ -258,11 +260,14 @@ entryRoutes.put('/entries/:kind/:id', async (c) => {
     return writeEntry(c, entry, mode === 'update' ? existing : null);
 });
 
-/** 最新 publish 有冇用緊：劇集睇 episode ID，節目睇 document 有冇佢 */
+/**
+ * 最新 publish 有冇用緊：劇集睇 episode ID（淨讀 episode_ids，S-788），節目睇 document 有冇佢
+ * （節目一定要讀 document）；未 publish 過 = 冇用緊
+ */
 const isPublished = async (db: D1Database, kind: EntryInput['kind'], id: string) => {
+    if (kind === 'dramas') return dramasOf((await latestEpisodeIds(db)) ?? []).has(id);
     const latest = await latestPublish(db);
     if (!latest) return false;
-    if (kind === 'dramas') return dramasOf(latest.episodeIds).has(id);
     // document 讀唔到就當用緊（拒絕刪除，S-844）
     return documentShowIds(latest.document)?.has(id) ?? true;
 };

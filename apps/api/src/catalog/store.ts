@@ -47,6 +47,9 @@ export interface NewPublish {
 const SUMMARY_COLUMNS =
     'id, created_at, created_by, hash, show_count, drama_count, episode_count, rollback_of, status, error, deploy, deploy_requested_at';
 
+/** 「而家 publish 緊嗰份」= status = 'ok' 嘅最大 id；latestPublish / latestEpisodeIds / latestPublishKey 共用，確保揀同一行 */
+const LATEST_OK_PUBLISH = "WHERE status = 'ok' ORDER BY id DESC LIMIT 1";
+
 /**
  * Publish 用嘅 entries：按 id 排（同 buildCatalogJson.mjs folder 名排序一致，方便開 flag 前比較）；
  * draft（掃描自動建、未齊資料）唔包
@@ -99,8 +102,7 @@ export interface LatestPublish {
 export const latestPublish = async (db: D1Database): Promise<LatestPublish | null> => {
     const row = await db
         .prepare(
-            `SELECT ${SUMMARY_COLUMNS}, episode_ids, document FROM publishes
-             WHERE status = 'ok' ORDER BY id DESC LIMIT 1`,
+            `SELECT ${SUMMARY_COLUMNS}, episode_ids, document FROM publishes ${LATEST_OK_PUBLISH}`,
         )
         .first<PublishRow & { episode_ids: string; document: string }>();
     if (!row) return null;
@@ -108,12 +110,23 @@ export const latestPublish = async (db: D1Database): Promise<LatestPublish | nul
     return { row: summary, episodeIds: JSON.parse(ids) as string[], document };
 };
 
+/**
+ * 最新 ok publish 嘅鎖住 episode ID（同 latestPublish 同一行），唔讀 document 全文（S-788：
+ * PUT warnings / 劇嘅 DELETE 守衛淨係要 ID）；未 publish 過 → null
+ */
+export const latestEpisodeIds = async (db: D1Database): Promise<string[] | null> => {
+    const row = await db
+        .prepare(`SELECT episode_ids FROM publishes ${LATEST_OK_PUBLISH}`)
+        .first<{ episode_ids: string }>();
+    return row ? (JSON.parse(row.episode_ids) as string[]) : null;
+};
+
 /** 最新 ok publish 嘅 id + hash（唔讀 document 全文；S-1006 cache key）；未 publish 過 → null */
 export const latestPublishKey = async (
     db: D1Database,
 ): Promise<{ id: number; hash: string } | null> =>
     db
-        .prepare("SELECT id, hash FROM publishes WHERE status = 'ok' ORDER BY id DESC LIMIT 1")
+        .prepare(`SELECT id, hash FROM publishes ${LATEST_OK_PUBLISH}`)
         .first<{ id: number; hash: string }>();
 
 /** 某次 publish 嘅 document 全文；冇呢行 → null */

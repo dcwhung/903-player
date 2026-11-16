@@ -45,12 +45,14 @@ beforeEach(() => {
 /** 月曆方向（data-placement） */
 const placement = () => screen.getByRole('dialog').getAttribute('data-placement');
 
-/** 欄位喺 fieldTop()、高 30；月曆高 300 */
-const mockRects = (fieldTop: () => number) =>
+/** 欄位喺 fieldTop()、高 30；月曆高 popHeight()（預設 300） */
+const mockRects = (fieldTop: () => number, popHeight: () => number = () => 300) =>
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
         this: HTMLElement,
     ) {
-        const [top, height] = this.classList.contains('date-pop') ? [0, 300] : [fieldTop(), 30];
+        const [top, height] = this.classList.contains('date-pop')
+            ? [0, popHeight()]
+            : [fieldTop(), 30];
         return {
             top,
             bottom: top + height,
@@ -76,6 +78,34 @@ const stubFrames = () => {
             queued = [];
             run.forEach((callback) => callback(0));
         });
+};
+
+/** jsdom 冇 ResizeObserver：記低每個 instance，resize() = 模擬尺寸變咗觸發 callback（S-881） */
+const stubResizeObserver = () => {
+    const observers: FakeResizeObserver[] = [];
+    class FakeResizeObserver {
+        readonly observed = new Set<Element>();
+        disconnected = false;
+        constructor(private readonly callback: ResizeObserverCallback) {
+            observers.push(this);
+        }
+        observe(target: Element) {
+            this.observed.add(target);
+        }
+        unobserve(target: Element) {
+            this.observed.delete(target);
+        }
+        disconnect() {
+            this.disconnected = true;
+            this.observed.clear();
+        }
+        resize() {
+            act(() => this.callback([], this as unknown as ResizeObserver));
+        }
+    }
+    // setup.ts 嘅 afterEach 會 unstubAllGlobals
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    return observers;
 };
 
 /** jsdom 原本嘅 innerHeight：個別 test 會改，每個 test 後還原（S-861） */
@@ -289,6 +319,48 @@ describe('DateField', () => {
         await userEvent.keyboard('{Escape}');
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(cancel).toHaveBeenCalledTimes(1);
+    });
+
+    it('should place the calendar again when its height changes, e.g. a 6-week month (S-881)', async () => {
+        const flush = stubFrames();
+        const observers = stubResizeObserver();
+        render(<Harness initial="2026-11-05" />);
+        let popHeight = 300;
+        // 欄位底 = 430，下面淨 370：300 高放得落，換到更高嘅月份就唔夠
+        mockRects(
+            () => 400,
+            () => popHeight,
+        );
+        setInnerHeight(800);
+        await userEvent.click(trigger());
+        expect(placement()).toBe('down');
+        const observer = observers.find((o) => o.observed.has(screen.getByRole('dialog')));
+        expect(observer).toBeDefined();
+        // 超過換方向緩衝（S-859）先會轉
+        popHeight = 420;
+        observer?.resize();
+        flush();
+        expect(placement()).toBe('up');
+    });
+
+    it('should stop watching the calendar size once it closes (S-881)', async () => {
+        const observers = stubResizeObserver();
+        render(<Harness initial="2026-11-05" />);
+        await userEvent.click(trigger());
+        expect(observers).toHaveLength(1);
+        expect(observers[0]?.disconnected).toBe(false);
+        await userEvent.keyboard('{Escape}');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(observers[0]?.disconnected).toBe(true);
+    });
+
+    it('should still open and place the calendar without ResizeObserver (S-881)', async () => {
+        vi.stubGlobal('ResizeObserver', undefined);
+        render(<Harness initial="2026-11-05" />);
+        mockRects(() => 700);
+        setInnerHeight(800);
+        await userEvent.click(trigger());
+        expect(placement()).toBe('up');
     });
 
     it('should mark today in Hong Kong time, the day schedules use (S-835)', async () => {
