@@ -3,6 +3,8 @@
  * 同 viewport + 最近嘅捲動容器（例如內容區）比，下面唔夠位就向上（placementOf）；
  * 打開咗之後 resize / 任何捲動（capture，連內容區）都再量（S-838）：每格 frame 最多量一次，
  * 換方向有緩衝，臨界位附近捲動唔會閃（S-859）。冇動畫，直接換位
+ * popover 自己尺寸變（例如換月由 4 行變 6 行）都再量：ResizeObserver 睇住佢；
+ * 冇 ResizeObserver 嘅環境就照舊淨係 resize / scroll 先量（S-881）
  */
 import { useLayoutEffect, useState, type RefObject } from 'react';
 import { placementOf, type Placement } from './dateFieldModel';
@@ -49,11 +51,16 @@ export const usePopoverPlacement = (popRef: RefObject<HTMLElement | null>) => {
             if (frame === NO_FRAME) frame = requestAnimationFrame(place);
         };
         place();
+        // feature-detect：舊瀏覽器 / jsdom 冇都唔可以 crash（S-881）
+        const observer =
+            typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(schedule);
+        if (popRef.current) observer?.observe(popRef.current);
         window.addEventListener('resize', schedule);
         window.addEventListener('scroll', schedule, CAPTURE);
         return () => {
             window.removeEventListener('resize', schedule);
             window.removeEventListener('scroll', schedule, CAPTURE);
+            observer?.disconnect();
             if (frame !== NO_FRAME) cancelAnimationFrame(frame);
         };
     }, [popRef]);
