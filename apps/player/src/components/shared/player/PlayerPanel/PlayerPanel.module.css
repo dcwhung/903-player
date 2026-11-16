@@ -137,3 +137,26 @@
     color: var(--color-title);
     text-align: center;
 }
+
+/* 有 ⓘ 嘅唱片（P9.5 #12）：包成一行闊，ⓘ 喺唱片圈頂、離右邊 --space-3（同頁頭返回掣離左邊一樣） */
+.infoRow {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    width: 100%;
+}
+
+.info {
+    position: absolute;
+    top: 0;
+    right: var(--space-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border: none;
+    background: transparent;
+    color: var(--color-accent-text);
+}

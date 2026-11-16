@@ -1,0 +1,54 @@
+/* 主持 / 聲演 chip（_mockups_/catalog-item-info A 修訂版）：圓角、track 色底，唔係掣 */
+.chips {
+    display: flex;
+    min-width: 0;
+}
+
+.inline {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.stacked {
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.role {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-caps);
+}
+
+.inline .role {
+    margin-right: var(--space-half);
+}
+
+.list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.stacked .list {
+    gap: var(--space-2);
+}
+
+.chip {
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--color-track);
+    color: var(--color-text);
+    font-size: var(--font-size-xs);
+    line-height: var(--info-chip-line);
+}
+
+.stacked .chip {
+    padding: 0 var(--space-3);
+    font-size: var(--font-size-md);
+    line-height: var(--info-sheet-chip-line);
+}

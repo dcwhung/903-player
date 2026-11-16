@@ -1,0 +1,140 @@
+/*
+ * 節目 / 劇集資料 sheet（_mockups_/catalog-item-info A 修訂版）：直版由畫面底彈出蓋全頁（遮罩），
+ * 橫版（docked）只喺右欄唱片嗰欄底彈出、冇遮罩。高度、遮罩、拉閂同全集 sheet（ArcSheet）一樣
+ */
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--arc-sheet-z);
+}
+
+.backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--arc-sheet-scrim);
+    transition: opacity var(--arc-sheet-slide-ms) ease-out;
+}
+
+.sheet {
+    position: absolute;
+    inset: auto 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-width: var(--page-max-width);
+    max-height: var(--arc-sheet-max-height);
+    margin: 0 auto;
+    padding: var(--space-2) var(--space-6) 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-floating);
+    outline: none;
+    /* 內容以外都係拉表嘅把手：單指手勢交畀 useSheetDrag */
+    touch-action: none;
+    transition: transform var(--arc-sheet-slide-ms) ease-out;
+}
+
+.sheet[data-dragging='true'],
+.backdrop[data-dragging='true'] {
+    transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sheet,
+    .backdrop {
+        transition: none;
+    }
+}
+
+.sheet[data-closing='true'],
+.backdrop[data-closing='true'] {
+    pointer-events: none;
+}
+
+/* 橫版：overlay 填滿右欄但唔擋撳（唱片、播放掣照撳得），得張表收 pointer */
+.docked {
+    position: absolute;
+    pointer-events: none;
+}
+
+.docked .sheet {
+    max-width: none;
+    pointer-events: auto;
+}
+
+.grab {
+    flex-shrink: 0;
+    align-self: center;
+    width: var(--arc-sheet-grab-width);
+    height: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--color-track);
+}
+
+.close {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text);
+}
+
+/* 唯一捲動嘅 panel */
+.body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0 0 calc(env(safe-area-inset-bottom) + var(--space-6));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-4) 0 var(--space-6);
+}
+
+/* 劇集同短篇之間一條線 */
+.section + .section {
+    border-top: 1px solid var(--color-divider);
+}
+
+/* 第一段標題讓開右上角 ✕ */
+.title {
+    margin: 0;
+    padding-right: var(--touch-target);
+    color: var(--color-title);
+    font-family: var(--theme-title-font);
+    font-size: var(--info-sheet-title-size);
+    font-weight: 700;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.label {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-caps);
+}
+
+.text {
+    margin: 0;
+    color: var(--color-text);
+    font-size: var(--font-size-md);
+    line-height: var(--info-text-line);
+}

@@ -117,3 +117,18 @@ export const TrashIcon = (props: IconProps) => (
         <path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" />
     </StrokeIcon>
 );
+
+/** ⓘ：唱片圈右上角開節目 / 劇集資料（P9.5 #12） */
+export const InfoIcon = (props: IconProps) => (
+    <StrokeIcon {...props}>
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 16v-4M12 8h.01" />
+    </StrokeIcon>
+);
+
+/** 向右箭咀 ›：「全集」/「節目表」旁邊展開資料（展開時 CSS 轉 90° 向下） */
+export const ChevronIcon = (props: IconProps) => (
+    <StrokeIcon strokeWidth={2.4} {...props}>
+        <path d="M9 5l7 7-7 7" />
+    </StrokeIcon>
+);

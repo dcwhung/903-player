@@ -151,6 +151,15 @@
     --arc-sheet-check-offset: calc(-2px * var(--ui-scale));
     --arc-sheet-badge-outline: 2px;
     /*
+     * 節目 / 劇集資料（P9.5 #12，_mockups_/catalog-item-info）：資料 sheet 標題、chip 行高、正文行高；
+     * 今日節目表展開時「播緊」線（OnAirLamp）上下留位（行高約 80%）
+     */
+    --info-sheet-title-size: calc(20px * var(--ui-scale));
+    --info-sheet-chip-line: calc(30px * var(--ui-scale));
+    --info-chip-line: calc(20px * var(--ui-scale));
+    --info-text-line: 1.6;
+    --info-lamp-inset: 10%;
+    /*
      * 集數清單行頭欄闊：節目日子（17/10 + 星期六）；每日劇集日子 + 「重溫」標籤；
      * 短篇劇集集名（最長「認認真真搵返個人」8 個字，佔清單四成）
      */

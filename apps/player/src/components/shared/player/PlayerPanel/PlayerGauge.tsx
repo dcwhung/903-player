@@ -5,6 +5,7 @@ import { formatDuration } from '../../../../utils/time';
 import { ArcSlider } from '../../common/ArcSlider/ArcSlider';
 import { Disc } from '../../common/Disc/Disc';
 import { GaugeActions } from './GaugeActions';
+import { GaugeInfoRow } from './GaugeInfoRow';
 import styles from './PlayerPanel.module.css';
 import { useGaugeGestures } from './useGaugeGestures';
 
@@ -34,6 +35,10 @@ interface PlayerGaugeProps {
      * 唔會播 / 收藏預設嗰集
      */
     empty?: boolean;
+    /** 有資料先傳（P9.5 #12）：唱片圈右上角出 ⓘ，撳就開資料 sheet */
+    onInfo?: (() => void) | undefined;
+    /** ⓘ 讀屏名 */
+    infoLabel?: string | undefined;
 }
 
 /** 未開始樣時要顯示嘅續播位置 / 總長（秒） */
@@ -89,6 +94,8 @@ export const PlayerGauge = ({
     transitionName,
     bookmark,
     empty = false,
+    onInfo,
+    infoLabel,
 }: PlayerGaugeProps) => {
     const { known, shownTime, max, isPlaying, ...view } = useGaugeView(held, onStart, standbyTime);
     // 讀屏同畫面一樣：未知時長讀佔位，唔讀 0:00
@@ -96,37 +103,39 @@ export const PlayerGauge = ({
     const formatValueText = (seconds: number) =>
         t('player.progressText', { current: formatClock(seconds, known), total });
     return (
-        <div
-            className={styles.gauge}
-            style={{ viewTransitionName: transitionName }}
-            data-player-gauge=""
-        >
-            <div className={styles.arc}>
-                <ArcSlider
-                    {...view.arc}
-                    max={max}
-                    onSeek={view.seek}
-                    label={t('player.progress')}
-                    formatValueText={formatValueText}
+        <GaugeInfoRow onInfo={onInfo} label={infoLabel}>
+            <div
+                className={styles.gauge}
+                style={{ viewTransitionName: transitionName }}
+                data-player-gauge=""
+            >
+                <div className={styles.arc}>
+                    <ArcSlider
+                        {...view.arc}
+                        max={max}
+                        onSeek={view.seek}
+                        label={t('player.progress')}
+                        formatValueText={formatValueText}
+                    />
+                </div>
+                <div className={styles.discArea}>
+                    <Disc art={art} artRef={artRef} {...view.disc} />
+                </div>
+                {/* 外框止喺掣旁邊，入面嘅字放唔落就向外伸（見 PlayerPanel.module.css .time） */}
+                <span className={`${styles.time} ${styles.elapsed}`}>
+                    <span>{formatClock(shownTime, known)}</span>
+                </span>
+                <span className={`${styles.time} ${styles.total}`}>
+                    <span>{total}</span>
+                </span>
+                <GaugeActions
+                    isPlaying={isPlaying}
+                    onRestart={view.restart}
+                    onToggle={view.toggle}
+                    bookmark={bookmark}
+                    disabled={empty}
                 />
             </div>
-            <div className={styles.discArea}>
-                <Disc art={art} artRef={artRef} {...view.disc} />
-            </div>
-            {/* 外框止喺掣旁邊，入面嘅字放唔落就向外伸（見 PlayerPanel.module.css .time） */}
-            <span className={`${styles.time} ${styles.elapsed}`}>
-                <span>{formatClock(shownTime, known)}</span>
-            </span>
-            <span className={`${styles.time} ${styles.total}`}>
-                <span>{total}</span>
-            </span>
-            <GaugeActions
-                isPlaying={isPlaying}
-                onRestart={view.restart}
-                onToggle={view.toggle}
-                bookmark={bookmark}
-                disabled={empty}
-            />
-        </div>
+        </GaugeInfoRow>
     );
 };

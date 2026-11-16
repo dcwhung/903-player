@@ -413,3 +413,19 @@ describe('PlayerGauge with nothing picked (empty)', () => {
         );
     });
 });
+
+describe('PlayerGauge info button（P9.5 #12）', () => {
+    it('should show no info button without onInfo', () => {
+        renderWithProviders(<PlayerGauge art="/art/gongzi.jpg" />);
+        expect(screen.queryByRole('button', { name: '節目資料' })).not.toBeInTheDocument();
+    });
+
+    it('should show an info button named by infoLabel that calls onInfo', async () => {
+        const onInfo = vi.fn();
+        renderWithProviders(
+            <PlayerGauge art="/art/gongzi.jpg" onInfo={onInfo} infoLabel="節目資料" />,
+        );
+        await userEvent.click(screen.getByRole('button', { name: '節目資料' }));
+        expect(onInfo).toHaveBeenCalledTimes(1);
+    });
+});
