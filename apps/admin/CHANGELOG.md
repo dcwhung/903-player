@@ -2,6 +2,22 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.8.3 — 2026-11-16
+
+Batch review：`.proj-docs/reviews/2026-11-16_review_admin-player-fixes_batch.md`（T1–T5 + cleanup）。
+
+### Added
+
+- 「處理待辦」/「確認發佈」stepper 步驟撳得：同更新頁「下一步」共用 `usePublishPlan`，未載入 / 載入失敗 / 冇嘢揀時唔畀跳（T3）
+
+### Changed
+
+- 處理待辦頁列出其他已儲存改動（「其他改動」，淨係顯示、一定一併發佈）；側欄待發佈數計埋其他改動同 App 外觀（T1）
+- 刪除 entry 成功即刻由清單拎走、返回清單頁（`replace`），背景再重讀（T2）
+- 「沒有待發佈的項目。」只喺真係乜都冇嘅時候出；套用配色 / 圖片即存 / R2 自動裁切成功後重讀待發佈改動（T4）
+- 發佈 / 部署記錄頁：部署中 / 失敗 / 不明嘅部署 pill 本身連去 GitHub run（`noopener noreferrer`），已部署係 pill、無需部署唔出（T5）
+- 更新頁「下一步」直接用 `usePublishPlan` 嘅路徑，同 stepper 同一個來源（S-1093）
+
 ## 0.8.1 — 2026-11-15
 
 ### Changed
