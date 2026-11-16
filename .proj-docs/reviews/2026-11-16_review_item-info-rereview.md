@@ -125,3 +125,37 @@ next_agent: quality-assurance
 branch: "feature/catalog/item-info"
 context: "item info delta re-review 100/100 pass；W-748、S-1019、S-1020、S-1021 全部 verified，冇新 finding；integration branch = main；QA S1 chains catalog-data / drama / show-today-page"
 ```
+
+## Merge delta — `e7dbb9f`（merge `origin/main` 48dfb14 入 branch，2026-11-16）
+
+- 範圍：`git show e7dbb9f --remerge-diff`（code 衝突：`remoteCatalog.mjs`、`run.mjs`、`apps/player/package.json`、`package-lock.json`；`itemInfo.mjs` 跟新簽名）+ main 新改動同 item info code 嘅 semantic conflict。ledger / QA plans 歸 QA，冇驗
+- Hard gates：all pass —— `npx tsc -b` exit 0；`npm run lint` exit 0；`npx vitest related packages/catalog/src/index.ts config/catalogImage.ts ItemInfo/InfoBanner.tsx selectors/itemInfo.ts i18n/zh-HK.ts catalog/dramas/index.ts --run`：227 files / 2626 tests 全綠；另跑 `catalogImageCors.node.test.ts` + `e2eSrcConstants.test.ts` 21 tests 綠；4 個 e2e `.mjs` `node --check` ok；冇殘留衝突標記
+- 新 finding：冇（下一個 ID 照舊 C-024 / W-749 / S-1022）
+- 分數：**100 / 100（✅ pass）**
+
+| 檢查                          | 結果 | 證據                                                                                                                                                                                                                               |
+| ----------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `remoteCatalog.mjs`           | ✅   | 用 main 新簽名 `openWithCatalog(env, { contextOptions, ...routeOptions })`；`CATALOG_DIR` / `CATALOG_FOLDER` 改返 `export`（`itemInfo.mjs:8,58-59` 用到）；main 新加嘅 `ASSETS_DIR` / banner 常數保留；全部 9 個 caller 都係新簽名 |
+| `itemInfo.mjs`                | ✅   | `openWithCatalog(env, { catalogBody: json, contextOptions })`，冇再傳第三個參數                                                                                                                                                    |
+| `run.mjs`                     | ✅   | `runItemInfoChecks`（1690）同 `runShowGridCountChecks`（1693）兩個 section 都喺度，import 齊                                                                                                                                       |
+| Version / lock                | ✅   | main 1.36.0 → 1.37.0（MINOR，feature）；`git diff 48dfb14 e7dbb9f -- package-lock.json` 淨係 `apps/player` version 一行                                                                                                            |
+| 兩邊都改嘅 `catalog/index.ts` | ✅   | 自動合併：main 加 contrast / dimensions / branding export，我哋加 `type ArcInfo`，冇重疊                                                                                                                                           |
+| Semantic：catalog 圖 CORS     | ✅   | main 收緊 `catalogImageCors.node.test.ts`（掃晒 components 嘅 `<img>`）；新 `InfoBanner.tsx` 有 `crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}`，test 綠                                                                                |
+| Semantic：其他 main 改動      | ✅   | main 改嘅 src 集中喺 home（ShowGrid / HomeBanner）、catalog admin / document / branding / theme；冇掂 Sheet / ItemInfo / Gauge / TodayShowList / tokens / zh-HK / selectors                                                        |
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: "merge 後 28 行待 QA 重驗（ledger-merge.mjs exit 1）"
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/catalog/item-info"
+context: "merge delta e7dbb9f 100/100 pass；衝突解決正確（openWithCatalog 新簽名、CATALOG_DIR/FOLDER export、run.mjs 兩 section、1.37.0 + lock 一行），冇 semantic conflict（InfoBanner 已有 CORS crossOrigin）；ledger 28 行交 QA 重驗；integration branch = main"
+```
