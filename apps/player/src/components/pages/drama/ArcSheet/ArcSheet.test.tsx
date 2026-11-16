@@ -573,6 +573,74 @@ describe('ArcSheet pull down to close', () => {
 
         expect(onClose).toHaveBeenCalledTimes(2);
     });
+
+    describe('reopened while still sliding away (W-777)', () => {
+        beforeEach(() => {
+            // jsdom 冇 Web Animations：扮收埋動畫跑緊（未完），表喺 closing 留住同一粒 DOM
+            Object.defineProperty(HTMLElement.prototype, 'getAnimations', {
+                configurable: true,
+                value: () => [{ finished: new Promise(() => undefined) }],
+            });
+        });
+
+        afterEach(() => {
+            Reflect.deleteProperty(HTMLElement.prototype, 'getAnimations');
+        });
+
+        const backdrop = () => screen.getByTestId('arc-sheet-backdrop');
+        const overlay = () => dialog().parentElement!;
+        const reopen = () => fireEvent.click(screen.getByRole('button', { name: 'reopen' }));
+
+        const expectFreshSheet = () => {
+            expect(overlay()).toHaveAttribute('data-sheet-state', 'open');
+            expect(overlay()).not.toHaveAttribute('inert');
+            expect(dialog().style.transform).toBe('');
+            expect(dialog()).not.toHaveAttribute('data-closing');
+            expect(backdrop().style.opacity).toBe('');
+            expect(backdrop()).not.toHaveAttribute('data-closing');
+        };
+
+        it('shows the sheet again without the leftovers of a pull-to-close', () => {
+            render(<Harness onClose={vi.fn()} />);
+            const sheet = dialog();
+
+            pull(header(), FAR_PX);
+            settle();
+            expect(overlay()).toHaveAttribute('data-sheet-state', 'closing');
+            reopen();
+
+            // 同一粒 DOM（未 unmount），但拉走寫低嘅 inline style / data-closing 要清走
+            expect(dialog()).toBe(sheet);
+            expectFreshSheet();
+        });
+
+        it('lets the reopened sheet be pulled and closed again', () => {
+            const onClose = vi.fn();
+            render(<Harness onClose={onClose} />);
+
+            pull(header(), FAR_PX);
+            settle();
+            reopen();
+            pull(header(), FAR_PX);
+            settle();
+
+            expect(onClose).toHaveBeenCalledTimes(2);
+        });
+
+        it('shows the sheet again after closing from the backdrop or the close button', () => {
+            render(<Harness onClose={vi.fn()} />);
+
+            fireEvent.click(backdrop());
+            expect(overlay()).toHaveAttribute('data-sheet-state', 'closing');
+            reopen();
+            expectFreshSheet();
+
+            fireEvent.click(within(dialog()).getByRole('button', { name: '關閉' }));
+            expect(overlay()).toHaveAttribute('data-sheet-state', 'closing');
+            reopen();
+            expectFreshSheet();
+        });
+    });
 });
 
 describe('ArcSheet drama banner（G1）', () => {

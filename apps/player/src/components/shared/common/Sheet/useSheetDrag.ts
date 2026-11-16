@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo } from 'react';
 import { useBox } from '../../../../hooks/useBox';
 import { bindElements, useSheetDragControls, type SheetElements } from './useSheetDragControls';
 import { useListTouchDrag } from './useListTouchDrag';
@@ -13,6 +13,11 @@ export const useSheetDrag = (open: boolean, onClose: () => void) => {
     const controls = useSheetDragControls(elements, onClose);
     // 表閂咗（Escape / ✕ / 拉走）或者再開：清走未完嘅手勢同閂表計時，唔會閂兩次 / 重開即刻跟住拉
     useEffect(() => controls.reset, [open, controls]);
+    // W-777：收埋緊（同一粒 DOM）再開要清走拉走留低嘅 transform / data-closing / 遮罩 opacity；
+    // layout effect = paint 之前，唔會閃一格畫面外嘅表。閂嗰陣唔清：sheet-out 由拉到嘅位繼續落
+    useLayoutEffect(() => {
+        if (open) controls.clearLeftovers();
+    }, [open, controls]);
     useListTouchDrag(elements, open, controls);
     const handlers = useSheetPointerDrag(elements, open, controls);
     const refs = useMemo(() => bindElements(elements), [elements]);
