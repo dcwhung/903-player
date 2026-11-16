@@ -36,7 +36,6 @@ scanRoutes.post('/dramas/:id/scan', async (c) => {
         id: target.id,
         existing: definition,
         today: hkToday(),
-        source: 'r2',
     });
     const diff = result.json === null ? [] : jsonDiff(definition, result.json);
     return c.json({ draft: result.json, issues: result.issues, diff });

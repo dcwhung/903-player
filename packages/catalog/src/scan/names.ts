@@ -3,7 +3,7 @@
  * 同 dramas/filename.ts 嘅 template 規則一致
  */
 import { toChineseNumeral } from '../dramas/filename';
-import { wordingOf, type ScanWording } from './wording';
+import { SCAN_WORDING, type ScanWording } from './wording';
 
 const MAX_CHINESE_NUMERAL = 99;
 const HEX_WIDTH = 4;
@@ -77,7 +77,7 @@ const CHARACTER_TRAPS: readonly [RegExp, (ch: string) => string][] = [
 ];
 
 /** 一個名有咩可疑之處（冇就空 array） */
-export const findSuspicious = (name: string, wording: ScanWording = wordingOf()): string[] => {
+export const findSuspicious = (name: string, wording: ScanWording = SCAN_WORDING): string[] => {
     const found = CHARACTER_TRAPS.flatMap(([pattern, describe]) => {
         const match = pattern.exec(name);
         return match ? [describe(match[0])] : [];

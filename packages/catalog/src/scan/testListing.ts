@@ -1,5 +1,5 @@
 /*
- * scan test 共用：由「劇集 folder 底下嘅相對路徑」砌 FolderListing（同 CLI 由 fs 砌、Worker 由 R2 砌一樣嘅形狀）。
+ * scan test 共用：由「劇集 folder 底下嘅相對路徑」砌 FolderListing（同 Worker 由 R2 砌嘅一樣形狀）。
  * 第一層 folder = 短篇；短篇入面再深一層嘅 folder 用「名/」表示
  */
 import type { FolderListing } from './types';

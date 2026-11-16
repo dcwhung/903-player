@@ -39,8 +39,9 @@ const PLACEHOLDER_ARC_WIDTH = 2;
 const PLACEHOLDER_ARC_ID = new RegExp(`^${PLACEHOLDER_ARC_PREFIX}\\d+$`);
 
 /**
- * 係咪 CLI 冇 --id 時派嘅 placeholder 短篇 id（arc-NN）。
- * player library 嘅 drama.json 唔准留低（S-747，scripts/dramaFromFolder.test.ts 鎖住）：placeholder 發佈咗先改名會令進度斷
+ * 係咪唔知劇 ID 時派嘅 placeholder 短篇 id（arc-NN；admin 一定傳劇 ID，所以只會喺冇 id 嘅掃描出現）。
+ * player library 嘅 drama.json 唔准留低（S-747，apps/player/src/catalog/dramas/libraryRoundTrip.node.test.ts 鎖住）：
+ * placeholder 發佈咗先改名會令進度斷
  */
 export const isPlaceholderArcId = (id: string): boolean => PLACEHOLDER_ARC_ID.test(id);
 
@@ -194,7 +195,7 @@ const numbered = (prefix: string, n: number): string =>
  * 冇 id 嘅短篇（新短篇）自動派 id（避開已經用咗嘅），逐個出 TODO 提示人手確認：
  * id 係 episode ID（進度 / 收藏 key）嘅一部份，發佈之後唔可以再改。
  * 知道劇 ID（合 ID_PATTERN）就用「<劇 ID>-NN」，號碼由已有 id 嘅短篇數 + 1 起（例如 lancy-04，Phase 3c）；
- * 唔知（CLI 冇 --id）就照舊 arc-NN
+ * 唔知（冇傳 id，只有 test；admin 一定傳）就照舊 arc-NN
  */
 export const withArcIds = (
     arcs: readonly DraftArc[],

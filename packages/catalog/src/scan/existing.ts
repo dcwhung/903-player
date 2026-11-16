@@ -1,4 +1,4 @@
-/* 驗現有 drama.json（--existing / D1 definition）嘅形狀：壞咗要喺用之前停，唔好砌到一半 throw */
+/* 驗現有 drama.json（D1 definition）嘅形狀：壞咗要喺用之前停，唔好砌到一半 throw */
 import { renderFileName } from '../dramas/filename';
 import { dailyTokens, issue, seriesTokens } from './shared';
 import type { DramaScan, Issue } from './types';
