@@ -58,10 +58,12 @@
 
 /*
  * 橫版（docked）：只蓋住清單欄（DramaPage .listBody：chips + 集數清單），右欄播放器照見照撳得；
- * 冇遮罩，表填滿成格（唔再限最高 / 最闊）
+ * 冇遮罩，表填滿成格（唔再限最高 / 最闊）。
+ * clip：同資料 sheet 一樣，滑上 / 滑落期間表出咗格底，唔可以撐大左欄 / main 嘅可捲範圍
  */
 .docked {
     position: absolute;
+    overflow: clip;
 }
 
 .docked .sheet {

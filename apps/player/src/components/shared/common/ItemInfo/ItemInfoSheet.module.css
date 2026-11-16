@@ -51,9 +51,14 @@
     pointer-events: none;
 }
 
-/* 橫版：overlay 填滿右欄但唔擋撳（唱片、播放掣照撳得），得張表收 pointer */
+/*
+ * 橫版：overlay 填滿右欄但唔擋撳（唱片、播放掣照撳得），得張表收 pointer。
+ * clip：滑上 / 滑落（SheetMotion translateY）期間表出咗欄底，唔可以撐大欄 / main 嘅可捲範圍
+ * （手機打橫撳 ⓘ 成頁彈上彈落）；clip 唔係捲動容器，表入面 .body 照自己捲
+ */
 .docked {
     position: absolute;
+    overflow: clip;
     pointer-events: none;
 }
 

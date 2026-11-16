@@ -9,11 +9,14 @@ import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mj
 
 const WAIT_MS = 5000;
 const ABSENT_WAIT_MS = 1500;
-/** 展開 / 收合過場（tokens.css --view-transition-fade 260ms）之後先量 */
-const SETTLE_MS = 600;
 const LANDSCAPE = { viewport: { width: 1280, height: 800 } };
 /** 窄橫版：唱片按欄闊計（T7b：ⓘ 喺進度圈外面都要放得落欄入面） */
 const NARROW_LANDSCAPE = { viewport: { width: 1024, height: 768 } };
+/** 手機打橫（iPhone 14 類）：撳 ⓘ 成頁彈上彈落嘅實機尺寸 */
+const PHONE_LANDSCAPE = { viewport: { width: 844, height: 390 } };
+/** 彈出動畫（--view-transition-fade）期間 + 之後都要量：開表之後量幾耐 */
+const OPEN_WATCH_MS = 900;
+const SCROLL_POLL_MS = 16;
 /** ⓘ 離畫面右邊（同頁頭返回掣離左邊一樣，--space-3 × --ui-scale；直版 ui-scale 1） */
 const INFO_RIGHT_GAP_PX = 12;
 const GAP_TOLERANCE_PX = 2;
@@ -83,8 +86,34 @@ const open = (env, json, contextOptions) =>
 const infoSheet = (p, name) => p.getByRole('dialog', { name });
 const viewportWidth = (p) => p.viewportSize().width;
 
-/** banner 16:9 貼 sheet 頂、左右貼邊；名疊喺 banner 入面 */
+/**
+ * 等 locator 自己同入面所有動畫 / 過場（sheet 滑上、展開 / 收合 grid-template-rows）完先量。
+ * 唔用固定 sleep：CI CPU 慢時表仲滑緊，banner 同 ✕ 分開量會差咗一截（W-779）；
+ * 減少動態冇動畫即刻返；最多等 WAIT_MS（等唔到照量，交畀斷言報錯）
+ */
+const settleAnimations = (locator) =>
+    succeeds(
+        locator.evaluate(
+            (el, waitMs) =>
+                Promise.race([
+                    Promise.all(
+                        el
+                            .getAnimations({ subtree: true })
+                            // 無限循環（播放中唱片轉、等緊載入）永遠唔會 finished，唔等
+                            .filter((animation) =>
+                                Number.isFinite(animation.effect?.getComputedTiming().endTime),
+                            )
+                            .map((animation) => animation.finished),
+                    ),
+                    new Promise((resolve) => setTimeout(resolve, waitMs)),
+                ]),
+            WAIT_MS,
+        ),
+    );
+
+/** banner 16:9 貼 sheet 頂、左右貼邊；名疊喺 banner 入面（表滑定咗先量） */
 const checkBanner = async (env, sheet, label) => {
+    await settleAnimations(sheet);
     const banner = sheet.getByTestId('info-banner');
     const [b, s] = await Promise.all([banner.boundingBox(), sheet.boundingBox()]);
     const flush =
@@ -107,7 +136,10 @@ const checkBanner = async (env, sheet, label) => {
         close.y + close.height <= b.y + b.height / 2 &&
         close.x + close.width <= b.x + b.width &&
         close.x >= b.x + b.width / 2;
-    env.log(onCorner, `${label}：✕ 喺 banner 右上角`);
+    env.log(
+        onCorner,
+        `${label}：✕ 喺 banner 右上角（✕ ${close?.x.toFixed(0)},${close?.y.toFixed(0)}，banner ${b?.x.toFixed(0)},${b?.y.toFixed(0)} ${b?.width.toFixed(0)}×${b?.height.toFixed(0)}）`,
+    );
 };
 
 /** 節目頁直版：第一次入自動彈、內容、ⓘ 位置、閂咗撳 ⓘ 開返 */
@@ -276,11 +308,9 @@ const checkArcSheet = async (env, json, reducedMotion) => {
     }
     await checkBanner(env, arcSheet(p), `${label}：全集 sheet`);
     await dramaToggle(p).click();
-    if (!reducedMotion) await p.waitForTimeout(SETTLE_MS);
-    const rows = await arcSheet(p)
-        .locator('[data-expanded]')
-        .first()
-        .evaluate((el) => getComputedStyle(el).gridTemplateRows);
+    const collapse = arcSheet(p).locator('[data-expanded]').first();
+    await settleAnimations(collapse);
+    const rows = await collapse.evaluate((el) => getComputedStyle(el).gridTemplateRows);
     log(rows === '0px', `${label}：撳箭咀收埋（grid-template-rows ${rows}）`);
     return p;
 };
@@ -316,14 +346,108 @@ const checkArcPick = async (env, json) => {
     }
 };
 
+/**
+ * 開表期間成頁唔可以捲（手機打橫撳 ⓘ 成頁彈上再彈返落嚟）：表由畫面底下面滑上嚟，
+ * focus / 溢出會令 document、#root、main、欄等捲去露出佢。
+ * 記低 opener（ⓘ / 全集掣）所有祖先 + document 喺開表期間（scroll 事件 + 輪詢）最大嘅 scrollTop，
+ * 同埋可捲範圍（scrollHeight − clientHeight）比開表前多咗幾多（滑緊嘅表唔可以撐大欄 / main）
+ */
+const watchPageScroll = (p, opener) =>
+    opener.evaluate((el) => {
+        const containers = [document.scrollingElement];
+        for (let node = el.parentElement; node; node = node.parentElement) containers.push(node);
+        const unique = [...new Set(containers.filter(Boolean))];
+        const range = (c) => c.scrollHeight - c.clientHeight;
+        const baseline = new Map(unique.map((c) => [c, range(c)]));
+        const label = (c) =>
+            typeof c === 'string' ? c : `${c.tagName.toLowerCase()}.${c.className}`;
+        const peak = { y: 0, where: '', grow: 0, grewAt: '' };
+        if (window.__pageScrollSample) {
+            document.removeEventListener('scroll', window.__pageScrollSample, { capture: true });
+        }
+        const sample = () => {
+            const values = [['window', window.scrollY], ...unique.map((c) => [c, c.scrollTop])];
+            for (const [c, y] of values) {
+                if (y > peak.y) {
+                    peak.y = y;
+                    peak.where = label(c);
+                }
+            }
+            for (const c of unique) {
+                const grow = range(c) - baseline.get(c);
+                if (grow > peak.grow) {
+                    peak.grow = grow;
+                    peak.grewAt = label(c);
+                }
+            }
+        };
+        sample();
+        document.addEventListener('scroll', sample, { capture: true, passive: true });
+        window.__pageScrollPeak = peak;
+        window.__pageScrollSample = sample;
+    });
+
+const pageScrollPeak = async (p) => {
+    const end = Date.now() + OPEN_WATCH_MS;
+    while (Date.now() < end) {
+        await p.evaluate(() => window.__pageScrollSample());
+        await p.waitForTimeout(SCROLL_POLL_MS);
+    }
+    return p.evaluate(() => window.__pageScrollPeak);
+};
+
+const logNoPageScroll = (env, peak, label) => {
+    env.log(
+        peak.y === 0,
+        `${label}：開表期間同之後成頁冇捲（最大 scrollTop ${peak.y}${peak.where ? ` @ ${peak.where}` : ''}）`,
+    );
+    env.log(
+        peak.grow === 0,
+        `${label}：滑緊嘅表冇撐大欄 / main 可捲範圍（最多多咗 ${peak.grow}px${peak.grewAt ? ` @ ${peak.grewAt}` : ''}）`,
+    );
+};
+
+/** 撳 ⓘ 開資料 sheet（第一次入自動彈嗰張先閂咗）：開嘅時候成頁唔捲 */
+const checkInfoOpenNoPageScroll = async (env, json, contextOptions, label) => {
+    const { p } = await open(env, json, contextOptions);
+    await p.goto(`${env.base}#/show/gongzi`);
+    const sheet = infoSheet(p, '節目資料');
+    await sheet.waitFor({ timeout: WAIT_MS });
+    await sheet.getByRole('button', { name: '關閉' }).click();
+    await sheet.waitFor({ state: 'detached', timeout: WAIT_MS });
+    const info = p.getByRole('button', { name: '節目資料' });
+    await watchPageScroll(p, info);
+    await info.click();
+    logNoPageScroll(env, await pageScrollPeak(p), label);
+    await watchPageScroll(p, info);
+    await sheet.getByRole('button', { name: '關閉' }).click();
+    // 收埋動畫期間都要量：唔好等 detached 先開始輪詢
+    logNoPageScroll(env, await pageScrollPeak(p), `${label}（閂返）`);
+    await sheet.waitFor({ state: 'detached', timeout: WAIT_MS });
+};
+
+/** 手機打橫全集 sheet（docked 左欄）：撳「全集」開表時成頁唔捲 */
+const checkArcOpenNoPageScroll = async (env, json) => {
+    const label = '劇集資料手機橫版：撳全集';
+    const { p } = await open(env, json, PHONE_LANDSCAPE);
+    await p.goto(`${env.base}#/drama/lancy`);
+    await arcSheet(p).waitFor({ timeout: WAIT_MS });
+    await p.keyboard.press('Escape');
+    await arcSheet(p).waitFor({ state: 'detached', timeout: WAIT_MS });
+    const button = p.getByRole('button', { name: '全集', exact: true });
+    await watchPageScroll(p, button);
+    await button.click();
+    logNoPageScroll(env, await pageScrollPeak(p), label);
+};
+
 const todayToggle = (p) =>
     p.getByRole('region', { name: '節目表' }).getByRole('button', { name: '節目資料' });
 
 /** 今日節目行資料：字大細跟 mockup、播放時間一行、資料區伸到播放掣下面、主持標籤同 chip 同一行 */
 const checkTodayInline = async (env, p, label) => {
     const { log } = env;
-    await p.waitForTimeout(SETTLE_MS);
     const row = p.locator('li[data-today-row]').filter({ hasText: TODAY_SUMMARY });
+    await settleAnimations(row);
     const m = await inlineMetrics(row.locator('[data-role="item-info"]'));
     log(
         Math.abs(m.textPx - INLINE_TEXT_PX) < 0.5 && Math.abs(m.chipPx - INLINE_CHIP_PX) < 0.5,
@@ -358,6 +482,13 @@ export const runItemInfoChecks = async (env) => {
     await section('節目資料：節目頁直版', () => checkShowPortrait(env, json));
     await section('節目資料：節目頁橫版', () => checkShowLandscape(env, json));
     await section('節目資料：節目頁窄橫版', () => checkShowNarrowLandscape(env, json));
+    await section('節目資料：手機橫版撳 ⓘ 成頁唔捲', () =>
+        checkInfoOpenNoPageScroll(env, json, PHONE_LANDSCAPE, '節目資料手機橫版：撳 ⓘ'),
+    );
+    await section('節目資料：直版撳 ⓘ 成頁唔捲', () =>
+        checkInfoOpenNoPageScroll(env, json, {}, '節目資料直版：撳 ⓘ'),
+    );
+    await section('節目資料：手機橫版撳全集成頁唔捲', () => checkArcOpenNoPageScroll(env, json));
     await section('節目資料：全集 sheet', () => checkArcPick(env, json));
     await section('節目資料：全集 sheet 減少動態', () => checkArcSheet(env, json, true));
     await section('節目資料：全集 sheet 橫版', () => checkArcSheetLandscape(env, json));
