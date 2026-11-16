@@ -192,3 +192,50 @@ describe('buildRegistry', () => {
         expect(empty.enabledDramas()).toEqual([]);
     });
 });
+
+describe('buildRegistry: item info（P9.5 #12）', () => {
+    const registry = build(
+        sourceOf(
+            folder(
+                'info',
+                series('Info', {
+                    summary: '劇集簡介',
+                    arcs: [
+                        {
+                            id: 'a',
+                            name: 'A',
+                            episodes: 1,
+                            summary: '短篇簡介',
+                            cast: ['甲', '乙'],
+                        },
+                        { id: 'b', name: 'B', episodes: 1 },
+                        { id: 'c', name: 'C', episodes: 1, enabled: false, summary: '停用' },
+                    ],
+                }),
+            ),
+            folder('bare', series('Bare')),
+        ),
+    );
+
+    it('should carry the drama summary, leaving it out when drama.json has none', () => {
+        expect(registry.findDrama('info')?.summary).toBe('劇集簡介');
+        expect(registry.findDrama('bare')).not.toHaveProperty('summary');
+    });
+
+    it('should hand out an enabled arc summary and cast', () => {
+        expect(registry.arcInfoFor('info', 'A')).toEqual({
+            summary: '短篇簡介',
+            cast: ['甲', '乙'],
+        });
+    });
+
+    it('should hand out empty info for an arc without any', () => {
+        expect(registry.arcInfoFor('info', 'B')).toEqual({});
+    });
+
+    it('should hand out nothing for a disabled arc, an unknown arc or an unknown drama', () => {
+        expect(registry.arcInfoFor('info', 'C')).toBeUndefined();
+        expect(registry.arcInfoFor('info', 'Z')).toBeUndefined();
+        expect(registry.arcInfoFor('nope', 'A')).toBeUndefined();
+    });
+});
