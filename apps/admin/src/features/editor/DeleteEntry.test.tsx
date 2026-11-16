@@ -4,7 +4,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import type { LoadedEntry } from '../../api/types';
 import { AdminDataContext } from '../../data/AdminData';
 import { hasIcon } from '../../../tests/icons';
-import { fakeData, mockApi, renderAt } from '../../../tests/renderApp';
+import { fakeData, mockApi, renderAt, resource } from '../../../tests/renderApp';
 import { DeleteEntry } from './DeleteEntry';
 
 const entry: LoadedEntry = {
@@ -18,7 +18,11 @@ const entry: LoadedEntry = {
 };
 
 /** 列表 → 編輯頁（history 有兩格），刪除後睇去咗邊、撳「上一頁」會唔會返去已刪除嘅項目 */
-const renderFromList = (target: LoadedEntry, refresh: () => Promise<void>) => {
+const renderFromList = (
+    target: LoadedEntry,
+    refresh: () => Promise<void>,
+    entries = resource<LoadedEntry[]>([]),
+) => {
     const list = `/${target.kind}`;
     const router = createMemoryRouter(
         [
@@ -28,7 +32,7 @@ const renderFromList = (target: LoadedEntry, refresh: () => Promise<void>) => {
         { initialEntries: [list, `${list}/${target.id}`], initialIndex: 1 },
     );
     render(
-        <AdminDataContext.Provider value={fakeData({ refresh: vi.fn(refresh) })}>
+        <AdminDataContext.Provider value={fakeData({ refresh: vi.fn(refresh), entries })}>
             <RouterProvider router={router} />
         </AdminDataContext.Provider>,
     );
@@ -79,6 +83,30 @@ describe('DeleteEntry', () => {
         const router = renderFromList(entry, () => new Promise<void>(() => undefined));
         await confirmDelete();
         await waitFor(() => expect(router.state.location.pathname).toBe('/shows'));
+    });
+
+    it('should drop the deleted entry from the list data at once, before the refresh lands', async () => {
+        mockApi({ 'DELETE /api/entries/shows/waves': () => ({ body: { ok: true } }) });
+        const other: LoadedEntry = { ...entry, id: 'other' };
+        const sameIdDrama: LoadedEntry = { ...entry, kind: 'dramas' };
+        const entries = resource<LoadedEntry[]>([entry, other, sameIdDrama]);
+        const router = renderFromList(entry, () => new Promise<void>(() => undefined), entries);
+        await confirmDelete();
+        await waitFor(() => expect(router.state.location.pathname).toBe('/shows'));
+        expect(entries.mutate).toHaveBeenCalledOnce();
+        const update = vi.mocked(entries.mutate).mock.calls[0]?.[0];
+        expect(update?.([entry, other, sameIdDrama])).toEqual([other, sameIdDrama]);
+    });
+
+    it('should not touch the list data when the delete fails', async () => {
+        mockApi({
+            'DELETE /api/entries/shows/waves': () => ({ status: 412, body: { error: '已被修改' } }),
+        });
+        const entries = resource<LoadedEntry[]>([entry]);
+        renderFromList(entry, () => Promise.resolve(), entries);
+        await confirmDelete();
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(entries.mutate).not.toHaveBeenCalled();
     });
 
     it('should stay and show the error when the delete fails', async () => {

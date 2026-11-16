@@ -6,6 +6,11 @@ export interface Resource<T> {
     error: Error | undefined;
     loading: boolean;
     reload: () => Promise<T | undefined>;
+    /**
+     * 即刻改已載入嘅 data（唔重讀；例如刪除後先喺列表拎走，之後 reload 照覆蓋）。
+     * Method 寫法（bivariant）：test 嘅 resource(字面值) 照可以當 Resource<較闊型別> 用
+     */
+    mutate(update: (data: T | undefined) => T | undefined): void;
 }
 
 const asError = (error: unknown) => (error instanceof Error ? error : new Error(String(error)));
@@ -29,8 +34,11 @@ export const useResource = <T>(loader: () => Promise<T>, auto = true): Resource<
             return undefined;
         }
     }, []);
+    const mutate = useCallback((update: (data: T | undefined) => T | undefined) => {
+        setState((s) => ({ ...s, data: update(s.data) }));
+    }, []);
     useEffect(() => {
         if (auto) void reload();
     }, [auto, reload]);
-    return { data: state.data, error: state.error, loading: state.loading, reload };
+    return { data: state.data, error: state.error, loading: state.loading, reload, mutate };
 };
