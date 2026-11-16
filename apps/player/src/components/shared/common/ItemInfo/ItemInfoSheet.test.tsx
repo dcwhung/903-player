@@ -1,7 +1,9 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { ItemInfoSheet } from './ItemInfoSheet';
 import { INFO_OPENER_ATTR } from './useCloseOnOutsidePress';
+import { SHEET_SLIDE_MS } from '../Sheet/sheetDrag';
 
 const SHOW = {
     kind: 'show' as const,
@@ -372,5 +374,90 @@ describe('ItemInfoSheet', () => {
             expect(screen.queryByTestId('info-banner')).not.toBeInTheDocument();
             expect(document.querySelector('img[src="arc.webp"]')).not.toBeNull();
         });
+    });
+});
+
+describe('ItemInfoSheet closing motion', () => {
+    afterEach(() => {
+        Reflect.deleteProperty(HTMLElement.prototype, 'getAnimations');
+    });
+
+    it('should slide away still showing its content, then unmount (T6)', async () => {
+        let finish: () => void = () => undefined;
+        const finished = new Promise<void>((resolve) => {
+            finish = resolve;
+        });
+        // jsdom 冇 Web Animations：扮收埋動畫跑緊
+        Object.defineProperty(HTMLElement.prototype, 'getAnimations', {
+            configurable: true,
+            value: () => [{ finished }],
+        });
+        const props = { label: '劇集資料', onClose: vi.fn() };
+        const { rerender } = render(<ItemInfoSheet open sections={[SHOW]} {...props} />);
+        // 短篇資料 sheet 閂嗰下父層清走 sections（useSeriesInfo）：滑走緊都要見返原本內容
+        rerender(<ItemInfoSheet open={false} sections={[]} {...props} />);
+        const overlay = document.querySelector('[data-info-sheet]');
+        expect(overlay).toHaveAttribute('data-sheet-state', 'closing');
+        expect(screen.getByRole('heading', { name: '公子會', hidden: true })).toBeInTheDocument();
+        await act(async () => finish());
+        expect(document.querySelector('[data-info-sheet]')).toBeNull();
+    });
+
+    it('should come back visible and pressable when reopened while sliding away after a pull (W-777)', () => {
+        vi.useFakeTimers();
+        vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+            height: 400,
+        } as DOMRect);
+        // 收埋動畫一直未完：closing 期間同一粒 DOM 留住
+        Object.defineProperty(HTMLElement.prototype, 'getAnimations', {
+            configurable: true,
+            value: () => [{ finished: new Promise(() => undefined) }],
+        });
+        const Harness = () => {
+            const [open, setOpen] = useState(true);
+            return (
+                <>
+                    <button type="button" onClick={() => setOpen(true)}>
+                        reopen
+                    </button>
+                    <ItemInfoSheet
+                        open={open}
+                        sections={[SHOW]}
+                        label="節目資料"
+                        onClose={() => setOpen(false)}
+                    />
+                </>
+            );
+        };
+        render(<Harness />);
+        const sheet = screen.getByRole('dialog');
+        // handlers 掛喺表本身（清單以外隨時拉得）
+        fireEvent.pointerDown(sheet, { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(sheet, { clientY: 460, pointerId: 1 });
+        fireEvent.pointerUp(sheet, { clientY: 460, pointerId: 1 });
+        act(() => vi.advanceTimersByTime(SHEET_SLIDE_MS));
+        const overlay = document.querySelector('[data-info-sheet]');
+        expect(overlay).toHaveAttribute('data-sheet-state', 'closing');
+
+        fireEvent.click(screen.getByRole('button', { name: 'reopen' }));
+
+        expect(screen.getByRole('dialog')).toBe(sheet);
+        expect(overlay).toHaveAttribute('data-sheet-state', 'open');
+        expect(overlay).not.toHaveAttribute('inert');
+        expect(sheet.style.transform).toBe('');
+        expect(sheet).not.toHaveAttribute('data-closing');
+        const backdrop = screen.getByTestId('info-sheet-backdrop');
+        expect(backdrop.style.opacity).toBe('');
+        expect(backdrop).not.toHaveAttribute('data-closing');
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+    });
+
+    it('should mark the overlay open so it slides up from the bottom', () => {
+        render(<ItemInfoSheet open sections={[SHOW]} label="節目資料" onClose={vi.fn()} />);
+        expect(document.querySelector('[data-info-sheet]')).toHaveAttribute(
+            'data-sheet-state',
+            'open',
+        );
     });
 });

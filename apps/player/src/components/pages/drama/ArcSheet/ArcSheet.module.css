@@ -118,7 +118,7 @@
     gap: var(--space-2);
     min-height: 0;
     margin: 0;
-    padding: 0 0 calc(env(safe-area-inset-bottom) + var(--space-3));
+    padding: 0 0 calc(var(--safe-area-bottom-visible) + var(--space-3));
     overflow-y: auto;
     overscroll-behavior: contain;
     /* 清單自己畀瀏覽器捲；捲到頂再向下拉先由表接手（useSheetDrag 嘅 touch 監聽） */

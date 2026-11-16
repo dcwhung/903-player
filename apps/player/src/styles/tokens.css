@@ -65,6 +65,11 @@
     --radius-row: calc(8px * var(--ui-scale));
 
     --touch-target: calc(44px * var(--ui-scale));
+    /*
+     * 橫版 ⓘ（PlayerPanel .info，T7b）喺進度圈右邊外面要嘅位：間距 + 掣闊。
+     * 橫版唱片闊兩邊都預留呢個位（Page.module.css .playerColumn），ⓘ 先唔會壓住圈又唔會出咗欄
+     */
+    --gauge-info-room: calc(var(--space-2) + var(--touch-target));
     /* WCAG 2.2 target size (minimum)：細粒掣嘅撳得到範圍 */
     --touch-target-min: calc(24px * var(--ui-scale));
     --focus-ring-width: 2px;
@@ -404,10 +409,15 @@
     --mini-lift-scale: 1.02;
     --mini-long-press-ms: 250ms;
     --mini-dismiss-slide-ms: 200ms;
-    --mini-player-offset-bottom: calc(
-        max(0px, calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))) +
-            var(--space-2)
+    /*
+     * viewport 入面真係睇得到嘅底部安全區：iOS standalone viewport 可能已經停喺 home indicator 上面，
+     * env() 照報安全區，扣返 useViewportGap 量到嘅差距，唔會留兩次（T8：底部 sheet 底嘅空白）
+     */
+    --safe-area-bottom-visible: max(
+        0px,
+        calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))
     );
+    --mini-player-offset-bottom: calc(var(--safe-area-bottom-visible) + var(--space-2));
     --shadow-clay-tile: 0 6px 0 rgb(25 45 75 / 35%), 0 10px 18px rgb(20 40 65 / 30%);
     /* 主頁節目格「New」標籤：輕輕浮起，同節目圖分開 */
     --shadow-new-badge: 0 2px 6px rgb(0 0 0 / 35%);
@@ -595,14 +605,15 @@
          *    （e2e 會印出今日節目頁播放器佔高同清單行數）
          * 5. 「集數 / 共 N 集」標題列：30px（量出嚟）
          * 6. --player-reserved-rows 行集數（預設 3，好矮嘅畫面 2）× 56px（EpisodeList .row，border-box 連分隔線）
-         * 7. 清單底 padding（--space-2）+ 底部安全區
+         * 7. 清單底 padding（--space-2）+ 睇得到嘅底部安全區（--safe-area-bottom-visible，同清單一樣）
          * 改字體大小、播放掣或者行高要跟住改。
          */
         --player-reserved-height: calc(
             env(safe-area-inset-top) + var(--space-4) + var(--touch-target) + 3 *
                 var(--fixed-page-gap) +
                 max(var(--date-strip-label-height) + var(--date-strip-height), 60px) + 30px +
-                var(--player-reserved-rows) * 56px + var(--space-2) + env(safe-area-inset-bottom)
+                var(--player-reserved-rows) * 56px + var(--space-2) +
+                var(--safe-area-bottom-visible)
         );
         /* 成個播放器最多佔幾高：殼高 × --player-max-share */
         --player-max-height: calc(var(--player-shell-height) * var(--player-max-share));

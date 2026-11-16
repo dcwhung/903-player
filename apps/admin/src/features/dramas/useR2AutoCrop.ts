@@ -1,7 +1,7 @@
 /*
  * R2 原圖自動裁切（用戶 2026-11-12，mockup admin-phase4 ① 狀態 A）：開劇集編輯頁 / 重新掃描之後，
  * 已儲存版本有 slot 冇圖 → GET sources → 有原圖 key → r2-source → 置中裁切 → PUT /api/assets →
- * 全部做完一次 PUT entry（patchSaved：最新 ETag，412 重讀再試）。Slot 有圖唔郁。
+ * 全部做完一次 PUT entry（patchSaved：最新 ETag，412 重讀再試），成功就重讀未發佈變更（nav「更新」待發佈數）。Slot 有圖唔郁。
  * 每個 slot 喺呢個編輯頁只試一次（attempted ref：StrictMode effect 行兩次、每次儲存都會再觸發，都唔會重複）；
  * ⟳ 重新掃描之後 retry：已儲存版本仲係冇圖嘅 slot 再試一次（用戶可能啱啱放咗原圖入 R2），做緊嘅 slot 唔會重複。
  * 掃描先發現嘅新短篇未儲存，要「儲存」之後先由 updatedAt effect 觸發。
@@ -12,6 +12,7 @@ import { ApiError } from '../../api/client';
 import { fetchR2Source, getDramaSources, uploadAsset } from '../../api/endpoints';
 import { errorMessage } from '../../api/errorMessage';
 import type { DramaSources, LoadedEntry } from '../../api/types';
+import { useAdminData } from '../../data/AdminData';
 import { isRecord } from '../../model/raw';
 import type { AutoCropStatus } from '../../ui/ImageSlot';
 import { prepareImage } from '../../ui/imageCrop';
@@ -27,6 +28,9 @@ interface AutoCropEditor {
     entry: LoadedEntry | null;
     patchSaved: (apply: (d: Draft) => Draft) => Promise<boolean>;
 }
+
+/** 儲存成功後：重讀 GET /api/changes（同 useImageSave 一樣） */
+type OnSaved = () => void;
 
 type Statuses = Record<string, AutoCropStatus>;
 
@@ -103,13 +107,14 @@ const useAttempts = () => {
 interface AutoCropRun {
     id: string;
     editorRef: { current: AutoCropEditor };
+    onSavedRef: { current: OnSaved };
     set: SetStatus;
     claim: (keys: string[]) => string[];
     release: (keys: string[]) => void;
 }
 
 /** 已儲存版本冇圖、未試過嘅 slot → sources → 逐個裁切上載 → 一次儲存 */
-const autoCrop = async ({ id, editorRef, set, claim, release }: AutoCropRun) => {
+const autoCrop = async ({ id, editorRef, onSavedRef, set, claim, release }: AutoCropRun) => {
     const entry = editorRef.current.entry;
     if (!entry || !isR2(entry)) return;
     const missing = claim(missingSlots(entry.definition, entry.images));
@@ -118,11 +123,12 @@ const autoCrop = async ({ id, editorRef, set, claim, release }: AutoCropRun) => 
         const sources = await loadSources(id);
         if (!sources) return;
         const jobs = planAutoCrop(entry.definition, entry.images, sources);
-        await runJobs(
+        const saved = await runJobs(
             jobs.filter((job) => missing.includes(job.key)),
             editorRef,
             set,
         );
+        if (saved) onSavedRef.current();
     } finally {
         release(missing);
     }
@@ -131,12 +137,16 @@ const autoCrop = async ({ id, editorRef, set, claim, release }: AutoCropRun) => 
 export const useR2AutoCrop = (id: string, editor: AutoCropEditor) => {
     const { set, statusOf } = useStatuses();
     const { claim, release, forget } = useAttempts();
+    const { changes } = useAdminData();
     const editorRef = useRef(editor);
+    // ref：changes.reload 每次 render 可能唔同，唔好令 run 變、重新觸發 updatedAt effect
+    const onSavedRef = useRef<OnSaved>(() => void changes.reload());
     useEffect(() => {
         editorRef.current = editor;
+        onSavedRef.current = () => void changes.reload();
     });
     const run = useCallback(
-        () => autoCrop({ id, editorRef, set, claim, release }),
+        () => autoCrop({ id, editorRef, onSavedRef, set, claim, release }),
         [id, set, claim, release],
     );
     /** 重新掃描後：忘記試過邊啲 slot（做緊嗰啲除外）再行一次 */
@@ -151,12 +161,12 @@ export const useR2AutoCrop = (id: string, editor: AutoCropEditor) => {
     return { statusOf, retry };
 };
 
-/** 逐個 slot 做（同一時間只 decode 一張大圖），最後一次過儲存 */
+/** 逐個 slot 做（同一時間只 decode 一張大圖），最後一次過儲存；true = 有儲存而且成功 */
 const runJobs = async (
     jobs: AutoCropJob[],
     editorRef: { current: AutoCropEditor },
     set: SetStatus,
-) => {
+): Promise<boolean> => {
     set(
         jobs.map((job) => job.key),
         { status: 'loading' },
@@ -168,7 +178,7 @@ const runJobs = async (
         else if ('error' in result) set([job.key], { status: 'error', message: result.error });
         else done.push({ job, name: result.name });
     }
-    if (done.length === 0) return;
+    if (done.length === 0) return false;
     const apply = (draft: Draft) =>
         done.reduce((d, { job, name }) => withImage(job.slot, name, job.arcId)(d), draft);
     // 儲存失敗：編輯頁頂嘅 EditorNotices 已經顯示原因，slot 留空
@@ -176,4 +186,5 @@ const runJobs = async (
     done.forEach(({ job }) =>
         set([job.key], saved ? { status: 'done', file: fileNameOf(job.sourceKey) } : null),
     );
+    return saved;
 };

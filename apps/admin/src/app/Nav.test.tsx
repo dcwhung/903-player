@@ -1,13 +1,37 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import type { ChangeItem } from '@903-player/catalog';
+import type { ChangesResponse, TodoRow } from '../api/types';
 import { AdminDataContext } from '../data/AdminData';
 import { fakeData, resource } from '../../tests/renderApp';
 import { Nav } from './Nav';
 
+const ROW = { key: 'newArc/lancy/love-after' } as TodoRow;
+const EDIT: ChangeItem = {
+    kind: 'edit',
+    when: 'now',
+    entry: { kind: 'shows', id: 'waves', name: '口水多過浪花' },
+    detail: { fields: ['airTime'] },
+};
+const UNLIST: ChangeItem = { ...EDIT, kind: 'unlist', detail: {} };
+/** 1 行新內容 + 1 項修改 + 1 項下架 + 1 項 App 外觀 = 4 項待發佈（blocking 只有 0：唔再只數必須處理） */
+const PENDING: ChangesResponse = {
+    base: 1,
+    changes: { items: [], timeline: [] },
+    validation: { ok: true, episodeCount: 10 },
+    appearance: { icon: false, text: false, banner: true },
+    others: { items: [EDIT, UNLIST], timeline: [] },
+};
+
 const renderNav = (mini: boolean, onToggle = vi.fn()) =>
     render(
-        <AdminDataContext.Provider value={fakeData({ todos: resource({ rows: [], blocking: 3 }) })}>
+        <AdminDataContext.Provider
+            value={fakeData({
+                todos: resource({ rows: [ROW], blocking: 0 }),
+                changes: resource(PENDING),
+            })}
+        >
             <MemoryRouter initialEntries={['/']}>
                 <Nav email="admin@example.com" onLogout={vi.fn()} mini={mini} onToggle={onToggle} />
             </MemoryRouter>
@@ -18,13 +42,13 @@ const following = (a: Element, b: Element) =>
     Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
 describe('Nav v4', () => {
-    it('should put 更新 first under 內容, before 節目 and 廣播劇, keeping the todo count', () => {
+    it('should put 更新 first under 內容, before 節目 and 廣播劇, with the pending-publish count', () => {
         renderNav(false);
         const nav = within(screen.getByRole('navigation', { name: '主選單' }));
         const links = nav.getAllByRole('link');
         expect(links.map((link) => link.textContent)).toEqual([
             'App 外觀',
-            '更新3',
+            '更新4',
             '節目',
             '廣播劇',
             '發佈 / 部署',
@@ -33,7 +57,7 @@ describe('Nav v4', () => {
         expect(following(nav.getByText('品牌'), links[0] as Element)).toBe(true);
         expect(following(links[0] as Element, nav.getByText('內容'))).toBe(true);
         expect(following(nav.getByText('內容'), links[1] as Element)).toBe(true);
-        expect(nav.getByRole('link', { name: '更新（3 項待辦）' })).toBeInTheDocument();
+        expect(nav.getByRole('link', { name: '更新（4 項待發佈）' })).toBeInTheDocument();
     });
 
     it('should put the theme switch and an icon-only collapse button on one row, collapse last', () => {

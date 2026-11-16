@@ -164,3 +164,15 @@
     background: transparent;
     color: var(--color-accent-text);
 }
+
+/*
+ * 橫版（LANDSCAPE_QUERY，T7 / T7b）：右欄好闊，ⓘ 貼住欄邊就離唱片好遠；改為喺唱片格（.gauge，喺 .infoRow 正中、
+ * 闊 --player-disc-size，進度圈差唔多填滿成格闊）右邊外面：掣左邊離圈右邊 --space-2（--gauge-info-room
+ * = 間距 + 掣闊），頂同唱片格頂齊，唔會壓住進度圈。橫版唱片兩邊已經預留呢個位（Page.module.css
+ * .playerColumn）；max 0px 只係保險：點都唔會出咗欄
+ */
+@media (orientation: landscape) and (min-width: 640px) {
+    .info {
+        right: max(0px, calc(50% - var(--player-disc-size) / 2 - var(--gauge-info-room)));
+    }
+}

@@ -1,7 +1,7 @@
 /*
  * 側邊 nav：Design Origin: mockup: _mockups_/admin-style/index.html#i（⑨ / ⑨b nav v4，實色天藍 + 白字，可收細）
- * 品牌：App 外觀（最頂）/ 內容：更新（待辦數）、節目、廣播劇 / 記錄：發佈 / 部署 / 底：主題 + 收合、email + 登出（NavFooter）
- * 收細（76px）：banner → player app icon 縮圖（public/icon-192.png，圓角）、只剩 icon + tooltip、待辦數 → 小橙點。
+ * 品牌：App 外觀（最頂）/ 內容：更新（待發佈數：新內容 + 修改 + App 外觀，pendingModel）、節目、廣播劇 / 記錄：發佈 / 部署 / 底：主題 + 收合、email + 登出（NavFooter）
+ * 收細（76px）：banner → player app icon 縮圖（public/icon-192.png，圓角）、只剩 icon + tooltip、待發佈數 → 小橙點。
  * 手動收合 / 展開：主題掣同收合掣由舊位置滑去新位置（FLIP，flip.ts）；視窗窄咗自動收合唔播
  * 左上 banner / icon 撳落去同收合掣一樣收合 / 展開（2026-11-13 用戶要求；之前係去「更新」嘅 link）
  */
@@ -10,6 +10,7 @@ import { useRef, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAdminData } from '../data/AdminData';
 import { t } from '../i18n/t';
+import { pendingPublishCount } from '../features/update/pendingModel';
 import { Tooltip } from '../ui/Tooltip';
 import { Brand } from './Brand';
 import { useFlip } from './flip';
@@ -93,11 +94,10 @@ export function Nav(props: NavProps) {
     const { pathname } = useLocation();
     const navRef = useRef<HTMLElement>(null);
     const capture = useFlip(navRef, mini);
-    const blocking = useAdminData().todos.data?.blocking ?? 0;
+    const { todos, changes } = useAdminData();
+    const pending = pendingPublishCount(todos.data?.rows ?? [], changes.data);
     const todoLabel =
-        blocking > 0
-            ? `${t('nav.update')}（${t('nav.todoCount', { count: blocking })}）`
-            : undefined;
+        pending > 0 ? `${t('nav.update')}（${t('nav.todoCount', { count: pending })}）` : undefined;
     const toggle = () => {
         capture();
         onToggle();
@@ -115,7 +115,7 @@ export function Nav(props: NavProps) {
                 mini={mini}
                 current={UPDATE_PATHS.includes(pathname)}
                 ariaLabel={todoLabel}
-                extra={<TodoBadge count={blocking} mini={mini} />}
+                extra={<TodoBadge count={pending} mini={mini} />}
             />
             <Item to="/shows" label={t('nav.shows')} icon={Radio} mini={mini} />
             <Item to="/dramas" label={t('nav.dramas')} icon={Disc} mini={mini} />

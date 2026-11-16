@@ -13,6 +13,7 @@ export const resource = <T,>(data: T | undefined): Resource<T> => ({
     error: undefined,
     loading: false,
     reload: vi.fn(() => Promise.resolve(data)),
+    mutate: vi.fn(),
 });
 
 export const fakeData = (over: Partial<AdminData> = {}): AdminData => ({

@@ -10,6 +10,29 @@ import { nameOf } from '../../model/raw';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { errorMessage } from '../../api/errorMessage';
 
+/** 刪除 → 成功就返列表；失敗 = error */
+const useDeleteEntry = (entry: LoadedEntry) => {
+    const [error, setError] = useState<string>();
+    const navigate = useNavigate();
+    const { refresh, entries } = useAdminData();
+    const remove = async () => {
+        try {
+            await deleteEntry(entry.kind, entry.id, entry.etag);
+        } catch (deleteError) {
+            setError(errorMessage(deleteError));
+            return;
+        }
+        // 即刻返列表（replace：上一頁唔會返去已刪除嘅項目）；重讀全部 entry 可以好耐，喺背景做，
+        // 所以先喺已載入嘅 entries 拎走佢，列表唔會閃返已刪除嗰行
+        entries.mutate((list) =>
+            list?.filter((item) => item.kind !== entry.kind || item.id !== entry.id),
+        );
+        void navigate(`/${entry.kind}`, { replace: true });
+        void refresh();
+    };
+    return { error, remove };
+};
+
 export function DeleteEntry({
     entry,
     neverPublished,
@@ -18,20 +41,12 @@ export function DeleteEntry({
     neverPublished: boolean;
 }) {
     const [confirming, setConfirming] = useState(false);
-    const [error, setError] = useState<string>();
-    const navigate = useNavigate();
-    const { refresh } = useAdminData();
+    const { error, remove } = useDeleteEntry(entry);
     if (!neverPublished)
         return <span className="small danger-note">{t('editor.publishedNoDelete')}</span>;
-    const onConfirm = async () => {
+    const onConfirm = () => {
         setConfirming(false);
-        try {
-            await deleteEntry(entry.kind, entry.id, entry.etag);
-            await refresh();
-            navigate(`/${entry.kind}`);
-        } catch (deleteError) {
-            setError(errorMessage(deleteError));
-        }
+        void remove();
     };
     return (
         <>
@@ -51,7 +66,7 @@ export function DeleteEntry({
                     confirmLabel={t('editor.delete')}
                     confirmIcon={<Trash2 aria-hidden="true" />}
                     danger
-                    onConfirm={() => void onConfirm()}
+                    onConfirm={onConfirm}
                     onCancel={() => setConfirming(false)}
                 />
             )}

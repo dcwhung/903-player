@@ -18,30 +18,9 @@ export interface DeployView {
     polling: boolean;
     /** 可以重新部署（失敗 / unknown） */
     canRedeploy: boolean;
+    /** pill 本身連去 run 頁（部署中 / 失敗 / 不明；已部署唔使再睇） */
+    linksRun: boolean;
 }
-
-const RUN_VIEW: Record<DeployStatus['status'], DeployView> = {
-    queued: { labelKey: 'history.deployRunning', tone: 'info', polling: true, canRedeploy: false },
-    in_progress: {
-        labelKey: 'history.deployRunning',
-        tone: 'info',
-        polling: true,
-        canRedeploy: false,
-    },
-    success: {
-        labelKey: 'history.deploySuccess',
-        tone: 'ok',
-        polling: false,
-        canRedeploy: false,
-    },
-    failure: { labelKey: 'history.deployFailed', tone: 'bad', polling: false, canRedeploy: true },
-    unknown: {
-        labelKey: 'history.deployUnknown',
-        tone: 'none',
-        polling: false,
-        canRedeploy: true,
-    },
-};
 
 /** triggered 之前（未 poll）先當部署中 */
 const TRIGGERED: DeployView = {
@@ -49,18 +28,47 @@ const TRIGGERED: DeployView = {
     tone: 'info',
     polling: true,
     canRedeploy: false,
+    linksRun: true,
 };
 
-/** deploy = none / skipped / failed：唔使 poll */
+const FAILED: DeployView = {
+    labelKey: 'history.deployFailed',
+    tone: 'bad',
+    polling: false,
+    canRedeploy: true,
+    linksRun: true,
+};
+
+const RUN_VIEW: Record<DeployStatus['status'], DeployView> = {
+    queued: TRIGGERED,
+    in_progress: TRIGGERED,
+    success: {
+        labelKey: 'history.deploySuccess',
+        tone: 'ok',
+        polling: false,
+        canRedeploy: false,
+        linksRun: false,
+    },
+    failure: FAILED,
+    unknown: {
+        labelKey: 'history.deployUnknown',
+        tone: 'none',
+        polling: false,
+        canRedeploy: true,
+        linksRun: true,
+    },
+};
+
+/** deploy = skipped / failed：唔使 poll；none（無需部署）乜都唔出 */
 const REQUEST_VIEW: Partial<Record<DeployRequest, DeployView>> = {
-    none: { labelKey: 'history.deployNone', tone: 'none', polling: false, canRedeploy: false },
     skipped: {
         labelKey: 'history.deploySkipped',
         tone: 'none',
         polling: false,
         canRedeploy: false,
+        linksRun: false,
     },
-    failed: { labelKey: 'history.deployFailed', tone: 'bad', polling: false, canRedeploy: true },
+    failed: FAILED,
 };
 
 /** triggered 行先要 poll（status 未返就當部署中） */

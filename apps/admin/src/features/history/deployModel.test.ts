@@ -8,13 +8,26 @@ describe('deployModel', () => {
         expect(deployView(undefined, undefined)).toBeNull();
     });
 
-    it('should label none and skipped without polling or redeploy', () => {
-        expect(deployView('none', undefined)).toMatchObject({
-            labelKey: 'history.deployNone',
+    it('should show nothing when no deploy is needed', () => {
+        expect(deployView('none', undefined)).toBeNull();
+    });
+
+    it('should label skipped without polling or redeploy', () => {
+        expect(deployView('skipped', undefined)).toMatchObject({
+            labelKey: 'history.deploySkipped',
             polling: false,
             canRedeploy: false,
         });
-        expect(deployView('skipped', undefined)?.labelKey).toBe('history.deploySkipped');
+    });
+
+    it.each([
+        ['in_progress', true],
+        ['queued', true],
+        ['failure', true],
+        ['unknown', true],
+        ['success', false],
+    ] as const)('should link the %s pill to the GitHub run: %s', (status, linksRun) => {
+        expect(deployView('triggered', { status, url: 'u' })?.linksRun).toBe(linksRun);
     });
 
     it('should let a failed trigger be redeployed', () => {

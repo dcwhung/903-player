@@ -2,19 +2,23 @@
  * 更新 · 處理待辦：Design Origin: mockup: _mockups_/admin/index.html#uB（結構）+
  * mockup: _mockups_/admin-style/index.html#a（漸變統計卡、按鈕 icon）+
  * mockup: _mockups_/admin-selective-publish/index.html#a（App 外觀 section、「發佈」勾選、選擇發佈）。
- * 有「必須處理」都可以「下一步」：未完成嘅行今次唔發佈
+ * 有「必須處理」都可以「下一步」：未完成嘅行今次唔發佈。
+ * 「其他改動」section（OthersSection）：其他已儲存改動全部列出，同確認發佈頁嘅卡一樣，淨係顯示（一定一併發佈，冇勾選）
  */
 import { AlertTriangle, Check, FileText, Inbox } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
 import { AppearanceSection } from './AppearanceSection';
+import { OthersSection } from './OthersSection';
+import { pendingPublishCount } from './pendingModel';
 import { usePublishSelection } from './PublishSelection';
+import { usePublishPlan } from './usePublishPlan';
 import { SelectionFooter } from './SelectionFooter';
 import { Stepper } from './Stepper';
 import { TodoMatrix } from './TodoMatrix';
 import { StatCards, type Stat } from '../../ui/StatCards';
-import { incompleteRows, selectionOf } from './selectionModel';
+import { incompleteRows } from './selectionModel';
 import { todoStats } from './todoModel';
 
 const statsOf = (counts: ReturnType<typeof todoStats>): Stat[] => [
@@ -42,6 +46,22 @@ const statsOf = (counts: ReturnType<typeof todoStats>): Stat[] => [
     },
 ];
 
+const isWaiting = (resource: { data: unknown; error: Error | undefined }) =>
+    resource.data === undefined && resource.error === undefined;
+
+/**
+ * 冇新內容待辦行時：待辦 / 變更未載入完 =「載入中…」；有其他改動 / App 外觀改動 = 唔出（下面 section 已列）；
+ * 全部都冇先出「沒有待發佈的項目。」；載入失敗 = 唔出（錯誤已另外顯示）
+ */
+function EmptyNote() {
+    const { todos, changes } = useAdminData();
+    if (isWaiting(todos) || isWaiting(changes))
+        return <p className="note ok">{t('app.loading')}</p>;
+    if (todos.error || changes.error) return null;
+    if (pendingPublishCount([], changes.data) > 0) return null;
+    return <p className="note ok">{t('update.nothingPending')}</p>;
+}
+
 export function UpdatePage() {
     const { todos, entries, changes } = useAdminData();
     const { unpicked, toggleContent, toggleAppearance } = usePublishSelection();
@@ -50,7 +70,7 @@ export function UpdatePage() {
     useEffect(() => void reload(), [reload]);
     const rows = todos.data?.rows ?? [];
     const appearance = changes.data?.appearance;
-    const selection = selectionOf(rows, appearance, unpicked);
+    const { selection, path } = usePublishPlan();
     return (
         <>
             <div className="title-row">
@@ -76,10 +96,12 @@ export function UpdatePage() {
                     onToggle={toggleContent}
                 />
             ) : (
-                <p className="note ok">{todos.loading ? t('app.loading') : t('update.noTodos')}</p>
+                <EmptyNote />
             )}
+            <OthersSection changes={changes.data} entries={entries.data ?? []} />
             <SelectionFooter
                 selection={selection}
+                path={path}
                 incomplete={incompleteRows(rows).length}
                 others={changes.data?.others?.items ?? []}
                 loading={changes.data === undefined}

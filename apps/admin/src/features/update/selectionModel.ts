@@ -83,6 +83,10 @@ export const hasAnythingToPublish = (
 export const encodeSelection = (selection: PublishSelection): string =>
     new URLSearchParams({ [SELECTION_PARAM]: JSON.stringify(selection) }).toString();
 
+/** 確認發佈頁網址（「下一步」同 stepper 共用，帶住今次選擇） */
+export const publishPathOf = (selection: PublishSelection): string =>
+    `/publish?${encodeSelection(selection)}`;
+
 const isSelection = (value: unknown): value is PublishSelection =>
     isRecord(value) &&
     Array.isArray(value.content) &&

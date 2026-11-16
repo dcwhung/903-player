@@ -4,7 +4,7 @@
 // 檢查：節目頁第一次入自動彈 sheet、ⓘ 位置、橫版右欄；全集 sheet 箭咀展開 / 收合（減少動態直接切換）、
 // 揀未聽短篇彈短篇 sheet；今日節目表箭咀、第一次展開之後收合、橫版標題列
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
-import { isShown, runSection } from './harness.mjs';
+import { isShown, runSection, succeeds } from './harness.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 
 const WAIT_MS = 5000;
@@ -12,6 +12,8 @@ const ABSENT_WAIT_MS = 1500;
 /** 展開 / 收合過場（tokens.css --view-transition-fade 260ms）之後先量 */
 const SETTLE_MS = 600;
 const LANDSCAPE = { viewport: { width: 1280, height: 800 } };
+/** 窄橫版：唱片按欄闊計（T7b：ⓘ 喺進度圈外面都要放得落欄入面） */
+const NARROW_LANDSCAPE = { viewport: { width: 1024, height: 768 } };
 /** ⓘ 離畫面右邊（同頁頭返回掣離左邊一樣，--space-3 × --ui-scale；直版 ui-scale 1） */
 const INFO_RIGHT_GAP_PX = 12;
 const GAP_TOLERANCE_PX = 2;
@@ -135,6 +137,28 @@ const checkShowPortrait = async (env, json) => {
     log(await isShown(sheet, { timeout: WAIT_MS }), '節目資料：撳 ⓘ 再開到 sheet');
 };
 
+/**
+ * T7b：橫版 ⓘ 喺進度圈（唱片格，弧形填滿成格闊）右邊外面、頂同唱片格齊，完整喺所屬欄（.infoRow）同畫面入面
+ */
+const checkInfoOutsideRing = async (env, p, label) => {
+    const info = await p.getByRole('button', { name: '節目資料' }).boundingBox();
+    const ring = await p.getByRole('slider', { name: '播放進度' }).boundingBox();
+    const row = await p
+        .locator('[data-player-gauge]')
+        .first()
+        .evaluate((el) => el.parentElement.getBoundingClientRect().toJSON());
+    const ringRight = ring ? ring.x + ring.width : Infinity;
+    const outside = info !== null && info.x >= ringRight - 0.5;
+    const right = info ? info.x + info.width : Infinity;
+    const inside = right <= row.right + 0.5 && right <= viewportWidth(p) + 0.5;
+    const offTop = info && ring ? info.y - ring.y : -1;
+    env.log(
+        outside && inside && Math.abs(offTop) <= GAP_TOLERANCE_PX,
+        `${label}：ⓘ 喺進度圈外面（掣左 ${info?.x.toFixed(1)} ≥ 圈右 ${ringRight.toFixed(1)}）、` +
+            `完整喺欄入面（掣右 ${right.toFixed(1)} ≤ 欄右 ${row.right.toFixed(1)}）、頂差 ${offTop.toFixed(1)}px`,
+    );
+};
+
 /** 節目頁橫版：sheet 喺右欄（唱片嗰欄），唔蓋左欄清單、冇遮罩 */
 const checkShowLandscape = async (env, json) => {
     const { p } = await open(env, json, LANDSCAPE);
@@ -151,6 +175,7 @@ const checkShowLandscape = async (env, json) => {
         timeout: ABSENT_WAIT_MS,
     });
     env.log(!backdrop, '節目資料橫版：冇遮罩，左欄清單照撳得');
+    await checkInfoOutsideRing(env, p, '節目資料橫版（sheet 開住）');
     await checkBanner(env, sheet, '節目資料橫版');
     // 撳左欄任何掣（呢度：第一個集數收藏星）右欄 sheet 自動閂
     await p
@@ -158,16 +183,22 @@ const checkShowLandscape = async (env, json) => {
         .getByRole('button', { name: /收藏/ })
         .first()
         .click();
-    const closed = !(await isShown(sheet, { timeout: ABSENT_WAIT_MS }));
+    // 收埋動畫（T6）完先 unmount：等佢走，唔係即刻當冇
+    const closed = await succeeds(sheet.waitFor({ state: 'detached', timeout: WAIT_MS }));
     env.log(closed, '節目資料橫版：撳左欄掣，右欄 sheet 自動閂');
-    // ⓘ 離畫面右邊同直版一樣計法：同頁頭返回掣離左邊一樣（--space-3 × --ui-scale），唔再讓開把手預留位
-    const info = await p.getByRole('button', { name: '節目資料' }).boundingBox();
-    const back = await p.getByRole('button', { name: '返回主頁' }).first().boundingBox();
-    const gap = info ? viewportWidth(p) - (info.x + info.width) : -1;
-    env.log(
-        back !== null && Math.abs(gap - back.x) <= GAP_TOLERANCE_PX,
-        `節目資料橫版：ⓘ 離右邊 ${gap.toFixed(1)}px（返回掣離左邊 ${back?.x.toFixed(1)}px）`,
-    );
+    await checkInfoOutsideRing(env, p, '節目資料橫版');
+};
+
+/** 窄橫版（1024×768）：唱片按欄闊計，ⓘ 照樣喺進度圈外面、唔出欄（sheet 開住同閂咗都驗） */
+const checkShowNarrowLandscape = async (env, json) => {
+    const { p } = await open(env, json, NARROW_LANDSCAPE);
+    await p.goto(`${env.base}#/show/gongzi`);
+    const sheet = infoSheet(p, '節目資料');
+    await sheet.waitFor({ timeout: WAIT_MS });
+    await checkInfoOutsideRing(env, p, '節目資料窄橫版（sheet 開住）');
+    await sheet.getByRole('button', { name: '關閉' }).click();
+    await sheet.waitFor({ state: 'detached', timeout: WAIT_MS });
+    await checkInfoOutsideRing(env, p, '節目資料窄橫版');
 };
 
 /**
@@ -326,6 +357,7 @@ export const runItemInfoChecks = async (env) => {
     const section = (label, run) => runSection(env.log, label, run, env.browser);
     await section('節目資料：節目頁直版', () => checkShowPortrait(env, json));
     await section('節目資料：節目頁橫版', () => checkShowLandscape(env, json));
+    await section('節目資料：節目頁窄橫版', () => checkShowNarrowLandscape(env, json));
     await section('節目資料：全集 sheet', () => checkArcPick(env, json));
     await section('節目資料：全集 sheet 減少動態', () => checkArcSheet(env, json, true));
     await section('節目資料：全集 sheet 橫版', () => checkArcSheetLandscape(env, json));

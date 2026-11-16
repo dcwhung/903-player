@@ -1,8 +1,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { StrictMode } from 'react';
+import { StrictMode, type ReactNode } from 'react';
+import { fakeData, resource } from '../../../tests/renderApp';
 import { ApiError } from '../../api/client';
 import { fetchR2Source, getDramaSources, uploadAsset } from '../../api/endpoints';
-import type { LoadedEntry } from '../../api/types';
+import type { ChangesResponse, LoadedEntry } from '../../api/types';
+import { AdminDataContext } from '../../data/AdminData';
 import { prepareImage } from '../../ui/imageCrop';
 import type { Draft } from '../editor/entryDraft';
 import { useR2AutoCrop } from './useR2AutoCrop';
@@ -52,6 +54,22 @@ const editorOf = (entry: LoadedEntry) => {
     return { editor: { entry, patchSaved }, saved };
 };
 
+type AutoCropEditor = Parameters<typeof useR2AutoCrop>[1];
+
+/** AdminData（假）包住；strict = 再包 StrictMode */
+const renderCrop = (id: string, editor: AutoCropEditor, strict = false) => {
+    const changes = resource<ChangesResponse>(undefined);
+    const wrapper = ({ children }: { children: ReactNode }) => {
+        const tree = (
+            <AdminDataContext.Provider value={fakeData({ changes })}>
+                {children}
+            </AdminDataContext.Provider>
+        );
+        return strict ? <StrictMode>{tree}</StrictMode> : tree;
+    };
+    return { ...renderHook(() => useR2AutoCrop(id, editor), { wrapper }), changes };
+};
+
 describe('useR2AutoCrop', () => {
     beforeEach(() => {
         vi.mocked(getDramaSources).mockResolvedValue(SOURCES);
@@ -70,7 +88,7 @@ describe('useR2AutoCrop', () => {
 
     it('should crop every empty slot that has an R2 source and save them in one PUT', async () => {
         const { editor, saved } = editorOf(entryOf(R2_DRAMA));
-        const { result } = renderHook(() => useR2AutoCrop('lancy', editor));
+        const { result } = renderCrop('lancy', editor);
         await waitFor(() => expect(editor.patchSaved).toHaveBeenCalledOnce());
         expect(prepareImage).toHaveBeenCalledTimes(3);
         expect(saved[0]?.definition).toMatchObject({
@@ -87,11 +105,25 @@ describe('useR2AutoCrop', () => {
         });
     });
 
+    it('should reload the pending changes after saving (nav 待發佈 count)', async () => {
+        const { editor } = editorOf(entryOf(R2_DRAMA));
+        const { changes } = renderCrop('lancy', editor);
+        await waitFor(() => expect(changes.reload).toHaveBeenCalledOnce());
+        expect(editor.patchSaved).toHaveBeenCalledOnce();
+    });
+
+    it('should not reload the pending changes when saving fails', async () => {
+        const { editor } = editorOf(entryOf(R2_DRAMA));
+        editor.patchSaved.mockResolvedValue(false);
+        const { changes } = renderCrop('lancy', editor);
+        await waitFor(() => expect(editor.patchSaved).toHaveBeenCalledOnce());
+        await act(async () => {});
+        expect(changes.reload).not.toHaveBeenCalled();
+    });
+
     it('should run once under StrictMode and re-renders', async () => {
         const { editor } = editorOf(entryOf(R2_DRAMA));
-        const { rerender } = renderHook(() => useR2AutoCrop('lancy', editor), {
-            wrapper: StrictMode,
-        });
+        const { rerender } = renderCrop('lancy', editor, true);
         rerender();
         await waitFor(() => expect(editor.patchSaved).toHaveBeenCalledOnce());
         expect(getDramaSources).toHaveBeenCalledOnce();
@@ -100,7 +132,7 @@ describe('useR2AutoCrop', () => {
     it('should leave a slot quietly empty when R2 has no such source (404)', async () => {
         vi.mocked(fetchR2Source).mockRejectedValue(new ApiError(404, 'not found'));
         const { editor } = editorOf(entryOf(R2_DRAMA));
-        const { result } = renderHook(() => useR2AutoCrop('lancy', editor));
+        const { result } = renderCrop('lancy', editor);
         await waitFor(() => expect(fetchR2Source).toHaveBeenCalledTimes(3));
         await act(async () => {});
         expect(editor.patchSaved).not.toHaveBeenCalled();
@@ -110,7 +142,7 @@ describe('useR2AutoCrop', () => {
     it('should show an error and keep the slot empty when the source fails otherwise', async () => {
         vi.mocked(fetchR2Source).mockRejectedValue(new ApiError(500, 'HTTP 500'));
         const { editor } = editorOf(entryOf(R2_DRAMA));
-        const { result } = renderHook(() => useR2AutoCrop('lancy', editor));
+        const { result } = renderCrop('lancy', editor);
         await waitFor(() =>
             expect(result.current.statusOf().disc).toEqual({
                 status: 'error',
@@ -126,9 +158,9 @@ describe('useR2AutoCrop', () => {
             { 'disc.webp': 'a.webp', 'tile.webp': 'b.webp' },
         );
         const { editor } = editorOf(filled);
-        renderHook(() => useR2AutoCrop('lancy', editor));
+        renderCrop('lancy', editor);
         const { editor: other } = editorOf(entryOf({ name: 'x', audio: { host: 'app' } }));
-        renderHook(() => useR2AutoCrop('other', other));
+        renderCrop('other', other);
         await act(async () => {});
         expect(getDramaSources).not.toHaveBeenCalled();
     });
@@ -136,7 +168,7 @@ describe('useR2AutoCrop', () => {
     it('should quietly skip dramas the sources endpoint refuses (422)', async () => {
         vi.mocked(getDramaSources).mockRejectedValue(new ApiError(422, 'not r2'));
         const { editor } = editorOf(entryOf(R2_DRAMA));
-        const { result } = renderHook(() => useR2AutoCrop('lancy', editor));
+        const { result } = renderCrop('lancy', editor);
         await waitFor(() => expect(getDramaSources).toHaveBeenCalledOnce());
         await act(async () => {});
         expect(result.current.statusOf()).toEqual({});
@@ -146,7 +178,7 @@ describe('useR2AutoCrop', () => {
     it('should retry still-empty slots after a rescan finds new R2 sources', async () => {
         vi.mocked(getDramaSources).mockResolvedValueOnce({ ...SOURCES, cdCover: null, arcs: [] });
         const { editor, saved } = editorOf(entryOf(R2_DRAMA));
-        const { result } = renderHook(() => useR2AutoCrop('lancy', editor));
+        const { result } = renderCrop('lancy', editor);
         await waitFor(() => expect(getDramaSources).toHaveBeenCalledOnce());
         await act(async () => {});
         expect(editor.patchSaved).not.toHaveBeenCalled();
@@ -168,7 +200,7 @@ describe('useR2AutoCrop', () => {
                 }),
         );
         const { editor } = editorOf(entryOf(R2_DRAMA));
-        const { result } = renderHook(() => useR2AutoCrop('lancy', editor));
+        const { result } = renderCrop('lancy', editor);
         await waitFor(() => expect(fetchR2Source).toHaveBeenCalledOnce());
 
         await act(async () => {

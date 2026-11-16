@@ -21,6 +21,11 @@ export interface SheetDragControls {
     abort: () => void;
     /** 表開 / 閂時清走未完嘅手勢同閂表計時 */
     reset: () => void;
+    /**
+     * 表（再）開時清走拉表留低嘅 inline style / data attribute（W-777）：
+     * 拉走之後收埋動畫未完就再開，會重用同一粒 DOM，唔清就留喺畫面外、唔收 tap
+     */
+    clearLeftovers: () => void;
 }
 
 export type GetElement = () => HTMLElement | null;
@@ -62,6 +67,16 @@ const settle = (sheet: HTMLElement | null, backdrop: HTMLElement | null, dismiss
     }
     if (sheet) sheet.style.transform = dismiss ? FULLY_HIDDEN : '';
     if (backdrop) backdrop.style.opacity = dismiss ? '0' : '';
+};
+
+/** 清走 paint / settle 寫落表同遮罩嘅嘢，交返 CSS（sheet-in 由底滑上）話事 */
+const clearDragStyles = (sheet: HTMLElement | null, backdrop: HTMLElement | null) => {
+    for (const el of [sheet, backdrop]) {
+        el?.removeAttribute(DRAGGING_ATTR);
+        el?.removeAttribute(CLOSING_ATTR);
+    }
+    if (sheet) sheet.style.transform = '';
+    if (backdrop) backdrop.style.opacity = '';
 };
 
 /** 閂表計時：滑走動畫完先 onClose；onClose 用 ref，拉緊途中 re-render（播放時間每秒更新）唔會斷 */
@@ -113,10 +128,22 @@ interface ControlDeps {
     close: ReturnType<typeof useCloseTimer>;
 }
 
+/**
+ * 彈出動畫（SheetMotion sheet-in，CSSAnimation 有 animationName）未完就拉：即刻完咗佢，
+ * 唔係動畫會蓋過拉表嘅 inline transform，表唔跟手指。拉表 / 彈返嘅 transition 唔郁
+ */
+const finishOpening = (sheet: HTMLElement) => {
+    if (typeof sheet.getAnimations !== 'function') return;
+    sheet.getAnimations().forEach((animation) => {
+        if ('animationName' in animation) animation.finish();
+    });
+};
+
 /** 按低：表滑走緊 / 已經有手勢（例如 header 同清單同時拉）就唔接；量一次表高 */
 const startGesture = ({ getSheet, gesture, close }: ControlDeps, y: number, t: number) => {
     const sheet = getSheet();
     if (!sheet || close.isPending() || gesture.current) return false;
+    finishOpening(sheet);
     const height = sheet.getBoundingClientRect().height;
     gesture.current = { startY: y, height, offset: 0, samples: [toSample(y, t)] };
     return true;
@@ -156,6 +183,7 @@ const createControls = (deps: ControlDeps): SheetDragControls => ({
         deps.gesture.current = null;
         deps.close.cancel();
     },
+    clearLeftovers: () => clearDragStyles(deps.getSheet(), deps.getBackdrop()),
 });
 
 /** controls 只靠 box，所以係穩定嘅（listener 唔會拉緊途中重新掛） */

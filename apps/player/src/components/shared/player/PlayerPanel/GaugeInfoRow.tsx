@@ -14,8 +14,9 @@ interface GaugeInfoRowProps {
 const INFO_ICON_SIZE = 24;
 
 /**
- * 唱片圈頂嗰行右邊嘅 ⓘ（P9.5 #12）：成行闊（唔係唱片闊），離右邊同頁頭返回掣離左邊一樣，
- * 直版橫版同一位置；冇底色，icon 用主題強調色
+ * 唱片圈頂嗰行右邊嘅 ⓘ（P9.5 #12）：直版成行闊（唔係唱片闊），離右邊同頁頭返回掣離左邊一樣；
+ * 橫版（T7 / T7b）喺進度圈右邊外面、頂同唱片格齊，唔壓住圈亦唔去到闊欄嘅邊（PlayerPanel.module.css）；
+ * 冇底色，icon 用主題強調色
  */
 export const GaugeInfoRow = ({ onInfo, label, children }: GaugeInfoRowProps) => (
     // S-1014：一律包 wrapper，淨係條件 render ⓘ；短篇之間轉（有 / 冇資料）唔會 remount Disc / ArcSlider

@@ -13,8 +13,9 @@ const MIN_CARD_GAP_PX = 8;
 describe('mini player bottom gap', () => {
     // 用戶 iPhone：viewport 以下嘅 59px 係 iOS（畫唔到），控制得到嘅只係安全區以外嗰格
     it('should sit one --space-2 above the safe area left inside the viewport', () => {
+        // S-1092：睇得到嘅安全區用返 --safe-area-bottom-visible，唔再抄一次條式
         expect(cssDeclarations(tokens, ':root')['--mini-player-offset-bottom']).toBe(
-            'calc( max(0px, calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))) + var(--space-2) )',
+            'calc(var(--safe-area-bottom-visible) + var(--space-2))',
         );
     });
 });

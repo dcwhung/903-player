@@ -914,10 +914,17 @@
     margin-top: 6px;
 }
 
-.hist-row .deploy a {
-    color: var(--accent-ink);
-    font-size: 13px;
-    font-weight: 600;
+/* 部署中 / 失敗：pill 本身連去 GitHub run 頁 */
+.hist-row .deploy .pill-link {
+    display: inline-flex;
+    border-radius: 999px;
+    text-decoration: none;
+}
+
+.hist-row .deploy .pill-link:hover .pill,
+.hist-row .deploy .pill-link:focus-visible .pill {
+    text-decoration: underline;
+    box-shadow: 0 0 0 1px currentcolor;
 }
 
 @media (max-width: 760px) {
