@@ -23,11 +23,9 @@ import { useDailyDramaPage } from './useDramaPage';
  */
 export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
     // 由「我的收藏」撳行入嚟：唔播，清單捲去嗰集、短暫 highlight
-    const focusUrl = useEpisodeFocus();
-    const { theme, current, start, strip, items, selectEpisode, pressEpisode } = useDailyDramaPage(
-        drama,
-        focusUrl,
-    );
+    const focusId = useEpisodeFocus();
+    const { theme, current, start, strip, items, focusKey, selectEpisode, pressEpisode } =
+        useDailyDramaPage(drama, focusId);
     const { duration } = usePlayer();
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
     // 橫版頁頭喺左欄清單上面（清單成日都有）
@@ -63,7 +61,7 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
                         items={items}
                         onSelect={pressEpisode}
                         labels="taggedDate"
-                        focusKey={focusUrl}
+                        focusKey={focusKey}
                     />
                 </div>
                 <InnerPageHandle page={{ kind: 'drama', dramaId: drama.id }} />

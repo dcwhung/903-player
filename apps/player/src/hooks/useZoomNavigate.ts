@@ -15,7 +15,7 @@ export const useZoomNavigate = () => {
             zoomInto(
                 key,
                 (zoomed) => {
-                    // extra：入頁要帶嘅其他 state（例如收藏 tab 撳行帶嗰集，focusUrl）
+                    // extra：入頁要帶嘅其他 state（例如收藏 tab 撳行帶嗰集，focusId）
                     const state = zoomed ? { ...extra, ...zoomState(key) } : extra;
                     void navigate(path, state ? { state } : undefined);
                 },
