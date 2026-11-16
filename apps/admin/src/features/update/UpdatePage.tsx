@@ -70,7 +70,7 @@ export function UpdatePage() {
     useEffect(() => void reload(), [reload]);
     const rows = todos.data?.rows ?? [];
     const appearance = changes.data?.appearance;
-    const { selection } = usePublishPlan();
+    const { selection, path } = usePublishPlan();
     return (
         <>
             <div className="title-row">
@@ -101,6 +101,7 @@ export function UpdatePage() {
             <OthersSection changes={changes.data} entries={entries.data ?? []} />
             <SelectionFooter
                 selection={selection}
+                path={path}
                 incomplete={incompleteRows(rows).length}
                 others={changes.data?.others?.items ?? []}
                 loading={changes.data === undefined}

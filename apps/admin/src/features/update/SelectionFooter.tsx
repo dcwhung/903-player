@@ -10,10 +10,15 @@ import { Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { PublishSelection } from '../../api/types';
 import { t } from '../../i18n/t';
-import { hasAnythingToPublish, pickedCount, publishPathOf } from './selectionModel';
+import { hasAnythingToPublish, pickedCount } from './selectionModel';
 
 interface SelectionFooterProps {
     selection: PublishSelection;
+    /**
+     * usePublishPlan 嘅 path（S-1093：同 Stepper「確認發佈」同一個來源）：
+     * undefined = 未載入 / 載入失敗 / 冇嘢揀，「下一步」灰
+     */
+    path: string | undefined;
     incomplete: number;
     /** 其他已儲存改動（GET /api/changes others.items，Q3） */
     others: readonly ChangeItem[];
@@ -42,10 +47,6 @@ const summaryOf = ({
 
 export function SelectionFooter(props: SelectionFooterProps) {
     const navigate = useNavigate();
-    const canGo =
-        props.error === undefined &&
-        !props.loading &&
-        hasAnythingToPublish(props.selection, props.others);
     return (
         <div className="savebar">
             <span className="muted small" aria-live="polite">
@@ -55,8 +56,10 @@ export function SelectionFooter(props: SelectionFooterProps) {
                 <button
                     type="button"
                     className="primary big"
-                    disabled={!canGo}
-                    onClick={() => navigate(publishPathOf(props.selection))}
+                    disabled={props.path === undefined}
+                    onClick={() => {
+                        if (props.path !== undefined) navigate(props.path);
+                    }}
                 >
                     <Send aria-hidden="true" />
                     {t('update.next')}
