@@ -78,7 +78,7 @@
     --today-row-gap: calc(14px * var(--ui-scale));
     --today-row-icon: calc(22px * var(--ui-scale));
     --today-row-height: calc(64px * var(--ui-scale));
-    /* S-1016：行碟（Disc size="small"）同資料區縮入共用一個大細，Disc 跟呢度，唔使抄 Disc 預設 */
+    /* S-1055：行碟（Disc size="small"）同資料區縮入共用一個大細，Disc 跟呢度，唔使抄 Disc 預設 */
     --disc-small-size: calc(40px * var(--ui-scale));
 }
 

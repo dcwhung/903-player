@@ -83,7 +83,7 @@ describe('ItemInfoSheet', () => {
     });
 
     it('should render both parts without a key clash when the arc is named like the drama', () => {
-        // S-1018：短篇顯示名同劇集名一樣時 key 唔可以撞
+        // S-1057：短篇顯示名同劇集名一樣時 key 唔可以撞
         const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
         render(
             <ItemInfoSheet

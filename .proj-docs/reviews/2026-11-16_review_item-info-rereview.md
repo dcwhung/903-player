@@ -1,8 +1,10 @@
 # Code Re-review — 2026-11-16 — P9.5 #12 節目 / 劇集資料（item info）
 
+> **改號註明（2026-11-16）**：本報告原本用 S-1015–S-1018，同 `main` S-751 review（`2026-11-16_review_S-751-remove-cli.md`）撞號，合併時改為 S-1054–S-1057：S-1015 → S-1054、S-1016 → S-1055、S-1017 → S-1056、S-1018 → S-1057。commit message 照舊用舊號。
+
 - 審閱者：Code Reviewer（獨立角色，冇寫過呢批代碼）
 - 目標：`feature/catalog/item-info`（未 push），`a7607d8..919ca28`；code commit 共 19 個（`docs(mockup)` / `docs(plan)` 只用嚟對規格）
-- 上一輪：`2026-11-16_review_item-info.md`（95 / 100，W-747 + S-1014 – S-1018）
+- 上一輪：`2026-11-16_review_item-info.md`（95 / 100，W-747 + S-1014、S-1054 – S-1057）
 - 規格：`.proj-docs/plans/2026-11-16_plan_item-info.md`（已更新）；Design Origin：`mockup:_mockups_/catalog-item-info/index.html`（用戶真機 / preview 已確認）
 - Tier **T2**；Review Item ID：今次用 **W-748**、**S-1019 – S-1021**（冇 C）
 - 總評：**✅ pass（95 / 100）**。上一輪 6 項全部修好，而且每項都有回歸測試。新改動（V1–V4、「逢…播放」、橫版撳左欄閂、行資料全闊、banner、G1、64:27、ⓘ 離邊）逐點對得上 plan。得 1 個 Warning（新播放時間字眼寫死喺 selector，冇入 `zh-HK.ts`），3 個 Suggestion。
@@ -17,10 +19,10 @@ all pass —— `npx tsc -b` exit 0；`npm run lint`（eslint + `prettier --chec
 | ------ | ------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | W-747  | e9578b9 | ✅ verified | `Sheet/useSheetBehaviour.ts:7-25` 用 `onCloseRef`，effect 只依 `open`；`ItemInfoSheet.test.tsx:120`「re-rendered with a new onClose」keep focus 綠 |
 | S-1014 | 6db4d83 | ✅ verified | `GaugeInfoRow.tsx:20-35` 一律包 `.infoRow`；`PlayerGauge.test.tsx:434-457` 斷言 `[data-player-gauge]` 同一個 node                                  |
-| S-1015 | db7772a | ✅ verified | sheet hooks 搬咗去 `components/shared/common/Sheet/`；`rg "from '.*pages/" components/shared` 冇結果；`dragVelocity` 抽去 `hooks/`                 |
-| S-1016 | 4233fd8 | ✅ verified | `TodayShowList.module.css:82` 設 `--disc-small-size`，Disc（`Disc.module.css:33`）同 `.rowInfo` 共用                                               |
-| S-1017 | 2909c97 | ✅ verified | `e2e/run.mjs:582,880`、`e2e/touch.mjs:466` 用 `[data-role="today-list"]`；`TodayShowListInfo.test.tsx:78` 有對應 unit test                         |
-| S-1018 | 542c85a | ✅ verified | `ItemInfoSheet.tsx:87` `key={section.kind}`；`ItemInfoSheet.test.tsx:86` 同名劇集 / 短篇 test                                                      |
+| S-1054 | db7772a | ✅ verified | sheet hooks 搬咗去 `components/shared/common/Sheet/`；`rg "from '.*pages/" components/shared` 冇結果；`dragVelocity` 抽去 `hooks/`                 |
+| S-1055 | 4233fd8 | ✅ verified | `TodayShowList.module.css:82` 設 `--disc-small-size`，Disc（`Disc.module.css:33`）同 `.rowInfo` 共用                                               |
+| S-1056 | 2909c97 | ✅ verified | `e2e/run.mjs:582,880`、`e2e/touch.mjs:466` 用 `[data-role="today-list"]`；`TodayShowListInfo.test.tsx:78` 有對應 unit test                         |
+| S-1057 | 542c85a | ✅ verified | `ItemInfoSheet.tsx:87` `key={section.kind}`；`ItemInfoSheet.test.tsx:86` 同名劇集 / 短篇 test                                                      |
 
 ## 評分結果
 
@@ -92,7 +94,7 @@ hard_gates:
 next_action: merge_develop
 next_agent: quality-assurance
 branch: "feature/catalog/item-info"
-context: "item info re-review 95/100 pass；W-747、S-1014–S-1018 全部 verified；新 W-748（formatPlayTime 文案寫死喺 selector，建議 merge 前搬入 zh-HK.ts）；S-1019–S-1021 backlog；integration branch = main；QA S1 chains catalog-data / drama / show-today-page"
+context: "item info re-review 95/100 pass；W-747、S-1014、S-1054–S-1057 全部 verified；新 W-748（formatPlayTime 文案寫死喺 selector，建議 merge 前搬入 zh-HK.ts）；S-1019–S-1021 backlog；integration branch = main；QA S1 chains catalog-data / drama / show-today-page"
 ```
 
 ## Delta re-review — `1b52b8f..f47d174`（2026-11-16）

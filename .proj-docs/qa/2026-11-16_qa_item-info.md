@@ -4,7 +4,7 @@
 - Ledger（`impact --since "$(git merge-base HEAD origin/main)"` = `713cb85`）: SKIP 2（admin、api）/ REVERIFY 12 / UNCOVERED 153（新 code / test 51 + `_mockups_/catalog-item-info/` 102）/ IGNORED 3
     - 主鏈：catalog-data、drama、show-today-page；其餘 9 條（bookmark、card-zoom、coming-soon、home、mini-player、player-core、pwa-shell、repo-tooling、ui-foundation）係共用檔被改（`useDramaPage`、`ShowPage`、`tokens.css`、`i18n`、`constants`、ArcSheet `sheetDrag` 等 → `Sheet/` 改名、version bump）→ 按各自 plan 重驗
     - UNCOVERED 歸鏈：ItemInfo / Sheet / `useItemInfoSheet` / `dragVelocity` / `selectors/itemInfo` / mockup / `e2e/itemInfo.mjs` → show-today-page（+ drama 共用嗰啲）；ArcSheet 新檔、`useSeriesInfo` / `useDailyInfo` / `seriesPageLabels` / `e2e/arcSheet.mjs` → drama；`selectors/itemInfo*` → catalog-data（1-hop）
-- SSoT: `.proj-docs/plans/2026-11-16_plan_item-info.md`；review `.proj-docs/reviews/2026-11-16_review_item-info-rereview.md`（100/100 pass）；plans 更新 `plans/{catalog-data,drama,show-today-page}.md`（加 AC：catalog-data AC-11、drama AC-11（merge main 後由 AC-7 / AC-10 改號）、show-today-page AC-5；scope、commands），其餘 9 份沿用
+- SSoT: `.proj-docs/plans/2026-11-16_plan_item-info.md`；review `.proj-docs/reviews/2026-11-16_review_item-info-rereview.md`（100/100 pass）；plans 更新 `plans/{catalog-data,drama,show-today-page}.md`（加 AC：catalog-data AC-11、drama AC-12（merge main 後由 AC-7 / AC-10 改號；drama 第二次 merge main（S-751 用咗 AC-11）再改 AC-12）、show-today-page AC-5；scope、commands），其餘 9 份沿用
 
 ## Runs
 
@@ -25,7 +25,7 @@
 ## Delta：merge `origin/main`（`48dfb14`，1.36.0）→ `e7dbb9f`（1.37.0）
 
 - 新 base = `git merge-base HEAD origin/main` = `48dfb14`；`impact`：SKIP 8 / REVERIFY 6（catalog-data、drama、home、pwa-shell、show-today-page、ui-foundation）/ UNCOVERED 12（`ledger-merge.mjs` exit 1 冇寫入嘅 28 行 + 改名前舊 ArcSheet path）；S1 層面：drama / show-today-page 因 `e2e/itemInfo.mjs`（跟 main 嘅 `openWithCatalog({ contextOptions })` 新簽名）STALE；其餘 REVERIFY 係 S3 行
-- Merge 解衝突嘅 code：`itemInfo.mjs` 簽名、`remoteCatalog.mjs` export `CATALOG_DIR` / `CATALOG_FOLDER`、`run.mjs`（main 嘅 S-1017 `data-role="today-list"` + itemInfo section）、`packages/catalog/src/index.ts`（加 `type ArcInfo`）、version 1.37.0（`package.json` / lock 各 1 行）；item-info 52 個改動 .ts / .tsx：`git diff 22e69ba e7dbb9f` 淨 `packages/catalog/src/index.ts` 有改（main 嘅 export + `type ArcInfo`）→ coverage 證據沿用
+- Merge 解衝突嘅 code：`itemInfo.mjs` 簽名、`remoteCatalog.mjs` export `CATALOG_DIR` / `CATALOG_FOLDER`、`run.mjs`（main 嘅 S-1056 `data-role="today-list"` + itemInfo section）、`packages/catalog/src/index.ts`（加 `type ArcInfo`）、version 1.37.0（`package.json` / lock 各 1 行）；item-info 52 個改動 .ts / .tsx：`git diff 22e69ba e7dbb9f` 淨 `packages/catalog/src/index.ts` 有改（main 嘅 export + `type ArcInfo`）→ coverage 證據沿用
 - `npm test -- <11 份 plan（merge 後版本）npm test path 聯集，162 個>`：297 files / 3459 tests pass（102 s）；e2e 引用 Developer @`e7dbb9f`（log 11:20，commit 11:06，working tree clean）：912 PASS / 0 FAIL「All E2E checks passed」，`節目資料：…` 25 個 PASS；tsc 0、lint pass（Developer 同 SHA）
 - Freeze @`3018e14`（code = `e7dbb9f`，之後淨 re-review 報告）：catalog-data / coming-soon / drama / home / player-core / repo-tooling / show-today-page S1 = ledger 現有行 + 28 行（ArcSheet 嗰批用 `shared/common/Sheet/` 新 path）；同兩個 parent（`1f4a4b6`、`48dfb14`）比 chain + stage + path 冇少行（`1f4a4b6` 嘅 admin `ImagePreviewDialog.test.tsx` 行唔喺度 = main 已刪該檔，非今次鏈）
 

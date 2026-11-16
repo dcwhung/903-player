@@ -75,7 +75,7 @@ describe('TodayShowList item info（P9.5 #12）', () => {
     });
 
     it('should mark the schedule list apart from the host chip lists', () => {
-        // S-1017：e2e 用 data-role 揀主清單，展開有主持 chip（都係 <ul>）都唔會撞
+        // S-1056：e2e 用 data-role 揀主清單，展開有主持 chip（都係 <ul>）都唔會撞
         const { container } = renderList({ infoExpanded: true, onToggleInfo: vi.fn() });
         const lists = container.querySelectorAll('[data-role="today-list"]');
         expect(lists).toHaveLength(1);

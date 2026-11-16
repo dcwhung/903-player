@@ -579,7 +579,7 @@ const checkTodayCardShare = (share, label, short) => {
 
 /** 今日節目頁固定：捲輪 / scrollTo 都唔會捲成頁；清單太長就自己捲 */
 const checkFixedTodayPage = async (p, label) => {
-    // S-1017：用 data-role 揀主清單（展開資料有主持 chip，都係 list）
+    // S-1056：用 data-role 揀主清單（展開資料有主持 chip，都係 list）
     const list = p.getByRole('region', { name: '節目表' }).locator('[data-role="today-list"]');
     // 橫版播放器喺右欄，唔受六成上限（同矮螢幕一樣只印出）
     const short = p.viewportSize().height <= SHORT_HEIGHT_PX || isLandscape(p);
@@ -877,7 +877,7 @@ const SHELL_PAGES = [
     {
         route: '#/today',
         region: '節目表',
-        // S-1017：主清單用 data-role 揀（展開資料嘅主持 chip 都係 list）
+        // S-1056：主清單用 data-role 揀（展開資料嘅主持 chip 都係 list）
         list: '[data-role="today-list"]',
         minRows: TODAY_MIN_ROWS,
         name: '今日節目頁',

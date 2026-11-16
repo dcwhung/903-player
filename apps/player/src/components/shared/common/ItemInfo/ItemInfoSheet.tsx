@@ -89,7 +89,7 @@ export const ItemInfoSheet = ({
                 <SheetTop banner={banner} onClose={onClose} />
                 <div ref={listRef} className={styles.body} data-role="sheet-list">
                     {sections.map((section) => (
-                        // S-1018：每種段落最多一段，用類型做 key（短篇名同劇集名一樣都唔撞）
+                        // S-1057：每種段落最多一段，用類型做 key（短篇名同劇集名一樣都唔撞）
                         <InfoSection
                             key={section.kind}
                             section={section}

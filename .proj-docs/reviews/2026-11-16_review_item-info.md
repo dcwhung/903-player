@@ -1,10 +1,12 @@
 # Code Review — 2026-11-16 — P9.5 #12 節目 / 劇集資料（item info）
 
+> **改號註明（2026-11-16）**：本報告原本用 S-1015–S-1018，同 `main` S-751 review（`2026-11-16_review_S-751-remove-cli.md`）撞號，合併時改為 S-1054–S-1057：S-1015 → S-1054、S-1016 → S-1055、S-1017 → S-1056、S-1018 → S-1057。commit message 照舊用舊號。
+
 - 審閱者：Code Reviewer（獨立角色，冇寫過呢批代碼）
 - 目標：`feature/catalog/item-info`（未 push），`c399d7b..505f5e2`（7 個 code commit；之前 `docs(mockup)` / `docs(plan)` 只用嚟對規格）
 - 流程：標準 `/feature`；Tier **T2**（MINOR 1.33.0 → 1.34.0、跨 catalog / drama / show-today-page）
 - 規格：`.proj-docs/plans/2026-11-16_plan_item-info.md`；Design Origin：`mockup:_mockups_/catalog-item-info/index.html`（頁頂兩節：「今日節目頁」+「A 修訂版」）
-- Review Item ID：今次用 **W-747**、**S-1014 – S-1018**（冇 C）
+- Review Item ID：今次用 **W-747**、**S-1014、S-1054 – S-1057**（冇 C）
 - 總評：**✅ pass（95 / 100）**。規格逐點對得上：registry 冇值唔出 key、只帶 enabled arc；`hasItemInfo` 唔計 airDays；ⓘ 分流（未揀 → 全集展開、已揀 → 獨立 sheet）；揀未聽短篇自動彈；今日節目表箭咀 + localStorage（有 try/catch）；lamp 80%；動畫放 `prefers-reduced-motion: no-preference`、用 `--view-transition-fade` + `grid-template-rows 0fr → 1fr`。測試有咬力（新邏輯 coverage 99%）。只有 1 個 Warning（焦點每次 re-render 被搶走），同 5 個 Suggestion。
 
 ## Hard Gates
@@ -19,10 +21,10 @@ Version bump：`apps/player/package.json` + `package-lock.json` 1.33.0 → 1.34.
 | -------- | ------ | ------- | ----------------------------------------------------- |
 | 正確性   | 20     | 25      | W-747                                                 |
 | 安全性   | 20     | 20      | 純顯示；chip 唔係連結；文字經 React escape            |
-| 可維護性 | 20     | 20      | S-1014 / S-1015 / S-1016 / S-1018（🟢 唔扣分）        |
+| 可維護性 | 20     | 20      | S-1014 / S-1054 / S-1055 / S-1057（🟢 唔扣分）        |
 | 測試覆蓋 | 15     | 15      | 新邏輯 99%；e2e 新 section 覆蓋直版 / 橫版 / 減少動態 |
 | 性能     | 10     | 10      |                                                       |
-| 代碼風格 | 10     | 10      | S-1017（🟢）                                          |
+| 代碼風格 | 10     | 10      | S-1056（🟢）                                          |
 | **總分** | **95** | **100** |                                                       |
 
 **結果：✅ pass**
@@ -66,10 +68,10 @@ const useSheetFocus = (open: boolean, onClose: () => void) => {
 ## 🟢 Suggestion（backlog，唔扣分）
 
 - S-1014 `components/shared/player/PlayerPanel/GaugeInfoRow.tsx:20`：有冇 `onInfo` 決定包唔包 `.infoRow`，⇒ ⓘ 出現 / 消失時成個 gauge（Disc、ArcSlider）remount（臨時 test 證實 `[data-player-gauge]` 換咗 node）；短篇劇喺有 / 冇資料嘅短篇之間轉會觸發。建議一律包 wrapper，淨係條件 render 粒掣。
-- S-1015 `components/shared/common/ItemInfo/ItemInfoSheet.tsx:3`：shared 第一次 import `components/pages/drama/ArcSheet/useSheetBehaviour`（依賴方向反咗，同 S-660 同類）。建議將 `useSheetBehaviour` / `useSheetDrag*` 搬去 `components/shared/common/Sheet/`（或 `hooks/`）。
-- S-1016 `components/pages/today/TodayShowList/TodayShowList.module.css:83`：`--today-row-disc: calc(40px * var(--ui-scale))` 抄 `Disc.module.css:33` 嘅預設；Disc 改大細資料區就對唔齊。建議喺 `.row` 設 `--disc-small-size` 俾 Disc 同 `.rowInfo` 共用。
-- S-1017 `e2e/run.mjs:581`、`e2e/touch.mjs:465`：`region 節目表 → getByRole('list')`，有主持資料而且展開時（chip 係 `<ul>`）會 strict-mode 撞。建議改 `.locator(':scope > ul')` 或者加 `data-role` 揀主清單。
-- S-1018 `components/shared/common/ItemInfo/ItemInfoSheet.tsx:65`：`key={section.title}`，短篇顯示名同劇集名一樣時 key 撞。建議用 index 或者段落類型做 key。
+- S-1054 `components/shared/common/ItemInfo/ItemInfoSheet.tsx:3`：shared 第一次 import `components/pages/drama/ArcSheet/useSheetBehaviour`（依賴方向反咗，同 S-660 同類）。建議將 `useSheetBehaviour` / `useSheetDrag*` 搬去 `components/shared/common/Sheet/`（或 `hooks/`）。
+- S-1055 `components/pages/today/TodayShowList/TodayShowList.module.css:83`：`--today-row-disc: calc(40px * var(--ui-scale))` 抄 `Disc.module.css:33` 嘅預設；Disc 改大細資料區就對唔齊。建議喺 `.row` 設 `--disc-small-size` 俾 Disc 同 `.rowInfo` 共用。
+- S-1056 `e2e/run.mjs:581`、`e2e/touch.mjs:465`：`region 節目表 → getByRole('list')`，有主持資料而且展開時（chip 係 `<ul>`）會 strict-mode 撞。建議改 `.locator(':scope > ul')` 或者加 `data-role` 揀主清單。
+- S-1057 `components/shared/common/ItemInfo/ItemInfoSheet.tsx:65`：`key={section.title}`，短篇顯示名同劇集名一樣時 key 撞。建議用 index 或者段落類型做 key。
 
 ## Developer 疑點評估
 
@@ -82,9 +84,9 @@ const useSheetFocus = (open: boolean, onClose: () => void) => {
 | 5 今日「第一次」要有資料先記            | 合理（冇資料冇箭咀，記咗會浪費第一次）→ 唔係 finding                                                                           |
 | 6 橫版標題列一律顯示                    | plan §4 / mockup「橫版加返標題列」→ 符合；冇資料時出唔出係**產品決定**（小）                                                   |
 | 7 資料放 li、分隔線 / 淺底 / lamp 搬 li | 讀屏讀到資料，li 同 button 淺底同色冇重疊問題 → 唔係 finding                                                                   |
-| 8 shared import pages hook              | → S-1015                                                                                                                       |
+| 8 shared import pages hook              | → S-1054                                                                                                                       |
 | 9 e2e 用 remote catalog route           | 唔改 library json 係啱嘅做法 → 唔係 finding                                                                                    |
-| 10 `getByRole('list')` 將來撞           | → S-1017                                                                                                                       |
+| 10 `getByRole('list')` 將來撞           | → S-1056                                                                                                                       |
 
 ## ✅ 做得好嘅地方
 
@@ -108,5 +110,5 @@ hard_gates:
 next_action: merge_develop
 next_agent: quality-assurance
 branch: "feature/catalog/item-info"
-context: "item info 95/100 pass；W-747（sheet 焦點每次 re-render 被搶，修 useSheetFocus 用 onCloseRef）建議 merge 前修；S-1014–S-1018 backlog；疑點 1/2/4/6 要用戶決定；integration branch = main；QA S1 chains catalog-data / drama / show-today-page"
+context: "item info 95/100 pass；W-747（sheet 焦點每次 re-render 被搶，修 useSheetFocus 用 onCloseRef）建議 merge 前修；S-1014、S-1054–S-1057 backlog；疑點 1/2/4/6 要用戶決定；integration branch = main；QA S1 chains catalog-data / drama / show-today-page"
 ```
