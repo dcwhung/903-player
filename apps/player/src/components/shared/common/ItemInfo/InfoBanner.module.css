@@ -41,3 +41,25 @@
     margin: 0;
     font-size: var(--info-banner-subtitle-size);
 }
+
+/*
+ * 疊喺 banner 上嘅 grab bar / ✕（資料 sheet、全集 sheet 共用，S-1021）：元素要同時有 data-on-banner，
+ * 優先過 sheet 自己嘅 .grab / .close 基本樣（唔靠 CSS 載入次序）
+ */
+.grabOnBanner[data-on-banner] {
+    position: absolute;
+    top: var(--space-2);
+    left: 50%;
+    background: var(--info-banner-grab);
+    transform: translateX(-50%);
+}
+
+/* ✕：sheet 右上角，白色、冇底色、drop-shadow（淺色圖都睇得清），撳得到範圍照 sheet 自己嘅 --touch-target */
+.closeOnBanner[data-on-banner] {
+    position: absolute;
+    top: var(--info-banner-close-top);
+    right: var(--info-banner-close-right);
+    background: transparent;
+    color: var(--info-banner-text);
+    filter: var(--info-banner-icon-shadow);
+}

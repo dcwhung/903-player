@@ -159,25 +159,9 @@
     --disc-small-size: var(--info-arc-disc-size);
 }
 
-/*
- * 有 banner：banner 貼 sheet 頂，grab bar 同 ✕ 疊喺圖上面（白色；✕ 冇底色，用 drop-shadow 喺淺色圖都睇得清，
- * 撳得到範圍照 --touch-target）
- */
+/* 有 banner：banner 貼 sheet 頂；grab bar / ✕ 疊喺圖上嘅樣喺 InfoBanner.module.css（同全集 sheet 共用） */
 .sheet[data-banner='true'] {
     padding-top: 0;
-}
-
-.sheet[data-banner='true'] .grab {
-    position: absolute;
-    top: var(--space-2);
-    left: 50%;
-    background: var(--info-banner-grab);
-    transform: translateX(-50%);
-}
-
-.sheet[data-banner='true'] .close {
-    color: var(--info-banner-text);
-    filter: var(--info-banner-icon-shadow);
 }
 
 /* banner 底同第一段之間收窄一半（sheet gap + 呢度 = 原本 gap + --space-4 嘅一半） */

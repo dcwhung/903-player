@@ -269,6 +269,35 @@ describe('ItemInfoSheet', () => {
             expect(within(dialog).getByText('節目簡介')).toBeInTheDocument();
         });
 
+        it('should leave out a part that has nothing left once the banner takes its title and time', () => {
+            // S-1019：節目淨有播放時間（已經做咗 banner 細字）就唔出空 <section>
+            render(
+                <ItemInfoSheet
+                    open
+                    banner={banner}
+                    sections={[{ kind: 'show', title: '公子會', airTime: '逢星期六播放' }]}
+                    label="節目資料"
+                    onClose={vi.fn()}
+                />,
+            );
+            expect(screen.getByRole('dialog').querySelector('section[data-kind]')).toBeNull();
+        });
+
+        it('should mark the grab bar and close button as sitting on the banner', () => {
+            // S-1021：疊喺 banner 上嘅樣（白色 grab bar、✕ drop-shadow）兩個 sheet 共用
+            render(
+                <ItemInfoSheet
+                    open
+                    banner={banner}
+                    sections={[SHOW]}
+                    label="節目資料"
+                    onClose={vi.fn()}
+                />,
+            );
+            const dialog = screen.getByRole('dialog');
+            expect(dialog.querySelectorAll('[data-on-banner]')).toHaveLength(2);
+        });
+
         it('should keep the close button on top of the banner', () => {
             render(
                 <ItemInfoSheet

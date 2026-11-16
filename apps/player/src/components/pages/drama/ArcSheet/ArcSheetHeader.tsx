@@ -1,7 +1,7 @@
 import { t } from '../../../../i18n/t';
 import type { ArcSummary } from '../../../../selectors/arcProgress';
 import type { InfoBanner as InfoBannerData } from '../../../../selectors/itemInfo';
-import { InfoBanner } from '../../../shared/common/ItemInfo/InfoBanner';
+import { BANNER_OVERLAY, InfoBanner } from '../../../shared/common/ItemInfo/InfoBanner';
 import { CloseIcon, HourglassIcon } from '../../../shared/common/icons/icons';
 import { InfoToggle } from '../../../shared/common/ItemInfo/InfoToggle';
 import { SpokenText, type SpokenNotice } from '../../../shared/common/SpokenText/SpokenText';
@@ -27,7 +27,7 @@ const CloseButton = ({
 }) => (
     <button
         type="button"
-        className={`${styles.close} ${onBanner ? styles.bannerClose : ''}`}
+        className={`${styles.close} ${onBanner ? BANNER_OVERLAY.close : ''}`}
         aria-label={t('drama.sheetClose')}
         data-on-banner={onBanner || undefined}
         onClick={onClose}
@@ -60,7 +60,11 @@ export const SheetHeader = ({
 }: SheetHeaderProps) => (
     <>
         {banner && <InfoBanner banner={banner} />}
-        <span className={styles.grab} aria-hidden="true" />
+        <span
+            className={`${styles.grab} ${banner ? BANNER_OVERLAY.grab : ''}`}
+            data-on-banner={banner ? 'true' : undefined}
+            aria-hidden="true"
+        />
         {banner && <CloseButton onClose={onClose} onBanner />}
         <header className={styles.header}>
             <h2 id={titleId} className={styles.title}>

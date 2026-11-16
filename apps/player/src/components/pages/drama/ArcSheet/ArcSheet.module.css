@@ -359,24 +359,7 @@
     color: var(--color-text-muted);
 }
 
-/* 劇集 banner（G1）：貼表頂，grab bar 疊喺圖上（白色半透明）；表頭照舊喺 banner 下面 */
+/* 劇集 banner（G1）：貼表頂；grab bar / ✕ 疊喺圖上嘅樣喺 InfoBanner.module.css（共用）；表頭照舊喺 banner 下面 */
 .sheet[data-banner='true'] {
     padding-top: 0;
-}
-
-.sheet[data-banner='true'] .grab {
-    position: absolute;
-    top: var(--space-2);
-    left: 50%;
-    background: var(--info-banner-grab);
-    transform: translateX(-50%);
-}
-
-/* 有 banner：✕ 由表頭搬上表右上角，疊喺圖上（同資料 sheet 一樣：白色、冇底色、drop-shadow） */
-.bannerClose {
-    position: absolute;
-    top: var(--info-banner-close-top);
-    right: var(--info-banner-close-right);
-    color: var(--info-banner-text);
-    filter: var(--info-banner-icon-shadow);
 }

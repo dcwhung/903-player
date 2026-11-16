@@ -2,7 +2,7 @@ import { t } from '../../../../i18n/t';
 import type { InfoBanner as InfoBannerData, ItemInfoSection } from '../../../../selectors/itemInfo';
 import { useSheetBehaviour } from '../Sheet/useSheetBehaviour';
 import { CloseIcon } from '../icons/icons';
-import { InfoBanner } from './InfoBanner';
+import { BANNER_OVERLAY, InfoBanner } from './InfoBanner';
 import { InfoSection } from './InfoSection';
 import { useCloseOnOutsidePress } from './useCloseOnOutsidePress';
 import styles from './ItemInfoSheet.module.css';
@@ -32,10 +32,15 @@ const SheetTop = ({
 }) => (
     <>
         {banner && <InfoBanner banner={banner} />}
-        <span className={styles.grab} aria-hidden="true" />
+        <span
+            className={`${styles.grab} ${banner ? BANNER_OVERLAY.grab : ''}`}
+            data-on-banner={banner ? 'true' : undefined}
+            aria-hidden="true"
+        />
         <button
             type="button"
-            className={styles.close}
+            className={`${styles.close} ${banner ? BANNER_OVERLAY.close : ''}`}
+            data-on-banner={banner ? 'true' : undefined}
             aria-label={t('info.close')}
             onClick={onClose}
         >

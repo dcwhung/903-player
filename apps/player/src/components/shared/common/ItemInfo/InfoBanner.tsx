@@ -23,3 +23,9 @@ export const InfoBanner = ({ banner }: { banner: InfoBannerData }) => (
         </div>
     </div>
 );
+
+/** 疊喺 banner 上嘅 grab bar / ✕ 共用樣（S-1021）：加喺元素 className，同時要有 data-on-banner */
+export const BANNER_OVERLAY = {
+    grab: styles.grabOnBanner,
+    close: styles.closeOnBanner,
+} as const;

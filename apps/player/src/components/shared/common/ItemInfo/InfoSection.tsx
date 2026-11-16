@@ -23,10 +23,21 @@ const SectionTitle = ({ section }: { section: ItemInfoSection }) => {
     );
 };
 
-/** 一段（節目 / 劇集 / 短篇）：data-kind 畀 CSS 揀標題大細（短篇細過劇集名） */
-export const InfoSection = ({ section, underBanner }: InfoSectionProps) => (
-    <section className={styles.section} data-kind={section.kind}>
-        {!underBanner && <SectionTitle section={section} />}
-        <ItemInfoFields section={section} omitAirTime={underBanner && section.kind === 'show'} />
-    </section>
-);
+/** banner 拎走標題（同節目段嘅播放時間）之後仲有冇嘢出 */
+const hasBody = (section: ItemInfoSection, omitAirTime: boolean): boolean =>
+    Boolean(section.hosts || section.cast || section.summary || (section.airTime && !omitAirTime));
+
+/**
+ * 一段（節目 / 劇集 / 短篇）：data-kind 畀 CSS 揀標題大細（短篇細過劇集名）。
+ * S-1019：banner 代替咗標題而且淨低冇欄位（例如節目淨有播放時間）就唔出空 <section>
+ */
+export const InfoSection = ({ section, underBanner }: InfoSectionProps) => {
+    const omitAirTime = underBanner && section.kind === 'show';
+    if (underBanner && !hasBody(section, omitAirTime)) return null;
+    return (
+        <section className={styles.section} data-kind={section.kind}>
+            {!underBanner && <SectionTitle section={section} />}
+            <ItemInfoFields section={section} omitAirTime={omitAirTime} />
+        </section>
+    );
+};

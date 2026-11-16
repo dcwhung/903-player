@@ -614,6 +614,8 @@ describe('ArcSheet drama banner（G1）', () => {
         const close = within(dialog).getByRole('button', { name: '關閉' });
         expect(close.closest('header')).toBeNull();
         expect(close).toHaveAttribute('data-on-banner', 'true');
+        // S-1021：grab bar 同 ✕ 用 InfoBanner 共用嘅疊層樣
+        expect(dialog.querySelectorAll('[data-on-banner]')).toHaveLength(2);
         await userEvent.click(close);
         expect(onClose).toHaveBeenCalledTimes(1);
     });
