@@ -242,6 +242,10 @@ export const zhHK = {
     // 節目 / 劇集資料（P9.5 #12）：資料 sheet 小標題、chip 組標籤、ⓘ / 箭咀讀屏名
     info: {
         airTime: '播放時間',
+        // 播放時間（formatPlayTime，W-748）：「逢星期六（23:00 - 23:45）播放」；七日都播用 playTimeDaily（唔出「逢每日」）
+        playTime: '逢{days}{time}播放',
+        playTimeDaily: '{days}{time}播放',
+        playTimeRange: '（{start} - {end}）',
         hosts: '主持',
         cast: '聲演',
         summary: '簡介',

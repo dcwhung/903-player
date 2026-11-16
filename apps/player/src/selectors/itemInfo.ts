@@ -12,6 +12,7 @@ import {
     type ShowConfig,
     type Weekday,
 } from '@903-player/catalog';
+import { t } from '../i18n/t';
 import type { Progress } from '../services/progressStore';
 import type { ArcState } from './arcProgress';
 
@@ -23,10 +24,10 @@ export interface InfoFields {
     airTime?: AirTime | undefined;
 }
 
-/** 資料 sheet 一段（節目 / 劇集 / 短篇）：標題 + 有嘅欄位 */
 /** 資料 sheet 段落類型：節目 / 劇集 / 短篇（React key、短篇標題細啲） */
 export type ItemInfoSectionKind = 'show' | 'drama' | 'arc';
 
+/** 資料 sheet 一段（節目 / 劇集 / 短篇）：標題 + 有嘅欄位 */
 export interface ItemInfoSection {
     kind: ItemInfoSectionKind;
     title: string;
@@ -64,10 +65,8 @@ const field = <K extends string, V>(key: K, value: V | undefined) =>
 const namesField = <K extends 'hosts' | 'cast'>(key: K, names: readonly string[] | undefined) =>
     field(key, hasNames(names) ? names : undefined);
 
-/** formatAirDays 七日都播嘅字：前面唔加「逢」 */
+/** formatAirDays 七日都播嘅字：用 info.playTimeDaily（前面唔加「逢」） */
 const EVERY_DAY_TEXT = formatAirDays([0, 1, 2, 3, 4, 5, 6]);
-const PLAY_TIME_PREFIX = '逢';
-const PLAY_TIME_SUFFIX = '播放';
 
 /**
  * player 資料 sheet / 今日節目行嘅播放時間：「逢星期六（23:00 - 23:45）播放」「逢星期六播放」
@@ -79,9 +78,8 @@ export const formatPlayTime = (
 ): string | undefined => {
     if (airDays.length === 0) return undefined;
     const days = formatAirDays(airDays);
-    const prefix = days === EVERY_DAY_TEXT ? '' : PLAY_TIME_PREFIX;
-    const time = airTime ? `（${airTime.start} - ${airTime.end}）` : '';
-    return `${prefix}${days}${time}${PLAY_TIME_SUFFIX}`;
+    const time = airTime ? t('info.playTimeRange', { ...airTime }) : '';
+    return t(days === EVERY_DAY_TEXT ? 'info.playTimeDaily' : 'info.playTime', { days, time });
 };
 
 /**
