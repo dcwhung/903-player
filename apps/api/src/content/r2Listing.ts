@@ -33,7 +33,7 @@ const arcListing = async (bucket: R2Bucket, prefix: string, name: string) => {
     return { name, files: [...files, ...folders.map((f) => `${f}${DELIMITER}`)] };
 };
 
-/** <folder>/ 底下兩層 → FolderListing（同 CLI 由 fs 砌嘅一樣） */
+/** <folder>/ 底下兩層 → FolderListing（scan/testListing.ts 喺 test 砌同一個形狀） */
 export const listingFromR2 = async (bucket: R2Bucket, folder: string): Promise<FolderListing> => {
     const prefix = `${folder}${DELIMITER}`;
     const root = await listLevel(bucket, prefix);
