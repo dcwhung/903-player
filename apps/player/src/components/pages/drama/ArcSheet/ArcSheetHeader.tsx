@@ -1,5 +1,7 @@
 import { t } from '../../../../i18n/t';
 import type { ArcSummary } from '../../../../selectors/arcProgress';
+import type { InfoBanner as InfoBannerData } from '../../../../selectors/itemInfo';
+import { InfoBanner } from '../../../shared/common/ItemInfo/InfoBanner';
 import { CloseIcon, HourglassIcon } from '../../../shared/common/icons/icons';
 import { InfoToggle } from '../../../shared/common/ItemInfo/InfoToggle';
 import { SpokenText, type SpokenNotice } from '../../../shared/common/SpokenText/SpokenText';
@@ -20,12 +22,26 @@ interface SheetHeaderProps {
     progress: ReturnType<typeof sheetProgress>;
     notice: SpokenNotice | undefined;
     info: ArcSheetInfo | undefined;
+    /** 劇集 banner（G1）：貼表頂，grab bar 疊喺圖上（CSS data-banner）；表頭喺佢下面 */
+    banner: InfoBannerData | undefined;
     onClose: () => void;
 }
 
-/** 表頭：「全集」（+ 劇集資料箭咀）+「聽完 N / M 個」+ ✕；成套劇快將下架就下面加一行琥珀字 */
-export const SheetHeader = ({ titleId, progress, notice, info, onClose }: SheetHeaderProps) => (
+/**
+ * 表頂：（劇集 banner +）grab bar + 表頭「全集」（+ 劇集資料箭咀）+「聽完 N / M 個」+ ✕；
+ * 成套劇快將下架就下面加一行琥珀字
+ */
+export const SheetHeader = ({
+    titleId,
+    progress,
+    notice,
+    info,
+    banner,
+    onClose,
+}: SheetHeaderProps) => (
     <>
+        {banner && <InfoBanner banner={banner} />}
+        <span className={styles.grab} aria-hidden="true" />
         <header className={styles.header}>
             <h2 id={titleId} className={styles.title}>
                 {t('drama.sheetTitle')}

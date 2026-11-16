@@ -387,6 +387,7 @@ const useSeriesSheetView = (
             ...sheetActions,
             openSheet: info.openSheet,
             info: info.sheetInfo,
+            banner: info.sheetBanner,
         },
         gaugeInfo: info.gaugeInfo,
         infoSheet: info.infoSheet,

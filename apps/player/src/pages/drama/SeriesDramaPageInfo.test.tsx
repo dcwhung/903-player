@@ -53,6 +53,14 @@ describe('SeriesDramaPage item info（P9.5 #12）', () => {
         expect(within(sheet).getByRole('list', { name: '聲演' })).toHaveTextContent('聲演甲');
     });
 
+    it('should top the 全集 sheet with the drama banner', async () => {
+        openChisee();
+        const sheet = await arcSheet();
+        const banner = within(sheet).getByTestId('info-banner');
+        expect(within(banner).getByRole('heading')).toHaveTextContent('芝See菇Bi Family');
+        expect(banner).toHaveTextContent(/最新上架：|\d+ 個短篇/);
+    });
+
     it('should open the 全集 sheet collapsed from the 全集 chip', async () => {
         saveProgress(CHISEE[0]?.id ?? '', 60, 1200);
         openChisee();
@@ -141,6 +149,12 @@ describe('SeriesDramaPage item info（P9.5 #12）', () => {
 describe('SeriesDramaPage without item info', () => {
     beforeEach(() => {
         info.dramaSummary = undefined;
+    });
+
+    it('should still top the 全集 sheet with the drama banner', async () => {
+        openChisee();
+        const sheet = await arcSheet();
+        expect(within(sheet).getByTestId('info-banner')).toHaveTextContent('芝See菇Bi Family');
     });
 
     it('should show no ⓘ and no chevron when the drama has none', async () => {

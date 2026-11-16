@@ -24,7 +24,9 @@
     max-width: var(--page-max-width);
     max-height: var(--arc-sheet-max-height);
     margin: 0 auto;
-    padding: var(--space-2) var(--space-4) 0;
+    /* 左右留白：banner（InfoBanner）用同一個值貼返邊、對齊疊字 */
+    --info-sheet-pad-x: var(--space-4);
+    padding: var(--space-2) var(--info-sheet-pad-x) 0;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     background: var(--color-bg);
     box-shadow: var(--shadow-floating);
@@ -355,4 +357,17 @@
     border: var(--upcoming-dash-width) dashed var(--color-text-muted);
     border-radius: var(--radius-full);
     color: var(--color-text-muted);
+}
+
+/* 劇集 banner（G1）：貼表頂，grab bar 疊喺圖上（白色半透明）；表頭照舊喺 banner 下面 */
+.sheet[data-banner='true'] {
+    padding-top: 0;
+}
+
+.sheet[data-banner='true'] .grab {
+    position: absolute;
+    top: var(--space-2);
+    left: 50%;
+    background: var(--info-banner-grab);
+    transform: translateX(-50%);
 }

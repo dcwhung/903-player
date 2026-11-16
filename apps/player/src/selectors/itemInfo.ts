@@ -163,6 +163,10 @@ export const showInfoBanner = (show: ShowConfig): InfoBanner | undefined =>
 export const dailyInfoBanner = (drama: Drama): InfoBanner | undefined =>
     bannerOf('drama', drama.tileArt, drama.name);
 
+/** 短篇劇劇集 banner（全集 sheet 頂，G1；同已揀短篇 sheet 劇集有簡介時一樣）：細字「最新上架：…」/「N 個短篇」 */
+export const seriesDramaBanner = (drama: Drama, subtitle: string): InfoBanner | undefined =>
+    bannerOf('drama', drama.tileArt, drama.name, subtitle);
+
 export interface SeriesBannerInput {
     drama: Drama;
     arcLabel: string;
@@ -183,7 +187,7 @@ export const seriesInfoBanner = ({
     dramaSubtitle,
 }: SeriesBannerInput): InfoBanner | undefined =>
     drama.summary
-        ? bannerOf('drama', drama.tileArt, drama.name, dramaSubtitle)
+        ? seriesDramaBanner(drama, dramaSubtitle)
         : bannerOf('arc', arcTile || drama.tileArt, arcLabel, drama.name);
 
 /** 已上架短篇入面上架日最遲嗰個（YYYY-MM-DD 字串比較）；全部冇上架日就 undefined */

@@ -1,6 +1,7 @@
 import { useId, type Ref } from 'react';
 import { t } from '../../../../i18n/t';
 import type { ArcGroup, ArcSummary } from '../../../../selectors/arcProgress';
+import type { InfoBanner as InfoBannerData } from '../../../../selectors/itemInfo';
 import { DramaSummaryCard } from '../../../shared/common/ItemInfo/DramaSummaryCard';
 import type { SpokenNotice } from '../../../shared/common/SpokenText/SpokenText';
 import { GROUP_TITLES } from './arcLabels';
@@ -28,6 +29,8 @@ interface ArcSheetProps extends RowProps {
     notice?: SpokenNotice | undefined;
     /** 劇集 / 短篇資料（P9.5 #12）：成套劇有資料先傳，「全集」旁邊出箭咀 */
     info?: ArcSheetInfo | undefined;
+    /** 頂部劇集 banner（G1）：固定喺表頂（唔跟清單捲），表頭喺佢下面；冇圖就唔出 */
+    banner?: InfoBannerData | undefined;
     onClose: () => void;
 }
 
@@ -82,7 +85,8 @@ const SheetList = ({ listRef, groups, upcoming, info, rowProps }: SheetListProps
 /**
  * 全集一覽表（底部彈出）：分組 播放中 → 新上架 → 未聽完 → 已收聽，圓環 = 聽完幾多集；
  * 撳行轉去嗰個短篇，撳右邊掣直接播（續聽 / 未收聽 / ↺ 重聽）。
- * 閂：✕ 掣、撳遮罩、Escape，或者向下拉（grab bar / header；清單捲到頂都得，直版橫版一樣）。
+ * 頂部劇集 banner（G1，有圖先出）。閂：✕ 掣、撳遮罩、Escape，或者向下拉（banner / grab bar / header；
+ * 清單捲到頂都得，直版橫版一樣）。
  * 見 design/previews/drama-flow-preview.html；橫版 docked 見 landscape-list-left-preview.html
  */
 export const ArcSheet = ({
@@ -92,6 +96,7 @@ export const ArcSheet = ({
     upcoming = [],
     notice,
     info,
+    banner,
     onClose,
     ...sheetRowProps
 }: ArcSheetProps) => {
@@ -114,15 +119,14 @@ export const ArcSheet = ({
                 role="dialog"
                 aria-modal={!docked}
                 aria-labelledby={titleId}
+                data-banner={banner !== undefined}
                 tabIndex={-1}
                 {...handlers}
             >
-                <span className={styles.grab} aria-hidden="true" />
                 <SheetHeader
                     titleId={titleId}
                     progress={sheetProgress(groups)}
-                    notice={notice}
-                    info={info}
+                    {...{ notice, info, banner }}
                     onClose={onClose}
                 />
                 <SheetList

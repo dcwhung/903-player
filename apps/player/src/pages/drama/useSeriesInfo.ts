@@ -13,6 +13,7 @@ import {
     arcInfoSections,
     arcInlineInfo,
     latestArcOf,
+    seriesDramaBanner,
     seriesHasInfo,
     seriesInfoBanner,
     shouldAutoOpenArcInfo,
@@ -137,8 +138,14 @@ export const useSeriesInfo = (drama: DramaConfig, options: SeriesInfoOptions) =>
         ? hasInfo
         : pickedArc !== undefined && arcSheet.sectionsOf(pickedArc).length > 0;
     const onInfo = () => (empty ? openAll(true) : arcSheet.openArc(pickedArc ?? null));
+    const sheetBanner = useMemo(
+        () => seriesDramaBanner(drama, dramaSubtitleOf(drama.id, summaries)),
+        [drama, summaries],
+    );
     return {
         sheetInfo,
+        /** 全集 sheet 頂嘅劇集 banner（G1）：同有冇資料無關 */
+        sheetBanner,
         gaugeInfo: canOpen ? { onInfo, infoLabel: t('info.dramaInfo') } : undefined,
         infoSheet: arcSheet.infoSheet,
         /** 由「全集」掣開：資料預設收合 */

@@ -224,6 +224,7 @@ const checkArcSheet = async (env, json, reducedMotion) => {
             .boundingBox();
         logFullWidth(log, `${label}短篇行`, m.right, play);
     }
+    await checkBanner(env, arcSheet(p), `${label}：全集 sheet`);
     await dramaToggle(p).click();
     if (!reducedMotion) await p.waitForTimeout(SETTLE_MS);
     const rows = await arcSheet(p)
@@ -232,6 +233,14 @@ const checkArcSheet = async (env, json, reducedMotion) => {
         .evaluate((el) => getComputedStyle(el).gridTemplateRows);
     log(rows === '0px', `${label}：撳箭咀收埋（grid-template-rows ${rows}）`);
     return p;
+};
+
+/** 橫版全集 sheet（docked 左欄）：頂部劇集 banner 貼頂、左右貼邊（G1） */
+const checkArcSheetLandscape = async (env, json) => {
+    const { p } = await open(env, json, LANDSCAPE);
+    await p.goto(`${env.base}#/drama/lancy`);
+    await arcSheet(p).waitFor({ timeout: WAIT_MS });
+    await checkBanner(env, arcSheet(p), '劇集資料橫版：全集 sheet');
 };
 
 /** 揀未聽過又有資料嘅短篇：彈嗰個短篇嘅資料 sheet */
@@ -300,6 +309,7 @@ export const runItemInfoChecks = async (env) => {
     await section('節目資料：節目頁橫版', () => checkShowLandscape(env, json));
     await section('節目資料：全集 sheet', () => checkArcPick(env, json));
     await section('節目資料：全集 sheet 減少動態', () => checkArcSheet(env, json, true));
+    await section('節目資料：全集 sheet 橫版', () => checkArcSheetLandscape(env, json));
     await section('節目資料：今日節目直版', () => checkToday(env, json, {}, '今日節目資料'));
     await section('節目資料：今日節目橫版', () =>
         checkToday(env, json, LANDSCAPE, '今日節目資料橫版'),

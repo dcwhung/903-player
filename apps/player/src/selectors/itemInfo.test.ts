@@ -8,6 +8,7 @@ import {
     hasNoItemProgress,
     latestArcOf,
     seriesHasInfo,
+    seriesDramaBanner,
     seriesInfoBanner,
     showInfoBanner,
     shouldAutoOpenArcInfo,
@@ -239,6 +240,18 @@ describe('info sheet banner', () => {
             subtitle: '蘭茜夫人劇場',
         });
         expect(seriesInfoBanner({ ...input, arcTile: undefined })?.art).toBe('d.webp');
+    });
+});
+
+describe('seriesDramaBanner', () => {
+    it('should give the drama banner whether or not the drama has a summary', () => {
+        expect(seriesDramaBanner(drama({ tileArt: 'd.webp' }), '3 個短篇')).toEqual({
+            kind: 'drama',
+            art: 'd.webp',
+            title: '蘭茜夫人劇場',
+            subtitle: '3 個短篇',
+        });
+        expect(seriesDramaBanner(drama({ tileArt: '' }), '3 個短篇')).toBeUndefined();
     });
 });
 
