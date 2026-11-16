@@ -62,6 +62,25 @@ describe('ShowEditor', () => {
         },
     );
 
+    it('should go back to the 節目列表 after deleting a never-listed show', async () => {
+        const off = { ...SHOW, definition: { ...SHOW.definition, enabled: false } };
+        mockApi({
+            'GET /api/entries/shows/waves': () => ({ body: off, etag: '"v1"' }),
+            'DELETE /api/entries/shows/waves': () => ({ body: { ok: true } }),
+        });
+        const summary = { ...off, kind: 'shows' as const, id: 'waves', etag: '"v1"' };
+        renderAt(
+            '/shows/waves',
+            '/shows/:id',
+            <ShowEditorPage />,
+            fakeData({ entries: resource([{ ...summary, published: false }]) }),
+        );
+        await userEvent.click(await screen.findByRole('button', { name: '刪除' }));
+        const dialog = screen.getByRole('dialog');
+        await userEvent.click(within(dialog).getByRole('button', { name: '刪除' }));
+        expect(await screen.findByTestId('location')).toHaveTextContent(/^\/shows$/);
+    });
+
     it('should save with If-Match and show the dirty field', async () => {
         const api = mockApi({
             'GET /api/entries/shows/waves': load,
