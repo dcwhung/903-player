@@ -11,6 +11,7 @@ import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
 import { AppearanceSection } from './AppearanceSection';
 import { OthersSection } from './OthersSection';
+import { pendingPublishCount } from './pendingModel';
 import { usePublishSelection } from './PublishSelection';
 import { usePublishPlan } from './usePublishPlan';
 import { SelectionFooter } from './SelectionFooter';
@@ -44,6 +45,22 @@ const statsOf = (counts: ReturnType<typeof todoStats>): Stat[] => [
         label: t('update.statDone'),
     },
 ];
+
+const isWaiting = (resource: { data: unknown; error: Error | undefined }) =>
+    resource.data === undefined && resource.error === undefined;
+
+/**
+ * 冇新內容待辦行時：待辦 / 變更未載入完 =「載入中…」；有其他改動 / App 外觀改動 = 唔出（下面 section 已列）；
+ * 全部都冇先出「沒有待發佈的項目。」；載入失敗 = 唔出（錯誤已另外顯示）
+ */
+function EmptyNote() {
+    const { todos, changes } = useAdminData();
+    if (isWaiting(todos) || isWaiting(changes))
+        return <p className="note ok">{t('app.loading')}</p>;
+    if (todos.error || changes.error) return null;
+    if (pendingPublishCount([], changes.data) > 0) return null;
+    return <p className="note ok">{t('update.nothingPending')}</p>;
+}
 
 export function UpdatePage() {
     const { todos, entries, changes } = useAdminData();
@@ -79,7 +96,7 @@ export function UpdatePage() {
                     onToggle={toggleContent}
                 />
             ) : (
-                <p className="note ok">{todos.loading ? t('app.loading') : t('update.noTodos')}</p>
+                <EmptyNote />
             )}
             <OthersSection changes={changes.data} entries={entries.data ?? []} />
             <SelectionFooter

@@ -2,7 +2,7 @@ import type { ChangeItem } from '@903-player/catalog';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fakeData, mockApi, renderAt, resource } from '../../../tests/renderApp';
-import type { ChangesResponse, TodoRow } from '../../api/types';
+import type { ChangesResponse, TodoRow, TodosResponse } from '../../api/types';
 import { UpdatePage } from './UpdatePage';
 
 const DONE = { state: 'done', target: '/dramas/lancy/arcs#love-after' } as const;
@@ -75,6 +75,44 @@ describe('UpdatePage', () => {
         // App 外觀未知：照撳會靜靜雞唔發佈預設勾咗嘅 App 外觀
         expect(screen.getByRole('button', { name: '下一步：確認發佈' })).toBeDisabled();
         expect(screen.getByText('載入中…')).toBeInTheDocument();
+    });
+
+    it.each([
+        ['todos', { todos: resource<TodosResponse>(undefined) }],
+        ['changes', { changes: resource<ChangesResponse>(undefined) }],
+    ])('should say 載入中… instead of the empty message while %s are loading', (_, over) => {
+        mockApi({
+            'GET /api/branding': () => ({ body: { icon: null, text: null, updatedAt: null } }),
+            'GET /api/banner': () => ({ body: { banner: null, updatedAt: null } }),
+        });
+        const data = fakeData({
+            todos: resource({ rows: [], blocking: 0 }),
+            changes: resource(changes()),
+            ...over,
+        });
+        const { container } = renderAt('/', '/', <UpdatePage />, data);
+        expect(container.querySelector('p.note')).toHaveTextContent('載入中…');
+        expect(screen.queryByText('沒有待發佈的項目。')).not.toBeInTheDocument();
+    });
+
+    it('should show no empty message when only other or App 外觀 changes are pending', () => {
+        show([], {
+            appearance: { icon: false, text: false, banner: false },
+            others: { items: [UNLIST], timeline: [] },
+        });
+        expect(screen.queryByText('沒有待發佈的項目。')).not.toBeInTheDocument();
+        expect(screen.queryByText('沒有待辦事項。')).not.toBeInTheDocument();
+        expect(screen.queryByText('載入中…')).not.toBeInTheDocument();
+    });
+
+    it('should show no empty message when only App 外觀 changes are pending', () => {
+        const { container } = show([]);
+        expect(container.querySelector('p.note')).toBeNull();
+    });
+
+    it('should say 沒有待發佈的項目。 once nothing at all is pending', () => {
+        show([], { appearance: { icon: false, text: false, banner: false } });
+        expect(screen.getByText('沒有待發佈的項目。')).toBeInTheDocument();
     });
 
     it('should show the load error and keep 下一步 disabled when GET /api/changes fails (S-988)', () => {

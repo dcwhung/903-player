@@ -71,7 +71,7 @@ export const zhHK = {
         metaNewArc: '新短篇 · {count} 集',
         metaNewEpisodes: '新集數',
         metaMissingFolder: '找不到資料夾',
-        noTodos: '沒有待辦事項。',
+        nothingPending: '沒有待發佈的項目。',
         next: '下一步：確認發佈',
         colPublish: '發佈',
         contentTitle: '新內容',
