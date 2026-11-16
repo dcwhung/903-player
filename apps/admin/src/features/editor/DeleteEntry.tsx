@@ -27,11 +27,13 @@ export function DeleteEntry({
         setConfirming(false);
         try {
             await deleteEntry(entry.kind, entry.id, entry.etag);
-            await refresh();
-            navigate(`/${entry.kind}`);
         } catch (deleteError) {
             setError(errorMessage(deleteError));
+            return;
         }
+        // 即刻返列表（replace：上一頁唔會返去已刪除嘅項目）；重讀全部 entry 可以好耐，喺背景做
+        void navigate(`/${entry.kind}`, { replace: true });
+        void refresh();
     };
     return (
         <>

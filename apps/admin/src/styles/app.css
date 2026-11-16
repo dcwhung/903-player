@@ -269,3 +269,26 @@ table.matrix th[scope='row'] {
 .sentence .days.inline {
     margin: 0 4px;
 }
+
+/* Stepper：處理待辦 / 確認發佈 可以撳（而家嗰步同自動掃描唔係 link）；樣子同其他步一樣，hover / focus 先現 */
+.stepper .step-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -2px -4px;
+    padding: 2px 10px 2px 4px;
+    border-radius: 999px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.stepper .step-link:hover,
+.stepper .step-link:focus-visible {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+}
+
+.stepper .step-link:hover .num,
+.stepper .step-link:focus-visible .num {
+    border-color: var(--accent);
+}

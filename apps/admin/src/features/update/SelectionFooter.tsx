@@ -10,7 +10,7 @@ import { Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { PublishSelection } from '../../api/types';
 import { t } from '../../i18n/t';
-import { encodeSelection, hasAnythingToPublish, pickedCount } from './selectionModel';
+import { hasAnythingToPublish, pickedCount, publishPathOf } from './selectionModel';
 
 interface SelectionFooterProps {
     selection: PublishSelection;
@@ -56,7 +56,7 @@ export function SelectionFooter(props: SelectionFooterProps) {
                     type="button"
                     className="primary big"
                     disabled={!canGo}
-                    onClick={() => navigate(`/publish?${encodeSelection(props.selection)}`)}
+                    onClick={() => navigate(publishPathOf(props.selection))}
                 >
                     <Send aria-hidden="true" />
                     {t('update.next')}

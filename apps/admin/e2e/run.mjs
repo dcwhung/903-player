@@ -1885,12 +1885,10 @@ const brandingCheck = (browser) =>
             await page.getByRole('button', { name: '發佈', exact: true }).click();
             await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();
 
-            // ⑤ 部署狀態：triggered 行 poll → 已部署 + GitHub 連結
+            // ⑤ 部署狀態：triggered 行 poll → 已部署（淨係 pill，唔再出 GitHub 連結）
             await page.getByText('已部署').waitFor();
-            await page
-                .getByRole('link', { name: /在 GitHub 查看/ })
-                .first()
-                .waitFor();
+            const runLinks = await page.getByRole('link', { name: /於 GitHub 查看/ }).count();
+            if (runLinks > 0) throw new Error(`已部署 should not link to GitHub (${runLinks})`);
             await shoot(page, 'appearance-deploy');
             await page.close();
         },

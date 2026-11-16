@@ -148,4 +148,14 @@ describe('UpdatePage', () => {
         show([READY], { others: { items: [UNLIST], timeline: [] } });
         expect(screen.queryByRole('region', { name: /已修改/ })).not.toBeInTheDocument();
     });
+
+    it('should carry the same selection from the stepper 確認發佈 step as from 下一步', async () => {
+        show([READY, CAMP]);
+        await userEvent.click(screen.getByRole('checkbox', { name: '發佈名稱與簡介' }));
+        await userEvent.click(screen.getByRole('link', { name: /確認發佈/ }));
+        const location = decodeURIComponent(screen.getByTestId('location').textContent ?? '');
+        expect(location).toBe(
+            '/publish?selection={"content":["newArc/lancy/love-after"],"branding":{"icon":false,"text":false},"banner":false}',
+        );
+    });
 });
