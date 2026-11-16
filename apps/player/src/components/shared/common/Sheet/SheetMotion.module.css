@@ -1,0 +1,49 @@
+/*
+ * 底部 sheet 彈出 / 收埋（全集 ArcSheet、資料 ItemInfoSheet 共用；直版、橫版 docked 一樣）。
+ * overlay 嘅 data-sheet-state 由 useSheetPresence 設：open = 由底滑上 + 遮罩淡入；
+ * closing = 滑落 + 淡出，動畫完 hook 先 unmount（✕ / 遮罩 / Escape / 撳左欄 / 拉走都行呢度）。
+ * 收埋緊 overlay 係 inert（useSheetPresence），唔收 tap / 焦點。
+ * 減少動態：冇動畫，hook 即刻 unmount。時間同 easing 用 view transition 過場 token
+ */
+@media (prefers-reduced-motion: no-preference) {
+    [data-sheet-state='open'] > .sheet {
+        animation: sheet-in var(--view-transition-fade) var(--ease-view-transition);
+    }
+
+    [data-sheet-state='open'] > .backdrop {
+        animation: scrim-in var(--view-transition-fade) var(--ease-view-transition);
+    }
+
+    /* 收埋：冇 from，由而家個位開始（拉走咗已經喺底就原地完，唔會彈返上嚟再落） */
+    [data-sheet-state='closing'] > .sheet {
+        animation: sheet-out var(--view-transition-fade) var(--ease-view-transition) forwards;
+    }
+
+    [data-sheet-state='closing'] > .backdrop {
+        animation: scrim-out var(--view-transition-fade) var(--ease-view-transition) forwards;
+    }
+}
+
+@keyframes sheet-in {
+    from {
+        transform: translateY(100%);
+    }
+}
+
+@keyframes scrim-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes sheet-out {
+    to {
+        transform: translateY(100%);
+    }
+}
+
+@keyframes scrim-out {
+    to {
+        opacity: 0;
+    }
+}

@@ -404,6 +404,14 @@
     --mini-lift-scale: 1.02;
     --mini-long-press-ms: 250ms;
     --mini-dismiss-slide-ms: 200ms;
+    /*
+     * viewport 入面真係睇得到嘅底部安全區：iOS standalone viewport 可能已經停喺 home indicator 上面，
+     * env() 照報安全區，扣返 useViewportGap 量到嘅差距，唔會留兩次（T8：底部 sheet 底嘅空白）
+     */
+    --safe-area-bottom-visible: max(
+        0px,
+        calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))
+    );
     --mini-player-offset-bottom: calc(
         max(0px, calc(env(safe-area-inset-bottom) - var(--viewport-gap-bottom, 0px))) +
             var(--space-2)

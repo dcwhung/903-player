@@ -73,6 +73,14 @@ const centreOf = (box) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2
 /** 表而家嘅 inline transform（拉緊 translateY(Npx)；放手彈返清空） */
 const sheetTransform = (p) => sheetOf(p).evaluate((el) => el.style.transform);
 
+/** 等表嘅彈出動畫（SheetMotion sheet-in）完；減少動態冇動畫即刻返 */
+const settleOpening = (p) =>
+    succeeds(
+        sheetOf(p).evaluate((el) =>
+            Promise.all(el.getAnimations().map((animation) => animation.finished)),
+        ),
+    );
+
 /** translateY(Npx) 嘅 N；冇就 0 */
 const translateYOf = (transform) => Number(/translateY\(([\d.]+)px\)/.exec(transform)?.[1] ?? 0);
 
@@ -185,6 +193,8 @@ const openSheet = async (env, label) => {
         visible = await isShown(sheetOf(p), { state: 'visible', timeout: SHEET_OPEN_TIMEOUT_MS });
         if (!visible && taps === 1) await reportMissedTap(env, label);
     }
+    // T6：表由底滑上（SheetMotion）；滑定先量位 / 拉，唔係手指會按喺滑緊嘅表下面
+    if (visible) await settleOpening(p);
     const transform = visible ? await sheetTransform(p) : '(冇表)';
     const retried = taps > 1 ? `，撳咗 ${taps} 下` : '';
     log(
