@@ -705,6 +705,7 @@
     border-radius: 24px;
 }
 
+/* Android maskable 圖本身已畫滿（裁切框 = 成張圖），預覽同樣填滿遮罩，唔再縮細留白（用戶 2026-11-16） */
 .icon-prev .ios img,
 .icon-prev .ios canvas,
 .icon-prev .android img,
@@ -712,12 +713,6 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-}
-
-.icon-prev .android img,
-.icon-prev .android canvas {
-    width: 82%;
-    height: 82%;
 }
 
 .icon-prev .tab {
