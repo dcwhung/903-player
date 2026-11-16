@@ -65,6 +65,11 @@
     --radius-row: calc(8px * var(--ui-scale));
 
     --touch-target: calc(44px * var(--ui-scale));
+    /*
+     * 橫版 ⓘ（PlayerPanel .info，T7b）喺進度圈右邊外面要嘅位：間距 + 掣闊。
+     * 橫版唱片闊兩邊都預留呢個位（Page.module.css .playerColumn），ⓘ 先唔會壓住圈又唔會出咗欄
+     */
+    --gauge-info-room: calc(var(--space-2) + var(--touch-target));
     /* WCAG 2.2 target size (minimum)：細粒掣嘅撳得到範圍 */
     --touch-target-min: calc(24px * var(--ui-scale));
     --focus-ring-width: 2px;
