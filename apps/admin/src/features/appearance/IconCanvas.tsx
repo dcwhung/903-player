@@ -1,5 +1,5 @@
 /*
- * 一個裁切後嘅 App 圖示縮圖（預覽用）：按 box 畫落 size × size canvas；maskable = true 時填遮罩底色 + 安全區。
+ * 一個裁切後嘅 App 圖示縮圖（預覽用）：按 box 畫落 size × size canvas；maskable 時先填遮罩底色（同上載 PNG 一樣畫滿，唔縮入安全區）。
  * 拖緊框時最多每格（rAF）畫一次（同 ChoiceCanvas 做法）
  */
 import { useEffect, useRef } from 'react';
@@ -14,7 +14,7 @@ const PREVIEW_PX = 128;
 interface IconCanvasProps {
     loaded: LoadedSource;
     box: CropRect;
-    /** maskable：填底色、圖縮入安全區；null = 成個 canvas 都係圖 */
+    /** maskable：先填底色（透明位見到）；null = 唔填底色。兩款圖都畫滿成個 canvas */
     background: string | null;
 }
 

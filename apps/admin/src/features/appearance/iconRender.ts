@@ -1,17 +1,18 @@
 /*
- * App 圖示輸出 PNG：每張按自己裝置嘅裁切框畫落標準尺寸 canvas；maskable 先填遮罩底色，
- * 再將圖縮入中間 80% 安全區（iconModel.safeRect）。輸出再對 ASSET_MAX_BYTES 檢查（同封面一樣）
+ * App 圖示輸出 PNG：每張按自己裝置嘅裁切框畫滿標準尺寸 canvas；maskable 先填遮罩底色（只會喺透明位見到），
+ * 唔再縮入安全區：編輯器實線圈 = 遮罩邊界 = 成張圖，虛線圈（框嘅 80%）= 安全區（用戶 2026-11-16）。
+ * 輸出再對 ASSET_MAX_BYTES 檢查（同封面一樣）
  */
 import { ASSET_MAX_BYTES } from '@903-player/catalog';
 import { t } from '../../i18n/t';
 import type { CropRect } from '../../ui/cropGeometry';
 import { browserEnv, type Failure, type ImageEnv, type LoadedSource } from '../../ui/imageCrop';
 import { kilobytes } from '../../ui/imageUpload';
-import { ICON_OUTPUTS, safeRect, type IconBoxes, type IconKey } from './iconModel';
+import { ICON_OUTPUTS, type IconBoxes, type IconKey } from './iconModel';
 
 export const PNG_TYPE = 'image/png';
 
-/** background = null：成張 canvas 都係圖；有底色 = maskable（底色 + 安全區入面先係圖） */
+/** 裁切框畫滿成張 canvas；有底色 = maskable（先填底色，圖透明位後面先見到） */
 export const drawIcon = (
     canvas: HTMLCanvasElement,
     image: CanvasImageSource,
@@ -20,15 +21,14 @@ export const drawIcon = (
 ) => {
     const context = canvas.getContext('2d');
     if (!context) return;
-    const size = { width: canvas.width, height: canvas.height };
-    const area = background === null ? { x: 0, y: 0, ...size } : safeRect(size);
+    const { width: outWidth, height: outHeight } = canvas;
     context.imageSmoothingQuality = 'high';
     if (background !== null) {
         context.fillStyle = background;
-        context.fillRect(0, 0, size.width, size.height);
+        context.fillRect(0, 0, outWidth, outHeight);
     }
     const { x, y, width, height } = box;
-    context.drawImage(image, x, y, width, height, area.x, area.y, area.width, area.height);
+    context.drawImage(image, x, y, width, height, 0, 0, outWidth, outHeight);
 };
 
 const toPng = (canvas: HTMLCanvasElement): Promise<Blob | null> =>
