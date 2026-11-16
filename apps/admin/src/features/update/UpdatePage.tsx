@@ -3,14 +3,14 @@
  * mockup: _mockups_/admin-style/index.html#a（漸變統計卡、按鈕 icon）+
  * mockup: _mockups_/admin-selective-publish/index.html#a（App 外觀 section、「發佈」勾選、選擇發佈）。
  * 有「必須處理」都可以「下一步」：未完成嘅行今次唔發佈。
- * 「已修改」section（EditsSection）：同確認發佈頁嘅修改卡一樣，淨係顯示（一定一併發佈，冇勾選）
+ * 「其他改動」section（OthersSection）：其他已儲存改動全部列出，同確認發佈頁嘅卡一樣，淨係顯示（一定一併發佈，冇勾選）
  */
 import { AlertTriangle, Check, FileText, Inbox } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
 import { AppearanceSection } from './AppearanceSection';
-import { EditsSection } from './EditsSection';
+import { OthersSection } from './OthersSection';
 import { usePublishSelection } from './PublishSelection';
 import { SelectionFooter } from './SelectionFooter';
 import { Stepper } from './Stepper';
@@ -80,7 +80,7 @@ export function UpdatePage() {
             ) : (
                 <p className="note ok">{todos.loading ? t('app.loading') : t('update.noTodos')}</p>
             )}
-            <EditsSection changes={changes.data} entries={entries.data ?? []} />
+            <OthersSection changes={changes.data} entries={entries.data ?? []} />
             <SelectionFooter
                 selection={selection}
                 incomplete={incompleteRows(rows).length}

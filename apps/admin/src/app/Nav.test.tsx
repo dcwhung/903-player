@@ -14,13 +14,14 @@ const EDIT: ChangeItem = {
     entry: { kind: 'shows', id: 'waves', name: '口水多過浪花' },
     detail: { fields: ['airTime'] },
 };
-/** 1 行新內容 + 1 項修改 + 1 項 App 外觀 = 3 項待發佈（blocking 只有 0：唔再只數必須處理） */
+const UNLIST: ChangeItem = { ...EDIT, kind: 'unlist', detail: {} };
+/** 1 行新內容 + 1 項修改 + 1 項下架 + 1 項 App 外觀 = 4 項待發佈（blocking 只有 0：唔再只數必須處理） */
 const PENDING: ChangesResponse = {
     base: 1,
     changes: { items: [], timeline: [] },
     validation: { ok: true, episodeCount: 10 },
     appearance: { icon: false, text: false, banner: true },
-    others: { items: [EDIT], timeline: [] },
+    others: { items: [EDIT, UNLIST], timeline: [] },
 };
 
 const renderNav = (mini: boolean, onToggle = vi.fn()) =>
@@ -47,7 +48,7 @@ describe('Nav v4', () => {
         const links = nav.getAllByRole('link');
         expect(links.map((link) => link.textContent)).toEqual([
             'App 外觀',
-            '更新3',
+            '更新4',
             '節目',
             '廣播劇',
             '發佈 / 部署',
@@ -56,7 +57,7 @@ describe('Nav v4', () => {
         expect(following(nav.getByText('品牌'), links[0] as Element)).toBe(true);
         expect(following(links[0] as Element, nav.getByText('內容'))).toBe(true);
         expect(following(nav.getByText('內容'), links[1] as Element)).toBe(true);
-        expect(nav.getByRole('link', { name: '更新（3 項待發佈）' })).toBeInTheDocument();
+        expect(nav.getByRole('link', { name: '更新（4 項待發佈）' })).toBeInTheDocument();
     });
 
     it('should put the theme switch and an icon-only collapse button on one row, collapse last', () => {

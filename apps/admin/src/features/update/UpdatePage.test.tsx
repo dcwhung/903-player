@@ -33,6 +33,7 @@ const SHOW_EDIT: ChangeItem = {
     detail: { fields: ['airTime', 'hosts', 'theme'] },
 };
 const UNLIST: ChangeItem = { ...SHOW_EDIT, kind: 'unlist', detail: {} };
+const REORDER: ChangeItem = { kind: 'reorder', when: 'now', detail: { list: 'shows' } };
 
 const changes = (over: Partial<ChangesResponse> = {}): ChangesResponse => ({
     base: 1,
@@ -131,22 +132,30 @@ describe('UpdatePage', () => {
         expect(screen.getByRole('button', { name: '下一步：確認發佈' })).toBeEnabled();
     });
 
-    it('should list edited items with field chips like the publish page, published together', () => {
-        show([READY], { others: { items: [SHOW_EDIT, UNLIST], timeline: [] } });
-        const section = screen.getByRole('region', { name: /已修改/ });
-        expect(within(section).getByText('以下修改將一併發佈')).toBeInTheDocument();
+    it('should list every other saved change like the publish page, published together', () => {
+        show([READY], { others: { items: [SHOW_EDIT, UNLIST, REORDER], timeline: [] } });
+        const section = screen.getByRole('region', { name: /其他改動/ });
+        expect(within(section).getByText('以下改動將一併發佈')).toBeInTheDocument();
         expect(within(section).getByText('口水多過浪花')).toBeInTheDocument();
         const chips = [...section.querySelectorAll('.tl-chip')].map((chip) => chip.textContent);
         expect(chips).toEqual(['播放時間', '主持', '配色']);
-        // 只列「修改」；一定一併發佈：冇勾選、冇還原
-        expect(within(section).queryByText('下架')).not.toBeInTheDocument();
+        // 修改、下架、排序全部列出（一定一併發佈）；冇勾選、冇還原
+        const tags = [...section.querySelectorAll('.tl-tag')].map((tag) => tag.textContent);
+        expect(tags).toEqual(['修改', '下架', '修改']);
+        expect(within(section).getByText('節目排序已更改')).toBeInTheDocument();
         expect(within(section).queryByRole('checkbox')).not.toBeInTheDocument();
         expect(within(section).queryByRole('button')).not.toBeInTheDocument();
     });
 
-    it('should not render the edited section when nothing was edited', () => {
+    it('should show an unlist-only change in the section too', () => {
         show([READY], { others: { items: [UNLIST], timeline: [] } });
-        expect(screen.queryByRole('region', { name: /已修改/ })).not.toBeInTheDocument();
+        const section = screen.getByRole('region', { name: /其他改動/ });
+        expect(within(section).getByText('下架')).toBeInTheDocument();
+    });
+
+    it('should not render the section when there are no other saved changes', () => {
+        show([READY]);
+        expect(screen.queryByRole('region', { name: /其他改動/ })).not.toBeInTheDocument();
     });
 
     it('should carry the same selection from the stepper 確認發佈 step as from 下一步', async () => {

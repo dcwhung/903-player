@@ -10,9 +10,9 @@ import { useState } from 'react';
 import type { LoadedEntry, TodoRow } from '../../api/types';
 import { t } from '../../i18n/t';
 import type { AppearanceItem } from './selectionModel';
-import { ReorderCard } from './ReorderCard';
+import { ChangeCard } from './ChangeCard';
 import { SkipGroup } from './SkipGroup';
-import { AppearanceCard, EntryCardView } from './TimelineCards';
+import { AppearanceCard } from './TimelineCards';
 import { entryCardsOf, groupHeading } from './timelineEntries';
 import { whenLabel } from './timelineModel';
 
@@ -55,18 +55,14 @@ function TimelineGroup({
             </p>
             <ul className="tl-entries">
                 {now && appearance?.map((item) => <AppearanceCard key={item} item={item} />)}
-                {entryCardsOf(group.items).map((card) =>
-                    card.items[0]?.kind === 'reorder' ? (
-                        <ReorderCard key={card.key} item={card.items[0]} onReverted={onReverted} />
-                    ) : (
-                        <EntryCardView
-                            key={card.key}
-                            card={card}
-                            entries={entries}
-                            onReverted={onReverted}
-                        />
-                    ),
-                )}
+                {entryCardsOf(group.items).map((card) => (
+                    <ChangeCard
+                        key={card.key}
+                        card={card}
+                        entries={entries}
+                        onReverted={onReverted}
+                    />
+                ))}
             </ul>
         </li>
     );
