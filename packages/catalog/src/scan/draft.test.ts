@@ -6,7 +6,6 @@ import { DRAMA_AUDIO_BASE } from '../constants';
 import { buildEpisodes } from '../dramas/episodes';
 import { parseDramaDefinition } from '../dramas/schema';
 import { generateDraft } from './draft';
-import { episodeUrls } from './urls';
 import { episodeFile, listingOf, range } from './testListing';
 import type { DraftJson, DraftResult, Issue } from './types';
 
@@ -103,7 +102,6 @@ describe('generateDraft — new series drama', () => {
         const json = jsonOf(build([...files, 'cover photo.png', '初戀/cover-photo.jpg']));
         const urls = appEpisodes('test', json).map((e) => e.url);
         expect(urls.map((u) => pathOfUrl(u, DRAMA)).sort()).toEqual([...files].sort());
-        expect(episodeUrls(json)).toEqual(urls);
     });
 
     it('should block on gaps, duplicates, unreadable names and mismatched numbers', () => {
@@ -199,7 +197,7 @@ describe('generateDraft — new series drama', () => {
 
     it('should warn about an id the app would reject', () => {
         const result = build([episodeFile('甲', 1)], 'Bad_ID');
-        expect(messagesOf(result.issues, 'warn')).toContain('--id「Bad_ID」唔合 app 規則');
+        expect(messagesOf(result.issues, 'warn')).toContain('劇 ID「Bad_ID」唔合 app 規則');
     });
 });
 
@@ -229,7 +227,7 @@ describe('generateDraft — merging with an existing definition', () => {
             gone,
             { id: 'arc-01', name: '新', addedAt: TODAY, episodes: 1 },
         ]);
-        expect(messagesOf(result.issues, 'warn')).toContain('已走：本機 folder 冇呢個短篇');
+        expect(messagesOf(result.issues, 'warn')).toContain('已走：R2 資料夾冇呢個短篇');
         expect(messagesOf(result.issues, 'info')).toContain('甲：集數由 1 變 2');
         expect(messagesOf(result.issues, 'info')).toContain('新：新短篇');
     });
@@ -319,7 +317,7 @@ describe('generateDraft — merging with an existing definition', () => {
         const base = jsonOf(draft(paths));
         const existing = { ...base, audio: { ...(base.audio as Json), folder: '另一個' } };
         expect(messagesOf(draft(paths, existing).issues, 'warn')).toContain(
-            'audio.folder「另一個」同本機 folder 名唔一樣',
+            'audio.folder「另一個」同R2 資料夾名唔一樣',
         );
     });
 
@@ -332,7 +330,7 @@ describe('generateDraft — merging with an existing definition', () => {
 
     it('should report a daily definition given for a series folder instead of crashing', () => {
         expect(blockedBy({ kind: 'daily', episodes: [] })).toContain(
-            '--existing 係 daily，但 folder 睇落係 series',
+            '現有設定係 daily，但 folder 睇落係 series',
         );
     });
 
@@ -348,8 +346,8 @@ describe('generateDraft — merging with an existing definition', () => {
     });
 
     it('should report a null or non-object existing value instead of treating it as new', () => {
-        expect(blockedBy(null)).toContain('--existing 唔係 drama.json');
-        expect(blockedBy([])).toContain('--existing 唔係 drama.json');
+        expect(blockedBy(null)).toContain('現有設定唔係 drama.json');
+        expect(blockedBy([])).toContain('現有設定唔係 drama.json');
     });
 });
 
@@ -383,7 +381,7 @@ describe('generateDraft — daily drama', () => {
             { date: '2026-10-22', rerun: true },
             { date: '2026-10-20' },
         ]);
-        expect(messagesOf(result.issues, 'warn')).toContain('2026-10-20：本機 folder 冇呢日');
+        expect(messagesOf(result.issues, 'warn')).toContain('2026-10-20：R2 資料夾冇呢日');
     });
 
     it('should block on audio files that are not YYYYMMDD.m4a', () => {
@@ -394,30 +392,21 @@ describe('generateDraft — daily drama', () => {
     });
 });
 
-/** S-785：同一套檢查，CLI（本機 folder，預設）同 API（R2 掃描）各自出合適嘅字眼 */
-describe('generateDraft — wording by source (S-785)', () => {
+/** S-785 / S-751：admin 掃 R2，訊息唔可以提本機 CLI 參數或者本機 folder */
+describe('generateDraft — R2 wording (S-785)', () => {
     const CLI_ONLY = /--verify|--existing|--id|本機/;
     const allMessages = (result: DraftResult) =>
         result.issues.map((i) => `${i.where}：${i.message}`).join('\n');
 
-    const nfdSeries = (source?: 'folder' | 'r2') =>
-        generateDraft(listingOf('劇', [episodeFile(NFD_NAME, 1)]), {
-            id: 'Bad_ID',
-            today: TODAY,
-            ...(source === undefined ? {} : { source }),
-        });
-
-    it('should keep the CLI hints when scanning a local folder (default)', () => {
-        const text = allMessages(nfdSeries());
-        expect(text).toContain('--verify');
-        expect(text).toContain('--id「Bad_ID」');
-        expect(allMessages(nfdSeries('folder'))).toBe(text);
-    });
-
-    it('should not mention CLI flags or a local folder for an R2 scan', () => {
-        const text = allMessages(nfdSeries('r2'));
+    it('should not mention CLI flags or a local folder', () => {
+        const text = allMessages(
+            generateDraft(listingOf('劇', [episodeFile(NFD_NAME, 1)]), {
+                id: 'Bad_ID',
+                today: TODAY,
+            }),
+        );
         expect(text).toContain('NFD');
-        expect(text).toContain('「Bad_ID」');
+        expect(text).toContain('劇 ID「Bad_ID」');
         expect(text).not.toMatch(CLI_ONLY);
     });
 
@@ -426,11 +415,7 @@ describe('generateDraft — wording by source (S-785)', () => {
         const base = jsonOf(generateDraft(listingOf('劇', paths), { today: TODAY }));
         const gone = { id: 'gone', name: '已走', episodes: 1 };
         const existing = { ...base, arcs: [...(base.arcs as unknown[]), gone] };
-        const series = generateDraft(listingOf('劇', paths), {
-            existing,
-            today: TODAY,
-            source: 'r2',
-        });
+        const series = generateDraft(listingOf('劇', paths), { existing, today: TODAY });
         expect(messagesOf(series.issues, 'warn')).toContain('已走：R2 資料夾冇呢個短篇');
 
         const daily = generateDraft(listingOf('每日劇', ['20261022.m4a']), {
@@ -440,7 +425,6 @@ describe('generateDraft — wording by source (S-785)', () => {
                 episodes: [{ date: '2026-10-20' }],
             },
             today: TODAY,
-            source: 'r2',
         });
         expect(messagesOf(daily.issues, 'warn')).toContain('2026-10-20：R2 資料夾冇呢日');
         expect(allMessages(series) + allMessages(daily)).not.toMatch(CLI_ONLY);
@@ -450,7 +434,6 @@ describe('generateDraft — wording by source (S-785)', () => {
         const blocked = generateDraft(listingOf('劇', [episodeFile('甲', 1)]), {
             existing: { kind: 'daily', episodes: [] },
             today: TODAY,
-            source: 'r2',
         });
         expect(blocked.json).toBeNull();
         expect(messagesOf(blocked.issues, 'error')).toContain('現有設定係 daily');

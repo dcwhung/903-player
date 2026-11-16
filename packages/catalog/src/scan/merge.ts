@@ -187,7 +187,7 @@ const numbered = (prefix: string, n: number): string =>
  * 冇 id 嘅短篇（新短篇）自動派 id（避開已經用咗嘅），逐個出 TODO 提示人手確認：
  * id 係 episode ID（進度 / 收藏 key）嘅一部份，發佈之後唔可以再改。
  * 知道劇 ID（合 ID_PATTERN）就用「<劇 ID>-NN」，號碼由已有 id 嘅短篇數 + 1 起（例如 lancy-04，Phase 3c）；
- * 唔知（CLI 冇 --id）就照舊 arc-NN
+ * 唔知（冇傳 id，只有 test；admin 一定傳）就照舊 arc-NN
  */
 export const withArcIds = (
     arcs: readonly DraftArc[],

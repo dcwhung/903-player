@@ -16,7 +16,7 @@ import { episodeOptionsFor } from './lib/episodeOptionsFor';
 /*
  * Library round-trip（由已刪嘅 scripts/dramaFromFolder.test.ts 搬過嚟）：
  * 由 library 每套劇 app 砌出嚟嘅錄音網址，砌返成棵 R2 folder listing，再行 admin / API 掃描用嘅
- * generateDraft（source: 'r2'，同 apps/api/src/admin/rescan.ts 一樣傳 id + existing），
+ * generateDraft（同 apps/api/src/admin/rescan.ts 一樣傳 id + existing），
  * 要生成返一模一樣嘅 drama.json：掃描規則（packages/catalog/src/scan/）同 app 規則
  *（packages/catalog/src/dramas/）唔可以甩。純掃描規則嘅 case 喺 packages/catalog/src/scan/*.test.ts
  */
@@ -26,7 +26,6 @@ const TODAY = '2026-10-29';
 /** host: app 嘅錄音 base：用固定 base path，唔讀 import.meta.env（node test 冇 vite/client） */
 const BASE_PATH = '/';
 const EPISODE_OPTIONS = episodeOptionsFor(BASE_PATH);
-const SCAN_SOURCE = 'r2';
 const DRAMA_COVER = 'cover photo.png';
 const ARC_COVER = 'cover photo.jpg';
 const PATH_SEPARATOR = '/';
@@ -94,7 +93,7 @@ const mirrorListing = (id: string) => {
 };
 
 const scan = (id: string, existing?: Json): DraftResult =>
-    generateDraft(mirrorListing(id), { id, existing, today: TODAY, source: SCAN_SOURCE });
+    generateDraft(mirrorListing(id), { id, existing, today: TODAY });
 
 /** 生成成功嘅 drama.json；有 error 就直接 fail 兼列出原因 */
 const jsonOf = (result: DraftResult): Json => {
@@ -153,7 +152,6 @@ describe('library drama.json — merging a rescan into lancy', () => {
             id: LANCY,
             existing: committed(LANCY),
             today: TODAY,
-            source: SCAN_SOURCE,
         });
 
     it('should keep hand-written fields, flag a missing arc and date a new arc today', () => {

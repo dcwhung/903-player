@@ -2,6 +2,15 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.12.1 — 2026-11-16
+
+本機 CLI `dramaFromFolder` 刪除（S-751）之後嘅清理；API 行為同 admin 見到嘅掃描字眼一字不差。
+
+### Removed
+
+- `packages/catalog` 掃描：`generateDraft` 嘅 `source` 參數、`ScanSource` type（只得 R2 一套字眼 `SCAN_WORDING`）；`episodeUrls` / `coverUrls`（原本畀 CLI `--verify` 用）
+- `POST /api/scan`、`POST /api/dramas/:id/scan`、重新掃描唔再傳 `source: 'r2'`
+
 ## 0.12.0 — 2026-11-14
 
 變更摘要準確度（`.proj-docs/plans/2026-11-14_plan_publish-change-accuracy.md`）。舊 client 照用得；`reorder` 係新 change kind，識得 0.11.0 item 嘅 client 要加返先顯示到。
