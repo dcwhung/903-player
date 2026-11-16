@@ -94,3 +94,34 @@ next_agent: quality-assurance
 branch: "feature/catalog/item-info"
 context: "item info re-review 95/100 pass；W-747、S-1014–S-1018 全部 verified；新 W-748（formatPlayTime 文案寫死喺 selector，建議 merge 前搬入 zh-HK.ts）；S-1019–S-1021 backlog；integration branch = main；QA S1 chains catalog-data / drama / show-today-page"
 ```
+
+## Delta re-review — `1b52b8f..f47d174`（2026-11-16）
+
+- 範圍：f6e6db4（W-748、S-1020）、f47d174（S-1019、S-1021），只驗上面 4 項同佢哋嘅 diff
+- Hard gates：all pass —— `npx vitest related <8 個改咗嘅 src 檔> --run`：104 files / 1387 tests 全綠；`npx tsc -b` exit 0；`npm run lint` exit 0
+- 新 finding：冇（下一個 ID 照舊 C-024 / W-749 / S-1022）
+- 分數：**100 / 100（✅ pass）**（W-748 已修，可維護性 15 → 20）
+
+| ID     | Commit  | 結果        | 證據                                                                                                                                                                                                                     |
+| ------ | ------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| W-748  | f6e6db4 | ✅ verified | `zh-HK.ts` 加 `info.playTime` / `playTimeDaily` / `playTimeRange`；`formatPlayTime` 用 `t()`；同一條 `rg` 而家淨係出 `playbackLog.ts:36`（開發用）；`itemInfo.test.ts` 原有 formatPlayTime 斷言冇改照綠                  |
+| S-1020 | f6e6db4 | ✅ verified | JSDoc 搬返 `interface ItemInfoSection` 上面                                                                                                                                                                              |
+| S-1019 | f47d174 | ✅ verified | `InfoSection.tsx` `underBanner && !hasBody` → `null`；`ItemInfoSheet.test.tsx`「nothing left once the banner takes its title and time」綠（同上一輪臨時 test 同一個情況）                                                |
+| S-1021 | f47d174 | ✅ verified | 疊層樣抽去 `InfoBanner.module.css` `.grabOnBanner` / `.closeOnBanner`（加 `[data-on-banner]`，specificity 0,2,0 高過兩邊 `.grab` / `.close` 嘅 0,1,0，唔靠載入次序）；屬性同搬之前一樣；兩個 sheet 都有 test 數 2 個標記 |
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/catalog/item-info"
+context: "item info delta re-review 100/100 pass；W-748、S-1019、S-1020、S-1021 全部 verified，冇新 finding；integration branch = main；QA S1 chains catalog-data / drama / show-today-page"
+```
