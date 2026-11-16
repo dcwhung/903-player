@@ -10,8 +10,8 @@
 - 涵蓋 commit：`29c0fdd`、`e741619`、`ebe9571`、`8e0da67`、`d881095`、`c92203c`、`587c729`（+ 4 個 lane merge commit）
 - Hard gates：all pass（main agent 喺 HEAD 跑：`npx tsc -b`、`npm run lint`、`npm test` 435 files / 4591 tests 全綠；reviewer 另跑 diff 相關 8 個 test file，198 tests 全綠，見下）
 - Coverage：n/a（冇量度；改動嘅邏輯每條分支都有新 test 直接打中）
-- 整體 score：99/100
-- Status：⚠️ warn（W-760 要喺 PR 內修，修完 re-review 只驗 W-760）
+- 整體 score：第一輪 99/100 → re-review 100/100
+- Status：第一輪 ⚠️ warn → re-review ✅ pass（見 §Re-review）
 
 Reviewer 自己跑（L2 證據）：
 
@@ -92,12 +92,27 @@ npx vitest run apps/api/test/entries.test.ts apps/api/test/publishWarnings.test.
 "version": "1.36.1", // W-760：S-796 改咗 player src，PATCH bump
 ```
 
+## Re-review — 2026-11-16（`42d2abb` `bb9f6ba`）
+
+只驗 W-760 同 S-1052 嘅修正 diff，冇重新 review 成個 branch。
+
+| ID     | Commit    | 結果    | 核對                                                                                                                                          |
+| ------ | --------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-760  | `42d2abb` | ✅ 已修 | `apps/player/package.json` 1.36.0 → 1.36.1；`package-lock.json` 改嘅係 `apps/player` 嗰個 entry；commit 只有呢兩行，格式 `fix: W-760 \| …` 啱 |
+| S-1052 | `bb9f6ba` | ✅ 已修 | `LATEST_OK_PUBLISH` const，三個 query 砌出嚟嘅 SQL 同之前一字不差（淨係換行 / 空格唔同），冇改行為；commit 只改 `store.ts`                    |
+
+Reviewer 自己跑（L2）：`npx vitest run apps/api/test/latestEpisodeIds.test.ts apps/api/test/entries.test.ts apps/api/test/publish.test.ts apps/api/test/revert.test.ts` → 4 files / 88 tests pass；`npx tsc -p apps/api --noEmit` 過；`npx eslint apps/api/src/catalog/store.ts` 過。
+
+更新評分：可維護性 20 / 20，**總分 100 / 100**，Section E 100 / 100。冇未清嘅 🔴 / 🟡；S-1050、S-1051、S-1053 照第一輪建議唔使跟進、唔落 backlog。
+
+**結果：✅ pass**
+
 ## Handoff receipt
 
 ```handoff-receipt
 protocol: 1
-status: warn
-score: 99/100
+status: pass
+score: 100/100
 stage: T2
 ledger: n/a
 hard_gates:
@@ -105,10 +120,8 @@ hard_gates:
   type_check: pass
   tests: pass
   coverage: n/a
-next_action: invoke_developer
-next_agent: frontend-developer
+next_action: merge_develop
+next_agent: null
 branch: "claude/brave-gauss-xy73t7"
-context: "Batch L1-L4: A/B/C/D pass; E (L4 S-796) pass by score but W-760 player version not bumped -> fix in PR (bump 1.36.1), re-review W-760 only. S-1052 optional in-PR; S-1050/S-1051/S-1053 no action."
-blockers:
-  - "W-760: apps/player/package.json still 1.36.0 after S-796 player src change"
+context: "Re-review pass: W-760 (42d2abb player 1.36.1) and S-1052 (bb9f6ba LATEST_OK_PUBLISH) verified; batch L1-L4 all pass. Integration target is main (no develop). S-1050/S-1051/S-1053 no action, not for backlog."
 ```
