@@ -12,11 +12,12 @@ import { t } from '../../i18n/t';
 import { AppearanceSection } from './AppearanceSection';
 import { OthersSection } from './OthersSection';
 import { usePublishSelection } from './PublishSelection';
+import { usePublishPlan } from './usePublishPlan';
 import { SelectionFooter } from './SelectionFooter';
 import { Stepper } from './Stepper';
 import { TodoMatrix } from './TodoMatrix';
 import { StatCards, type Stat } from '../../ui/StatCards';
-import { incompleteRows, selectionOf } from './selectionModel';
+import { incompleteRows } from './selectionModel';
 import { todoStats } from './todoModel';
 
 const statsOf = (counts: ReturnType<typeof todoStats>): Stat[] => [
@@ -52,7 +53,7 @@ export function UpdatePage() {
     useEffect(() => void reload(), [reload]);
     const rows = todos.data?.rows ?? [];
     const appearance = changes.data?.appearance;
-    const selection = selectionOf(rows, appearance, unpicked);
+    const { selection } = usePublishPlan();
     return (
         <>
             <div className="title-row">
