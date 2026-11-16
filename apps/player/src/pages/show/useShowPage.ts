@@ -23,6 +23,7 @@ import { asShowRecording } from '../../types/track';
 import { zoomFromState, zoomState } from '../../utils/cardZoom';
 import { playbackStateOf } from '../../utils/playbackState';
 import { toEpisodeItems } from '../shared/episodeItems';
+import { useShowInfo } from './useShowInfo';
 
 /**
  * 呢個節目嘅集數同揀中嗰集：播緊呢個節目就用播緊嗰集；未載入就用由「我的收藏」撳入嚟嗰集
@@ -191,5 +192,6 @@ export const useShowPage = (showId: string, focusUrl?: string) => {
         strip: useShowStrip(show, episodes, currentUrl),
         selectEpisode: press.selectEpisode,
         pressEpisode: press.pressEpisode,
+        info: useShowInfo(show, focusUrl !== undefined),
     };
 };

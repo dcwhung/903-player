@@ -3,6 +3,7 @@ import { EpisodeList } from '../../components/shared/player/EpisodeList/EpisodeL
 import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { NowPlaying } from '../../components/shared/player/NowPlaying/NowPlaying';
 import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPanel';
+import { ItemInfoSheet } from '../../components/shared/common/ItemInfo/ItemInfoSheet';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import { LANDSCAPE_QUERY } from '../../config/layout';
@@ -16,6 +17,44 @@ import { DramaHeader } from './DramaHeader';
 import page from '../shared/Page.module.css';
 import { useDailyDramaPage } from './useDramaPage';
 
+type DailyView = ReturnType<typeof useDailyDramaPage>;
+
+interface DailyPlayerProps {
+    drama: DramaConfig;
+    view: DailyView;
+    current: NonNullable<DailyView['current']>;
+    landscape: boolean;
+}
+
+/** 唱片 + 日子條（橫版加「現正播放」）+ 劇集資料 sheet（橫版喺唱片嗰欄，直版由畫面底彈出） */
+const DailyPlayer = ({ drama, view, current, landscape }: DailyPlayerProps) => {
+    const { duration } = usePlayer();
+    const { theme, start, strip, info } = view;
+    return (
+        <>
+            <PlayerPanel
+                title={drama.name}
+                dateLabel={formatSpokenDate(current.date)}
+                art={start ? undefined : theme.art}
+                days={strip.days}
+                currentDay={strip.current}
+                onPick={view.selectEpisode}
+                onStart={start}
+                bookmark={current}
+                {...info.gaugeInfo}
+            />
+            {landscape && (
+                <NowPlaying
+                    label={formatDateLabel(current.date)}
+                    spokenLabel={formatSpokenDate(current.date)}
+                    connecting={!start && !hasKnownDuration(duration)}
+                />
+            )}
+            <ItemInfoSheet {...info.sheet} onClose={info.sheet.close} docked={landscape} />
+        </>
+    );
+};
+
 /**
  * 每日劇集：同節目頁一樣嘅版面（唱片 + 日子條，直版下面 / 橫版左欄集數清單）。
  * 成頁固定唔捲，得集數清單自己捲（Page.module.css .locked / .fixed）。
@@ -24,44 +63,26 @@ import { useDailyDramaPage } from './useDramaPage';
 export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
     // 由「我的收藏」撳行入嚟：唔播，清單捲去嗰集、短暫 highlight
     const focusUrl = useEpisodeFocus();
-    const { theme, current, start, strip, items, selectEpisode, pressEpisode } = useDailyDramaPage(
-        drama,
-        focusUrl,
-    );
-    const { duration } = usePlayer();
+    const view = useDailyDramaPage(drama, focusUrl);
+    const { current } = view;
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
     // 橫版頁頭喺左欄清單上面（清單成日都有）
     return (
-        <ThemeScope theme={theme}>
+        <ThemeScope theme={view.theme}>
             <main className={`${page.page} ${page.locked} ${page.fixed}`} data-player-page="">
                 <div className={page.playerColumn}>
                     {!landscape && <DramaHeader title={drama.name} />}
-                    {!current && <StatusMessage message={t('episodes.noneUp')} />}
-                    {current && (
-                        <PlayerPanel
-                            title={drama.name}
-                            dateLabel={formatSpokenDate(current.date)}
-                            art={start ? undefined : theme.art}
-                            days={strip.days}
-                            currentDay={strip.current}
-                            onPick={selectEpisode}
-                            onStart={start}
-                            bookmark={current}
-                        />
-                    )}
-                    {current && landscape && (
-                        <NowPlaying
-                            label={formatDateLabel(current.date)}
-                            spokenLabel={formatSpokenDate(current.date)}
-                            connecting={!start && !hasKnownDuration(duration)}
-                        />
+                    {current ? (
+                        <DailyPlayer {...{ drama, view, current, landscape }} />
+                    ) : (
+                        <StatusMessage message={t('episodes.noneUp')} />
                     )}
                 </div>
                 <div className={page.listColumn}>
                     {landscape && <DramaHeader title={drama.name} />}
                     <EpisodeList
-                        items={items}
-                        onSelect={pressEpisode}
+                        items={view.items}
+                        onSelect={view.pressEpisode}
                         labels="taggedDate"
                         focusKey={focusUrl}
                     />

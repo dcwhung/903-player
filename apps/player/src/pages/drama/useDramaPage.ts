@@ -34,6 +34,7 @@ import type { StandbyTime } from '../../components/shared/player/PlayerPanel/Pla
 import { toDailyItems, toSeriesItems } from '../shared/dramaItems';
 import type { RowContext } from '../shared/episodeItems';
 import { useSeriesAvailability, type SeriesAvailabilityView } from './useSeriesAvailability';
+import { useDailyInfo } from './useDailyInfo';
 import { useSeriesInfo } from './useSeriesInfo';
 
 /** 每日劇集今日有得聽嘅集數，最新喺頂 */
@@ -146,6 +147,7 @@ export const useDailyDramaPage = (drama: DramaConfig, focusUrl?: string) => {
         items: toDailyItems(episodes, ctx),
         selectEpisode,
         pressEpisode,
+        info: useDailyInfo(drama, focusUrl !== undefined),
     };
 };
 
