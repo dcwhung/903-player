@@ -33,6 +33,17 @@ describe('DailyDramaPage item info（P9.5 #12）', () => {
         expect(within(sheet).getByText('每日劇示範簡介')).toBeInTheDocument();
     });
 
+    it('should not pop it when entered from 我的收藏 (focusId)', async () => {
+        renderWithProviders(<DramaPage />, {
+            route: '/drama/c18',
+            path: '/drama/:dramaId',
+            state: { focusId: C18[0]?.id },
+        });
+        await screen.findByRole('button', { name: '劇集資料' });
+        await act(async () => {});
+        expect(screen.queryByRole('dialog', { name: '劇集資料' })).not.toBeInTheDocument();
+    });
+
     it('should not pop it with progress, but open it from ⓘ', async () => {
         saveProgress(C18[0]?.id ?? '', 60, 600);
         openC18();

@@ -63,7 +63,8 @@ describe('ShowPage item info（P9.5 #12）', () => {
     });
 
     it('should not pop it when entered from 我的收藏', async () => {
-        renderWithProviders(<ShowPage />, { ...ROUTE, state: { focusUrl: RECORDINGS[1]?.url } });
+        // S-743：收藏 tab 帶 episode id（focusId）入頁
+        renderWithProviders(<ShowPage />, { ...ROUTE, state: { focusId: RECORDINGS[1]?.id } });
         await screen.findByRole('button', { name: '節目資料' });
         await act(async () => {});
         expect(screen.queryByRole('dialog', { name: '節目資料' })).not.toBeInTheDocument();

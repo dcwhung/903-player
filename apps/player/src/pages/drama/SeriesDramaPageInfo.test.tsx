@@ -61,6 +61,17 @@ describe('SeriesDramaPage item info（P9.5 #12）', () => {
         expect(banner).toHaveTextContent(/最新上架：|\d+ 個短篇/);
     });
 
+    it('should not open the 全集 sheet when entered from 我的收藏 (focusId)', async () => {
+        renderWithProviders(<DramaPage />, {
+            route: '/drama/chisee',
+            path: PATH,
+            state: { focusId: CHISEE[0]?.id },
+        });
+        await screen.findByRole('button', { name: /^全集/ });
+        expect(screen.queryByRole('dialog', { name: '全集' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', { name: '劇集資料' })).not.toBeInTheDocument();
+    });
+
     it('should open the 全集 sheet collapsed from the 全集 chip', async () => {
         saveProgress(CHISEE[0]?.id ?? '', 60, 1200);
         openChisee();
