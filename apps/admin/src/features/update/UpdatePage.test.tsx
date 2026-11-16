@@ -123,4 +123,14 @@ describe('UpdatePage', () => {
         expect(screen.getByText('只發佈其他已儲存的改動')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '下一步：確認發佈' })).toBeEnabled();
     });
+
+    it('should carry the same selection from the stepper 確認發佈 step as from 下一步', async () => {
+        show([READY, CAMP]);
+        await userEvent.click(screen.getByRole('checkbox', { name: '發佈名稱與簡介' }));
+        await userEvent.click(screen.getByRole('link', { name: /確認發佈/ }));
+        const location = decodeURIComponent(screen.getByTestId('location').textContent ?? '');
+        expect(location).toBe(
+            '/publish?selection={"content":["newArc/lancy/love-after"],"branding":{"icon":false,"text":false},"banner":false}',
+        );
+    });
 });
