@@ -185,7 +185,14 @@ const checkArcSheet = async (env, json, reducedMotion) => {
     );
     if (cast) {
         const info = castList(p).locator('xpath=ancestor::*[@data-role="item-info"][1]');
-        logLabelFlow(log, `${label}聲演`, await inlineMetrics(info));
+        const m = await inlineMetrics(info);
+        logLabelFlow(log, `${label}聲演`, m);
+        const play = await info
+            .locator('xpath=ancestor::li[1]')
+            .locator('button:not([data-role="pick"])')
+            .first()
+            .boundingBox();
+        logFullWidth(log, `${label}短篇行`, m.right, play);
     }
     await dramaToggle(p).click();
     if (!reducedMotion) await p.waitForTimeout(SETTLE_MS);

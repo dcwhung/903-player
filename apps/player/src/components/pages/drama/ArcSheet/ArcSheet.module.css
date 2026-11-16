@@ -157,9 +157,12 @@
     border-radius: var(--radius-md);
 }
 
-/* 短篇資料：對齊名 / 進度嗰欄（pick 左 padding + 碟面 + 間距） */
+/*
+ * 短篇資料：左邊對齊名 / 進度（pick 左 padding + 碟面 + 間距），右邊橫跨到播放掣下面
+ * （行 padding-right = 播放掣右邊），用盡成行闊度（用戶 2026-11-16）
+ */
 .rowInfo {
-    grid-column: 1;
+    grid-column: 1 / -1;
     padding-left: calc(var(--space-2) + var(--arc-sheet-ring) + var(--space-3));
 }
 
