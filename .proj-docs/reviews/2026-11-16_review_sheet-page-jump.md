@@ -44,3 +44,31 @@ all pass —— `npx tsc -b --noEmit`（apps/player）exit 0；`npm run lint`（
 - Root cause 拆得清楚（focus 捲祖先 vs 滑緊嘅表撐大捲動範圍），各自一個最細修正，冇用 `scrollTo(0,0)` 之類嘅補鑊
 - e2e `watchPageScroll` 喺動畫期間用 scroll 事件 + 輪詢量所有祖先，連「閂返」都量；CI 實測 scrollTop 0 / +0px
 - `sheetMotion.node.test.ts` 用 CSS 原文鎖住兩個 `.docked` 嘅 `overflow: clip`，日後有人改返 `hidden` 會即刻紅
+
+## Re-review（2026-11-16，HEAD `62b5063`）
+
+- 範圍：`git diff 7900466..62b5063`（`707878b` S-1095、`62b5063` W-779），只驗上一輪 🟡 / 🟢 嘅修正
+- Hard gates：all pass —— `npm run lint`（eslint + `prettier --check .`）exit 0；`vitest related ArcSheet.module.css` 對應嘅 `sheetMotion.node.test.ts` + `sheetBottomInset.node.test.ts`：2 files / 8 tests 綠（兩個都讀 CSS 原文）；E2E 用 CI run 43953159262（`62b5063`，Lint / unit / build + E2E 全 success）
+- **W-779 ✅ 已修**：揀咗方案 A 嘅加強版 —— `settleAnimations(locator)` 喺 `checkBanner` 開頭等 sheet 同 subtree 所有有限動畫 `finished`（無限動畫用 `endTime` 篩走，`Promise.race` 封頂 `WAIT_MS`，`succeeds` 包住唔 throw），三個舊 `SETTLE_MS` sleep 全部換走（`checkArcSheet` 收合、`checkTodayInline`），`SETTLE_MS` 已刪。減少動態冇動畫即刻返，同舊 `if (!reducedMotion)` 行為一致。L2：CI 43953159262 E2E 綠；Developer 另外喺 0.1x–1x 動畫速度跑 itemInfo 56 PASS。✕ 失敗訊息加咗座標，日後 flake 易查
+- **S-1095 ✅ 已修**：兩段 block comment 併成一段，冇改規則
+- 新 finding：冇（re-review 唔搵新 🟢）
+- 評分：測試覆蓋 15 / 15 → **總分 100 / 100**
+
+**結果：✅ pass**
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: n/a
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: null
+branch: "claude/admin-player-fixes-6fzdtw"
+context: "Re-review: W-779 / S-1095 fixed; CI 43953159262 on 62b5063 all green; integration branch is main (no develop); report committed locally, not pushed"
+```
