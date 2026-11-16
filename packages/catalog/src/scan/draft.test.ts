@@ -6,6 +6,7 @@ import { DRAMA_AUDIO_BASE } from '../constants';
 import { buildEpisodes } from '../dramas/episodes';
 import { parseDramaDefinition } from '../dramas/schema';
 import { generateDraft } from './draft';
+import { isPlaceholderArcId } from './merge';
 import { episodeUrls } from './urls';
 import { episodeFile, listingOf, range } from './testListing';
 import type { DraftJson, DraftResult, Issue } from './types';
@@ -83,6 +84,20 @@ describe('generateDraft — new series drama', () => {
         const result = build([episodeFile('甲', 1)]);
         expect((jsonOf(result).arcs as Json[])[0]?.id).toBe('arc-01');
         expect(messagesOf(result.issues, 'warn')).toContain('甲：TODO：id「arc-01」係 placeholder');
+    });
+
+    it('should tell people to rename a placeholder id before committing (S-747)', () => {
+        const result = build([episodeFile('甲', 1)]);
+        expect(messagesOf(result.issues, 'warn')).toContain('commit 前一定要改名');
+    });
+
+    it('should recognise the placeholder ids it generates but not real arc ids (S-747)', () => {
+        const generated = (jsonOf(build([episodeFile('甲', 1)])).arcs as Json[])[0]?.id;
+        expect(isPlaceholderArcId(String(generated))).toBe(true);
+        expect(['arc-1', 'arc-99', 'arc-123'].every(isPlaceholderArcId)).toBe(true);
+        expect(['season-1', 'lancy-04', 'arc-1b', 'arc-', 'arcs-01', 'my-arc-01']).toSatisfy(
+            (ids: string[]) => !ids.some(isPlaceholderArcId),
+        );
     });
 
     it('should number new arcs after the drama id when the id is known (Phase 3c)', () => {
