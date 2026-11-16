@@ -59,13 +59,13 @@ describe('ShowPage', () => {
     });
     afterEach(() => vi.useRealTimers());
 
-    // P7 #7：收藏 tab 撳行入嚟（focusUrl）：唔播、捲去嗰集、短暫 highlight
+    // P7 #7：收藏 tab 撳行入嚟（focusId）：唔播、捲去嗰集、短暫 highlight
     it('should not autoplay and should highlight the episode opened from 我的收藏', async () => {
         const target = RECORDINGS[1];
         const { audio, container } = renderWithProviders(<ShowPage />, {
             ...ROUTE,
             recordings: RECORDINGS,
-            state: { focusUrl: target?.url },
+            state: { focusId: target?.id },
         });
 
         await screen.findByRole('button', { name: /^播放 03\/10/ });
@@ -88,7 +88,7 @@ describe('ShowPage', () => {
         const { audio } = renderWithProviders(<ShowPage />, {
             ...ROUTE,
             recordings: RECORDINGS,
-            state: { focusUrl: target?.url },
+            state: { focusId: target?.id },
         });
 
         await userEvent.click(await screen.findByRole('button', { name }));
@@ -102,7 +102,7 @@ describe('ShowPage', () => {
         const { audio } = renderWithProviders(<ShowPage />, {
             ...ROUTE,
             recordings: gongziOnly,
-            state: { focusUrl: gongziOnly[1]?.url },
+            state: { focusId: gongziOnly[1]?.id },
             extraRoutes: [{ path: '/', element: <HomePage /> }],
         });
         await screen.findByRole('button', { name: /^播放 03\/10/ });
@@ -123,7 +123,7 @@ describe('ShowPage', () => {
             const navigate = useNavigate();
             const enter = async () => {
                 await load(other, { autoplay: true });
-                await navigate('/show/gongzi', { state: { focusUrl: RECORDINGS[1]?.url } });
+                await navigate('/show/gongzi', { state: { focusId: RECORDINGS[1]?.id } });
             };
             return (
                 <button type="button" onClick={() => void enter()}>

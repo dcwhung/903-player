@@ -17,7 +17,7 @@ interface Options {
     unavailable?: UnavailableEpisode[];
     /** 預設 probe 即刻完、乜都搵唔到（唔會真係 probe 原站） */
     prober?: RecordingsProber;
-    /** 入第一頁嗰個 history entry 嘅 state（例如收藏 tab 撳行入頁帶嘅 focusUrl） */
+    /** 入第一頁嗰個 history entry 嘅 state（例如收藏 tab 撳行入頁帶嘅 focusId） */
     state?: unknown;
     /** 額外路由，例如模擬由其他頁返嚟 */
     extraRoutes?: { path: string; element: ReactElement }[];

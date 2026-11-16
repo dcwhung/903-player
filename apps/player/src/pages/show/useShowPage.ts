@@ -5,6 +5,7 @@ import { findShow, themeFor } from '../../catalog/shows';
 import { useRecordings } from '../../data/useRecordings';
 import { useEpisodePress } from '../../hooks/useEpisodePress';
 import { useAudioBusy } from '../../hooks/useAudioBusy';
+import { focusKeyOf } from '../../hooks/useEpisodeFocus';
 import { useRefreshedOn } from '../../hooks/useRefreshedOn';
 import { useStandbyStart } from '../../hooks/useStandbyStart';
 import { useStartPlayback } from '../../hooks/useStartPlayback';
@@ -28,7 +29,7 @@ import { toEpisodeItems } from '../shared/episodeItems';
  * 呢個節目嘅集數同揀中嗰集：播緊呢個節目就用播緊嗰集；未載入就用由「我的收藏」撳入嚟嗰集
  * （focused，唔 load player，W-530），再冇就用預設嗰集
  */
-const useShowEpisodes = (show: ShowConfig | undefined, focusUrl: string | undefined) => {
+const useShowEpisodes = (show: ShowConfig | undefined, focusId: string | undefined) => {
     const { recordings, unavailable } = useRecordings();
     const player = usePlayer();
     const episodes = useMemo(
@@ -42,7 +43,7 @@ const useShowEpisodes = (show: ShowConfig | undefined, focusUrl: string | undefi
     );
     const loaded = asShowRecording(player.recording);
     const playing = loaded?.showId === show?.id ? loaded : null;
-    const focused = playing ? undefined : episodes.find((e) => e.url === focusUrl);
+    const focused = playing ? undefined : episodes.find((e) => e.id === focusId);
     const current =
         playing ??
         focused ??
@@ -163,12 +164,12 @@ const useFocusedStart = (focused: Recording | undefined, standby: (() => void) |
     return focused ? () => void load(focused, { autoplay: true }) : standby;
 };
 
-/** 節目頁嘅資料同動作；focusUrl = 由「我的收藏」撳入嚟嗰集（唔自動播） */
-export const useShowPage = (showId: string, focusUrl?: string) => {
+/** 節目頁嘅資料同動作；focusId = 由「我的收藏」撳入嚟嗰集嘅 id（唔自動播） */
+export const useShowPage = (showId: string, focusId?: string) => {
     const show = findShow(showId);
     const { status, isSearching } = useRecordings();
-    const { episodes, entries, playing, current, focused } = useShowEpisodes(show, focusUrl);
-    useAutoplayShow(show, episodes, playing?.url, focusUrl !== undefined);
+    const { episodes, entries, playing, current, focused } = useShowEpisodes(show, focusId);
+    useAutoplayShow(show, episodes, playing?.url, focusId !== undefined);
     const start = useFocusedStart(focused, useShowStart(show, playing !== null));
     const currentUrl = current?.url;
     const { episodeItems, isPlayingCurrent } = useShowEpisodeItems(
@@ -187,6 +188,7 @@ export const useShowPage = (showId: string, focusUrl?: string) => {
         current,
         start,
         episodeItems,
+        focusKey: focusKeyOf(episodes, focusId),
         // 日子條：同撳集數行同一條路（未聽完續播、聽過由頭播）
         strip: useShowStrip(show, episodes, currentUrl),
         selectEpisode: press.selectEpisode,

@@ -4,9 +4,9 @@ export interface ShowPageState {
 }
 
 /**
- * 由「我的收藏」撳行入節目頁 / 劇集頁（P7 #7）：focusUrl = 嗰集網址。
- * 唔播（同 url 唔同），清單捲去嗰集、短暫 highlight
+ * 由「我的收藏」撳行入節目頁 / 劇集頁（P7 #7）：focusId = 嗰集嘅穩定 episode ID
+ * （同收藏 / 進度 storage 一樣用 id，S-743）。唔播（同 url 唔同），清單捲去嗰集、短暫 highlight
  */
 export interface EpisodeFocusState {
-    focusUrl?: string;
+    focusId?: string;
 }
