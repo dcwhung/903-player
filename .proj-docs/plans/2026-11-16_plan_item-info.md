@@ -31,7 +31,7 @@ admin（Phase 3）已可編輯 `summary`、`hosts`、`cast`、`airTime`，player
 
 ### 1. ⓘ 掣（節目頁、短篇劇頁、每日劇頁）
 
-- 位置：唱片圈（`PlayerGauge` / `PlayerPanel` 嘅 gauge）頂嗰行、貼近右邊，同頁頭掣一樣距離（右 12px）；冇底色、冇圓形 background；icon 用主題 accent 色；直版橫版同一位置
+- 位置：唱片圈（`PlayerGauge` / `PlayerPanel` 嘅 gauge）頂嗰行、貼近右邊，離**畫面右邊**同頁頭返回掣離左邊一樣（`--space-3` × ui-scale，直版 12px）；闊橫版右欄預留咗把手位（`--home-handle-reserve`），ⓘ 扣返佢、照量畫面邊（用戶 2026-11-16）；冇底色、冇圓形 background；icon 用主題 accent 色；直版橫版同一位置
 - 冇資料就唔出 ⓘ
 - 今日節目頁卡片**唔加** ⓘ
 
@@ -45,9 +45,9 @@ admin（Phase 3）已可編輯 `summary`、`hosts`、`cast`、`airTime`，player
 
 #### 2a. 頂部 banner（v3，用戶 2026-11-16，`_mockups_/catalog-item-info` 「新 v3」：`d-n-show` / `d-l-show` / `d-l-arc-s1` / `d-n-arc-s4`）
 
-- 圖：節目 / 劇集嘅主頁橫圖（`tileArt`），16:9，由 sheet 最頂開始、左右貼邊，上面兩角跟 sheet 圓角；直版、橫版右欄一樣
-- grab bar（白色半透明）同 ✕ 疊喺 banner 上面；✕ 白色、**冇圓形底色**，用 `drop-shadow` 喺淺色圖都睇得清，撳得到範圍照 44px
-- 名疊喺左下角：白色粗體約 28px × ui-scale，下面細字約 14px；底部 linear-gradient 由約 62% 黑漸變到透明；原本段標題唔再出（dialog accessible name 照留）
+- 圖：節目 / 劇集嘅主頁橫圖（`tileArt`），16:9 高度 × 0.75（= 64:27，`--info-banner-ratio`，`object-fit: cover`；用戶 2026-11-16），由 sheet 最頂開始、左右貼邊，上面兩角跟 sheet 圓角；直版、橫版右欄一樣
+- grab bar（白色半透明）同 ✕ 疊喺 banner 上面；✕ 喺 sheet 右上角，白色、**冇圓形底色**，用 `drop-shadow` 喺淺色圖都睇得清，撳得到範圍照 44px
+- 名疊喺左下角：白色粗體 `--font-size-xl`（用戶 2026-11-16 細一級），下面細字約 14px；底部 linear-gradient 由約 62% 黑漸變到透明；原本段標題唔再出（dialog accessible name 照留）
 - 細字：
     - 節目：播放時間（`formatPlayTime`）；下面唔再出「播放時間」段
     - 每日劇：冇細字
@@ -67,7 +67,7 @@ admin（Phase 3）已可編輯 `summary`、`hosts`、`cast`、`airTime`，player
 - 冇資料嘅短篇行唔出資料區；成套劇（劇集 + 全部短篇）都冇資料就唔出箭咀
 - 預設：第一次自動彈（現有 `isFirstSeriesVisit` 邏輯）時展開；之後由「全集」掣開預設收合
 - 唱片圈 ⓘ：未揀短篇（黑碟 / unloaded）= 開全集 sheet 兼展開資料；已揀短篇 = 開獨立 sheet（第 2 點）
-- 頂部劇集 banner（G1，用戶 2026-11-16，`_mockups_/catalog-item-info` `g-n-b1-open` / `g-n-b1-closed` / `g-n-b1-nosum` / `g-l-b1-open`）：重用 `InfoBanner`（劇集 tileArt，16:9，貼表頂、左右貼邊、上面兩角跟表圓角），直版 modal 同橫版 docked 一樣；疊字同劇集 banner 一樣（大字劇集名，細字「最新上架：<短篇名>」/「N 個短篇」）；grab bar 疊喺 banner 上（白色半透明），「全集」表頭（箭咀 / 聽完 N / M 個 / ✕）喺 banner 下面；banner 固定喺表頂唔跟清單捲；收合 / 展開都出，劇集冇簡介都出，冇 tileArt 就唔出；拖 banner 都可以向下拉閂；劇集簡介卡、短篇行唔改
+- 頂部劇集 banner（G1，用戶 2026-11-16，`_mockups_/catalog-item-info` `g-n-b1-open` / `g-n-b1-closed` / `g-n-b1-nosum` / `g-l-b1-open`）：重用 `InfoBanner`（劇集 tileArt，16:9，貼表頂、左右貼邊、上面兩角跟表圓角），直版 modal 同橫版 docked 一樣；疊字同劇集 banner 一樣（大字劇集名，細字「最新上架：<短篇名>」/「N 個短篇」）；grab bar 疊喺 banner 上（白色半透明），✕ 由表頭搬上表右上角（同資料 sheet 一樣疊喺 banner 上；冇 banner 就照舊喺表頭）；「全集」表頭（箭咀 / 聽完 N / M 個）喺 banner 下面；banner 固定喺表頂唔跟清單捲；收合 / 展開都出，劇集冇簡介都出，冇 tileArt 就唔出；拖 banner 都可以向下拉閂；劇集簡介卡、短篇行唔改
 
 ### 4. 今日節目頁
 
