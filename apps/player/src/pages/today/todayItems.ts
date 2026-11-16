@@ -4,6 +4,7 @@ import type {
     TodayShowItem,
 } from '../../components/pages/today/TodayShowList/TodayShowList';
 import { findShow, themeFor } from '../../catalog/shows';
+import { hasInlineInfo, showInlineInfo } from '../../selectors/itemInfo';
 import { entryKey, isAvailable } from '../../selectors/recordings';
 import type { EpisodeEntry, Recording } from '../../types/recording';
 import { formatBroadcastTime } from '../../utils/time';
@@ -21,12 +22,20 @@ const statusOf = (
     return isWatched ? 'watched' : 'unwatched';
 };
 
-/** 每行都有嘅：key、節目名、播出時間、唱片圖 */
+/** 節目資料（P9.5 #12：播放時間、主持、簡介）；冇就唔出 key */
+const infoOf = (showId: string) => {
+    const show = findShow(showId);
+    const info = show && showInlineInfo(show);
+    return info && hasInlineInfo(info) ? { info } : {};
+};
+
+/** 每行都有嘅：key、節目名、播出時間、唱片圖（+ 節目資料） */
 const rowBase = (entry: EpisodeEntry) => ({
     key: entryKey(entry),
     name: findShow(entry.showId)?.name ?? '',
     time: formatBroadcastTime(entry.time),
     art: themeFor(entry.showId).art,
+    ...infoOf(entry.showId),
 });
 
 /** 今日節目清單每一行：揀中（activeUrl）嗰個係 active；未上架嘅撳唔到、永遠唔係 active */

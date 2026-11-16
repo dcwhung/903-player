@@ -187,3 +187,22 @@ describe('PlayerPanel', () => {
         expect(face?.className).toMatch(/spinning/);
     });
 });
+
+describe('PlayerPanel info button（P9.5 #12）', () => {
+    it('should pass onInfo through to the gauge info button', async () => {
+        const onInfo = vi.fn();
+        renderWithProviders(
+            <PlayerPanel
+                title="公子會"
+                dateLabel="17/10 星期六"
+                days={STRIP.days}
+                currentDay={STRIP.current}
+                onPick={() => undefined}
+                onInfo={onInfo}
+                infoLabel="節目資料"
+            />,
+        );
+        await userEvent.click(screen.getByRole('button', { name: '節目資料' }));
+        expect(onInfo).toHaveBeenCalledTimes(1);
+    });
+});

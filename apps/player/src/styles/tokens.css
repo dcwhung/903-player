@@ -136,7 +136,7 @@
     --arc-sheet-row-height: calc(64px * var(--ui-scale));
     --arc-sheet-ring: calc(52px * var(--ui-scale));
     --arc-sheet-z: 10;
-    /* 向下拉閂：放手後滑走 / 彈返嘅時間（同 src/components/pages/drama/ArcSheet/sheetDrag.ts SHEET_SLIDE_MS 一致） */
+    /* 向下拉閂：放手後滑走 / 彈返嘅時間（同 src/components/shared/common/Sheet/sheetDrag.ts SHEET_SLIDE_MS 一致） */
     --arc-sheet-slide-ms: 250ms;
     /*
      * 碟面圓環細節：外圈進度環粗幼、碟面底「1/4」pill（字、行高、
@@ -150,6 +150,42 @@
     --arc-sheet-check: calc(18px * var(--ui-scale));
     --arc-sheet-check-offset: calc(-2px * var(--ui-scale));
     --arc-sheet-badge-outline: 2px;
+    /*
+     * 節目 / 劇集資料（P9.5 #12，_mockups_/catalog-item-info）：資料 sheet 標題、chip 行高、正文行高；
+     * 今日節目表展開時「播緊」線（OnAirLamp）上下留位（行高約 80%）
+     */
+    --info-sheet-title-size: calc(20px * var(--ui-scale));
+    --info-sheet-arc-title-size: calc(17px * var(--ui-scale));
+    /* 資料 sheet 左右留白（banner 用負 margin 貼返邊） */
+    --info-sheet-pad-x: var(--space-6);
+    /*
+     * 資料 sheet / 全集 sheet banner（P9.5 #12 v3、G1）：主頁橫圖 16:9 高度 × 0.75（= 64:27，用戶 2026-11-16）；
+     * 名用 --font-size-xl、細字 14px，底部漸變 62% 黑；grab bar / ✕ 疊喺圖上（✕ 喺 sheet 右上角）
+     */
+    --info-banner-ratio: 64 / 27;
+    --info-banner-title-size: var(--font-size-xl);
+    --info-banner-title-line: 1.2;
+    --info-banner-subtitle-size: calc(14px * var(--ui-scale));
+    --info-banner-scrim: rgb(0 0 0 / 62%);
+    --info-banner-text: #ffffff;
+    --info-banner-grab: rgb(255 255 255 / 60%);
+    --info-banner-icon-shadow: drop-shadow(0 1px 2px rgb(0 0 0 / 60%));
+    --info-banner-close-top: var(--space-4);
+    --info-banner-close-right: var(--space-3);
+    /* 短篇段標題前面嘅短篇碟面 */
+    --info-arc-disc-size: calc(44px * var(--ui-scale));
+    --info-arc-disc-ring: 2px;
+    --info-sheet-chip-line: calc(30px * var(--ui-scale));
+    /*
+     * 列表行展開資料（InlineItemInfo：全集 sheet 短篇行、今日節目行）嘅字同 chip：刻意唔跟 --ui-scale。
+     * mockup 橫版（--ui-scale 1.5，t9-l-open / a7-l-progress）量到播放時間 / 簡介 13px、chip 12px、chip 高 20px，
+     * 同直版一樣；跟 --ui-scale 放大「星期一至五（06:00 - 09:00）」會斷兩行（V1）
+     */
+    --info-inline-text-size: 13px;
+    --info-inline-chip-size: 12px;
+    --info-chip-line: 20px;
+    --info-text-line: 1.6;
+    --info-lamp-inset: 10%;
     /*
      * 集數清單行頭欄闊：節目日子（17/10 + 星期六）；每日劇集日子 + 「重溫」標籤；
      * 短篇劇集集名（最長「認認真真搵返個人」8 個字，佔清單四成）

@@ -23,6 +23,9 @@ interface PlayerPanelProps {
     onStart?: (() => void) | undefined;
     /** 顯示緊嘅一集（收藏掣用） */
     bookmark?: Track | undefined;
+    /** 有資料先傳：唱片圈右上角 ⓘ（見 PlayerGauge） */
+    onInfo?: (() => void) | undefined;
+    infoLabel?: string | undefined;
 }
 
 /** 節目頁播放器：唱片 + 弧形進度 + 播放掣 + 日子條 */
@@ -35,6 +38,8 @@ export const PlayerPanel = ({
     onPick,
     onStart,
     bookmark,
+    onInfo,
+    infoLabel,
 }: PlayerPanelProps) => {
     // 日子條拖動時跟住轉嘅節目圖
     const artRef = useRef<HTMLImageElement>(null);
@@ -49,6 +54,8 @@ export const PlayerPanel = ({
                 held={held}
                 onStart={onStart}
                 bookmark={bookmark}
+                onInfo={onInfo}
+                infoLabel={infoLabel}
             />
             <DateStrip
                 title={title}

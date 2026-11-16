@@ -101,6 +101,9 @@ export const BOOKMARK_V1_STORE_VERSION = 1;
  */
 export const BOOKMARK_MIGRATED_STORAGE_KEY = '903player:bookmarks-migrated:v1';
 
+/** 今日節目頁「節目表」資料睇過未（P9.5 #12）：第一次有資料嗰次展開，之後預設收合 */
+export const TODAY_INFO_SEEN_STORAGE_KEY = '903player:today-info-seen:v1';
+
 export const MS_PER_SECOND = 1000;
 /** 報畀鎖屏嘅播放速度（app 冇變速） */
 export const MEDIA_SESSION_PLAYBACK_RATE = 1;

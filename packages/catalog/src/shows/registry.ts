@@ -6,6 +6,8 @@ import type { Folder, FolderSource } from '../core/folderSource';
 import { compareOrderThenId } from '../core/ordering';
 import { SchemaError } from '../core/reader';
 import { NEUTRAL_THEME, type ShowTheme } from '../showTheme';
+import type { AirTime } from '../admin/airTime';
+import { present } from '../core/textFields';
 import type { Weekday } from '../types/weekday';
 import { parseShowDefinition } from './schema';
 
@@ -21,6 +23,12 @@ export interface ShowConfig {
     theme: ShowTheme;
     /** 主頁節目格用嘅 16:9 圖 */
     tileArt: string;
+    /** 簡介（P9.5 #12：節目資料 sheet、今日節目）；冇就唔出 key */
+    summary?: string;
+    /** 主持；冇就唔出 key */
+    hosts?: readonly string[];
+    /** 播放時間（顯示用 formatAirTime）；冇就唔出 key */
+    airTime?: AirTime;
 }
 
 export interface ShowRegistry {
@@ -59,6 +67,9 @@ const toShow = (
             airDays: def.airDays,
             theme: { ...def.theme, art: requireImage(folder, def.disc) },
             tileArt: requireImage(folder, def.tile),
+            ...present('summary', def.summary),
+            ...present('hosts', def.hosts),
+            ...present('airTime', def.airTime),
         },
         order: def.order,
         enabled: def.enabled !== false,

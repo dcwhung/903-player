@@ -8,6 +8,7 @@ import { NowPlaying } from '../../components/shared/player/NowPlaying/NowPlaying
 import { PageHeader } from '../../components/shared/common/PageHeader/PageHeader';
 import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPanel';
+import { ItemInfoSheet } from '../../components/shared/common/ItemInfo/ItemInfoSheet';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import { LANDSCAPE_QUERY } from '../../config/layout';
@@ -24,7 +25,7 @@ import { useShowPage } from './useShowPage';
 
 type ShowPlayerProps = Pick<
     ReturnType<typeof useShowPage>,
-    'theme' | 'current' | 'start' | 'strip' | 'selectEpisode'
+    'theme' | 'current' | 'start' | 'strip' | 'selectEpisode' | 'info'
 > & { title: string; landscape: boolean };
 
 /**
@@ -39,6 +40,7 @@ const ShowPlayer = ({
     start,
     strip,
     selectEpisode,
+    info,
     landscape,
 }: ShowPlayerProps) => {
     const { duration } = usePlayer();
@@ -59,6 +61,7 @@ const ShowPlayer = ({
                 onPick={selectEpisode}
                 onStart={start}
                 bookmark={current}
+                {...info.gaugeInfo}
             />
             {landscape && (
                 <NowPlaying
@@ -67,6 +70,8 @@ const ShowPlayer = ({
                     connecting={!start && !hasKnownDuration(duration)}
                 />
             )}
+            {/* 節目資料：橫版喺唱片嗰欄（docked），直版由畫面底彈出 */}
+            <ItemInfoSheet {...info.sheet} onClose={info.sheet.close} docked={landscape} />
         </>
     );
 };

@@ -8,7 +8,7 @@ import {
 } from '@903-player/catalog';
 import type { ArcChip } from '../../components/pages/drama/ArcPicker/ArcPicker';
 import type { EpisodeItem } from '../../components/shared/player/EpisodeList/EpisodeList';
-import { arcAvailabilityOf, dramaArtFor } from '../../catalog/dramas';
+import { arcAvailabilityOf, arcCoverFor } from '../../catalog/dramas';
 import type { ArcSummary } from '../../selectors/arcProgress';
 import { episodesInArc } from '../../selectors/dramas';
 import {
@@ -20,10 +20,6 @@ import {
     upcomingChipsOf,
     upcomingRowsOf,
 } from './seriesAvailability';
-
-/** 短篇碟面（冇就劇集碟面）：即將上架嘅短篇未有集數，用短篇名搵（假集數，id / url 唔會用到） */
-const arcCover = (dramaId: string, arc: string): string =>
-    dramaArtFor({ kind: 'series', dramaId, id: '', url: '', arc, no: 0 });
 
 /** 短篇已上架最後一集（「聽到第 N 集」用） */
 const lastNoOf = (episodes: readonly SeriesEpisode[], arc: string): number =>
@@ -79,7 +75,7 @@ export const useSeriesAvailability = (drama: DramaConfig, episodes: readonly Ser
         pending,
         notice,
         upcomingChips: upcomingChipsOf(arcs, today),
-        upcomingRows: upcomingRowsOf(arcs, today, (arc) => arcCover(drama.id, arc)),
+        upcomingRows: upcomingRowsOf(arcs, today, (arc) => arcCoverFor(drama.id, arc)),
         ...arcLookups(infoOf, episodes, { today, dramaRemovedAt: drama.removedAt }),
         listItems: (
             arc: string | undefined,

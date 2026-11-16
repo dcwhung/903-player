@@ -35,6 +35,8 @@ import type { StandbyTime } from '../../components/shared/player/PlayerPanel/Pla
 import { toDailyItems, toSeriesItems } from '../shared/dramaItems';
 import type { RowContext } from '../shared/episodeItems';
 import { useSeriesAvailability, type SeriesAvailabilityView } from './useSeriesAvailability';
+import { useDailyInfo } from './useDailyInfo';
+import { useSeriesInfo } from './useSeriesInfo';
 
 /** 每日劇集今日有得聽嘅集數，最新喺頂 */
 const dailyNewestFirstOf = (id: string, today: string) =>
@@ -147,6 +149,7 @@ export const useDailyDramaPage = (drama: DramaConfig, focusId?: string) => {
         focusKey: focusKeyOf(episodes, focusId),
         selectEpisode,
         pressEpisode,
+        info: useDailyInfo(drama, focusId !== undefined),
     };
 };
 
@@ -201,10 +204,14 @@ const useArcOrder = (
  */
 const useArcSheetActions = (
     loaded: SeriesEpisode | null,
-    pickArc: (arc: string) => void,
+    {
+        pickArc,
+        pickArcQuietly,
+    }: { pickArc: (arc: string) => void; pickArcQuietly: (arc: string) => void },
     setOpen: (open: boolean) => void,
 ) => {
     const player = usePlayer();
+    // 撳行 = 揀短篇（未聽過又有資料會彈短篇資料）；撳播放掣直接播，唔彈資料
     const pick = (arc: string) => {
         pickArc(arc);
         setOpen(false);
@@ -212,9 +219,10 @@ const useArcSheetActions = (
     const play = (summary: ArcSummary) => {
         if (loaded?.arc === summary.arc) void player.toggle();
         else void player.load(summary.resume, { autoplay: true });
-        pick(summary.arc);
+        pickArcQuietly(summary.arc);
+        setOpen(false);
     };
-    return { openSheet: () => setOpen(true), close: () => setOpen(false), pick, play };
+    return { close: () => setOpen(false), pick, play };
 };
 
 type ArcGroups = readonly { items: readonly ArcSummary[] }[];
@@ -288,9 +296,11 @@ const useStandby = (
  */
 const useSeriesSheet = (firstVisit: boolean, loadedUrl: string | undefined) => {
     const [sheetOpen, setSheetOpen] = useState(firstVisit);
+    // 劇集資料（P9.5 #12）：第一次自動彈時展開，之後由「全集」掣開預設收合
+    const [infoExpanded, setInfoExpanded] = useState(firstVisit);
     const { watchedRevision } = usePlayer();
     const progressMap = useRefreshedOn(getProgressMap, [watchedRevision, loadedUrl, sheetOpen]);
-    return { sheetOpen, setSheetOpen, progressMap };
+    return { sheetOpen, setSheetOpen, infoExpanded, setInfoExpanded, progressMap };
 };
 
 /** 橫版「現正播放：短篇 · 第 N / M 集」：M = 個短篇有幾多集；N 按排位計（有第零集都係 1 起） */
@@ -364,6 +374,35 @@ const listActions = (
 ) => ({ selectEpisode: rows.selectEpisode, pressEpisode: rows.pressEpisode, focusKey });
 
 /**
+ * 全集表（開關、分組、動作、劇集資料）、唱片圈 ⓘ 同短篇資料 sheet（P9.5 #12）。
+ * 揀短篇經 useSeriesInfo（未聽過又有資料會彈短篇資料）；全集表撳播放掣直接播，唔彈
+ */
+const useSeriesSheetView = (
+    drama: DramaConfig,
+    loaded: SeriesEpisode | null,
+    arcs: ReturnType<typeof useSeriesArcs>,
+    { sheet, empty }: { sheet: ReturnType<typeof useSeriesSheet>; empty: boolean },
+) => {
+    const info = useSeriesInfo(drama, { ...arcs, empty, sheet });
+    const picks = { pickArc: info.pickArc, pickArcQuietly: arcs.pickArc };
+    const sheetActions = useArcSheetActions(loaded, picks, sheet.setSheetOpen);
+    return {
+        pickArc: info.pickArc,
+        sheet: {
+            open: sheet.sheetOpen,
+            groups: arcs.groups,
+            ...sheetAvailability(arcs.availability),
+            ...sheetActions,
+            openSheet: info.openSheet,
+            info: info.sheetInfo,
+            banner: info.sheetBanner,
+        },
+        gaugeInfo: info.gaugeInfo,
+        infoSheet: info.infoSheet,
+    };
+};
+
+/**
  * 短篇劇集頁（例如芝See菇Bi Family）：唱片 + 全集 / 短篇 chips + 嗰個短篇嘅集數；focusId 見 useEpisodeFocus。
  * 第一次入：一入嚟就開全集表，等用戶揀短篇
  */
@@ -371,13 +410,13 @@ export const useSeriesDramaPage = (drama: DramaConfig, focusId?: string) => {
     const episodes = useTodaysEpisodes(drama, seriesEpisodesOf);
     const loaded = useLoadedEpisode(drama, 'series');
     const firstVisit = useFirstVisitOnEntry(drama, focusId !== undefined);
-    const { sheetOpen, setSheetOpen, progressMap } = useSeriesSheet(firstVisit, loaded?.url);
+    const sheet = useSeriesSheet(firstVisit, loaded?.url);
+    const { progressMap } = sheet;
     const focused = focusedEpisode(episodes, focusId, loaded);
     const current = loaded ?? focused ?? pickSeriesStart(episodes, progressMap);
     const rows = usePlaybackRows(episodes, current, !!loaded);
     const arcs = useSeriesArcs(episodes, progressMap, current, loaded, { focused, drama });
-    const { upNext, pickArc, groups, availability } = arcs;
-    const sheetActions = useArcSheetActions(loaded, pickArc, setSheetOpen);
+    const { upNext, availability } = arcs;
     const standbyOptions = { ...arcs, episodes, progressMap };
     const standby = useStandby(drama, loaded !== null, rows.playState, standbyOptions);
     return {
@@ -390,10 +429,9 @@ export const useSeriesDramaPage = (drama: DramaConfig, focusId?: string) => {
         arcs: arcs.chips,
         ...pageAvailability(availability),
         arc: arcs.arc,
-        pickArc,
         items: availability.listItems(arcs.arc, toSeriesItems(arcs.shown, rows.ctx), arcs.shown),
         ...listActions(rows, focusKeyOf(episodes, focusId)),
-        sheet: { open: sheetOpen, groups, ...sheetAvailability(availability), ...sheetActions },
+        ...useSeriesSheetView(drama, loaded, arcs, { sheet, empty: standby.empty }),
     };
 };
 

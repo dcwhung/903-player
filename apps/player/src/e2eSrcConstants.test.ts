@@ -9,8 +9,8 @@ import {
     SHEET_DISMISS_RATIO,
     SHEET_FLICK_MIN_PX,
     SHEET_FLICK_VELOCITY_PX_PER_MS,
-} from './components/pages/drama/ArcSheet/sheetDrag';
-import { VELOCITY_WINDOW_MS } from './components/pages/today/ShowCardStack/cardStack';
+} from './components/shared/common/Sheet/sheetDrag';
+import { VELOCITY_WINDOW_MS } from './hooks/dragVelocity';
 import { SWIPE_REMOVE_RATIO } from './components/pages/home/SavedTab/useRowSwipe';
 import {
     ALLOWED_AUDIO_ORIGIN,

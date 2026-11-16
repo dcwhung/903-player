@@ -137,3 +137,30 @@
     color: var(--color-title);
     text-align: center;
 }
+
+/* 唱片外層（P9.5 #12，有冇 ⓘ 都包，S-1014）：一行闊，ⓘ 喺唱片圈頂、離右邊 --space-3（同頁頭返回掣離左邊一樣） */
+.infoRow {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    width: 100%;
+}
+
+.info {
+    position: absolute;
+    top: 0;
+    /*
+     * 離畫面右邊 --space-3（同頁頭返回掣離左邊一樣）：闊橫版右欄右邊預留咗把手位（Page.module.css
+     * --page-edge-reserve），扣返佢先係量畫面邊；直版 / 手機打橫冇預留位
+     */
+    right: calc(var(--space-3) - var(--page-edge-reserve, 0px));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border: none;
+    background: transparent;
+    color: var(--color-accent-text);
+}

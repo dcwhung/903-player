@@ -1,0 +1,65 @@
+/*
+ * 資料 sheet banner：sheet 有 padding，banner 用負 margin 貼返 sheet 頂同左右邊；
+ * 上面兩角跟 sheet 圓角（sheet 冇 overflow: hidden，因為內容要自己捲）
+ */
+.banner {
+    position: relative;
+    flex-shrink: 0;
+    margin: 0 calc(-1 * var(--info-sheet-pad-x));
+    overflow: hidden;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    aspect-ratio: var(--info-banner-ratio);
+}
+
+.art {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 左下角名 + 細字：底部由深色漸變到透明，淺色圖都睇得清 */
+.caption {
+    position: absolute;
+    inset: auto 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-8) var(--info-sheet-pad-x) var(--space-4);
+    background: linear-gradient(to top, var(--info-banner-scrim), transparent);
+    color: var(--info-banner-text);
+}
+
+.title {
+    margin: 0;
+    font-size: var(--info-banner-title-size);
+    font-weight: 700;
+    line-height: var(--info-banner-title-line);
+}
+
+.subtitle {
+    margin: 0;
+    font-size: var(--info-banner-subtitle-size);
+}
+
+/*
+ * 疊喺 banner 上嘅 grab bar / ✕（資料 sheet、全集 sheet 共用，S-1021）：元素要同時有 data-on-banner，
+ * 優先過 sheet 自己嘅 .grab / .close 基本樣（唔靠 CSS 載入次序）
+ */
+.grabOnBanner[data-on-banner] {
+    position: absolute;
+    top: var(--space-2);
+    left: 50%;
+    background: var(--info-banner-grab);
+    transform: translateX(-50%);
+}
+
+/* ✕：sheet 右上角，白色、冇底色、drop-shadow（淺色圖都睇得清），撳得到範圍照 sheet 自己嘅 --touch-target */
+.closeOnBanner[data-on-banner] {
+    position: absolute;
+    top: var(--info-banner-close-top);
+    right: var(--info-banner-close-right);
+    background: transparent;
+    color: var(--info-banner-text);
+    filter: var(--info-banner-icon-shadow);
+}

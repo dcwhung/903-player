@@ -12,6 +12,7 @@ import type {
 } from '../types/drama';
 import { hkToday } from '../date';
 import { compareOrderThenId } from '../core/ordering';
+import { present } from '../core/textFields';
 import { arcAvailabilityOf, isLiveEpisode, windowStatus, type DramaStatus } from './availability';
 import { isArcEnabled } from './arcLabel';
 import { buildEpisodes, type EpisodeBuildOptions } from './episodes';
@@ -40,6 +41,15 @@ export interface Drama {
     theme: ShowTheme;
     /** 主頁劇集格用嘅原圖（16:9，已經有劇名） */
     tileArt: string;
+    /** 劇集簡介（P9.5 #12：劇集資料）；冇就唔出 key */
+    summary?: string;
+}
+
+/** 一個短篇嘅資料（P9.5 #12）：冇寫就唔出 key */
+export interface ArcInfo {
+    summary?: string;
+    /** 聲演 */
+    cast?: readonly string[];
 }
 
 /** 舊名，consumer 繼續用得 */
@@ -82,6 +92,8 @@ export interface DramaRegistry {
     dramaEpisodeTheme(episode: DramaEpisode): ShowTheme;
     /** 短篇長方形圖（暫時未用）：冇就 undefined，唔 fallback */
     arcTileFor(dramaId: string, arc: string): string | undefined;
+    /** 上架短篇嘅簡介 / 聲演（arc = 短篇名）；停用 / 唔識嘅短篇或劇集 → undefined */
+    arcInfoFor(dramaId: string, arc: string): ArcInfo | undefined;
 }
 
 interface DramaEntry {
@@ -90,6 +102,7 @@ interface DramaEntry {
     arcArt: ReadonlyMap<string, string>;
     arcTiles: ReadonlyMap<string, string>;
     arcs: readonly ArcAvailability[];
+    arcInfo: ReadonlyMap<string, ArcInfo>;
 }
 
 const requireImage = (folder: DramaFolder, file: string): string => {
@@ -119,8 +132,21 @@ const toDrama = (folder: DramaFolder, def: DramaDefinition): Drama => {
         ...(def.removedAt ? { removedAt: def.removedAt } : {}),
         theme: { ...def.theme, art: requireImage(folder, def.disc) },
         tileArt: requireImage(folder, def.tile),
+        ...present('summary', def.summary),
     };
 };
+
+const arcInfoOf = (def: DramaDefinition): ReadonlyMap<string, ArcInfo> =>
+    new Map(
+        def.kind === 'series'
+            ? def.arcs
+                  .filter(isArcEnabled)
+                  .map((arc) => [
+                      arc.name,
+                      { ...present('summary', arc.summary), ...present('cast', arc.cast) },
+                  ])
+            : [],
+    );
 
 const arcImagesOf = (
     folder: DramaFolder,
@@ -151,6 +177,7 @@ const toEntry = (
             arcArt: arcImagesOf(folder, def, 'disc'),
             arcTiles: arcImagesOf(folder, def, 'tile'),
             arcs: arcAvailabilityOf(def),
+            arcInfo: arcInfoOf(def),
         },
         order: def.order,
     };
@@ -237,6 +264,7 @@ export const buildRegistry = (source: DramaSource, options: EpisodeBuildOptions)
         catalogEpisodeOf: (id, episodeId) =>
             entries.get(id)?.episodes.find((e) => e.id === episodeId),
         arcAvailabilityOf: (id) => entries.get(id)?.arcs ?? [],
+        arcInfoFor: (dramaId, arc) => entries.get(dramaId)?.arcInfo.get(arc),
         ...artLookups(entries),
     };
 };

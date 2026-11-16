@@ -1,0 +1,68 @@
+/* 主持 / 聲演 chip（_mockups_/catalog-item-info A 修訂版）：圓角、track 色底，唔係掣 */
+.chips {
+    min-width: 0;
+}
+
+/*
+ * 列表行（全集 / 今日節目行）：標籤同 chip 喺同一個 inline 流入面，標籤喺第一行最左，
+ * chip 滿咗先換行（V2 / V3，a7-n-progress）；ul 用 display: inline（唔用 contents），讀屏照當 list
+ */
+.inline {
+    line-height: var(--info-chip-line);
+}
+
+.stacked {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.role {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-caps);
+}
+
+.inline .role {
+    margin-right: var(--space-1);
+    font-size: var(--info-inline-chip-size);
+    vertical-align: middle;
+}
+
+.list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.inline .list {
+    display: inline;
+}
+
+.stacked .list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.chip {
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--color-track);
+    color: var(--color-text);
+}
+
+/* 上下各半格：兩行 chip 之間同一行入面嘅間距一樣（--space-1） */
+.inline .chip {
+    display: inline-block;
+    margin: var(--space-half) var(--space-1) var(--space-half) 0;
+    font-size: var(--info-inline-chip-size);
+    line-height: var(--info-chip-line);
+    vertical-align: middle;
+}
+
+.stacked .chip {
+    padding: 0 var(--space-3);
+    font-size: var(--font-size-md);
+    line-height: var(--info-sheet-chip-line);
+}

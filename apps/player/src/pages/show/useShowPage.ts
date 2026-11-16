@@ -24,6 +24,7 @@ import { asShowRecording } from '../../types/track';
 import { zoomFromState, zoomState } from '../../utils/cardZoom';
 import { playbackStateOf } from '../../utils/playbackState';
 import { toEpisodeItems } from '../shared/episodeItems';
+import { useShowInfo } from './useShowInfo';
 
 /**
  * 呢個節目嘅集數同揀中嗰集：播緊呢個節目就用播緊嗰集；未載入就用由「我的收藏」撳入嚟嗰集
@@ -177,7 +178,6 @@ export const useShowPage = (showId: string, focusId?: string) => {
         currentUrl,
         playing !== null,
     );
-
     // 集數清單：撳播緊嗰集就暫停（掣係暫停樣），其他同日子條一樣播嗰集
     const press = useEpisodePress(episodes, currentUrl, isPlayingCurrent);
     return {
@@ -193,5 +193,6 @@ export const useShowPage = (showId: string, focusId?: string) => {
         strip: useShowStrip(show, episodes, currentUrl),
         selectEpisode: press.selectEpisode,
         pressEpisode: press.pressEpisode,
+        info: useShowInfo(show, focusId !== undefined),
     };
 };

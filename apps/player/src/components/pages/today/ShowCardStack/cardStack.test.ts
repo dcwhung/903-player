@@ -4,14 +4,11 @@ import {
     FLICK_VELOCITY_PX_PER_MS,
     MAX_ROTATE_DEG,
     ROTATE_DIVISOR_PX,
-    VELOCITY_WINDOW_MS,
     cardRotation,
     dragProgress,
-    pushSample,
     releaseDirection,
     stackSlots,
     translateXOf,
-    velocityOf,
 } from './cardStack';
 
 const WIDTH = 300;
@@ -89,27 +86,5 @@ describe('translateXOf', () => {
     it('should be 0 when there is no transform', () => {
         expect(translateXOf('none')).toBe(0);
         expect(translateXOf('')).toBe(0);
-    });
-});
-
-describe('velocityOf', () => {
-    it('should measure the speed over the recent samples', () => {
-        let samples = pushSample([], { x: 0, t: 0 });
-        samples = pushSample(samples, { x: -30, t: 20 });
-        samples = pushSample(samples, { x: -60, t: 40 });
-
-        expect(velocityOf(samples)).toBeCloseTo(-1.5);
-    });
-
-    it('should forget samples older than the window, so a pause before release is slow', () => {
-        let samples = pushSample([], { x: 0, t: 0 });
-        samples = pushSample(samples, { x: -100, t: 20 });
-        samples = pushSample(samples, { x: -100, t: 20 + VELOCITY_WINDOW_MS + 1 });
-
-        expect(velocityOf(samples)).toBe(0);
-    });
-
-    it('should be zero without elapsed time', () => {
-        expect(velocityOf(pushSample([], { x: 5, t: 0 }))).toBe(0);
     });
 });

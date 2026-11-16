@@ -24,7 +24,9 @@
     max-width: var(--page-max-width);
     max-height: var(--arc-sheet-max-height);
     margin: 0 auto;
-    padding: var(--space-2) var(--space-4) 0;
+    /* 左右留白：banner（InfoBanner）用同一個值貼返邊、對齊疊字 */
+    --info-sheet-pad-x: var(--space-4);
+    padding: var(--space-2) var(--info-sheet-pad-x) 0;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     background: var(--color-bg);
     box-shadow: var(--shadow-floating);
@@ -85,13 +87,14 @@
 }
 
 .title {
-    flex: 1;
     color: var(--color-title);
     font-size: var(--font-size-lg);
     font-weight: 700;
 }
 
+/* 「聽完 N / M 個」推去右邊（「全集」旁邊有劇集資料箭咀） */
 .summary {
+    margin-left: auto;
     color: var(--color-text-muted);
     font-size: var(--font-size-xs);
 }
@@ -147,11 +150,22 @@
 }
 
 .row {
-    display: flex;
+    /* 一行 = 撳轉短篇 + 播放掣；展開資料（.rowInfo）喺下一行，碟面同播放掣留喺頂嗰行（P9.5 #12） */
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: var(--space-2);
+    column-gap: var(--space-2);
     padding-right: var(--space-2);
     border-radius: var(--radius-md);
+}
+
+/*
+ * 短篇資料：左邊對齊名 / 進度（pick 左 padding + 碟面 + 間距），右邊橫跨到播放掣下面
+ * （行 padding-right = 播放掣右邊），用盡成行闊度（用戶 2026-11-16）
+ */
+.rowInfo {
+    grid-column: 1 / -1;
+    padding-left: calc(var(--space-2) + var(--arc-sheet-ring) + var(--space-3));
 }
 
 /* 載入緊嗰個短篇：淺底 + 強調色框 */
@@ -343,4 +357,9 @@
     border: var(--upcoming-dash-width) dashed var(--color-text-muted);
     border-radius: var(--radius-full);
     color: var(--color-text-muted);
+}
+
+/* 劇集 banner（G1）：貼表頂；grab bar / ✕ 疊喺圖上嘅樣喺 InfoBanner.module.css（共用）；表頭照舊喺 banner 下面 */
+.sheet[data-banner='true'] {
+    padding-top: 0;
 }

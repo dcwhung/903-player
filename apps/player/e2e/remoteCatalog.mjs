@@ -23,7 +23,7 @@ import {
 } from './harness.mjs';
 import { checkStorage, seedV1 } from './storageMigration.mjs';
 
-const CATALOG_DIR = new URL('../src/catalog/', import.meta.url);
+export const CATALOG_DIR = new URL('../src/catalog/', import.meta.url);
 const ASSETS_DIR = new URL('../src/assets/', import.meta.url);
 /** catalog banner 圖嘅 sub-folder：<base>e2e-catalog/banner/<檔名> → src/assets/<檔名> */
 const BANNER_FOLDER = 'banner';
@@ -36,7 +36,7 @@ const BANNER_VIEWPORTS = [
     ['手機打橫', { width: PHONE.height, height: PHONE.width }],
     ['闊橫版', { width: 1300, height: 800 }],
 ];
-const CATALOG_FOLDER = 'e2e-catalog/';
+export const CATALOG_FOLDER = 'e2e-catalog/';
 const SHELF = '廣播劇';
 const WAIT_MS = 5000;
 /** 唔應該出現嘅嘢：等呢個耐都冇就當冇 */
@@ -116,7 +116,7 @@ const catalogRoute =
             .catch(() => undefined); // page 已經放棄（timeout）就唔使答
     };
 
-/** 開一頁，catalog.json 照 routeOptions 答；contextOptions（例如 viewport）交畀 newE2EPage（showGridCounts.mjs 都用） */
+/** 開一頁，catalog.json 照 routeOptions 答；contextOptions（例如 viewport）交畀 newE2EPage（showGridCounts.mjs、itemInfo.mjs 都用；例如 viewport、reducedMotion） */
 export const openWithCatalog = async (env, { contextOptions, ...routeOptions }) => {
     const { ctx, p } = await newE2EPage(env.browser, env.errors, contextOptions);
     const allowOrigin = new URL(env.base).origin;

@@ -1,0 +1,282 @@
+import type { Drama, ShowConfig } from '@903-player/catalog';
+import {
+    arcInfoSections,
+    dailyInfoBanner,
+    dailyInfoSections,
+    formatPlayTime,
+    hasItemInfo,
+    hasNoItemProgress,
+    latestArcOf,
+    seriesHasInfo,
+    seriesDramaBanner,
+    seriesInfoBanner,
+    showInfoBanner,
+    shouldAutoOpenArcInfo,
+    shouldAutoOpenInfo,
+    showInfoSections,
+} from './itemInfo';
+
+const show = (patch: Partial<ShowConfig> = {}): ShowConfig =>
+    ({ id: 'sat', name: '公子會', airDays: [6], ...patch }) as ShowConfig;
+
+const drama = (patch: Partial<Drama> = {}): Drama =>
+    ({ id: 'lancy', name: '蘭茜夫人劇場', kind: 'series', ...patch }) as Drama;
+
+const progress = { position: 10, duration: 600, watched: false, updatedAt: 0 };
+
+describe('hasItemInfo', () => {
+    it('should be false when nothing but airDays is there', () => {
+        expect(hasItemInfo({})).toBe(false);
+    });
+
+    it('should be true when any one of summary, hosts, cast or airTime is there', () => {
+        expect(hasItemInfo({ summary: '簡介' })).toBe(true);
+        expect(hasItemInfo({ hosts: ['甲'] })).toBe(true);
+        expect(hasItemInfo({ cast: ['乙'] })).toBe(true);
+        expect(hasItemInfo({ airTime: { start: '15:00', end: '16:00' } })).toBe(true);
+    });
+
+    it('should not count an empty name list', () => {
+        expect(hasItemInfo({ hosts: [], cast: [] })).toBe(false);
+    });
+});
+
+describe('showInfoSections', () => {
+    it('should be empty when the show has no info', () => {
+        expect(showInfoSections(show())).toEqual([]);
+    });
+
+    it('should give one section with the air time text, hosts and summary', () => {
+        const sections = showInfoSections(
+            show({
+                airTime: { start: '22:00', end: '23:45' },
+                hosts: ['主持甲'],
+                summary: '簡介',
+            }),
+        );
+        expect(sections).toEqual([
+            {
+                kind: 'show',
+                title: '公子會',
+                airTime: '逢星期六（22:00 - 23:45）播放',
+                hosts: ['主持甲'],
+                summary: '簡介',
+            },
+        ]);
+    });
+
+    it('should give the air days alone when the show has other info but no airTime', () => {
+        expect(showInfoSections(show({ summary: '簡介' }))).toEqual([
+            { kind: 'show', title: '公子會', airTime: '逢星期六播放', summary: '簡介' },
+        ]);
+    });
+
+    it('should stay empty when the show has nothing but airDays', () => {
+        expect(showInfoSections(show({ airDays: [1, 2, 3, 4, 5], hosts: [] }))).toEqual([]);
+    });
+});
+
+describe('formatPlayTime', () => {
+    it('should wrap the days and time in 逢…播放', () => {
+        expect(formatPlayTime([6], { start: '23:00', end: '23:45' })).toBe(
+            '逢星期六（23:00 - 23:45）播放',
+        );
+        expect(formatPlayTime([1, 2, 3, 4, 5], { start: '06:00', end: '09:00' })).toBe(
+            '逢星期一至五（06:00 - 09:00）播放',
+        );
+    });
+
+    it('should give the days alone when there is no airTime', () => {
+        expect(formatPlayTime([6], undefined)).toBe('逢星期六播放');
+    });
+
+    it('should say 每日 without 逢 when the show airs all seven days', () => {
+        const everyDay = [0, 1, 2, 3, 4, 5, 6] as const;
+        expect(formatPlayTime(everyDay, undefined)).toBe('每日播放');
+        expect(formatPlayTime(everyDay, { start: '06:00', end: '09:00' })).toBe(
+            '每日（06:00 - 09:00）播放',
+        );
+    });
+
+    it('should give nothing without any air day', () => {
+        expect(formatPlayTime([], undefined)).toBeUndefined();
+    });
+});
+
+describe('dailyInfoSections', () => {
+    it('should give the drama name and summary, or nothing without a summary', () => {
+        expect(dailyInfoSections(drama({ kind: 'daily', summary: '每日' }))).toEqual([
+            { kind: 'drama', title: '蘭茜夫人劇場', summary: '每日' },
+        ]);
+        expect(dailyInfoSections(drama({ kind: 'daily' }))).toEqual([]);
+    });
+});
+
+describe('arcInfoSections', () => {
+    const arc = { summary: '短篇簡介', cast: ['聲演甲'] };
+
+    it('should put the drama summary first, then the arc titled by its label', () => {
+        expect(arcInfoSections(drama({ summary: '劇集簡介' }), '戀愛二分一', arc)).toEqual([
+            { kind: 'drama', title: '蘭茜夫人劇場', summary: '劇集簡介' },
+            { kind: 'arc', title: '戀愛二分一', cast: ['聲演甲'], summary: '短篇簡介' },
+        ]);
+    });
+
+    it('should give only the arc when the drama has no summary', () => {
+        expect(arcInfoSections(drama(), '戀愛二分一', arc)).toEqual([
+            { kind: 'arc', title: '戀愛二分一', cast: ['聲演甲'], summary: '短篇簡介' },
+        ]);
+    });
+
+    it('should give only the drama when the arc has no info', () => {
+        expect(arcInfoSections(drama({ summary: '劇集簡介' }), '戀愛二分一', {})).toEqual([
+            { kind: 'drama', title: '蘭茜夫人劇場', summary: '劇集簡介' },
+        ]);
+        expect(arcInfoSections(drama(), '戀愛二分一', undefined)).toEqual([]);
+    });
+});
+
+describe('seriesHasInfo', () => {
+    it('should be true when the drama or any arc has info', () => {
+        expect(seriesHasInfo(drama({ summary: '劇集' }), [])).toBe(true);
+        expect(seriesHasInfo(drama(), [undefined, {}, { cast: ['甲'] }])).toBe(true);
+    });
+
+    it('should be false when neither the drama nor any arc has info', () => {
+        expect(seriesHasInfo(drama(), [undefined, {}])).toBe(false);
+    });
+});
+
+describe('hasNoItemProgress', () => {
+    it('should be true when no episode of the show has progress', () => {
+        expect(hasNoItemProgress('show', 'sat', { 'show:satx:2026-11-14': progress })).toBe(true);
+    });
+
+    it('should be false when any episode of the show or drama has progress', () => {
+        expect(hasNoItemProgress('show', 'sat', { 'show:sat:2026-11-14': progress })).toBe(false);
+        expect(hasNoItemProgress('drama', 'c18', { 'drama:c18:2026-11-14': progress })).toBe(false);
+    });
+});
+
+describe('shouldAutoOpenInfo', () => {
+    const fresh = { hasInfo: true, hasProgress: false, loaded: false, focused: false };
+
+    it('should open on a first visit with info', () => {
+        expect(shouldAutoOpenInfo(fresh)).toBe(true);
+    });
+
+    it('should not open without info, with progress, while loaded or from bookmarks', () => {
+        expect(shouldAutoOpenInfo({ ...fresh, hasInfo: false })).toBe(false);
+        expect(shouldAutoOpenInfo({ ...fresh, hasProgress: true })).toBe(false);
+        expect(shouldAutoOpenInfo({ ...fresh, loaded: true })).toBe(false);
+        expect(shouldAutoOpenInfo({ ...fresh, focused: true })).toBe(false);
+    });
+});
+
+describe('shouldAutoOpenArcInfo', () => {
+    it('should open for a picked arc with no progress that has info', () => {
+        expect(shouldAutoOpenArcInfo('new', { cast: ['甲'] })).toBe(true);
+    });
+
+    it('should not open for an arc with progress, without info or unknown', () => {
+        expect(shouldAutoOpenArcInfo('started', { cast: ['甲'] })).toBe(false);
+        expect(shouldAutoOpenArcInfo('done', { summary: '簡介' })).toBe(false);
+        expect(shouldAutoOpenArcInfo('new', {})).toBe(false);
+        expect(shouldAutoOpenArcInfo(undefined, { cast: ['甲'] })).toBe(false);
+    });
+});
+
+describe('info sheet banner', () => {
+    it('should put the show tile, name and play time on the show banner', () => {
+        const sat = show({ tileArt: 'tile.webp', airTime: { start: '23:00', end: '23:45' } });
+        expect(showInfoBanner(sat)).toEqual({
+            kind: 'show',
+            art: 'tile.webp',
+            title: '公子會',
+            subtitle: '逢星期六（23:00 - 23:45）播放',
+        });
+        expect(showInfoBanner(show({ tileArt: 'tile.webp' }))?.subtitle).toBe('逢星期六播放');
+    });
+
+    it('should give no banner without a tile image', () => {
+        expect(showInfoBanner(show({ tileArt: '' }))).toBeUndefined();
+        expect(dailyInfoBanner(drama({ tileArt: '' }))).toBeUndefined();
+    });
+
+    it('should give the daily drama banner without a subtitle', () => {
+        expect(dailyInfoBanner(drama({ tileArt: 'd.webp' }))).toEqual({
+            kind: 'drama',
+            art: 'd.webp',
+            title: '蘭茜夫人劇場',
+        });
+    });
+
+    it('should use the drama with the given subtitle when the drama has a summary', () => {
+        const banner = seriesInfoBanner({
+            drama: drama({ tileArt: 'd.webp', summary: '劇集簡介' }),
+            arcLabel: '初戀無限次',
+            arcTile: 'arc.webp',
+            dramaSubtitle: '最新上架：初戀無限次',
+        });
+        expect(banner).toEqual({
+            kind: 'drama',
+            art: 'd.webp',
+            title: '蘭茜夫人劇場',
+            subtitle: '最新上架：初戀無限次',
+        });
+    });
+
+    it('should use the arc (its tile, else the drama tile) when the drama has no summary', () => {
+        const input = {
+            drama: drama({ tileArt: 'd.webp' }),
+            arcLabel: '初戀無限次',
+            arcTile: 'arc.webp',
+            dramaSubtitle: '3 個短篇',
+        };
+        expect(seriesInfoBanner(input)).toEqual({
+            kind: 'arc',
+            art: 'arc.webp',
+            title: '初戀無限次',
+            subtitle: '蘭茜夫人劇場',
+        });
+        expect(seriesInfoBanner({ ...input, arcTile: undefined })?.art).toBe('d.webp');
+    });
+});
+
+describe('seriesDramaBanner', () => {
+    it('should give the drama banner whether or not the drama has a summary', () => {
+        expect(seriesDramaBanner(drama({ tileArt: 'd.webp' }), '3 個短篇')).toEqual({
+            kind: 'drama',
+            art: 'd.webp',
+            title: '蘭茜夫人劇場',
+            subtitle: '3 個短篇',
+        });
+        expect(seriesDramaBanner(drama({ tileArt: '' }), '3 個短篇')).toBeUndefined();
+    });
+});
+
+describe('latestArcOf', () => {
+    const availability = [
+        { arc: 'a', addedAt: '2026-10-01' },
+        { arc: 'b', addedAt: '2026-11-01' },
+        { arc: 'c', addedAt: '2026-12-01' },
+        { arc: 'd' },
+    ];
+
+    it('should pick the available arc added last', () => {
+        expect(latestArcOf(['a', 'b', 'd'], availability)).toBe('b');
+    });
+
+    it('should give nothing when no available arc has a date', () => {
+        expect(latestArcOf(['d'], availability)).toBeUndefined();
+        expect(latestArcOf([], availability)).toBeUndefined();
+    });
+});
+
+describe('arcInfoSections disc', () => {
+    it('should carry the arc disc on the arc part', () => {
+        expect(arcInfoSections(drama(), '戀愛二分一', { summary: '短篇' }, 'disc.webp')).toEqual([
+            { kind: 'arc', title: '戀愛二分一', art: 'disc.webp', summary: '短篇' },
+        ]);
+    });
+});

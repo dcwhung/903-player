@@ -4,7 +4,7 @@ export const SHEET_DISMISS_RATIO = 0.25;
 export const SHEET_FLICK_VELOCITY_PX_PER_MS = 0.6;
 /** 甩都要拉過咁多 px 先算，撳一下手指抖咗唔會閂 */
 export const SHEET_FLICK_MIN_PX = 24;
-/** 閂 / 彈返動畫時長（同 ArcSheet.module.css --arc-sheet-slide-ms 一致） */
+/** 閂 / 彈返動畫時長（同 tokens.css --arc-sheet-slide-ms 一致） */
 export const SHEET_SLIDE_MS = 250;
 
 /** 表跟手指向下移咗幾多 px；向上推唔會高過原位 */

@@ -104,3 +104,31 @@ describe('buildShowRegistry: enabled（Phase 3）', () => {
         ).toThrow(SchemaError);
     });
 });
+
+describe('buildShowRegistry: item info（P9.5 #12）', () => {
+    const registry = buildShowRegistry(
+        sourceOf(
+            folder('info', {
+                summary: '輕鬆傾偈',
+                hosts: ['阿甲', '阿乙'],
+                airTime: { start: '15:00', end: '16:30' },
+            }),
+            folder('bare'),
+        ),
+    );
+
+    it('should carry summary, hosts and airTime when show.json has them', () => {
+        expect(registry.findShow('info')).toMatchObject({
+            summary: '輕鬆傾偈',
+            hosts: ['阿甲', '阿乙'],
+            airTime: { start: '15:00', end: '16:30' },
+        });
+    });
+
+    it('should leave the keys out when show.json has none', () => {
+        const bare = registry.findShow('bare');
+        expect(bare).not.toHaveProperty('summary');
+        expect(bare).not.toHaveProperty('hosts');
+        expect(bare).not.toHaveProperty('airTime');
+    });
+});

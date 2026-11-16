@@ -1,0 +1,23 @@
+/*
+ * 展開資料（_mockups_/catalog-item-info）：收埋 0fr → 展開 1fr；
+ * 時間 / easing 用過場 token，減少動態直接切換（.claude/CLAUDE.md Motion）
+ */
+.collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+}
+
+.collapse[data-expanded='true'] {
+    grid-template-rows: 1fr;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .collapse {
+        transition: grid-template-rows var(--view-transition-fade) var(--ease-view-transition);
+    }
+}
+
+.clip {
+    min-height: 0;
+    overflow: hidden;
+}

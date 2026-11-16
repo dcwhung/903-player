@@ -1,3 +1,6 @@
+import type { ArcSummary } from '../../../../selectors/arcProgress';
+import type { InlineInfo } from '../../../../selectors/itemInfo';
+
 /** 一覽表行嘅上架 / 下架補充（P8 #6，_mockups_/coming-soon ⑥ A2、⑧ LS2）；冇就同以前一樣 */
 export interface ArcRowNotes {
     /** 膠囊分母：有未上架批次就計埋全部集數（A2「0/30」） */
@@ -24,4 +27,15 @@ export interface UpcomingArcRowView {
     status: string;
     /** 讀屏：「XXX，12/11 星期四 上架，20 集」 */
     label: string;
+}
+
+/** 全集 sheet 合併劇集資料（P9.5 #12）：成套劇有資料先有，冇就唔出箭咀 */
+export interface ArcSheetInfo {
+    /** 箭咀展開咗：劇集簡介卡 + 每個短篇行嘅聲演 / 簡介 */
+    expanded: boolean;
+    onToggle: () => void;
+    /** 劇集簡介（冇就唔出簡介卡） */
+    dramaSummary?: string | undefined;
+    /** 每個短篇行嘅資料（冇就空，嗰行唔出資料區） */
+    arcInfoOf: (summary: ArcSummary) => InlineInfo;
 }

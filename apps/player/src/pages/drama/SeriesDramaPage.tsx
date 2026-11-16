@@ -1,7 +1,8 @@
-import { arcLabelOf, type DramaConfig, type SeriesEpisode } from '@903-player/catalog';
+import type { DramaConfig } from '@903-player/catalog';
 import { NowPlaying } from '../../components/shared/player/NowPlaying/NowPlaying';
 import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { PlayerGauge } from '../../components/shared/player/PlayerPanel/PlayerGauge';
+import { ItemInfoSheet } from '../../components/shared/common/ItemInfo/ItemInfoSheet';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import { LANDSCAPE_QUERY } from '../../config/layout';
@@ -9,45 +10,12 @@ import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePlayer } from '../../player/usePlayer';
 import { t } from '../../i18n/t';
-import { PLAYBACK_LINE_KEY, type PlaybackLineState } from '../../utils/playbackState';
 import { hasKnownDuration } from '../../utils/time';
 import { DramaHeader } from './DramaHeader';
+import { arcPickerLabel, seriesNowPlaying } from './seriesPageLabels';
 import page from '../shared/Page.module.css';
 import { SeriesArcSheet, SeriesListColumn } from './SeriesListColumn';
 import { useSeriesDramaPage, type SeriesDramaView } from './useDramaPage';
-
-/**
- * 短篇 chips 上面嗰行：未聽過又未載入呢套劇叫用戶揀短篇；載入咗同日子條一樣，未讀到時長講「連線中…」，
- * 否則「現正播放：短篇 · 第 N 集 集名」（暫停講「已暫停：」，載入咗未開始講「下一集：」，
- * 聽過未載入講「繼續收聽：」）
- */
-const arcPickerLabel = (
-    connecting: boolean,
-    current: SeriesEpisode | undefined,
-    state: PlaybackLineState,
-    sep: string = t('common.separator'),
-): string => {
-    if (state === 'unloaded') return t(PLAYBACK_LINE_KEY.unloaded);
-    if (connecting) return t('episodes.connecting');
-    if (!current) return '';
-    const episodeNo = t('drama.episodeNo', { no: current.no });
-    const episode = current.title
-        ? t('drama.nowPlayingShort', { no: current.no, title: current.title, sep })
-        : episodeNo;
-    const label = t('drama.nowPlayingArcShort', { arc: arcLabelOf(current), episode, sep });
-    return t(PLAYBACK_LINE_KEY[state], { label });
-};
-
-/** 橫版唱片下面「現正播放」：短篇加埋第幾個 / 幾多集（按排位，唔係集數），下一行集名 */
-const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, arcTotal: number) => {
-    const params = { arc: arcLabelOf(current), no: arcPosition, total: arcTotal };
-    return {
-        label: t('drama.nowPlayingArc', params),
-        // 讀屏唔讀「·」（S-723）
-        spokenLabel: t('drama.nowPlayingArc', { ...params, sep: t('common.spokenSeparator') }),
-        detail: current.title,
-    };
-};
 
 /**
  * 橫版「現正播放」有冇第二行（集名，或者聽緊時嘅成套劇下架字）：有就預留兩行高，唔係第二行會俾版面裁走
@@ -67,6 +35,8 @@ interface SeriesPlayerColumnProps {
         | 'arcPosition'
         | 'arcTotal'
         | 'notice'
+        | 'gaugeInfo'
+        | 'infoSheet'
     >;
     title: string;
     landscape: boolean;
@@ -92,6 +62,7 @@ const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayer
                     standbyTime={view.standbyTime}
                     bookmark={current}
                     empty={view.empty}
+                    {...view.gaugeInfo}
                 />
             ) : (
                 <StatusMessage message={t('episodes.noneUp')} />
@@ -104,6 +75,15 @@ const SeriesPlayerColumn = ({ view, title, landscape, connecting }: SeriesPlayer
                     notice={view.notice}
                 />
             )}
+            {/* 已揀短篇嘅資料 sheet：橫版喺唱片嗰欄（docked），直版由畫面底彈出 */}
+            <ItemInfoSheet
+                open={view.infoSheet.open}
+                docked={landscape}
+                sections={view.infoSheet.sections}
+                banner={view.infoSheet.banner}
+                label={t('info.dramaInfo')}
+                onClose={view.infoSheet.close}
+            />
         </div>
     );
 };

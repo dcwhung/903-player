@@ -101,6 +101,7 @@ export { buildEpisodes, type EpisodeBuildOptions } from './dramas/episodes';
 export { toChineseNumeral } from './dramas/filename';
 export {
     buildRegistry,
+    type ArcInfo,
     type Drama,
     type DramaConfig,
     type DramaRegistry,

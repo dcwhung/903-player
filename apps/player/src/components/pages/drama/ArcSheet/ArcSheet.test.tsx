@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { SeriesEpisode } from '@903-player/catalog';
 import type { ArcSummary } from '../../../../selectors/arcProgress';
 import { ArcSheet } from './ArcSheet';
-import { SHEET_SLIDE_MS } from './sheetDrag';
+import { SHEET_SLIDE_MS } from '../../../shared/common/Sheet/sheetDrag';
 
 const ep = (arc: string, no: number, title?: string): SeriesEpisode => ({
     kind: 'series',
@@ -556,5 +556,90 @@ describe('ArcSheet pull down to close', () => {
         settle();
 
         expect(onClose).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('ArcSheet drama banner（G1）', () => {
+    const BANNER = {
+        kind: 'drama' as const,
+        art: 'tile.webp',
+        title: '芝See菇Bi Family',
+        subtitle: '最新上架：青春期',
+    };
+
+    const renderWithBanner = (banner?: typeof BANNER) => {
+        const onClose = vi.fn();
+        render(
+            <ArcSheet
+                open
+                groups={GROUPS}
+                current={undefined}
+                isPlaying={false}
+                onPick={vi.fn()}
+                onPlay={vi.fn()}
+                onClose={onClose}
+                coverOf={() => ''}
+                banner={banner}
+            />,
+        );
+        return onClose;
+    };
+
+    it('should put the drama tile, name and subtitle above the 全集 header', () => {
+        renderWithBanner(BANNER);
+        const dialog = screen.getByRole('dialog', { name: '全集' });
+        const banner = within(dialog).getByTestId('info-banner');
+        expect(banner.querySelector('img')).toHaveAttribute('src', 'tile.webp');
+        expect(within(banner).getByRole('heading')).toHaveTextContent('芝See菇Bi Family');
+        expect(banner).toHaveTextContent('最新上架：青春期');
+        const header = within(dialog).getByRole('heading', { name: '全集' });
+        // banner 喺表頭前面，兩個都唔喺捲動清單入面
+        expect(
+            banner.compareDocumentPosition(header) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        const list = dialog.querySelector('[data-role="sheet-list"]');
+        expect(list?.contains(banner)).toBe(false);
+        expect(dialog).toHaveAttribute('data-banner', 'true');
+    });
+
+    it('should show no banner without one', () => {
+        renderWithBanner();
+        expect(screen.queryByTestId('info-banner')).not.toBeInTheDocument();
+        expect(screen.getByRole('dialog')).toHaveAttribute('data-banner', 'false');
+    });
+
+    it('should move the close button out of the header onto the banner corner', async () => {
+        const onClose = renderWithBanner(BANNER);
+        const dialog = screen.getByRole('dialog');
+        const close = within(dialog).getByRole('button', { name: '關閉' });
+        expect(close.closest('header')).toBeNull();
+        expect(close).toHaveAttribute('data-on-banner', 'true');
+        // S-1021：grab bar 同 ✕ 用 InfoBanner 共用嘅疊層樣
+        expect(dialog.querySelectorAll('[data-on-banner]')).toHaveLength(2);
+        await userEvent.click(close);
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('should keep the close button in the header without a banner', () => {
+        renderWithBanner();
+        const close = screen.getByRole('button', { name: '關閉' });
+        expect(close.closest('header')).not.toBeNull();
+        expect(close).not.toHaveAttribute('data-on-banner');
+    });
+
+    it('should close when the banner is pulled down', () => {
+        vi.useFakeTimers();
+        vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+            height: 400,
+        } as DOMRect);
+        const onClose = renderWithBanner(BANNER);
+        const banner = screen.getByTestId('info-banner');
+        fireEvent.pointerDown(banner, { clientY: 100, pointerId: 1, button: 0 });
+        fireEvent.pointerMove(banner, { clientY: 250, pointerId: 1 });
+        fireEvent.pointerUp(banner, { clientY: 250, pointerId: 1 });
+        act(() => vi.advanceTimersByTime(SHEET_SLIDE_MS));
+        expect(onClose).toHaveBeenCalledTimes(1);
+        vi.useRealTimers();
+        vi.restoreAllMocks();
     });
 });
