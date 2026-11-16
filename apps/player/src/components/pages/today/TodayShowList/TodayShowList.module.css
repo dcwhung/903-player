@@ -8,10 +8,10 @@
     padding: 0 var(--space-4);
 }
 
-/* 標題列：左邊「節目表」，右邊有未上架就顯示幾多個（同集數清單標題列一樣） */
+/* 標題列：左邊「節目表」（+ 資料箭咀），右邊有未上架就顯示幾多個（同集數清單標題列一樣） */
 .header {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     padding-bottom: var(--space-2);
     border-bottom: 1px solid var(--color-divider);
@@ -25,11 +25,15 @@
     letter-spacing: var(--letter-spacing-caps);
 }
 
-/* 橫版：頁頭已經寫「今日節目」，唔再出標題列（日期 / 個數喺唱片下面「現正播放」） */
-@media (orientation: landscape) and (min-width: 640px) {
-    .header {
-        display: none;
-    }
+/* 「節目表」+ 箭咀（P9.5 #12；橫版都出，放箭咀） */
+.headingGroup {
+    display: flex;
+    align-items: center;
+}
+
+/* 箭咀撳得到範圍照 44px，但唔撐高標題列（上下疊入留白） */
+.toggle {
+    margin-block: calc((var(--touch-target-min) - var(--touch-target)) / 2);
 }
 
 /*
@@ -53,11 +57,10 @@
     /* 寫死嘅 px 都跟 --ui-scale（橫版大畫面放大）；直版 / 手機係 × 1 */
     gap: var(--today-row-gap);
     width: 100%;
-    min-height: calc(64px * var(--ui-scale));
+    min-height: var(--today-row-height);
     /* 右邊播放 / 暫停掣離邊兩倍（--space-2），唔好貼住清單右邊 */
     padding: 0 var(--space-2) 0 var(--list-row-pad-start);
     border: none;
-    border-bottom: 1px solid var(--color-divider);
     background: transparent;
     text-align: left;
 }
@@ -67,12 +70,31 @@
     background: var(--color-surface);
 }
 
-/* 每行 li：收藏掣（.bookmark）以佢定位 */
+/* 每行 li：收藏掣（.bookmark）、左邊條（OnAirLamp）以佢定位；分隔線喺行底（資料展開都喺最底） */
 .row {
     position: relative;
+    border-bottom: 1px solid var(--color-divider);
     /* 同 .item 嘅間距、右邊留白、行尾掣（PLAY_ICON_SIZE）一樣，計收藏掣離右邊幾遠 */
     --today-row-gap: calc(14px * var(--ui-scale));
     --today-row-icon: calc(22px * var(--ui-scale));
+    --today-row-height: calc(64px * var(--ui-scale));
+    /* 同 Disc size="small" 預設大細一樣（Disc.module.css .small） */
+    --today-row-disc: calc(40px * var(--ui-scale));
+}
+
+/* 展開資料（P9.5 #12）：左邊條拉長到行高約八成、上下置中 */
+.row[data-expanded='true'] {
+    --onair-lamp-inset: var(--info-lamp-inset);
+}
+
+/* 資料喺節目名嗰欄下面，唔伸入收藏 / 播放掣嗰幾格 */
+.rowInfo {
+    padding: 0
+        calc(
+            var(--space-2) + var(--today-row-icon) + 2 * var(--today-row-gap) +
+                var(--episode-bookmark-size)
+        )
+        0 calc(var(--list-row-pad-start) + var(--today-row-disc) + var(--today-row-gap));
 }
 
 /* 收藏掣：行入面留一格（播放掣左邊），星疊喺上面（_mockups_/bookmark P2） */
@@ -83,7 +105,8 @@
 
 .row > .bookmark {
     position: absolute;
-    top: 50%;
+    /* 行掣（頂嗰行）中間：展開資料都留喺頂 */
+    top: calc(var(--today-row-height) / 2);
     right: calc(var(--space-2) + var(--today-row-icon) + var(--today-row-gap));
     width: var(--episode-bookmark-size);
     height: var(--episode-bookmark-size);

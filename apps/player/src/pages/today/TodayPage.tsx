@@ -11,6 +11,7 @@ import { t } from '../../i18n/t';
 import type { InnerPage } from '../../selectors/pageHandle';
 import page from '../shared/Page.module.css';
 import { TodayPlayerColumn } from './TodayPlayerColumn';
+import { useTodayInfoExpanded } from './useTodayInfo';
 import { useTodayPage } from './useTodayPage';
 
 /** 今日頁頭（大字 h1）；手機打橫指示點搬上右邊 */
@@ -36,6 +37,7 @@ export const TodayPage = () => {
     // 卡疊同指示點只有播得到嘅節目；節目表（items）另外有未上架嘅
     const names = cards.map((card) => card.title);
     const listed = status === 'ready' && items.length > 0;
+    const info = useTodayInfoExpanded(listed && items.some((item) => item.info));
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
     // 手機打橫：指示點搬上頁頭右邊，騰返高度畀唱片
     const dotsInHeader = useMediaQuery(SHORT_LANDSCAPE_QUERY);
@@ -63,7 +65,12 @@ export const TodayPage = () => {
                 {listed && (
                     <div className={page.listColumn}>
                         {headerInList && header}
-                        <TodayShowList items={items} onSelect={state.selectShow} />
+                        <TodayShowList
+                            items={items}
+                            onSelect={state.selectShow}
+                            infoExpanded={info.expanded}
+                            onToggleInfo={info.toggle}
+                        />
                     </div>
                 )}
                 <InnerPageHandle page={handlePage} />

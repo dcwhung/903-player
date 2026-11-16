@@ -1,14 +1,12 @@
 import { useId } from 'react';
-import { t, type MessageKey } from '../../../../i18n/t';
+import { t } from '../../../../i18n/t';
+import type { InlineInfo } from '../../../../selectors/itemInfo';
 import type { Recording } from '../../../../types/recording';
-import { formatSpokenDate } from '../../../../utils/date';
-import { Disc } from '../../../shared/common/Disc/Disc';
-import { PauseIcon, PlayIcon } from '../../../shared/common/icons/icons';
-import { Marquee } from '../../../shared/common/Marquee/Marquee';
-import { SpokenText, type SpokenNotice } from '../../../shared/common/SpokenText/SpokenText';
-import { BookmarkButton } from '../../../shared/player/BookmarkButton/BookmarkButton';
+import { InfoToggle } from '../../../shared/common/ItemInfo/InfoToggle';
+import { InlineItemInfo } from '../../../shared/common/ItemInfo/InlineItemInfo';
 import styles from './TodayShowList.module.css';
-import { RowLamp, RowStatus } from './TodayShowRowParts';
+import { ShowRow } from './TodayShowRow';
+import { RowLamp } from './TodayShowRowParts';
 
 /** connecting：揀中、播緊但未讀到時長（寫「連線中…」、冇 pill，S-730） */
 export type ShowStatus = 'playing' | 'connecting' | 'watched' | 'unwatched' | 'unavailable';
@@ -23,122 +21,87 @@ export interface TodayShowItem {
     active: boolean;
     /** 呢個節目今日嗰集：有就喺播放掣左邊出收藏掣（P7 #7）；未上架冇 */
     track?: Recording;
+    /** 節目資料（P9.5 #12：播放時間、主持、簡介）；冇就唔出資料區 */
+    info?: InlineInfo;
 }
 
 interface TodayShowListProps {
     items: TodayShowItem[];
     onSelect: (key: string) => void;
+    /** 「節目表」箭咀展開咗：每行出資料 */
+    infoExpanded?: boolean;
+    /** 撳箭咀；冇傳就唔出箭咀 */
+    onToggleInfo?: (() => void) | undefined;
 }
 
-const STATUS_MESSAGE: Record<ShowStatus, MessageKey> = {
-    playing: 'common.status.playing',
-    connecting: 'episodes.connecting',
-    watched: 'common.status.watched',
-    unwatched: 'common.status.unwatched',
-    unavailable: 'today.statusUnavailable',
-};
-const PLAY_ICON_SIZE = 22;
-
-/** 未上架嗰行嘅「15:10 · 未上架」：讀屏版用「，」，唔讀「·」（S-723，同 S-717 一樣） */
-const unavailableStatus = (time: string): SpokenNotice => {
-    const params = { time, status: t(STATUS_MESSAGE.unavailable) };
-    return {
-        text: t('today.timeWithStatus', params),
-        label: t('today.timeWithStatus', { ...params, sep: t('common.spokenSeparator') }),
-    };
-};
-
-/**
- * 未上架：照列出節目同時間，但唔係掣（撳唔到、冇播放掣），唱片同節目名變淡。
- * 用普通 div：screen reader 直接讀節目名同讀屏版狀態（時間，未上架），唔會當成停用咗嘅掣
- */
-const UnavailableRow = ({ item }: { item: TodayShowItem }) => (
-    <div className={`${styles.item} ${styles.unavailable}`}>
-        <span className={styles.art}>
-            <Disc size="small" art={item.art} />
-        </span>
-        <span className={styles.text}>
-            <Marquee className={styles.name} text={item.name} />
-            <span className={styles.status}>
-                <SpokenText {...unavailableStatus(item.time)} />
-            </span>
-        </span>
-    </div>
-);
-
-/** ☆ 讀屏名講埋節目名同讀屏日子（C4：「收藏 公子會 06/11 星期五」） */
-const bookmarkLabel = (name: string, track: Recording): string =>
-    t('bookmark.toggleEpisode', {
-        label: t('bookmark.episodeOf', { name, label: formatSpokenDate(track.date) }),
-    });
-
-const ShowRow = ({ item, onSelect }: { item: TodayShowItem; onSelect: (key: string) => void }) => {
-    if (item.status === 'unavailable') {
-        return <UnavailableRow item={item} />;
-    }
-    const statusText = t(STATUS_MESSAGE[item.status]);
-    // 播緊（status playing = 揀中 + 播放中）：掣變暫停，撳落去暫停
-    const isPlaying = item.status === 'playing' || item.status === 'connecting';
-    // 收藏掣唔可以放入行掣入面：行入面留位，星疊喺個位上面（同一個 li）
-    return (
-        <>
-            <button
-                type="button"
-                className={`${styles.item} ${item.active ? styles.active : ''}`}
-                aria-current={item.active ? 'true' : undefined}
-                aria-label={t(
-                    isPlaying ? 'today.pauseShowWithStatus' : 'today.playShowWithStatus',
-                    {
-                        name: item.name,
-                        status: statusText,
-                    },
-                )}
-                onClick={() => onSelect(item.key)}
-            >
-                <RowLamp item={item} />
-                <Disc size="small" art={item.art} />
-                <span className={styles.text}>
-                    <Marquee className={styles.name} text={item.name} />
-                    <RowStatus item={item} statusText={statusText} />
-                </span>
-                {item.track && <span className={styles.bookmarkSpace} aria-hidden="true" />}
-                {isPlaying ? (
-                    <PauseIcon size={PLAY_ICON_SIZE} />
-                ) : (
-                    <PlayIcon size={PLAY_ICON_SIZE} filled={false} />
-                )}
-            </button>
-            {item.track && (
-                <BookmarkButton
-                    track={item.track}
-                    label={bookmarkLabel(item.name, item.track)}
-                    className={styles.bookmark}
-                />
-            )}
-        </>
-    );
-};
-
-export const TodayShowList = ({ items, onSelect }: TodayShowListProps) => {
+export const TodayShowList = ({
+    items,
+    onSelect,
+    infoExpanded = false,
+    onToggleInfo,
+}: TodayShowListProps) => {
     const headingId = useId();
     const unavailable = items.filter((item) => item.status === 'unavailable').length;
+    // 冇任何節目有資料就唔出箭咀（P9.5 #12）
+    const canToggle = onToggleInfo !== undefined && items.some((item) => item.info);
     return (
         <section className={styles.section} aria-labelledby={headingId}>
             <div className={styles.header}>
-                <h2 id={headingId} className={styles.heading}>
-                    {t('today.listTitle')}
-                </h2>
+                <span className={styles.headingGroup}>
+                    <h2 id={headingId} className={styles.heading}>
+                        {t('today.listTitle')}
+                    </h2>
+                    {canToggle && (
+                        <InfoToggle
+                            expanded={infoExpanded}
+                            label={t('info.showInfo')}
+                            onToggle={onToggleInfo}
+                            className={styles.toggle}
+                        />
+                    )}
+                </span>
                 {unavailable > 0 && (
                     <span>{t('today.unavailableCount', { count: unavailable })}</span>
                 )}
             </div>
             <ul className={styles.list}>
                 {items.map((item) => (
-                    <li key={item.key} className={styles.row}>
-                        <ShowRow item={item} onSelect={onSelect} />
-                    </li>
+                    <TodayRow
+                        key={item.key}
+                        item={item}
+                        onSelect={onSelect}
+                        expanded={canToggle && infoExpanded}
+                    />
                 ))}
             </ul>
         </section>
     );
 };
+
+/**
+ * 每行 li：左邊條（OnAirLamp）、揀中淺底同分隔線都喺 li，展開資料（P9.5 #12）喺行掣下面，
+ * 條同行一齊拉長（約八成高），碟面 / 收藏 / 播放掣留喺頂
+ */
+const TodayRow = ({
+    item,
+    onSelect,
+    expanded,
+}: {
+    item: TodayShowItem;
+    onSelect: (key: string) => void;
+    expanded: boolean;
+}) => (
+    <li
+        className={`${styles.row} ${item.active ? styles.active : ''}`}
+        data-today-row=""
+        data-expanded={expanded && item.info !== undefined}
+    >
+        <RowLamp item={item} />
+        <ShowRow item={item} onSelect={onSelect} />
+        {item.info && (
+            <div className={styles.rowInfo}>
+                <InlineItemInfo info={item.info} expanded={expanded} />
+            </div>
+        )}
+    </li>
+);
