@@ -22,7 +22,11 @@ export interface InfoFields {
 }
 
 /** 資料 sheet 一段（節目 / 劇集 / 短篇）：標題 + 有嘅欄位 */
+/** 資料 sheet 段落類型：節目 / 劇集 / 短篇（React key、短篇標題細啲） */
+export type ItemInfoSectionKind = 'show' | 'drama' | 'arc';
+
 export interface ItemInfoSection {
+    kind: ItemInfoSectionKind;
     title: string;
     /** 播放時間顯示字（formatAirTime） */
     airTime?: string;
@@ -32,7 +36,7 @@ export interface ItemInfoSection {
 }
 
 /** 列表每行展開嘅資料（全集 sheet 短篇行、今日節目行）：冇標題 */
-export type InlineInfo = Omit<ItemInfoSection, 'title'>;
+export type InlineInfo = Omit<ItemInfoSection, 'kind' | 'title'>;
 
 type ProgressMap = Readonly<Record<string, Progress>>;
 
@@ -69,16 +73,19 @@ export const arcInlineInfo = (arc: ArcInfo | undefined): InlineInfo => ({
     ...field('summary', arc?.summary || undefined),
 });
 
-/** 除咗標題仲有其他欄位先算一段 */
+const SECTION_HEAD_KEYS: ReadonlySet<string> = new Set(['kind', 'title']);
+
+/** 除咗類型同標題仲有其他欄位先算一段 */
 const sectionsOf = (...sections: ItemInfoSection[]): ItemInfoSection[] =>
-    sections.filter((section) => Object.keys(section).some((key) => key !== 'title'));
+    sections.filter((section) => Object.keys(section).some((key) => !SECTION_HEAD_KEYS.has(key)));
 
 /** 節目頁獨立 sheet：冇資料就空 */
 export const showInfoSections = (show: ShowConfig): ItemInfoSection[] =>
-    sectionsOf({ title: show.name, ...showInlineInfo(show) });
+    sectionsOf({ kind: 'show', title: show.name, ...showInlineInfo(show) });
 
 /** 劇集嗰段：劇集名 + 簡介 */
 const dramaSection = (drama: Drama): ItemInfoSection => ({
+    kind: 'drama',
     title: drama.name,
     ...field('summary', drama.summary || undefined),
 });
@@ -92,7 +99,8 @@ export const arcInfoSections = (
     drama: Drama,
     arcLabel: string,
     arc: ArcInfo | undefined,
-): ItemInfoSection[] => sectionsOf(dramaSection(drama), { title: arcLabel, ...arcInlineInfo(arc) });
+): ItemInfoSection[] =>
+    sectionsOf(dramaSection(drama), { kind: 'arc', title: arcLabel, ...arcInlineInfo(arc) });
 
 /** 成套短篇劇（劇集 + 全部短篇）有冇資料：冇就唔出全集箭咀、唱片圈 ⓘ */
 export const seriesHasInfo = (drama: Drama, arcs: readonly (ArcInfo | undefined)[]): boolean =>

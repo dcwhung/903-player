@@ -155,6 +155,7 @@
      * 今日節目表展開時「播緊」線（OnAirLamp）上下留位（行高約 80%）
      */
     --info-sheet-title-size: calc(20px * var(--ui-scale));
+    --info-sheet-arc-title-size: calc(17px * var(--ui-scale));
     --info-sheet-chip-line: calc(30px * var(--ui-scale));
     --info-chip-line: calc(20px * var(--ui-scale));
     --info-text-line: 1.6;

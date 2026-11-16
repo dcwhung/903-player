@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { useItemInfoSheet } from './useItemInfoSheet';
 
-const SECTIONS = [{ title: '公子會', summary: '簡介' }];
+const SECTIONS = [{ kind: 'show' as const, title: '公子會', summary: '簡介' }];
 
 describe('useItemInfoSheet', () => {
     it('should start open when told to auto-open on entry', () => {

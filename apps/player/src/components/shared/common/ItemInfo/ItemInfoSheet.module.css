@@ -138,3 +138,8 @@
     font-size: var(--font-size-md);
     line-height: var(--info-text-line);
 }
+
+/* 短篇標題細過劇集名（V4，_mockups_/catalog-item-info a2-n-series-full：劇集 20px、短篇 17px） */
+.section[data-kind='arc'] .title {
+    font-size: var(--info-sheet-arc-title-size);
+}

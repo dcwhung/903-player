@@ -18,6 +18,14 @@ interface ItemInfoSheetProps {
 
 const CLOSE_ICON_SIZE = 20;
 
+/** 一段（節目 / 劇集 / 短篇）：data-kind 畀 CSS 揀標題大細（短篇細過劇集名） */
+const InfoSection = ({ section }: { section: ItemInfoSection }) => (
+    <section className={styles.section} data-kind={section.kind}>
+        <h2 className={styles.title}>{section.title}</h2>
+        <ItemInfoFields section={section} />
+    </section>
+);
+
 /**
  * 節目 / 劇集資料 sheet（P9.5 #12，_mockups_/catalog-item-info A 修訂版）：
  * 標題 → 播放時間 → 主持 → 聲演 → 簡介，每段之間一條線。
@@ -62,10 +70,8 @@ export const ItemInfoSheet = ({
                 </button>
                 <div ref={listRef} className={styles.body} data-role="sheet-list">
                     {sections.map((section) => (
-                        <section key={section.title} className={styles.section}>
-                            <h2 className={styles.title}>{section.title}</h2>
-                            <ItemInfoFields section={section} />
-                        </section>
+                        // S-1018：每種段落最多一段，用類型做 key（短篇名同劇集名一樣都唔撞）
+                        <InfoSection key={section.kind} section={section} />
                     ))}
                 </div>
             </section>

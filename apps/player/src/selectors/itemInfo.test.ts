@@ -50,6 +50,7 @@ describe('showInfoSections', () => {
         );
         expect(sections).toEqual([
             {
+                kind: 'show',
                 title: '公子會',
                 airTime: '星期六（22:00 - 23:45）',
                 hosts: ['主持甲'],
@@ -60,7 +61,7 @@ describe('showInfoSections', () => {
 
     it('should leave out the air time when the show has no airTime', () => {
         expect(showInfoSections(show({ summary: '簡介' }))).toEqual([
-            { title: '公子會', summary: '簡介' },
+            { kind: 'show', title: '公子會', summary: '簡介' },
         ]);
     });
 });
@@ -68,7 +69,7 @@ describe('showInfoSections', () => {
 describe('dailyInfoSections', () => {
     it('should give the drama name and summary, or nothing without a summary', () => {
         expect(dailyInfoSections(drama({ kind: 'daily', summary: '每日' }))).toEqual([
-            { title: '蘭茜夫人劇場', summary: '每日' },
+            { kind: 'drama', title: '蘭茜夫人劇場', summary: '每日' },
         ]);
         expect(dailyInfoSections(drama({ kind: 'daily' }))).toEqual([]);
     });
@@ -79,20 +80,20 @@ describe('arcInfoSections', () => {
 
     it('should put the drama summary first, then the arc titled by its label', () => {
         expect(arcInfoSections(drama({ summary: '劇集簡介' }), '戀愛二分一', arc)).toEqual([
-            { title: '蘭茜夫人劇場', summary: '劇集簡介' },
-            { title: '戀愛二分一', cast: ['聲演甲'], summary: '短篇簡介' },
+            { kind: 'drama', title: '蘭茜夫人劇場', summary: '劇集簡介' },
+            { kind: 'arc', title: '戀愛二分一', cast: ['聲演甲'], summary: '短篇簡介' },
         ]);
     });
 
     it('should give only the arc when the drama has no summary', () => {
         expect(arcInfoSections(drama(), '戀愛二分一', arc)).toEqual([
-            { title: '戀愛二分一', cast: ['聲演甲'], summary: '短篇簡介' },
+            { kind: 'arc', title: '戀愛二分一', cast: ['聲演甲'], summary: '短篇簡介' },
         ]);
     });
 
     it('should give only the drama when the arc has no info', () => {
         expect(arcInfoSections(drama({ summary: '劇集簡介' }), '戀愛二分一', {})).toEqual([
-            { title: '蘭茜夫人劇場', summary: '劇集簡介' },
+            { kind: 'drama', title: '蘭茜夫人劇場', summary: '劇集簡介' },
         ]);
         expect(arcInfoSections(drama(), '戀愛二分一', undefined)).toEqual([]);
     });

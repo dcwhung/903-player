@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { ItemInfoSheet } from './ItemInfoSheet';
 
 const SHOW = {
+    kind: 'show' as const,
     title: '公子會',
     airTime: '星期六（22:00 - 23:45）',
     hosts: ['主持甲', '主持乙'],
@@ -34,7 +35,7 @@ describe('ItemInfoSheet', () => {
         render(
             <ItemInfoSheet
                 open
-                sections={[{ title: '公子會', summary: '節目簡介' }]}
+                sections={[{ kind: 'show', title: '公子會', summary: '節目簡介' }]}
                 label="節目資料"
                 onClose={vi.fn()}
             />,
@@ -49,8 +50,8 @@ describe('ItemInfoSheet', () => {
             <ItemInfoSheet
                 open
                 sections={[
-                    { title: '蘭茜夫人劇場', summary: '劇集簡介' },
-                    { title: '戀愛二分一', cast: ['聲演甲'], summary: '短篇簡介' },
+                    { kind: 'drama', title: '蘭茜夫人劇場', summary: '劇集簡介' },
+                    { kind: 'arc', title: '戀愛二分一', cast: ['聲演甲'], summary: '短篇簡介' },
                 ]}
                 label="劇集資料"
                 onClose={vi.fn()}
@@ -59,6 +60,44 @@ describe('ItemInfoSheet', () => {
         const headings = screen.getAllByRole('heading').map((h) => h.textContent);
         expect(headings).toEqual(['蘭茜夫人劇場', '戀愛二分一']);
         expect(screen.getByRole('list', { name: '聲演' })).toHaveTextContent('聲演甲');
+    });
+
+    it('should mark each part with its kind so the arc title can be smaller', () => {
+        // V4：短篇標題細過劇集名（ItemInfoSheet.module.css 按 data-kind 揀字大細）
+        render(
+            <ItemInfoSheet
+                open
+                sections={[
+                    { kind: 'drama', title: '蘭茜夫人劇場', summary: '劇集簡介' },
+                    { kind: 'arc', title: '初戀無限次', summary: '短篇簡介' },
+                ]}
+                label="劇集資料"
+                onClose={vi.fn()}
+            />,
+        );
+        const kindOf = (name: string) =>
+            screen.getByRole('heading', { name }).closest('section')?.dataset.kind;
+        expect(kindOf('蘭茜夫人劇場')).toBe('drama');
+        expect(kindOf('初戀無限次')).toBe('arc');
+    });
+
+    it('should render both parts without a key clash when the arc is named like the drama', () => {
+        // S-1018：短篇顯示名同劇集名一樣時 key 唔可以撞
+        const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        render(
+            <ItemInfoSheet
+                open
+                sections={[
+                    { kind: 'drama', title: '同名', summary: '劇集簡介' },
+                    { kind: 'arc', title: '同名', summary: '短篇簡介' },
+                ]}
+                label="劇集資料"
+                onClose={vi.fn()}
+            />,
+        );
+        expect(screen.getAllByRole('heading', { name: '同名' })).toHaveLength(2);
+        expect(error).not.toHaveBeenCalled();
+        error.mockRestore();
     });
 
     it('should not make the chips pressable', () => {
