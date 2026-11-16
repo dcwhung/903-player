@@ -9,8 +9,6 @@ import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mj
 
 const WAIT_MS = 5000;
 const ABSENT_WAIT_MS = 1500;
-/** 展開 / 收合過場（tokens.css --view-transition-fade 260ms）之後先量 */
-const SETTLE_MS = 600;
 const LANDSCAPE = { viewport: { width: 1280, height: 800 } };
 /** 窄橫版：唱片按欄闊計（T7b：ⓘ 喺進度圈外面都要放得落欄入面） */
 const NARROW_LANDSCAPE = { viewport: { width: 1024, height: 768 } };
@@ -88,8 +86,34 @@ const open = (env, json, contextOptions) =>
 const infoSheet = (p, name) => p.getByRole('dialog', { name });
 const viewportWidth = (p) => p.viewportSize().width;
 
-/** banner 16:9 貼 sheet 頂、左右貼邊；名疊喺 banner 入面 */
+/**
+ * 等 locator 自己同入面所有動畫 / 過場（sheet 滑上、展開 / 收合 grid-template-rows）完先量。
+ * 唔用固定 sleep：CI CPU 慢時表仲滑緊，banner 同 ✕ 分開量會差咗一截（W-779）；
+ * 減少動態冇動畫即刻返；最多等 WAIT_MS（等唔到照量，交畀斷言報錯）
+ */
+const settleAnimations = (locator) =>
+    succeeds(
+        locator.evaluate(
+            (el, waitMs) =>
+                Promise.race([
+                    Promise.all(
+                        el
+                            .getAnimations({ subtree: true })
+                            // 無限循環（播放中唱片轉、等緊載入）永遠唔會 finished，唔等
+                            .filter((animation) =>
+                                Number.isFinite(animation.effect?.getComputedTiming().endTime),
+                            )
+                            .map((animation) => animation.finished),
+                    ),
+                    new Promise((resolve) => setTimeout(resolve, waitMs)),
+                ]),
+            WAIT_MS,
+        ),
+    );
+
+/** banner 16:9 貼 sheet 頂、左右貼邊；名疊喺 banner 入面（表滑定咗先量） */
 const checkBanner = async (env, sheet, label) => {
+    await settleAnimations(sheet);
     const banner = sheet.getByTestId('info-banner');
     const [b, s] = await Promise.all([banner.boundingBox(), sheet.boundingBox()]);
     const flush =
@@ -112,7 +136,10 @@ const checkBanner = async (env, sheet, label) => {
         close.y + close.height <= b.y + b.height / 2 &&
         close.x + close.width <= b.x + b.width &&
         close.x >= b.x + b.width / 2;
-    env.log(onCorner, `${label}：✕ 喺 banner 右上角`);
+    env.log(
+        onCorner,
+        `${label}：✕ 喺 banner 右上角（✕ ${close?.x.toFixed(0)},${close?.y.toFixed(0)}，banner ${b?.x.toFixed(0)},${b?.y.toFixed(0)} ${b?.width.toFixed(0)}×${b?.height.toFixed(0)}）`,
+    );
 };
 
 /** 節目頁直版：第一次入自動彈、內容、ⓘ 位置、閂咗撳 ⓘ 開返 */
@@ -281,11 +308,9 @@ const checkArcSheet = async (env, json, reducedMotion) => {
     }
     await checkBanner(env, arcSheet(p), `${label}：全集 sheet`);
     await dramaToggle(p).click();
-    if (!reducedMotion) await p.waitForTimeout(SETTLE_MS);
-    const rows = await arcSheet(p)
-        .locator('[data-expanded]')
-        .first()
-        .evaluate((el) => getComputedStyle(el).gridTemplateRows);
+    const collapse = arcSheet(p).locator('[data-expanded]').first();
+    await settleAnimations(collapse);
+    const rows = await collapse.evaluate((el) => getComputedStyle(el).gridTemplateRows);
     log(rows === '0px', `${label}：撳箭咀收埋（grid-template-rows ${rows}）`);
     return p;
 };
@@ -421,8 +446,8 @@ const todayToggle = (p) =>
 /** 今日節目行資料：字大細跟 mockup、播放時間一行、資料區伸到播放掣下面、主持標籤同 chip 同一行 */
 const checkTodayInline = async (env, p, label) => {
     const { log } = env;
-    await p.waitForTimeout(SETTLE_MS);
     const row = p.locator('li[data-today-row]').filter({ hasText: TODAY_SUMMARY });
+    await settleAnimations(row);
     const m = await inlineMetrics(row.locator('[data-role="item-info"]'));
     log(
         Math.abs(m.textPx - INLINE_TEXT_PX) < 0.5 && Math.abs(m.chipPx - INLINE_CHIP_PX) < 0.5,
