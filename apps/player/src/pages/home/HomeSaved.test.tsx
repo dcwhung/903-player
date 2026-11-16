@@ -11,7 +11,7 @@ import {
     removeBookmark,
 } from '../../services/bookmarkStore';
 import { saveProgress } from '../../services/progressStore';
-import { focusUrlFromState } from '../../hooks/useEpisodeFocus';
+import { focusIdFromState } from '../../hooks/useEpisodeFocus';
 import { SWIPE_REMOVE_RATIO } from '../../components/pages/home/SavedTab/useRowSwipe';
 import { Toast } from '../../components/shared/common/Toast/Toast';
 import { HomeSaved } from './HomeSaved';
@@ -31,7 +31,7 @@ const FocusProbe = () => {
     const location = useLocation();
     return (
         <div data-testid="page">
-            {location.pathname} {focusUrlFromState(location.state) ?? ''}
+            {location.pathname} {focusIdFromState(location.state) ?? ''}
         </div>
     );
 };
@@ -113,8 +113,23 @@ describe('HomeSaved (我的收藏 tab)', () => {
 
         await userEvent.click(rowOpen(/^開啟 Bad Girl大過佬/));
 
-        expect(screen.getByTestId('page')).toHaveTextContent(`/show/badgirl ${BADGIRL.url}`);
+        expect(screen.getByTestId('page')).toHaveTextContent(`/show/badgirl ${BADGIRL.id}`);
         expect(audio.play).not.toHaveBeenCalled();
+    });
+
+    // S-743：行嘅 zoom key 用集數 id（同收藏 storage 一致），唔用網址
+    it('should key each saved and recent row by episode id', () => {
+        addBookmark(BADGIRL, 1);
+        saveProgress(SUNNY.id, 60, 600);
+        const { container } = openSaved();
+
+        const keys = [...container.querySelectorAll('[data-zoom-key]')].map((el) =>
+            el.getAttribute('data-zoom-key'),
+        );
+        expect(keys).toEqual(
+            expect.arrayContaining([`episode:${BADGIRL.id}`, `episode:${SUNNY.id}`]),
+        );
+        expect(keys.some((key) => key?.includes('https://'))).toBe(false);
     });
 
     it('should play in place from ▷ and turn the row into 播放中 with ⏸', async () => {
@@ -279,7 +294,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
 
             await userEvent.click(screen.getByRole('button', { name: /^開啟 在晴朗的一天出發/ }));
 
-            expect(screen.getByTestId('page')).toHaveTextContent(`/show/sunnyday ${SUNNY.url}`);
+            expect(screen.getByTestId('page')).toHaveTextContent(`/show/sunnyday ${SUNNY.id}`);
             expect(audio.play).not.toHaveBeenCalled();
         });
     });
@@ -339,7 +354,7 @@ describe('HomeSaved (我的收藏 tab)', () => {
 
             await userEvent.click(screen.getByRole('button', { name: /^開啟 在晴朗的一天出發/ }));
 
-            expect(screen.getByTestId('page')).toHaveTextContent(`/show/sunnyday ${SUNNY.url}`);
+            expect(screen.getByTestId('page')).toHaveTextContent(`/show/sunnyday ${SUNNY.id}`);
             expect(audio.play).not.toHaveBeenCalled();
         });
 

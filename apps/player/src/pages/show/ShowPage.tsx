@@ -96,8 +96,8 @@ const ShowList = ({ header, items, onSelect, focusKey }: ShowListProps) => (
 export const ShowPage = () => {
     const { showId = '' } = useParams();
     const goHome = useGoHome({ kind: 'show', showId });
-    const focusUrl = useEpisodeFocus(); // 由「我的收藏」撳行入嚟：唔播，捲去嗰集
-    const data = useShowPage(showId, focusUrl);
+    const focusId = useEpisodeFocus(); // 由「我的收藏」撳行入嚟：唔播，捲去嗰集
+    const data = useShowPage(showId, focusId);
     const { show, theme, status, isSearching, episodeItems } = data;
     const landscape = useMediaQuery(LANDSCAPE_QUERY);
     // 有集數（包括未上架）就列清單
@@ -135,7 +135,7 @@ export const ShowPage = () => {
                         header={headerInList && header}
                         items={episodeItems}
                         onSelect={data.pressEpisode}
-                        focusKey={focusUrl}
+                        focusKey={data.focusKey}
                     />
                 )}
                 <InnerPageHandle page={{ kind: 'show', showId }} />

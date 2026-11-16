@@ -26,13 +26,13 @@ describe('DramaPage (daily drama, once enabled)', () => {
     afterEach(() => vi.useRealTimers());
 
     describe('daily drama', () => {
-        // P7 #7：收藏 tab 撳行入嚟（focusUrl）：唔自動播，捲去嗰集、highlight
+        // P7 #7：收藏 tab 撳行入嚟（focusId）：唔自動播，捲去嗰集、highlight
         it('should not autoplay and should highlight the episode opened from 我的收藏', async () => {
             const target = C18[3];
             const { audio, container } = renderWithProviders(<DramaPage />, {
                 route: '/drama/c18',
                 path: '/drama/:dramaId',
-                state: { focusUrl: target?.url },
+                state: { focusId: target?.id },
             });
 
             await screen.findByRole('region', { name: '集數' });

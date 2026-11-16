@@ -794,7 +794,7 @@ describe('DramaPage opened from 我的收藏', () => {
         const { audio, container } = renderWithProviders(<DramaPage />, {
             route: '/drama/chisee',
             path: PATH,
-            state: { focusUrl: target?.url },
+            state: { focusId: target?.id },
         });
 
         await screen.findByRole('region', { name: '集數' });
@@ -812,7 +812,7 @@ describe('DramaPage opened from 我的收藏', () => {
         const { audio } = renderWithProviders(<DramaPage />, {
             route: '/drama/chisee',
             path: PATH,
-            state: { focusUrl: target?.url },
+            state: { focusId: target?.id },
         });
 
         await userEvent.click(await screen.findByRole('button', { name: '播放' }));
