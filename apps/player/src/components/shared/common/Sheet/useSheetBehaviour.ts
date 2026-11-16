@@ -13,14 +13,16 @@ const useSheetFocus = (open: boolean, onClose: () => void) => {
     useEffect(() => {
         if (!open) return undefined;
         const opener = document.activeElement as HTMLElement | null;
-        sheetRef.current?.focus();
+        // 表由畫面底下面滑上嚟（SheetMotion sheet-in）：focus 嗰刻仲喺畫面外，預設會捲祖先
+        // （連 overflow: hidden 嘅 main）去露出佢，手機打橫成頁彈上再彈落；開 / 閂都唔准捲
+        sheetRef.current?.focus({ preventScroll: true });
         const onKey = (event: KeyboardEvent) => {
             if (event.key === 'Escape') onCloseRef.current();
         };
         document.addEventListener('keydown', onKey);
         return () => {
             document.removeEventListener('keydown', onKey);
-            opener?.focus?.();
+            opener?.focus?.({ preventScroll: true });
         };
     }, [open]);
     return sheetRef;
