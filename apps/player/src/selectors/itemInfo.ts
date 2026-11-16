@@ -4,11 +4,12 @@
  */
 import {
     EPISODE_ID_KIND,
-    formatAirTime,
+    formatAirDays,
     type AirTime,
     type ArcInfo,
     type Drama,
     type ShowConfig,
+    type Weekday,
 } from '@903-player/catalog';
 import type { Progress } from '../services/progressStore';
 import type { ArcState } from './arcProgress';
@@ -28,7 +29,7 @@ export type ItemInfoSectionKind = 'show' | 'drama' | 'arc';
 export interface ItemInfoSection {
     kind: ItemInfoSectionKind;
     title: string;
-    /** 播放時間顯示字（formatAirTime） */
+    /** 播放時間顯示字（formatPlayTime） */
     airTime?: string;
     hosts?: readonly string[];
     cast?: readonly string[];
@@ -60,9 +61,32 @@ const field = <K extends string, V>(key: K, value: V | undefined) =>
 const namesField = <K extends 'hosts' | 'cast'>(key: K, names: readonly string[] | undefined) =>
     field(key, hasNames(names) ? names : undefined);
 
-/** 節目行 / 節目 sheet 嘅資料：播放時間（有 airTime 先出）、主持、簡介 */
+/** formatAirDays 七日都播嘅字：前面唔加「逢」 */
+const EVERY_DAY_TEXT = formatAirDays([0, 1, 2, 3, 4, 5, 6]);
+const PLAY_TIME_PREFIX = '逢';
+const PLAY_TIME_SUFFIX = '播放';
+
+/**
+ * player 資料 sheet / 今日節目行嘅播放時間：「逢星期六（23:00 - 23:45）播放」「逢星期六播放」
+ * 「每日（06:00 - 09:00）播放」。catalog formatAirTime 係 admin 用嘅短字，唔改佢
+ */
+export const formatPlayTime = (
+    airDays: readonly Weekday[],
+    airTime: AirTime | undefined,
+): string | undefined => {
+    if (airDays.length === 0) return undefined;
+    const days = formatAirDays(airDays);
+    const prefix = days === EVERY_DAY_TEXT ? '' : PLAY_TIME_PREFIX;
+    const time = airTime ? `（${airTime.start} - ${airTime.end}）` : '';
+    return `${prefix}${days}${time}${PLAY_TIME_SUFFIX}`;
+};
+
+/**
+ * 節目行 / 節目 sheet 嘅資料：播放時間、主持、簡介。airDays 本身唔算有資料，
+ * 所以淨有星期幾就成段唔出；有其他資料先連播放時間一齊出（冇 airTime 就淨係星期幾）
+ */
 export const showInlineInfo = (show: ShowConfig): InlineInfo => ({
-    ...field('airTime', show.airTime && formatAirTime(show.airDays, show.airTime)),
+    ...field('airTime', hasItemInfo(show) ? formatPlayTime(show.airDays, show.airTime) : undefined),
     ...namesField('hosts', show.hosts),
     ...field('summary', show.summary || undefined),
 });

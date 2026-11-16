@@ -2,7 +2,11 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TodayShowList, type TodayShowItem } from './TodayShowList';
 
-const INFO = { airTime: '星期一至五（06:00 - 10:00）', hosts: ['主持甲'], summary: '節目示範簡介' };
+const INFO = {
+    airTime: '逢星期一至五（06:00 - 10:00）播放',
+    hosts: ['主持甲'],
+    summary: '節目示範簡介',
+};
 
 const ITEMS: TodayShowItem[] = [
     {
@@ -65,7 +69,7 @@ describe('TodayShowList item info（P9.5 #12）', () => {
         const row = screen.getByRole('list', { name: '主持' }).closest('li[data-today-row]');
         expect(row).not.toBeNull();
         const scope = within(row as HTMLElement);
-        expect(scope.getByText('星期一至五（06:00 - 10:00）')).toBeInTheDocument();
+        expect(scope.getByText('逢星期一至五（06:00 - 10:00）播放')).toBeInTheDocument();
         expect(scope.getByText('節目示範簡介')).toBeInTheDocument();
         expect(scope.getByRole('button', { name: /^暫停 在晴朗的一天出發/ })).toBeInTheDocument();
     });

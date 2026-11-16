@@ -16,7 +16,7 @@ const LANDSCAPE = { viewport: { width: 1280, height: 800 } };
 const INFO_RIGHT_GAP_PX = 12;
 const GAP_TOLERANCE_PX = 2;
 
-const SHOW_AIR_TIME = '星期六（23:00 - 23:45）';
+const SHOW_AIR_TIME = '逢星期六（23:00 - 23:45）播放';
 const SHOW_SUMMARY = '（e2e 示範簡介）公子會節目簡介';
 const TODAY_SUMMARY = '（e2e 示範簡介）在晴朗的一天出發節目簡介';
 const DRAMA_SUMMARY = '（e2e 示範簡介）蘭茜夫人劇場劇集簡介';

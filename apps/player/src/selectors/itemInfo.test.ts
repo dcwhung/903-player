@@ -2,6 +2,7 @@ import type { Drama, ShowConfig } from '@903-player/catalog';
 import {
     arcInfoSections,
     dailyInfoSections,
+    formatPlayTime,
     hasItemInfo,
     hasNoItemProgress,
     seriesHasInfo,
@@ -52,17 +53,48 @@ describe('showInfoSections', () => {
             {
                 kind: 'show',
                 title: '公子會',
-                airTime: '星期六（22:00 - 23:45）',
+                airTime: '逢星期六（22:00 - 23:45）播放',
                 hosts: ['主持甲'],
                 summary: '簡介',
             },
         ]);
     });
 
-    it('should leave out the air time when the show has no airTime', () => {
+    it('should give the air days alone when the show has other info but no airTime', () => {
         expect(showInfoSections(show({ summary: '簡介' }))).toEqual([
-            { kind: 'show', title: '公子會', summary: '簡介' },
+            { kind: 'show', title: '公子會', airTime: '逢星期六播放', summary: '簡介' },
         ]);
+    });
+
+    it('should stay empty when the show has nothing but airDays', () => {
+        expect(showInfoSections(show({ airDays: [1, 2, 3, 4, 5], hosts: [] }))).toEqual([]);
+    });
+});
+
+describe('formatPlayTime', () => {
+    it('should wrap the days and time in 逢…播放', () => {
+        expect(formatPlayTime([6], { start: '23:00', end: '23:45' })).toBe(
+            '逢星期六（23:00 - 23:45）播放',
+        );
+        expect(formatPlayTime([1, 2, 3, 4, 5], { start: '06:00', end: '09:00' })).toBe(
+            '逢星期一至五（06:00 - 09:00）播放',
+        );
+    });
+
+    it('should give the days alone when there is no airTime', () => {
+        expect(formatPlayTime([6], undefined)).toBe('逢星期六播放');
+    });
+
+    it('should say 每日 without 逢 when the show airs all seven days', () => {
+        const everyDay = [0, 1, 2, 3, 4, 5, 6] as const;
+        expect(formatPlayTime(everyDay, undefined)).toBe('每日播放');
+        expect(formatPlayTime(everyDay, { start: '06:00', end: '09:00' })).toBe(
+            '每日（06:00 - 09:00）播放',
+        );
+    });
+
+    it('should give nothing without any air day', () => {
+        expect(formatPlayTime([], undefined)).toBeUndefined();
     });
 });
 

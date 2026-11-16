@@ -24,7 +24,7 @@ describe('toTodayItems item info（P9.5 #12）', () => {
     it('should carry the show info on a row of a show that has some', () => {
         const [sunny] = toTodayItems([SUNNY], undefined, false, new Set());
         expect(sunny?.info).toEqual({
-            airTime: '星期一至五（06:00 - 10:00）',
+            airTime: '逢星期一至五（06:00 - 10:00）播放',
             hosts: ['主持甲'],
             summary: '節目示範簡介',
         });

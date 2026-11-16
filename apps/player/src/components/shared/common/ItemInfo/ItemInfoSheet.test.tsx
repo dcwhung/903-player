@@ -5,7 +5,7 @@ import { ItemInfoSheet } from './ItemInfoSheet';
 const SHOW = {
     kind: 'show' as const,
     title: '公子會',
-    airTime: '星期六（22:00 - 23:45）',
+    airTime: '逢星期六（22:00 - 23:45）播放',
     hosts: ['主持甲', '主持乙'],
     summary: '節目簡介',
 };
@@ -21,7 +21,7 @@ describe('ItemInfoSheet', () => {
         const dialog = screen.getByRole('dialog', { name: '節目資料' });
         expect(within(dialog).getByRole('heading', { name: '公子會' })).toBeInTheDocument();
         expect(within(dialog).getByText('播放時間')).toBeInTheDocument();
-        expect(within(dialog).getByText('星期六（22:00 - 23:45）')).toBeInTheDocument();
+        expect(within(dialog).getByText('逢星期六（22:00 - 23:45）播放')).toBeInTheDocument();
         const hosts = within(dialog).getByRole('list', { name: '主持' });
         expect(
             within(hosts)
