@@ -19,6 +19,7 @@ import {
     buildEpisodes,
     DRAMA_AUDIO_BASE as APP_AUDIO_BASE,
     episodeUrls,
+    isPlaceholderArcId,
     parseDramaDefinition,
     toChineseNumeral,
     type DraftResult,
@@ -293,6 +294,40 @@ describe('generateDraft — committed dramas round-trip', () => {
                 .map(({ name, episodes }) => ({ name, episodes }))
                 .sort((a, b) => String(a.name).localeCompare(String(b.name)));
         expect(strip(json.arcs as Json[])).toEqual(strip(committed('lancy').arcs as Json[]));
+    });
+});
+
+/*
+ * S-747：CLI 唔知劇 ID（冇 --id）就畀新短篇出 placeholder id「arc-NN」兼 warn，等人之後改名。
+ * id 係 episode ID（進度 / 收藏 key）嘅一部份，placeholder 發佈咗先改名會令進度斷，
+ * 所以 library 入面 commit 咗嘅 drama.json 一律唔准留低 placeholder（新劇 folder 自動包埋）
+ */
+describe('committed library — no placeholder arc ids (S-747)', () => {
+    const libraryIds = readdirSync(DRAMAS_DIR, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name);
+
+    const placeholderArcIds = (json: Json): string[] =>
+        ((json.arcs as Json[] | undefined) ?? [])
+            .map((arc) => String(arc.id))
+            .filter(isPlaceholderArcId);
+
+    it('should scan every committed drama folder', () => {
+        expect(libraryIds).toEqual(expect.arrayContaining([...COMMITTED_IDS]));
+    });
+
+    it('should pick out placeholder arc ids from a drama.json', () => {
+        const json: Json = {
+            arcs: [{ id: 'season-1' }, { id: 'arc-01' }, { id: 'lancy-04' }, { id: 'arc-12' }],
+        };
+        expect(placeholderArcIds(json)).toEqual(['arc-01', 'arc-12']);
+    });
+
+    it.each(libraryIds)('should have no placeholder arc id left in %s/drama.json', (id) => {
+        const json = JSON.parse(
+            readFileSync(new URL(`${id}/drama.json`, DRAMAS_DIR), 'utf8'),
+        ) as Json;
+        expect(placeholderArcIds(json), `${id}: 請將 arc-NN 改做英文 slug`).toEqual([]);
     });
 });
 
