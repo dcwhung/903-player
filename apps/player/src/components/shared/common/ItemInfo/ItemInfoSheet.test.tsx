@@ -77,6 +77,31 @@ describe('ItemInfoSheet', () => {
         expect(onClose).toHaveBeenCalledTimes(3);
     });
 
+    it('should keep focus on the close button when re-rendered with a new onClose', () => {
+        // W-747：播放時每秒 re-render，caller 每次傳新 close function，焦點唔可以被扯返去 sheet
+        const { rerender } = render(
+            <ItemInfoSheet open sections={[SHOW]} label="節目資料" onClose={() => undefined} />,
+        );
+        const close = screen.getByRole('button', { name: '關閉' });
+        close.focus();
+        rerender(
+            <ItemInfoSheet open sections={[SHOW]} label="節目資料" onClose={() => undefined} />,
+        );
+        expect(document.activeElement).toBe(close);
+    });
+
+    it('should call the latest onClose on Escape', async () => {
+        const first = vi.fn();
+        const latest = vi.fn();
+        const { rerender } = render(
+            <ItemInfoSheet open sections={[SHOW]} label="節目資料" onClose={first} />,
+        );
+        rerender(<ItemInfoSheet open sections={[SHOW]} label="節目資料" onClose={latest} />);
+        await userEvent.keyboard('{Escape}');
+        expect(first).not.toHaveBeenCalled();
+        expect(latest).toHaveBeenCalledTimes(1);
+    });
+
     it('should have no backdrop and not be modal when docked', () => {
         render(<ItemInfoSheet open docked sections={[SHOW]} label="節目資料" onClose={vi.fn()} />);
         expect(screen.queryByTestId('info-sheet-backdrop')).not.toBeInTheDocument();
