@@ -41,6 +41,13 @@ none（🔴 / 🟡 冇）
 
 - none（CLI 刪除；R2 字眼由 `draft.test.ts` 同 AC-9 比較覆蓋）
 
+## Addendum — merge origin/main 259b1256（#249 backlog lanes）
+
+- 合併：S-747 `isPlaceholderArcId` + library「no placeholder arc ids」describe 搬入 `libraryRoundTrip.node.test.ts`（`libraryIds()` 全部劇）；player 1.36.2、api 0.12.2
+- Re-verify（merge 工作樹）：drama plan + `apps/player/scripts` 652/652；`npm test -w apps/api` 428 + 12；catalog-data 子集 505/505。AC-9 字眼比較唔重跑：S-747 warn 字係 main 有意加，由 `draft.test.ts` 鎖
+- `ledger-merge.mjs` exit 1 嘅行：api / catalog-data / coming-soon / drama / repo-tooling S1 用「merged ledger 行 + script 列出嘅 path − 已刪檔」重新 freeze（verified_commit 記 93bcaba1，merge 未 commit）
+- 同兩邊 parent 比 chain + stage + path：vs 93bcaba1 只多 `api S1 apps/api/test/latestEpisodeIds.test.ts`（main 加）；vs MERGE_HEAD 只少 4 個已刪檔（`dramaFromFolder.{ts,test.ts}`、`scan/urls.{ts,test.ts}`）、多 3 個新 test 行；全 ledger 冇其他行消失；S1 全部 FROZEN
+
 ```handoff-receipt
 status: pass
 stage: S1

@@ -5,6 +5,7 @@ import {
     buildEpisodes,
     DRAMA_AUDIO_BASE,
     generateDraft,
+    isPlaceholderArcId,
     parseDramaDefinition,
     type DraftResult,
     type Issue,
@@ -177,5 +178,28 @@ describe('library drama.json — merging a rescan into lancy', () => {
 
     it('should block when the existing kind does not match the folder', () => {
         expect(rescan(['20261023.m4a']).json).toBeNull();
+    });
+});
+
+/*
+ * S-747（由已刪嘅 scripts/dramaFromFolder.test.ts 搬過嚟）：唔知劇 ID 嘅掃描會畀新短篇出 placeholder id「arc-NN」兼 warn。
+ * id 係 episode ID（進度 / 收藏 key）嘅一部份，placeholder 發佈咗先改名會令進度斷，
+ * 所以 library 入面 commit 咗嘅 drama.json 一律唔准留低 placeholder（新劇 folder 自動包埋）
+ */
+describe('library drama.json — no placeholder arc ids (S-747)', () => {
+    const placeholderArcIds = (json: Json): string[] =>
+        ((json.arcs as Json[] | undefined) ?? [])
+            .map((arc) => String(arc.id))
+            .filter(isPlaceholderArcId);
+
+    it('should pick out placeholder arc ids from a drama.json', () => {
+        const json: Json = {
+            arcs: [{ id: 'season-1' }, { id: 'arc-01' }, { id: 'lancy-04' }, { id: 'arc-12' }],
+        };
+        expect(placeholderArcIds(json)).toEqual(['arc-01', 'arc-12']);
+    });
+
+    it.each(libraryIds())('should have no placeholder arc id left in %s/drama.json', (id) => {
+        expect(placeholderArcIds(committed(id)), `${id}: 請將 arc-NN 改做英文 slug`).toEqual([]);
     });
 });

@@ -17,6 +17,11 @@ describe('parseWebp', () => {
         expect(parseWebp(webpVp8(600, 600))).toEqual({ width: 600, height: 600 });
     });
 
+    // S-890：闊 ≠ 高，讀錯 VP8_HEIGHT_OFFSET（例如讀返闊嗰格）先會 fail
+    it('should read width and height from separate fields of a non-square VP8 image', () => {
+        expect(parseWebp(webpVp8(1216, 684))).toEqual({ width: 1216, height: 684 });
+    });
+
     it('should read the dimensions of a lossless (VP8L) image', () => {
         expect(parseWebp(webpVp8l(1216, 684))).toEqual({ width: 1216, height: 684 });
     });

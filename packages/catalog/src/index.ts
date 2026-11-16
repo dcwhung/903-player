@@ -130,6 +130,7 @@ export {
     exampleFileName,
     findSuspicious,
     generateDraft,
+    isPlaceholderArcId,
     parseEpisodeFileName,
     parseEpisodeNumeral,
     scanListing,

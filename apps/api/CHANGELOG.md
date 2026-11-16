@@ -2,7 +2,7 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
-## 0.12.1 — 2026-11-16
+## 0.12.2 — 2026-11-16
 
 本機 CLI `dramaFromFolder` 刪除（S-751）之後嘅清理；API 行為同 admin 見到嘅掃描字眼一字不差。
 

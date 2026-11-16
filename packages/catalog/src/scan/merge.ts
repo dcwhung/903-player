@@ -36,6 +36,14 @@ const HAND_WRITTEN_ARC_KEYS = [
 /** 新短篇嘅 placeholder id：arc-01、arc-02…（要人手改做有意思嘅 slug） */
 const PLACEHOLDER_ARC_PREFIX = 'arc-';
 const PLACEHOLDER_ARC_WIDTH = 2;
+const PLACEHOLDER_ARC_ID = new RegExp(`^${PLACEHOLDER_ARC_PREFIX}\\d+$`);
+
+/**
+ * 係咪唔知劇 ID 時派嘅 placeholder 短篇 id（arc-NN；admin 一定傳劇 ID，所以只會喺冇 id 嘅掃描出現）。
+ * player library 嘅 drama.json 唔准留低（S-747，apps/player/src/catalog/dramas/libraryRoundTrip.node.test.ts 鎖住）：
+ * placeholder 發佈咗先改名會令進度斷
+ */
+export const isPlaceholderArcId = (id: string): boolean => PLACEHOLDER_ARC_ID.test(id);
 
 export interface MergeContext extends AudioNaming {
     today: string;
@@ -208,7 +216,7 @@ export const withArcIds = (
         const id = nextFree();
         const message = known
             ? `TODO：id「${id}」係自動編號，請喺 admin 確認或修改；發佈之後唔可以再改`
-            : `TODO：id「${id}」係 placeholder，請改做英文 slug（有圖就用 arcs/<slug>/ folder 名）；發佈之後唔可以再改`;
+            : `TODO：id「${id}」係 placeholder，請改做英文 slug（有圖就用 arcs/<slug>/ folder 名）；commit 前一定要改名（library test 會擋），發佈之後唔可以再改`;
         issues.push(issue('warn', arc.name, message));
         return { id, ...arc };
     });
