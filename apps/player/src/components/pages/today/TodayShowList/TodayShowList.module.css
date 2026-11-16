@@ -87,14 +87,13 @@
     --onair-lamp-inset: var(--info-lamp-inset);
 }
 
-/* 資料喺節目名嗰欄下面，唔伸入收藏 / 播放掣嗰幾格 */
+/*
+ * 資料左邊對齊節目名（碟面右邊），右邊伸到收藏 / 播放掣下面、同播放掣右邊對齊（同 .item 右邊留白），
+ * 用盡成行闊度（用戶 2026-11-16）
+ */
 .rowInfo {
-    padding: 0
-        calc(
-            var(--space-2) + var(--today-row-icon) + 2 * var(--today-row-gap) +
-                var(--episode-bookmark-size)
-        )
-        0 calc(var(--list-row-pad-start) + var(--disc-small-size) + var(--today-row-gap));
+    padding: 0 var(--space-2) 0
+        calc(var(--list-row-pad-start) + var(--disc-small-size) + var(--today-row-gap));
 }
 
 /* 收藏掣：行入面留一格（播放掣左邊），星疊喺上面（_mockups_/bookmark P2） */

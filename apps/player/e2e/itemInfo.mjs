@@ -33,8 +33,6 @@ const INLINE_TEXT_PX = 13;
 const INLINE_CHIP_PX = 12;
 /** 標籤同第一粒 chip 喺同一行：兩個中線相差唔超過呢個 */
 const SAME_LINE_PX = 4;
-/** 資料區右邊到收藏掣左邊最多咁遠（行間距 14px × --ui-scale 1.5 = 21px，再加少少誤差） */
-const STAR_GAP_MAX_PX = 24;
 
 const SHOW_EXTRA = {
     gongzi: {
@@ -158,6 +156,15 @@ const logLabelFlow = (log, label, m) =>
         `${label}：標籤同第一粒 chip 同一行、chip 換行（中線差 ${m.roleOffset.toFixed(1)}px、chip ${m.chipRows} 行）`,
     );
 
+/** 資料區右邊同播放掣右邊對齊（用盡成行闊度，用戶 2026-11-16） */
+const logFullWidth = (log, label, infoRight, play) => {
+    const gap = play ? play.x + play.width - infoRight : Number.NaN;
+    log(
+        Math.abs(gap) <= GAP_TOLERANCE_PX,
+        `${label}：資料區伸到播放掣下面、右邊對齊播放掣（差 ${gap.toFixed(1)}px）`,
+    );
+};
+
 const arcSheet = (p) => p.getByRole('dialog', { name: '全集' });
 const dramaToggle = (p) => arcSheet(p).getByRole('button', { name: '劇集資料' });
 const castList = (p) => arcSheet(p).getByRole('list', { name: '聲演' });
@@ -208,7 +215,7 @@ const checkArcPick = async (env, json) => {
 const todayToggle = (p) =>
     p.getByRole('region', { name: '節目表' }).getByRole('button', { name: '節目資料' });
 
-/** 今日節目行資料：字大細跟 mockup、播放時間一行、資料區闊到收藏星前面、主持標籤同 chip 同一行 */
+/** 今日節目行資料：字大細跟 mockup、播放時間一行、資料區伸到播放掣下面、主持標籤同 chip 同一行 */
 const checkTodayInline = async (env, p, label) => {
     const { log } = env;
     await p.waitForTimeout(SETTLE_MS);
@@ -219,12 +226,9 @@ const checkTodayInline = async (env, p, label) => {
         `${label}：資料字 ${m.textPx}px（${INLINE_TEXT_PX}px）、chip ${m.chipPx}px（${INLINE_CHIP_PX}px）`,
     );
     log(m.firstLines === 1, `${label}：播放時間一行放得落（${m.firstLines} 行）`);
-    const star = await row.getByRole('button', { name: /收藏/ }).first().boundingBox();
-    const gap = star ? star.x - m.right : -1;
-    log(
-        gap >= 0 && gap <= STAR_GAP_MAX_PX,
-        `${label}：資料區闊到收藏星前面（離星 ${gap.toFixed(1)}px）`,
-    );
+    // 資料區伸到收藏 / 播放掣下面：右邊同播放掣 icon 右邊對齊（行掣最尾嗰個 svg）
+    const play = await row.locator('button').first().locator(':scope > svg').last().boundingBox();
+    logFullWidth(log, label, m.right, play);
     logLabelFlow(log, `${label}主持`, m);
 };
 
