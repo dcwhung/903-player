@@ -1,5 +1,6 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { recording, renderWithProviders } from '../../../../../tests/renderWithProviders';
 import {
     DISC_SCRUB_FAST_DEGREES_PER_MS,
@@ -427,5 +428,32 @@ describe('PlayerGauge info button（P9.5 #12）', () => {
         );
         await userEvent.click(screen.getByRole('button', { name: '節目資料' }));
         expect(onInfo).toHaveBeenCalledTimes(1);
+    });
+
+    it('should keep the same gauge element when the info button comes and goes', async () => {
+        // S-1014：短篇之間轉（有 / 冇資料）唔可以 remount 成個唱片
+        const InfoToggleHarness = () => {
+            const [withInfo, setWithInfo] = useState(true);
+            return (
+                <>
+                    <button type="button" onClick={() => setWithInfo((v) => !v)}>
+                        toggle
+                    </button>
+                    <PlayerGauge
+                        art="/art/gongzi.jpg"
+                        onInfo={withInfo ? vi.fn() : undefined}
+                        infoLabel="劇集資料"
+                    />
+                </>
+            );
+        };
+        const { container } = renderWithProviders(<InfoToggleHarness />);
+        const gauge = container.querySelector('[data-player-gauge]');
+        await userEvent.click(screen.getByRole('button', { name: 'toggle' }));
+        expect(screen.queryByRole('button', { name: '劇集資料' })).not.toBeInTheDocument();
+        expect(container.querySelector('[data-player-gauge]')).toBe(gauge);
+        await userEvent.click(screen.getByRole('button', { name: 'toggle' }));
+        expect(screen.getByRole('button', { name: '劇集資料' })).toBeInTheDocument();
+        expect(container.querySelector('[data-player-gauge]')).toBe(gauge);
     });
 });

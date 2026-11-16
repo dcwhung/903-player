@@ -138,7 +138,7 @@
     text-align: center;
 }
 
-/* 有 ⓘ 嘅唱片（P9.5 #12）：包成一行闊，ⓘ 喺唱片圈頂、離右邊 --space-3（同頁頭返回掣離左邊一樣） */
+/* 唱片外層（P9.5 #12，有冇 ⓘ 都包，S-1014）：一行闊，ⓘ 喺唱片圈頂、離右邊 --space-3（同頁頭返回掣離左邊一樣） */
 .infoRow {
     position: relative;
     display: flex;
