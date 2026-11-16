@@ -1,5 +1,5 @@
 import type { ChangeItem } from '@903-player/catalog';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fakeData, mockApi, renderAt, resource } from '../../../tests/renderApp';
 import type { ChangesResponse, TodoRow } from '../../api/types';
@@ -26,6 +26,13 @@ const CAMP: TodoRow = {
     cells: { ...READY.cells, schedule: { state: 'must', target: '/dramas/sammy/schedule#camp' } },
 };
 const EDIT = { kind: 'edit', when: 'now', detail: {} } as unknown as ChangeItem;
+const SHOW_EDIT: ChangeItem = {
+    kind: 'edit',
+    when: 'now',
+    entry: { kind: 'shows', id: 'waves', name: '口水多過浪花' },
+    detail: { fields: ['airTime', 'hosts', 'theme'] },
+};
+const UNLIST: ChangeItem = { ...SHOW_EDIT, kind: 'unlist', detail: {} };
 
 const changes = (over: Partial<ChangesResponse> = {}): ChangesResponse => ({
     base: 1,
@@ -122,5 +129,23 @@ describe('UpdatePage', () => {
         await userEvent.click(screen.getByRole('checkbox', { name: '發佈戀愛後二分一' }));
         expect(screen.getByText('只發佈其他已儲存的改動')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: '下一步：確認發佈' })).toBeEnabled();
+    });
+
+    it('should list edited items with field chips like the publish page, published together', () => {
+        show([READY], { others: { items: [SHOW_EDIT, UNLIST], timeline: [] } });
+        const section = screen.getByRole('region', { name: /已修改/ });
+        expect(within(section).getByText('以下修改將一併發佈')).toBeInTheDocument();
+        expect(within(section).getByText('口水多過浪花')).toBeInTheDocument();
+        const chips = [...section.querySelectorAll('.tl-chip')].map((chip) => chip.textContent);
+        expect(chips).toEqual(['播放時間', '主持', '配色']);
+        // 只列「修改」；一定一併發佈：冇勾選、冇還原
+        expect(within(section).queryByText('下架')).not.toBeInTheDocument();
+        expect(within(section).queryByRole('checkbox')).not.toBeInTheDocument();
+        expect(within(section).queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('should not render the edited section when nothing was edited', () => {
+        show([READY], { others: { items: [UNLIST], timeline: [] } });
+        expect(screen.queryByRole('region', { name: /已修改/ })).not.toBeInTheDocument();
     });
 });

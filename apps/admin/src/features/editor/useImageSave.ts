@@ -1,5 +1,9 @@
-/* 圖片上載即存：用最新已儲存版本 + 新圖 PUT（唔連埋其他未儲存改動），成功後同步落草稿 */
+/*
+ * 圖片上載即存：用最新已儲存版本 + 新圖 PUT（唔連埋其他未儲存改動），成功後同步落草稿，
+ * 再重讀未發佈變更（nav「更新」待發佈數 / 處理待辦「已修改」即刻計埋）
+ */
 import type { ImageMap, RawDefinition } from '../../api/types';
+import { useAdminData } from '../../data/AdminData';
 import type { ImageSlotKind } from '../../ui/imageUpload';
 import { imageFileFor, withImageFile } from './imagePatch';
 import type { EntryEditor } from './useEntryEditor';
@@ -21,7 +25,9 @@ export const withImage =
         };
     };
 
-export const useImageSave =
-    (editor: EntryEditor) => async (slot: ImageSlotKind, name: string, arcId?: string) => {
-        await editor.patchSaved(withImage(slot, name, arcId));
+export const useImageSave = (editor: EntryEditor) => {
+    const { changes } = useAdminData();
+    return async (slot: ImageSlotKind, name: string, arcId?: string) => {
+        if (await editor.patchSaved(withImage(slot, name, arcId))) void changes.reload();
     };
+};

@@ -21,7 +21,7 @@ export const zhHK = {
     nav: {
         label: '主選單',
         update: '更新',
-        todoCount: '{count} 項待辦',
+        todoCount: '{count} 項待發佈',
         content: '內容',
         shows: '節目',
         dramas: '廣播劇',
@@ -78,6 +78,8 @@ export const zhHK = {
         contentHint: '只可選擇已設定完成的項目',
         appearanceTitle: 'App 外觀',
         appearanceHint: '已儲存、未發佈的改動',
+        editsTitle: '已修改',
+        editsHint: '以下修改將一併發佈',
         colAppearanceItem: '項目',
         colStatus: '狀態',
         itemIcon: 'App 圖示',
