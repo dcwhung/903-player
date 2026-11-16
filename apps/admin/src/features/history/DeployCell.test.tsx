@@ -26,16 +26,19 @@ describe('DeployCell', () => {
         expect(container).toBeEmptyDOMElement();
     });
 
-    it('should label none and skipped', () => {
-        const { rerender } = render(
+    it('should show nothing when no deploy is needed', () => {
+        const { container } = render(
             <DeployCell row={row({ deploy: 'none' })} onRedeploy={vi.fn()} />,
         );
-        expect(screen.getByText('無需部署')).toBeInTheDocument();
-        rerender(<DeployCell row={row({ deploy: 'skipped' })} onRedeploy={vi.fn()} />);
+        expect(container).toBeEmptyDOMElement();
+    });
+
+    it('should label skipped', () => {
+        render(<DeployCell row={row({ deploy: 'skipped' })} onRedeploy={vi.fn()} />);
         expect(screen.getByText('未設定自動部署')).toBeInTheDocument();
     });
 
-    it('should offer GitHub and redeploy when a failed trigger', async () => {
+    it('should offer redeploy when a failed trigger', async () => {
         const onRedeploy = vi.fn();
         render(<DeployCell row={row({ deploy: 'failed' })} onRedeploy={onRedeploy} />);
         expect(screen.getByText('部署失敗')).toBeInTheDocument();
@@ -43,7 +46,36 @@ describe('DeployCell', () => {
         expect(onRedeploy).toHaveBeenCalledWith(9);
     });
 
-    it('should poll a triggered publish until the run concludes', async () => {
+    it('should make the 部署中 pill itself the link to the run, in a new tab', async () => {
+        mockApi({
+            'GET /api/publishes/9/deploy': () => ({
+                body: { status: 'in_progress', url: 'https://gh/run/1' },
+            }),
+        });
+        render(<DeployCell row={row({ deploy: 'triggered' })} onRedeploy={vi.fn()} />);
+        const link = await screen.findByRole('link', { name: '部署中，於 GitHub 查看 #9 的部署' });
+        expect(link).toHaveAttribute('href', 'https://gh/run/1');
+        expect(link).toHaveAttribute('target', '_blank');
+        expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+        expect(link.querySelector('.pill')).toHaveTextContent('部署中');
+        expect(screen.getAllByRole('link')).toHaveLength(1);
+    });
+
+    it('should make the 部署失敗 pill the link and keep redeploy', async () => {
+        mockApi({
+            'GET /api/publishes/9/deploy': () => ({
+                body: { status: 'failure', url: 'https://gh/run/1' },
+            }),
+        });
+        render(<DeployCell row={row({ deploy: 'triggered' })} onRedeploy={vi.fn()} />);
+        const link = await screen.findByRole('link', {
+            name: '部署失敗，於 GitHub 查看 #9 的部署',
+        });
+        expect(link).toHaveAttribute('href', 'https://gh/run/1');
+        expect(screen.getByRole('button', { name: '重新部署 #9' })).toBeInTheDocument();
+    });
+
+    it('should show only the 已部署 pill once the run succeeds, without a link', async () => {
         mockApi({
             'GET /api/publishes/9/deploy': () => ({
                 body: { status: 'success', url: 'https://gh/run/1' },
@@ -52,10 +84,7 @@ describe('DeployCell', () => {
         render(<DeployCell row={row({ deploy: 'triggered' })} onRedeploy={vi.fn()} />);
         expect(screen.getByText('部署中')).toBeInTheDocument();
         await waitFor(() => expect(screen.getByText('已部署')).toBeInTheDocument());
-        expect(screen.getByRole('link', { name: '在 GitHub 查看 #9 的部署' })).toHaveAttribute(
-            'href',
-            'https://gh/run/1',
-        );
+        expect(screen.queryByRole('link')).not.toBeInTheDocument();
     });
 
     it('should poll again after a redeploy of a triggered publish', async () => {
