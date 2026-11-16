@@ -44,6 +44,8 @@ export const dramaEpisodeTheme: Registry['dramaEpisodeTheme'] = (episode) =>
     activeDramaRegistry().dramaEpisodeTheme(episode);
 export const arcTileFor: Registry['arcTileFor'] = (dramaId, arc) =>
     activeDramaRegistry().arcTileFor(dramaId, arc);
+export const arcInfoFor: Registry['arcInfoFor'] = (dramaId, arc) =>
+    activeDramaRegistry().arcInfoFor(dramaId, arc);
 
 /**
  * 短篇顯示名（displayName，冇就短篇名）：收藏只存短篇名，用 catalog 嘅集數搵返；

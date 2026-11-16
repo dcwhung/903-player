@@ -239,6 +239,16 @@ export const zhHK = {
         // 橫版唱片下面「現正播放：好朋友手牽手 · 第 2 / 4 集」（下一行集名）
         nowPlayingArc: '{arc}{sep}第 {no} / {total} 集',
     },
+    // 節目 / 劇集資料（P9.5 #12）：資料 sheet 小標題、chip 組標籤、ⓘ / 箭咀讀屏名
+    info: {
+        airTime: '播放時間',
+        hosts: '主持',
+        cast: '聲演',
+        summary: '簡介',
+        showInfo: '節目資料',
+        dramaInfo: '劇集資料',
+        close: '關閉',
+    },
     // 即將上架 / 快將下架（P8 #6，_mockups_/coming-soon）。文案決定：copy decisions 2026-11-05（D2–G3）
     availability: {
         // 空格規則（G1）：半形數字同中文之間有空格（「05/12 下架」）；全形括號後面冇空格（「05/12（六）下架」）。
