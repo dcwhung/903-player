@@ -55,7 +55,7 @@ admin（Phase 3）已可編輯 `summary`、`hosts`、`cast`、`airTime`，player
 - 短篇劇已揀短篇而**劇集冇簡介**（sheet 淨係短篇）：banner 改用短篇：圖 = `arcTileFor(dramaId, arc)`（冇就劇集 tile），大字 = 短篇顯示名，細字 = 劇集名；下面唔再出短篇標題同碟面，直接「聲演」/「簡介」
 - 短篇段（劇集 banner 下面）：短篇名前面加短篇碟面（圓形約 44px × ui-scale，track 色外框；冇自己碟面用劇集碟面）
 - banner 底同第一段之間嘅間距係原本嘅一半（token）
-- 「全集」sheet、今日節目表唔加 banner；冇 tile 圖就唔出 banner，用返原本標題
+- 今日節目表唔加 banner；冇 tile 圖就唔出 banner，用返原本標題（「全集」sheet 見 3. G1）
 
 ### 3. 短篇劇「全集」sheet 合併資料
 
@@ -67,6 +67,7 @@ admin（Phase 3）已可編輯 `summary`、`hosts`、`cast`、`airTime`，player
 - 冇資料嘅短篇行唔出資料區；成套劇（劇集 + 全部短篇）都冇資料就唔出箭咀
 - 預設：第一次自動彈（現有 `isFirstSeriesVisit` 邏輯）時展開；之後由「全集」掣開預設收合
 - 唱片圈 ⓘ：未揀短篇（黑碟 / unloaded）= 開全集 sheet 兼展開資料；已揀短篇 = 開獨立 sheet（第 2 點）
+- 頂部劇集 banner（G1，用戶 2026-11-16，`_mockups_/catalog-item-info` `g-n-b1-open` / `g-n-b1-closed` / `g-n-b1-nosum` / `g-l-b1-open`）：重用 `InfoBanner`（劇集 tileArt，16:9，貼表頂、左右貼邊、上面兩角跟表圓角），直版 modal 同橫版 docked 一樣；疊字同劇集 banner 一樣（大字劇集名，細字「最新上架：<短篇名>」/「N 個短篇」）；grab bar 疊喺 banner 上（白色半透明），「全集」表頭（箭咀 / 聽完 N / M 個 / ✕）喺 banner 下面；banner 固定喺表頂唔跟清單捲；收合 / 展開都出，劇集冇簡介都出，冇 tileArt 就唔出；拖 banner 都可以向下拉閂；劇集簡介卡、短篇行唔改
 
 ### 4. 今日節目頁
 
