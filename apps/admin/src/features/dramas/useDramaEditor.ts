@@ -26,14 +26,23 @@ const useDramaFlags = (id: string, editor: EntryEditor) => {
     const summary = entries.data?.find((e) => e.kind === 'dramas' && e.id === id);
     const never = flags.never.has(`dramas:${id}`);
     const rows = todos.data?.rows ?? [];
+    const neverPublished = editor.entry?.draft === true || never;
+    /** 從未發佈嘅短篇（新短篇 / placeholder ID）：ID 仲改得 */
+    const isNewArc = (arcId: string) =>
+        never || flags.newArcs.has(`${id}:${arcId}`) || PLACEHOLDER_ID.test(arcId);
+    /** undefined = 未知（列表未載入 / 舊 API）→ 照舊當上過架 */
+    const isArcPublished = (arcId: string) => arcPublishedIn(summary?.publishedArcs, arcId);
     return {
-        neverPublished: editor.entry?.draft === true || never,
+        neverPublished,
         pendingPublish: flags.pending.has(`dramas:${id}`),
-        /** 從未發佈嘅短篇（新短篇 / placeholder ID）：ID 仲改得 */
-        isNewArc: (arcId: string) =>
-            never || flags.newArcs.has(`${id}:${arcId}`) || PLACEHOLDER_ID.test(arcId),
-        /** undefined = 未知（列表未載入 / 舊 API）→ 照舊當上過架 */
-        isArcPublished: (arcId: string) => arcPublishedIn(summary?.publishedArcs, arcId),
+        isNewArc,
+        isArcPublished,
+        /**
+         * 短篇喺唔喺已發佈 catalog（排程：唔喺就冇集數算已上架，見 stripModel.scheduleContextOf）：
+         * 劇集未發佈 / 新短篇 / 明確從未上過架；唔知（undefined）就當喺
+         */
+        isArcLive: (arcId: string) =>
+            !neverPublished && !isNewArc(arcId) && isArcPublished(arcId) !== false,
         missingFolder: rows.some((r) => r.kind === 'missingFolder' && r.dramaId === id),
     };
 };

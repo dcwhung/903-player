@@ -36,15 +36,25 @@ const pastRemovals = (arc: RawDefinition, today: string): Record<string, string>
           )
         : {};
 
+export interface ArcScheduleFacts {
+    /** 有冇已儲存嘅排程 */
+    scheduled?: boolean;
+    /**
+     * 有冇喺已發佈 catalog（唔係新短篇 / 上過架）；預設 true = 唔知就照舊。
+     * false：日子 ≤ 今日嘅批次前台都睇唔到，唔算已上架、唔鎖（用戶 2026-11-16）
+     */
+    published?: boolean;
+}
+
 export const scheduleContextOf = (
     drama: RawDefinition,
     arc: RawDefinition,
     today: string,
-    scheduled = false,
+    { scheduled = false, published = true }: ArcScheduleFacts = {},
 ): ScheduleContext => {
     const span = spanOf(arc);
     const base = { ...span, today };
-    if (isUnreleased(arc, scheduled)) return { ...base, listed: [], unlisted: {} };
+    if (!published || isUnreleased(arc, scheduled)) return { ...base, listed: [], unlisted: {} };
     return {
         ...base,
         listed: batchesOf(currentScheduleOf(drama, arc), span).filter((b) => b.date <= today),
@@ -52,15 +62,19 @@ export const scheduleContextOf = (
     };
 };
 
-/** 短篇 tab 細字：無排程 / 已上 X / Y 集 / 已全部上架（mockup ①）/ 定期（未開始上架） */
+/**
+ * 短篇 tab 細字：無排程 / 已上 X / Y 集 / 已全部上架（mockup ①）/ 定期（未開始上架）/
+ * 已排程（未發佈）（未發佈嘅短篇冇集數算已上架）
+ */
 export const arcTabNote = (
     drama: RawDefinition,
     arc: RawDefinition,
-    hasRule: boolean,
     today: string,
+    facts: ArcScheduleFacts = {},
 ) => {
-    if (!hasRule) return t('schedule.none');
-    const released = scheduleContextOf(drama, arc, today, hasRule).listed.reduce(
+    if (!facts.scheduled) return t('schedule.none');
+    if (facts.published === false) return t('schedule.scheduledUnpublished');
+    const released = scheduleContextOf(drama, arc, today, facts).listed.reduce(
         (sum, b) => sum + b.last - b.first + 1,
         0,
     );

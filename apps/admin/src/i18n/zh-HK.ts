@@ -609,6 +609,8 @@ export const zhHK = {
         periodic: '定期',
         released: '已上 {released} / {count} 集',
         allListedNote: '已全部上架',
+        scheduledUnpublished: '已排程（未發佈）',
+        unpublishedNote: '此短篇尚未發佈，前台看不到；發佈後按排程上架。',
         viewLabel: '檢視',
         viewEdit: '編輯',
         viewPreview: '預覽',

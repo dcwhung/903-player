@@ -43,6 +43,7 @@ export function ScheduleTab({ state, initialArc, onPick }: ScheduleTabProps) {
                 selected={selected}
                 schedules={schedules}
                 isNew={state.isNewArc}
+                isLive={state.isArcLive}
                 onSelect={(arcId) => {
                     setSelected(arcId);
                     onPick?.(arcId);

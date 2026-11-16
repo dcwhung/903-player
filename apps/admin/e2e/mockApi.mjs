@@ -188,6 +188,12 @@ const freshDrama = () => ({
     publishedArcs: [],
 });
 
+/*
+ * createState({ liveArcs: true })：我心不死（lancy-02）已發佈過（publishedArcs、變更摘要 / 待辦冇 newArc）：
+ * 排程 tab 第 1–15 集先算「已上架」（未發佈短篇冇集數算已上架，用戶 2026-11-16）
+ */
+const withLiveArc = (entry) => ({ ...entry, publishedArcs: [...entry.publishedArcs, 'lancy-02'] });
+
 /** D1 schedules：同蘭茜夫人劇場嘅 definition 對得上（排程 tab 短篇 chip 跟呢度計「已上 15 / 37 集」等） */
 const schedulesOf = () => ({
     'lancy/half': {
@@ -285,8 +291,10 @@ export const createState = ({
     selective = false,
     revert = false,
     reorder = false,
+    liveArcs = false,
 } = {}) => ({
     loggedIn: false,
+    liveArcs,
     // revert（api 0.11.0）：GET entry 有 published、確認發佈頁有「修改」行可以還原
     ...(revert ? { others: revertItems, reverts: [] } : {}),
     // reorder（api 0.12.0，#6）：節目排序改咗未發佈 + 上下架記錄有一次廣播劇排序
@@ -308,7 +316,7 @@ export const createState = ({
     entries: [
         show('waves', '口水多過浪花', 1, { airTime: { start: '15:00', end: '16:30' } }),
         show('night', '深夜節目', 2),
-        lancy(),
+        liveArcs ? withLiveArc(lancy()) : lancy(),
         golden(),
         ...(statusMix ? [sammy(), freshDrama()] : selective ? [sammy()] : []),
     ]
@@ -352,7 +360,7 @@ const todosOf = (state) => {
     const arc = drama.definition.arcs[1];
     const confirmed = state.confirms.some((c) => c.arcId === arc.id);
     const placeholder = arc.id === AUTO_ARC_ID && !confirmed;
-    if (state.publishes.length > 0) return { rows: [], blocking: 0 };
+    if (state.publishes.length > 0 || state.liveArcs) return { rows: [], blocking: 0 };
     const target = `/dramas/lancy/arcs#${arc.id}`;
     const row = {
         // 選擇發佈（api 0.10.0）：ID 未確認 = 必須處理 → incomplete
@@ -378,7 +386,7 @@ const todosOf = (state) => {
 };
 
 const changesOf = (state) => {
-    if (state.publishes.length > 0) return { items: [], timeline: [] };
+    if (state.publishes.length > 0 || state.liveArcs) return { items: [], timeline: [] };
     const arcId = state.entries?.find((e) => e.id === 'lancy').definition.arcs[1].id ?? AUTO_ARC_ID;
     const item = {
         kind: 'newArc',

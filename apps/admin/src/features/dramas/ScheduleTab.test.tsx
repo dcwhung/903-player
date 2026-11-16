@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { hasIcon } from '../../../tests/icons';
-import { mockApi, renderAt } from '../../../tests/renderApp';
+import { fakeData, mockApi, renderAt, resource } from '../../../tests/renderApp';
 import { DramaEditorPage } from './DramaEditor';
 
 /** 今日 = 1/12（mockup ⑧ ⑨） */
@@ -386,5 +386,77 @@ describe('ScheduleTab — earliest date is today (用戶 2026-11-12)', () => {
         await userEvent.clear(start);
         await userEvent.type(start, '20/11/2026{Enter}');
         expect(start).toHaveAccessibleDescription('日期不可早於 01/12/2026');
+    });
+});
+
+// Bug（用戶 2026-11-16）：未發佈短篇（新短篇）日子 ≤ 今日嘅批次唔算已上架、唔鎖；出「尚未發佈」提示
+describe('ScheduleTab — arc not published yet', () => {
+    /** 舊排程：當時第 1–15 集當咗已上架，寫入 rule 嘅 listed */
+    const SAVED = {
+        rule: {
+            kind: 'periodic',
+            start: '2026-12-07',
+            perRelease: 5,
+            every: { days: 7 },
+            from: 16,
+            listed: [
+                { from: 1, date: '2026-10-26' },
+                { from: 6, date: '2026-11-02' },
+                { from: 11, date: '2026-11-09' },
+            ],
+        },
+        expanded: null,
+        updatedAt: 's1',
+    };
+
+    const openUnpublished = async () => {
+        const fetchMock = api({
+            'GET /api/dramas/lancy/arcs/heart/schedule': () => ({ body: SAVED }),
+            'PUT /api/dramas/lancy/arcs/heart/schedule': () => ({
+                body: { updatedAt: 's2', warnings: { missingEpisodeIds: [] } },
+            }),
+        });
+        const summary = {
+            ...DRAMA,
+            kind: 'dramas' as const,
+            id: 'lancy',
+            etag: '"v1"',
+            published: true,
+            publishedArcs: ['half'],
+        };
+        renderAt(
+            '/dramas/lancy/schedule#heart',
+            '/dramas/:id/schedule',
+            <DramaEditorPage tab="schedule" />,
+            fakeData({ entries: resource([summary]) }),
+        );
+        await screen.findByRole('heading', { name: '下架' });
+        return fetchMock;
+    };
+
+    it('should not lock any episode as listed and show the not-published notice', async () => {
+        await openUnpublished();
+        expect(
+            screen.getByText('此短篇尚未發佈，前台看不到；發佈後按排程上架。'),
+        ).toBeInTheDocument();
+        expect(screen.getByText('可上架：第 1–30 集（共 30 集）')).toBeInTheDocument();
+        expect(screen.getByText('可下架：第 1–30 集（已排程上架）')).toBeInTheDocument();
+        expect(screen.queryByText('✓ 已上架')).not.toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: /我心不死/ })).toHaveTextContent('已排程（未發佈）');
+        // 已發佈嘅短篇照舊，冇提示
+        expect(screen.getByRole('tab', { name: /戀愛二分一/ })).toHaveTextContent('無排程');
+    });
+
+    it('should move episode 1 onwards when rescheduled, without the stale listed batches', async () => {
+        const fetchMock = await openUnpublished();
+        await userEvent.click(screen.getByRole('button', { name: '一次性全部' }));
+        await userEvent.clear(screen.getByLabelText('上架日期'));
+        await userEvent.type(screen.getByLabelText('上架日期'), '01/01/2027');
+        await userEvent.click(screen.getByRole('button', { name: '儲存' }));
+        await waitFor(() => expect(putBody(fetchMock)).toBeDefined());
+        expect(putBody(fetchMock)?.rule).toEqual({
+            kind: 'dates',
+            batches: [{ from: 1, date: '2027-01-01' }],
+        });
     });
 });
