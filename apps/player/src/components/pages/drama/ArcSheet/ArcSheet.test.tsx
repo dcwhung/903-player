@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { SeriesEpisode } from '@903-player/catalog';
 import type { ArcSummary } from '../../../../selectors/arcProgress';
 import { ArcSheet } from './ArcSheet';
-import { SHEET_SLIDE_MS } from './sheetDrag';
+import { SHEET_SLIDE_MS } from '../../../shared/common/Sheet/sheetDrag';
 
 const ep = (arc: string, no: number, title?: string): SeriesEpisode => ({
     kind: 'series',

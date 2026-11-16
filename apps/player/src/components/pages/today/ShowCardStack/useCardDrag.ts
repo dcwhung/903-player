@@ -2,7 +2,8 @@ import { useRef, type MouseEvent, type PointerEvent, type RefObject } from 'reac
 import { dragIntent, type SwipeDirection } from '../../../../hooks/swipe';
 import { useClickSuppression } from '../../../../hooks/useSwipe';
 import { preventDragStart } from '../../../../utils/dragStart';
-import { pushSample, releaseDirection, velocityOf, type DragSample } from './cardStack';
+import { pushSample, velocityOf, type DragSample } from '../../../../hooks/dragVelocity';
+import { releaseDirection } from './cardStack';
 import type { CardMotion } from './useCardMotion';
 
 interface Gesture {

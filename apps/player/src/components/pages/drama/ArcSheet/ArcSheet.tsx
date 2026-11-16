@@ -9,7 +9,7 @@ import { ArcRow, type ArcRowProps } from './ArcRow';
 import styles from './ArcSheet.module.css';
 import type { ArcSheetInfo, UpcomingArcRowView } from './arcSheetTypes';
 import { UpcomingArcGroup } from './UpcomingArcRow';
-import { useSheetBehaviour } from './useSheetBehaviour';
+import { useSheetBehaviour } from '../../../shared/common/Sheet/useSheetBehaviour';
 
 type RowProps = Omit<ArcRowProps, 'summary' | 'infoOf' | 'infoExpanded'>;
 

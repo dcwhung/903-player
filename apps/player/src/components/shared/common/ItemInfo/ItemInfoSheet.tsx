@@ -1,6 +1,6 @@
 import { t } from '../../../../i18n/t';
 import type { ItemInfoSection } from '../../../../selectors/itemInfo';
-import { useSheetBehaviour } from '../../../pages/drama/ArcSheet/useSheetBehaviour';
+import { useSheetBehaviour } from '../Sheet/useSheetBehaviour';
 import { CloseIcon } from '../icons/icons';
 import { ItemInfoFields } from './ItemInfoFields';
 import styles from './ItemInfoSheet.module.css';

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useBox, type Box } from '../../../../hooks/useBox';
 import { prefersReducedMotion } from '../../../../utils/motion';
-import { pushSample, velocityOf, type DragSample } from '../../today/ShowCardStack/cardStack';
+import { pushSample, velocityOf, type DragSample } from '../../../../hooks/dragVelocity';
 import { SHEET_SLIDE_MS, sheetOffset, shouldDismissSheet } from './sheetDrag';
 
 interface Gesture {
@@ -42,7 +42,7 @@ const DRAGGING_ATTR = 'data-dragging';
 const CLOSING_ATTR = 'data-closing';
 const FULLY_HIDDEN = 'translateY(100%)';
 
-/** 速度樣本只得一個方向：cardStack 嘅 DragSample.x 喺度裝直向座標 */
+/** 速度樣本只得一個方向：DragSample.x 喺度裝直向座標 */
 const toSample = (y: number, t: number): DragSample => ({ x: y, t });
 
 /** 表向下移 offset px；遮罩跟住變淡。拉緊（data-dragging）CSS 唔做 transition，直接跟手指 */

@@ -5,7 +5,7 @@ import { useListTouchDrag } from './useListTouchDrag';
 import { useSheetPointerDrag } from './useSheetPointerDrag';
 
 /**
- * 全集表向下拉閂（直版、橫版 docked 一樣）：清單以外（grab bar / header）隨時拉得；
+ * 表（全集 ArcSheet / 資料 ItemInfoSheet）向下拉閂（直版、橫版 docked 一樣）：清單以外（grab bar / header）隨時拉得；
  * 清單捲到頂再向下拉都得。返回掛喺表 / 遮罩 / 清單嘅 callback ref 同埋表嘅 pointer handlers
  */
 export const useSheetDrag = (open: boolean, onClose: () => void) => {

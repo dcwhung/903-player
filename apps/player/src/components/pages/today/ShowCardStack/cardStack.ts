@@ -4,8 +4,6 @@ import { SWIPE_THRESHOLD_PX, type SwipeDirection, wrapIndex } from '../../../../
 export const COMMIT_DISTANCE_RATIO = 0.3;
 /** 未夠遠但甩得夠快（px/ms）都轉節目 */
 export const FLICK_VELOCITY_PX_PER_MS = 0.5;
-/** 計甩動速度只睇最近呢段時間，停低咗再放手就唔算甩 */
-export const VELOCITY_WINDOW_MS = 100;
 /** 每拖咁多 px 轉 1°，最多轉 MAX_ROTATE_DEG */
 export const ROTATE_DIVISOR_PX = 20;
 export const MAX_ROTATE_DEG = 15;
@@ -16,11 +14,6 @@ export const CARD_FLY_MS = 280;
 export const CARD_SPRING_MS = 320;
 /** 疊喺後面嘅卡最多幾多張 */
 const MAX_BEHIND = 2;
-
-export interface DragSample {
-    x: number;
-    t: number;
-}
 
 /** 至少要拖咁遠先轉節目；量唔到卡闊（例如未 layout）都唔會細過普通 swipe 門檻 */
 const commitDistance = (width: number): number =>
@@ -72,16 +65,4 @@ export const translateXOf = (transform: string): number => {
     const index = match?.[1] === undefined ? undefined : TRANSLATE_X_INDEX[match[1]];
     const x = index === undefined ? NaN : Number(match?.[2]?.split(',')[index]);
     return Number.isFinite(x) ? x : 0;
-};
-
-/** 加一個拖動樣本，順手掉走速度窗口以外嘅舊樣本 */
-export const pushSample = (samples: DragSample[], sample: DragSample): DragSample[] =>
-    [...samples, sample].filter((s) => sample.t - s.t <= VELOCITY_WINDOW_MS);
-
-/** 最近樣本嘅橫向速度（px/ms，負數 = 向左） */
-export const velocityOf = (samples: DragSample[]): number => {
-    const first = samples[0];
-    const last = samples[samples.length - 1];
-    if (!first || !last || last.t <= first.t) return 0;
-    return (last.x - first.x) / (last.t - first.t);
 };
