@@ -638,6 +638,41 @@
     white-space: nowrap;
 }
 
+/*
+ * 卡上 iPhone / Android 預覽 = 掣（icon recrop，撳就單獨調嗰個裝置）：mockup 冇畫，跟 .big-slot 掣做法，
+ * 去走 button 預設外觀；hover / focus 用現有 token（底色 --surface-2、標籤 --accent-ink、focus outline 用全域）
+ */
+.icon-prev-adjust {
+    display: grid;
+    gap: 8px;
+    justify-items: center;
+    /* padding 畀 hover 底色留位；負 margin 抵銷，標籤同其他預覽對齊 */
+    margin: -6px;
+    padding: 6px;
+    border-radius: var(--radius);
+    background: none;
+    box-shadow: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.icon-prev-adjust:hover:not(:disabled) {
+    background: var(--surface-2);
+}
+
+.icon-prev-adjust:hover .icon-prev-label,
+.icon-prev-adjust:focus-visible .icon-prev-label {
+    color: var(--accent-ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .icon-prev-adjust {
+        transition: background-color var(--motion-fast) var(--motion-ease);
+    }
+}
+
 .big-slot {
     width: 128px;
     height: 128px;

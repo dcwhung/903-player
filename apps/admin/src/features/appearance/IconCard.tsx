@@ -1,7 +1,8 @@
 /*
  * App 外觀頁第一張卡「App 圖示」：Design Origin: mockup: _mockups_/admin-appearance/index.html#a
  * 狀態 pill（內建預設 / 自訂 · 未發佈 / 自訂）+ 還原（確認）+ 更換（dialog）；
- * 預覽：原圖、iPhone 圓角、Android 圓形 / 方形、瀏覽器分頁，置中平均用盡闊度。全部草稿，發佈先上線
+ * 預覽：原圖、iPhone 圓角、Android 圓形 / 方形、瀏覽器分頁，置中平均用盡闊度。全部草稿，發佈先上線。
+ * iPhone / Android 預覽撳得（icon recrop）：由原圖 + 上次嘅框開 dialog，單獨調嗰個裝置
  */
 import { Upload } from 'lucide-react';
 import { useRef } from 'react';
@@ -12,26 +13,19 @@ import { t } from '../../i18n/t';
 import { ImageFileInput } from '../../ui/ImageFileInput';
 import { useToast } from '../../ui/Toast';
 import { CardHead, RestoreDialog, StatusPill } from './AppearanceParts';
-import { BUILT_IN_TEXT, iconUrls } from './brandingModel';
+import {
+    BUILT_IN_TEXT,
+    iconSourceRequest,
+    iconUrls,
+    type IconSourceRequest,
+} from './brandingModel';
 import { IconDialog } from './IconDialog';
 import { IconPreviews } from './IconPreviews';
-import { renderIcons } from './iconRender';
-import { uploadIcons } from './iconUpload';
+import type { AdjustableDevice } from './iconModel';
 import { useIconCrop } from './useIconCrop';
+import { useIconUpload } from './useIconUpload';
 import { useRestore } from './useRestore';
 import type { BrandingResponse } from '../../api/types';
-
-/** 五張 PNG → 上載 → branding.icon；回錯誤文字（成功 = undefined） */
-const uploadFromCrop = async (
-    crop: ReturnType<typeof useIconCrop>,
-): Promise<string | undefined> => {
-    if (!crop.ready || !crop.boxes) return t('appearance.icon.encodeFailed');
-    crop.setError(undefined);
-    crop.setBusy(t('appearance.icon.rendering'));
-    const blobs = await renderIcons(crop.ready.loaded, crop.boxes, crop.background);
-    if ('error' in blobs) return blobs.error;
-    return uploadIcons(blobs, crop.background, crop.setBusy);
-};
 
 const useIconData = () => {
     const branding = useResource(getBranding);
@@ -48,15 +42,22 @@ const useIconData = () => {
 function IconPreviewCard({
     branding,
     name,
+    onAdjust,
 }: {
     branding: BrandingResponse | undefined;
     name: string;
+    onAdjust: (request: IconSourceRequest) => void;
 }) {
     const urls = iconUrls(branding?.icon ?? null);
+    // branding 未載入就唔知由邊張原圖開始：預覽暫時唔撳得
+    const adjust =
+        branding &&
+        ((device: AdjustableDevice) => onAdjust(iconSourceRequest(branding.icon, device)));
     const img = (src: string) => <img src={src} alt="" />;
     return (
         <IconPreviews
             tabLabel={name}
+            onAdjust={adjust}
             views={{
                 source: (
                     <span
@@ -88,16 +89,6 @@ function ChangeButton({ onClick }: { onClick: () => void }) {
     );
 }
 
-/** 上載 → 收 dialog → 刷新；留喺 dialog 顯示錯誤 */
-const useIconUpload =
-    (crop: ReturnType<typeof useIconCrop>, done: (message: string) => void) => async () => {
-        const failed = await uploadFromCrop(crop);
-        crop.setBusy(null);
-        if (failed !== undefined) return crop.setError(failed);
-        crop.session.close();
-        done(t('appearance.icon.saved'));
-    };
-
 export function IconCard() {
     const { branding, pending, refresh, toast } = useIconData();
     const input = useRef<HTMLInputElement>(null);
@@ -121,7 +112,7 @@ export function IconCard() {
             >
                 <ChangeButton onClick={() => input.current?.click()} />
             </CardHead>
-            <IconPreviewCard branding={branding.data} name={name} />
+            <IconPreviewCard branding={branding.data} name={name} onAdjust={crop.adjust} />
             <ImageFileInput ref={input} onPick={crop.onPick} />
             {crop.session.phase && (
                 <IconDialog

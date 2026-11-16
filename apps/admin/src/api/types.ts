@@ -174,7 +174,24 @@ export interface BannerResponse {
     updatedAt: string | null;
 }
 
-/** App 圖示五張（R2 圖檔名 <hash16>.png）+ maskable 安全區外嘅底色 #rrggbb */
+/** 原圖像素嘅裁切框 */
+export interface BrandingCropBox {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+/** App 圖示原圖 + 每種裝置嘅裁切框（api 0.13.0，重新裁切用；唔會發佈） */
+export interface BrandingIconSource {
+    /** R2 原圖檔名 <hash16>.<png|jpg|webp> */
+    image: string;
+    /** 「所有裝置使用同一裁切」 */
+    same: boolean;
+    boxes: Record<'ios' | 'android' | 'tab', BrandingCropBox>;
+}
+
+/** App 圖示五張（R2 圖檔名 <hash16>.png）+ maskable 安全區外嘅底色 #rrggbb + 原圖（冇 = 舊圖示 / 唔傳） */
 export interface BrandingIcon {
     favicon: string;
     appleTouch: string;
@@ -182,6 +199,7 @@ export interface BrandingIcon {
     icon512: string;
     maskable: string;
     maskableBackground: string;
+    source?: BrandingIconSource;
 }
 
 /** 名稱與簡介：shortName 冇 = 用 App 名 */
