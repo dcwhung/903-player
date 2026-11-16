@@ -209,7 +209,11 @@
     .todayColumn {
         --card-title-line: calc(1.6 * var(--font-size-xl));
         --today-stack-reserve: calc(2 * var(--card-stack-offset) + var(--touch-target-min));
-        --player-disc-width: calc(100cqw - 2 * var(--card-stack-gutter));
+        /* 同節目頁一樣留 --gauge-info-room（T7b）：今日節目頁唱片唔可以大過節目頁（e2e 對比） */
+        --player-disc-width: min(
+            calc(100cqw - 2 * var(--card-stack-gutter)),
+            calc(100cqw - 2 * var(--gauge-info-room))
+        );
         --player-disc-reserve: calc(
             var(--now-playing-height) + var(--fixed-page-gap) + var(--card-padding-block) +
                 var(--card-inner-gap) + var(--card-title-line) + var(--card-title-space) +

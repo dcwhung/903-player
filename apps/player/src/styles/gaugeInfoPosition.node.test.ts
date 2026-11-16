@@ -44,4 +44,11 @@ describe('gauge info button position', () => {
             'min( calc(100cqw * var(--landscape-disc-fill)), calc(100cqw - 2 * var(--gauge-info-room)) )',
         );
     });
+
+    it('should cap the today page disc by the same room so it never outgrows the show page disc', () => {
+        const today = cssDeclarations(page, '.todayColumn', LANDSCAPE_QUERY);
+        expect(today['--player-disc-width']).toBe(
+            'min( calc(100cqw - 2 * var(--card-stack-gutter)), calc(100cqw - 2 * var(--gauge-info-room)) )',
+        );
+    });
 });
