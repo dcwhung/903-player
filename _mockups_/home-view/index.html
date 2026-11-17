@@ -5,6 +5,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <title>HomeView 方形版面</title>
         <meta name="claude:viewport-fit-sides" content="cover" />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+        />
         <style>
             /* 版面：頂部姿勢導覽；每個姿勢一節，每頁一行「現狀｜建議」真 app 截圖，虛線 = 摺位 */
             :root {
@@ -277,8 +281,327 @@
             section > h3 {
                 margin-top: 8px;
             }
-            .frame.sq::after {
-                content: none;
+
+            /* 靜態畫面（544 × 544 設計稿）：.scr 入面所有尺寸 = px × --u，跟住舞台縮放；顏色係 app 畫面本身，唔跟頁面 theme */
+            .stage {
+                position: relative;
+                width: 100%;
+                aspect-ratio: 1;
+                container-type: inline-size;
+                overflow: hidden;
+            }
+            .scr {
+                --u: calc(100cqw / 544);
+                --gold: #d9b65c;
+                --cream: #f1e2b8;
+                --dim: #9a9488;
+                position: absolute;
+                inset: 0;
+                background: #111;
+                color: #fff;
+                font-family: 'Poppins', var(--font);
+                font-size: calc(var(--u) * 14);
+                line-height: 1.25;
+            }
+            .scr svg {
+                width: calc(var(--u) * 22);
+                height: calc(var(--u) * 22);
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 2;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+            .scr .abs {
+                position: absolute;
+            }
+            .hd {
+                position: absolute;
+                inset: calc(var(--u) * 16) calc(var(--u) * 16) auto;
+                display: grid;
+                grid-template-columns: calc(var(--u) * 44) 1fr calc(var(--u) * 44);
+                align-items: center;
+                height: calc(var(--u) * 44);
+                text-align: center;
+            }
+            .hd b {
+                color: var(--cream);
+                font-size: calc(var(--u) * 24);
+            }
+            .hd span {
+                display: grid;
+                place-items: center;
+            }
+            .disc {
+                position: absolute;
+                border-radius: 50%;
+                background:
+                    radial-gradient(circle, #111 0 7%, transparent 7.5%),
+                    url('disc-gongzi.webp') center / cover;
+                box-shadow:
+                    0 0 0 calc(var(--u) * 10) #1c1b19,
+                    0 0 0 calc(var(--u) * 16) #111,
+                    0 0 0 calc(var(--u) * 20) #2b2924;
+            }
+            .arc {
+                position: absolute;
+                border-radius: 50%;
+                background: conic-gradient(
+                    from 225deg,
+                    var(--gold) 0 78deg,
+                    #3a372f 78deg 270deg,
+                    transparent 270deg
+                );
+                -webkit-mask: radial-gradient(
+                    circle closest-side,
+                    transparent 0 90%,
+                    #000 90.5% 93%,
+                    transparent 93.5%
+                );
+                mask: radial-gradient(
+                    circle closest-side,
+                    transparent 0 90%,
+                    #000 90.5% 93%,
+                    transparent 93.5%
+                );
+            }
+            .play {
+                display: grid;
+                place-items: center;
+                border-radius: 50%;
+                background: var(--gold);
+                color: #111;
+                box-shadow: 0 calc(var(--u) * 4) calc(var(--u) * 12) rgb(0 0 0 / 50%);
+            }
+            .play svg {
+                fill: currentColor;
+                stroke: none;
+            }
+            .ctl {
+                position: absolute;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: calc(var(--u) * 14);
+                color: var(--gold);
+            }
+            .ctl i {
+                color: #fff;
+                font-style: normal;
+                font-size: calc(var(--u) * 13);
+                font-variant-numeric: tabular-nums;
+            }
+            .dates {
+                position: absolute;
+                display: flex;
+                gap: calc(var(--u) * 6);
+                justify-content: center;
+                text-align: center;
+                font-weight: 600;
+            }
+            .dates span {
+                display: grid;
+                place-content: center;
+                width: calc(var(--u) * 72);
+                height: calc(var(--u) * 44);
+                border-radius: calc(var(--u) * 12);
+            }
+            .dates small {
+                color: var(--dim);
+                font-size: calc(var(--u) * 10);
+                font-weight: 400;
+            }
+            .dates .on {
+                outline: calc(var(--u) * 1.5) solid var(--gold);
+                color: var(--cream);
+            }
+            .now {
+                position: absolute;
+                color: var(--gold);
+                font-size: calc(var(--u) * 12);
+                text-align: center;
+            }
+            .listbtn {
+                position: absolute;
+                display: flex;
+                gap: calc(var(--u) * 8);
+                align-items: center;
+                justify-content: center;
+                height: calc(var(--u) * 44);
+                border-radius: calc(var(--u) * 22);
+                background: #24221d;
+                color: var(--cream);
+                font-weight: 600;
+            }
+            .listbtn small {
+                color: var(--dim);
+                font-weight: 400;
+            }
+            .bar {
+                position: absolute;
+                height: calc(var(--u) * 4);
+                border-radius: calc(var(--u) * 2);
+                background: linear-gradient(90deg, var(--gold) 29%, #3a372f 29%);
+            }
+            .cover {
+                position: absolute;
+                inset: 0;
+                background:
+                    linear-gradient(
+                        180deg,
+                        rgb(0 0 0 / 35%) 0,
+                        transparent 22%,
+                        transparent 40%,
+                        #111 78%
+                    ),
+                    url('banner-gongzi.webp') center top / auto 62% no-repeat,
+                    #111;
+            }
+            .round {
+                display: grid;
+                place-items: center;
+                width: calc(var(--u) * 44);
+                height: calc(var(--u) * 44);
+                border-radius: 50%;
+                background: rgb(0 0 0 / 45%);
+            }
+            .scrim {
+                position: absolute;
+                inset: 0;
+                background: rgb(0 0 0 / 55%);
+            }
+            .sheet {
+                position: absolute;
+                inset: 38% 0 0;
+                padding: calc(var(--u) * 10) calc(var(--u) * 16) 0;
+                border-radius: calc(var(--u) * 20) calc(var(--u) * 20) 0 0;
+                background: #1b1a17;
+                box-shadow: 0 calc(var(--u) * -8) calc(var(--u) * 24) rgb(0 0 0 / 50%);
+            }
+            .sheet::before {
+                content: '';
+                display: block;
+                width: calc(var(--u) * 40);
+                height: calc(var(--u) * 4);
+                margin: 0 auto calc(var(--u) * 8);
+                border-radius: calc(var(--u) * 2);
+                background: #4a463c;
+            }
+            .sheet header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding-bottom: calc(var(--u) * 6);
+                color: var(--cream);
+                font-weight: 700;
+                font-size: calc(var(--u) * 16);
+            }
+            .sheet header small {
+                color: var(--dim);
+                font-weight: 400;
+                font-size: calc(var(--u) * 12);
+            }
+            .ep {
+                display: grid;
+                grid-template-columns: calc(var(--u) * 62) 1fr calc(var(--u) * 36) calc(
+                        var(--u) * 36
+                    );
+                align-items: center;
+                height: calc(var(--u) * 56);
+                border-top: 1px solid #2c2a25;
+                font-weight: 600;
+            }
+            .ep small {
+                display: block;
+                color: var(--dim);
+                font-weight: 400;
+                font-size: calc(var(--u) * 11);
+            }
+            .ep em {
+                color: var(--dim);
+                font-style: normal;
+                font-weight: 400;
+                font-size: calc(var(--u) * 12);
+            }
+            .ep.on {
+                background: #24221d;
+                box-shadow: inset calc(var(--u) * 3) 0 0 #c8102e;
+            }
+            .ep.on em {
+                color: var(--cream);
+            }
+            .ep > svg:first-of-type {
+                color: var(--gold);
+            }
+            .ep > :first-child {
+                padding-left: calc(var(--u) * 10);
+            }
+            /* 主頁 */
+            .home {
+                background: linear-gradient(180deg, #4e739b, #42658a);
+            }
+            .home .tabs {
+                position: absolute;
+                inset: calc(var(--u) * 16) auto auto calc(var(--u) * 16);
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                width: calc(var(--u) * 248);
+                height: calc(var(--u) * 44);
+                padding: calc(var(--u) * 3);
+                border-radius: calc(var(--u) * 22);
+                background: #3f5e7f;
+                font-size: calc(var(--u) * 12);
+                text-align: center;
+            }
+            .home .tabs span {
+                display: grid;
+                place-items: center;
+                border-radius: calc(var(--u) * 19);
+            }
+            .home .tabs .on {
+                background: #f5d294;
+                color: #2f4560;
+                font-weight: 600;
+            }
+            .shelf i {
+                position: absolute;
+                left: calc(var(--u) * 16);
+                width: calc(var(--u) * 248);
+                height: calc(var(--u) * 140);
+                border-radius: calc(var(--u) * 14);
+                background: center / cover;
+                box-shadow: 0 calc(var(--u) * 4) calc(var(--u) * 10) rgb(0 0 0 / 35%);
+            }
+            .shelf i.rest {
+                transform: scale(0.94);
+                filter: brightness(0.55);
+            }
+            .shelf b {
+                position: absolute;
+                padding: calc(var(--u) * 2) calc(var(--u) * 8);
+                border-radius: calc(var(--u) * 10);
+                font-size: calc(var(--u) * 11);
+            }
+            .shelf .new {
+                top: calc(var(--u) * 8);
+                left: calc(var(--u) * 8);
+                background: #c8102e;
+            }
+            .shelf .meta {
+                right: calc(var(--u) * 8);
+                bottom: calc(var(--u) * 8);
+                background: rgb(0 0 0 / 55%);
+                font-weight: 400;
+            }
+            .home img.card {
+                position: absolute;
+                inset: 0 0 0 50%;
+                width: 50%;
+                height: 100%;
+                max-width: none;
+            }
+            .tag {
+                flex: none;
             }
             .legend {
                 display: inline-block;
@@ -317,134 +640,1054 @@
             <header>
                 <h1>HomeView 方形版面</h1>
                 <p class="lede">
-                    P10 #9a preview gate，第 1 版。真 app（v1.37.3，e2e 假資料）喺 544 × 544
-                    嘅截圖。HomeView 係 1088 × 1088 實體像素，假設 2 倍密度；冇
-                    simulator、冇真機，呢個尺寸未驗證。確認之後先寫 code。
+                    P10 #9a preview gate，第 2 版，544 × 544。「現狀」係真 app
+                    截圖；「建議」同三款設計係新版面，用靜態 HTML 砌，顏色、字體、唱片同封面跟
+                    app。確認之後先寫 code。
                 </p>
             </header>
             <nav aria-label="章節">
-                <a href="#home"><b>主頁</b><span>左格右卡</span></a
-                ><a href="#pages"><b>內頁</b><span>照用直版</span></a
-                ><a href="#questions"><b>待確認</b><span>4 條</span></a>
+                <a href="#home"><b>主頁</b><span>左 card scroller</span></a
+                ><a href="#d1"><b>設計 1</b><span>唱片置中</span></a
+                ><a href="#d2"><b>設計 2</b><span>左唱片右控制</span></a
+                ><a href="#d3"><b>設計 3</b><span>封面鋪滿</span></a
+                ><a href="#questions"><b>待確認</b><span>3 條</span></a>
             </nav>
             <section id="home">
                 <header class="sec">
                     <h2>主頁</h2>
-                    <span class="size">544 × 544</span>
+                    <span class="size">左 card scroller、右播放卡</span>
                 </header>
                 <ul class="notes">
-                    <li>現狀：正方形當直版，每頁得 2 格，9 格要揭 4 頁；播放器縮成底部一條。</li>
                     <li>
-                        <b>建議：左邊節目格（3 × 3 一頁放晒）、右邊播放卡</b>，各佔一半，同 iPad
-                        打橫嘅主頁同一個結構。
+                        左邊用廣播劇直版嗰款疊卡
+                        scroller：揀中嗰張原大，其餘縮細調暗疊喺下面，上下掃轉卡。「節目」「廣播劇」兩個分類都用呢款。
                     </li>
+                    <li>右邊播放卡同 iPad 打橫主頁同一張（圖係真 app 截圖）。</li>
                     <li>
-                        建議圖係臨時 build
-                        影出嚟：節目格偏窄、封面裁得多，正式版會將橫額搬出格外或者改 2 欄再調。
+                        橫額（903 叱咤
+                        Player）喺方形版面冇位放；版本號會搬入播放卡或者分類掣旁邊，正式版再定。
                     </li>
                 </ul>
                 <div class="row">
                     <h3>主頁</h3>
                     <div class="pair">
-                        <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption>
+                                <span class="tag now">現狀</span>v1.37.3，每頁 2 格
+                            </figcaption>
                             <div class="frame sq" style="max-width: 544px">
-                                <img src="now-home.webp" alt="現狀 v1.37.3" loading="lazy" />
+                                <img
+                                    src="now-home.webp"
+                                    alt="現狀 v1.37.3，每頁 2 格"
+                                    loading="lazy"
+                                />
                             </div>
                         </figure>
-                        <figure class="shot">
-                            <figcaption><span class="tag new">建議</span>左格右卡</figcaption>
-                            <div class="frame sq" style="max-width: 544px">
-                                <img src="new-home.webp" alt="建議 左格右卡" loading="lazy" />
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption>
+                                <span class="tag new">建議</span>左 card scroller + 右播放卡
+                            </figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr home">
+                                        <div class="tabs">
+                                            <span class="on">節目</span><span>廣播劇</span>
+                                        </div>
+                                        <div class="shelf">
+                                            <i
+                                                class="rest"
+                                                style="
+                                                    top: calc(var(--u) * 360);
+                                                    background-image: url('banner-lancy.webp');
+                                                "
+                                            ></i
+                                            ><i
+                                                class="rest"
+                                                style="
+                                                    top: calc(var(--u) * 290);
+                                                    background-image: url('banner-wanni.webp');
+                                                "
+                                            ></i
+                                            ><i
+                                                class="rest"
+                                                style="
+                                                    top: calc(var(--u) * 220);
+                                                    background-image: url('banner-gongzi.webp');
+                                                "
+                                            ></i>
+                                            <i
+                                                style="
+                                                    top: calc(var(--u) * 76);
+                                                    background-image: url('banner-badgirl.webp');
+                                                "
+                                                ><b class="new">新</b
+                                                ><b class="meta">星期一至五</b></i
+                                            >
+                                        </div>
+                                        <img class="card" src="card.webp" alt="播放卡" />
+                                    </div>
+                                </div>
                             </div>
                         </figure>
                     </div>
                 </div>
             </section>
-            <section id="pages">
+            <section id="d1">
                 <header class="sec">
-                    <h2>內頁</h2>
-                    <span class="size">544 × 544</span>
+                    <h2>設計 1：唱片置中</h2>
+                    <span class="size">最似而家嘅節目頁</span>
                 </header>
                 <ul class="notes">
-                    <li>現狀直版喺正方形已經放得落：播放器喺上、清單喺下，冇裁切。</li>
+                    <li>大唱片喺正中，播放掣同日子條喺下面，底部一條「集數」掣。</li>
                     <li>
-                        我試過套用橫版兩欄（下面「試驗」圖）：左欄清單最少要 340px，右欄得返約
-                        190px，播放器放唔落。
+                        好處：同手機版一樣，唔使重新學。壞處：唱片細啲（200px），遠睇冇設計 3
+                        咁醒目。
                     </li>
-                    <li><b>建議：今日節目、節目頁、廣播劇頁照用直版，唔改。</b></li>
                 </ul>
-                <div class="row">
-                    <h3>今日節目</h3>
-                    <div class="pair">
-                        <figure class="shot">
-                            <figcaption>
-                                <span class="tag now">現狀</span>直版（建議保留）
-                            </figcaption>
-                            <div class="frame sq" style="max-width: 544px">
-                                <img
-                                    src="now-today.webp"
-                                    alt="現狀 直版（建議保留）"
-                                    loading="lazy"
-                                />
-                            </div>
-                        </figure>
-                        <figure class="shot">
-                            <figcaption>
-                                <span class="tag old">試驗</span>套用橫版兩欄：放唔落
-                            </figcaption>
-                            <div class="frame sq" style="max-width: 544px">
-                                <img
-                                    src="try-today.webp"
-                                    alt="試驗 套用橫版兩欄：放唔落"
-                                    loading="lazy"
-                                />
-                            </div>
-                        </figure>
-                    </div>
-                </div>
                 <div class="row">
                     <h3>節目頁</h3>
                     <div class="pair">
-                        <figure class="shot">
-                            <figcaption>
-                                <span class="tag now">現狀</span>直版（建議保留）
-                            </figcaption>
-                            <div class="frame sq" style="max-width: 544px">
-                                <img
-                                    src="now-show.webp"
-                                    alt="現狀 直版（建議保留）"
-                                    loading="lazy"
-                                />
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption><span class="tag new">設計 1</span>播放中</figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr">
+                                        <div class="hd">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>公子會</b
+                                            ><span style="color: var(--gold)"
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <circle cx="12" cy="12" r="9" />
+                                                    <path d="M12 11v6M12 7.5v.5" /></svg
+                                            ></span>
+                                        </div>
+                                        <div
+                                            class="arc"
+                                            style="
+                                                left: calc(var(--u) * 132);
+                                                top: calc(var(--u) * 64);
+                                                width: calc(var(--u) * 280);
+                                                height: calc(var(--u) * 280);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="disc"
+                                            style="
+                                                left: calc(var(--u) * 172);
+                                                top: calc(var(--u) * 104);
+                                                width: calc(var(--u) * 200);
+                                                height: calc(var(--u) * 200);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 316);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">12:40</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">44:00</i>
+                                        </div>
+                                        <div
+                                            class="now"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 386);
+                                            "
+                                        >
+                                            現正播放
+                                        </div>
+                                        <div
+                                            class="dates"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 404);
+                                            "
+                                        >
+                                            <span class="on"><small>六</small>28/11</span
+                                            ><span><small>六</small>21/11</span
+                                            ><span><small>六</small>14/11</span
+                                            ><span><small>六</small>07/11</span>
+                                        </div>
+                                        <div
+                                            class="listbtn"
+                                            style="
+                                                left: calc(var(--u) * 16);
+                                                right: calc(var(--u) * 16);
+                                                bottom: calc(var(--u) * 16);
+                                            "
+                                        >
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 7h16M4 12h16M4 17h16" /></svg
+                                            >集數 <small>共 4 集</small
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M6 15l6-6 6 6" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </figure>
-                        <figure class="shot">
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
                             <figcaption>
-                                <span class="tag old">試驗</span>套用橫版兩欄：放唔落
+                                <span class="tag new">設計 1</span>撳「集數」：清單由下面升起
                             </figcaption>
-                            <div class="frame sq" style="max-width: 544px">
-                                <img
-                                    src="try-show.webp"
-                                    alt="試驗 套用橫版兩欄：放唔落"
-                                    loading="lazy"
-                                />
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr">
+                                        <div class="hd">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>公子會</b
+                                            ><span style="color: var(--gold)"
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <circle cx="12" cy="12" r="9" />
+                                                    <path d="M12 11v6M12 7.5v.5" /></svg
+                                            ></span>
+                                        </div>
+                                        <div
+                                            class="arc"
+                                            style="
+                                                left: calc(var(--u) * 132);
+                                                top: calc(var(--u) * 64);
+                                                width: calc(var(--u) * 280);
+                                                height: calc(var(--u) * 280);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="disc"
+                                            style="
+                                                left: calc(var(--u) * 172);
+                                                top: calc(var(--u) * 104);
+                                                width: calc(var(--u) * 200);
+                                                height: calc(var(--u) * 200);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 316);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">12:40</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">44:00</i>
+                                        </div>
+                                        <div
+                                            class="now"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 386);
+                                            "
+                                        >
+                                            現正播放
+                                        </div>
+                                        <div
+                                            class="dates"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 404);
+                                            "
+                                        >
+                                            <span class="on"><small>六</small>28/11</span
+                                            ><span><small>六</small>21/11</span
+                                            ><span><small>六</small>14/11</span
+                                            ><span><small>六</small>07/11</span>
+                                        </div>
+                                        <div
+                                            class="listbtn"
+                                            style="
+                                                left: calc(var(--u) * 16);
+                                                right: calc(var(--u) * 16);
+                                                bottom: calc(var(--u) * 16);
+                                            "
+                                        >
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 7h16M4 12h16M4 17h16" /></svg
+                                            >集數 <small>共 4 集</small
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M6 15l6-6 6 6" />
+                                            </svg>
+                                        </div>
+                                        <div class="scrim"></div>
+                                        <div class="sheet">
+                                            <header>
+                                                <span>集數 <small>共 4 集</small></span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M6 6l12 12M18 6L6 18" />
+                                                </svg>
+                                            </header>
+                                            <div class="ep on">
+                                                <span>28/11<small>星期六</small></span
+                                                ><em>播放中 · 12:40 / 44:00</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14M16 5v14" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>21/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>14/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>07/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </figure>
                     </div>
                 </div>
+            </section>
+            <section id="d2">
+                <header class="sec">
+                    <h2>設計 2：左唱片右控制</h2>
+                    <span class="size">左右分</span>
+                </header>
+                <ul class="notes">
+                    <li>唱片喺左；右邊由上而下係日子、進度、播放掣、其他日子、「集數」掣。</li>
+                    <li>
+                        好處：同主頁「左內容、右播放」一致，日子大字易讀。壞處：右欄嘢多，掣比較密。
+                    </li>
+                </ul>
                 <div class="row">
-                    <h3>廣播劇頁</h3>
+                    <h3>節目頁</h3>
                     <div class="pair">
-                        <figure class="shot">
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption><span class="tag new">設計 2</span>播放中</figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr">
+                                        <div class="hd">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>公子會</b
+                                            ><span style="color: var(--gold)"
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <circle cx="12" cy="12" r="9" />
+                                                    <path d="M12 11v6M12 7.5v.5" /></svg
+                                            ></span>
+                                        </div>
+                                        <div
+                                            class="arc"
+                                            style="
+                                                left: calc(var(--u) * 4);
+                                                top: calc(var(--u) * 120);
+                                                width: calc(var(--u) * 280);
+                                                height: calc(var(--u) * 280);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="disc"
+                                            style="
+                                                left: calc(var(--u) * 44);
+                                                top: calc(var(--u) * 160);
+                                                width: calc(var(--u) * 200);
+                                                height: calc(var(--u) * 200);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="now"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                top: calc(var(--u) * 96);
+                                                right: calc(var(--u) * 24);
+                                                text-align: left;
+                                            "
+                                        >
+                                            現正播放
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                top: calc(var(--u) * 114);
+                                                font-size: calc(var(--u) * 28);
+                                                font-weight: 700;
+                                                color: var(--cream);
+                                            "
+                                        >
+                                            28/11
+                                            <span
+                                                style="
+                                                    font-size: calc(var(--u) * 14);
+                                                    font-weight: 400;
+                                                    color: var(--dim);
+                                                "
+                                                >星期六</span
+                                            >
+                                        </div>
+                                        <div
+                                            class="bar"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                right: calc(var(--u) * 24);
+                                                top: calc(var(--u) * 166);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                right: calc(var(--u) * 24);
+                                                top: calc(var(--u) * 176);
+                                                justify-content: space-between;
+                                            "
+                                        >
+                                            <i>12:40</i><i>44:00</i>
+                                        </div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                right: calc(var(--u) * 24);
+                                                top: calc(var(--u) * 206);
+                                                gap: calc(var(--u) * 22);
+                                            "
+                                        >
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 60);
+                                                    height: calc(var(--u) * 60);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 30);
+                                                        height: calc(var(--u) * 30);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                />
+                                            </svg>
+                                        </div>
+                                        <div
+                                            class="dates"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                right: calc(var(--u) * 24);
+                                                top: calc(var(--u) * 290);
+                                                justify-content: space-between;
+                                            "
+                                        >
+                                            <span><small>六</small>21/11</span
+                                            ><span><small>六</small>14/11</span
+                                            ><span><small>六</small>07/11</span>
+                                        </div>
+                                        <div
+                                            class="listbtn"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                right: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 24);
+                                            "
+                                        >
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 7h16M4 12h16M4 17h16" /></svg
+                                            >集數 <small>共 4 集</small
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M6 15l6-6 6 6" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
                             <figcaption>
-                                <span class="tag now">現狀</span>直版（建議保留）
+                                <span class="tag new">設計 2</span>撳「集數」：清單由下面升起
                             </figcaption>
-                            <div class="frame sq" style="max-width: 544px">
-                                <img
-                                    src="now-drama.webp"
-                                    alt="現狀 直版（建議保留）"
-                                    loading="lazy"
-                                />
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr">
+                                        <div class="hd">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>公子會</b
+                                            ><span style="color: var(--gold)"
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <circle cx="12" cy="12" r="9" />
+                                                    <path d="M12 11v6M12 7.5v.5" /></svg
+                                            ></span>
+                                        </div>
+                                        <div
+                                            class="arc"
+                                            style="
+                                                left: calc(var(--u) * 4);
+                                                top: calc(var(--u) * 120);
+                                                width: calc(var(--u) * 280);
+                                                height: calc(var(--u) * 280);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="disc"
+                                            style="
+                                                left: calc(var(--u) * 44);
+                                                top: calc(var(--u) * 160);
+                                                width: calc(var(--u) * 200);
+                                                height: calc(var(--u) * 200);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="now"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                top: calc(var(--u) * 96);
+                                                right: calc(var(--u) * 24);
+                                                text-align: left;
+                                            "
+                                        >
+                                            現正播放
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                top: calc(var(--u) * 114);
+                                                font-size: calc(var(--u) * 28);
+                                                font-weight: 700;
+                                                color: var(--cream);
+                                            "
+                                        >
+                                            28/11
+                                            <span
+                                                style="
+                                                    font-size: calc(var(--u) * 14);
+                                                    font-weight: 400;
+                                                    color: var(--dim);
+                                                "
+                                                >星期六</span
+                                            >
+                                        </div>
+                                        <div
+                                            class="bar"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                right: calc(var(--u) * 24);
+                                                top: calc(var(--u) * 166);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                right: calc(var(--u) * 24);
+                                                top: calc(var(--u) * 176);
+                                                justify-content: space-between;
+                                            "
+                                        >
+                                            <i>12:40</i><i>44:00</i>
+                                        </div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                right: calc(var(--u) * 24);
+                                                top: calc(var(--u) * 206);
+                                                gap: calc(var(--u) * 22);
+                                            "
+                                        >
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 60);
+                                                    height: calc(var(--u) * 60);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 30);
+                                                        height: calc(var(--u) * 30);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                />
+                                            </svg>
+                                        </div>
+                                        <div
+                                            class="dates"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                right: calc(var(--u) * 24);
+                                                top: calc(var(--u) * 290);
+                                                justify-content: space-between;
+                                            "
+                                        >
+                                            <span><small>六</small>21/11</span
+                                            ><span><small>六</small>14/11</span
+                                            ><span><small>六</small>07/11</span>
+                                        </div>
+                                        <div
+                                            class="listbtn"
+                                            style="
+                                                left: calc(var(--u) * 300);
+                                                right: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 24);
+                                            "
+                                        >
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 7h16M4 12h16M4 17h16" /></svg
+                                            >集數 <small>共 4 集</small
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M6 15l6-6 6 6" />
+                                            </svg>
+                                        </div>
+                                        <div class="scrim"></div>
+                                        <div class="sheet">
+                                            <header>
+                                                <span>集數 <small>共 4 集</small></span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M6 6l12 12M18 6L6 18" />
+                                                </svg>
+                                            </header>
+                                            <div class="ep on">
+                                                <span>28/11<small>星期六</small></span
+                                                ><em>播放中 · 12:40 / 44:00</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14M16 5v14" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>21/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>14/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>07/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section id="d3">
+                <header class="sec">
+                    <h2>設計 3：封面鋪滿</h2>
+                    <span class="size">遠睇最清楚</span>
+                </header>
+                <ul class="notes">
+                    <li>
+                        節目封面做底，節目名大字，下面一條進度同大播放掣（72px），「集數」掣喺右下角。
+                    </li>
+                    <li>
+                        好處：放喺枱面遠睇最易認，掣最大。壞處：冇唱片同日子條，轉日子要開清單。
+                    </li>
+                </ul>
+                <div class="row">
+                    <h3>節目頁</h3>
+                    <div class="pair">
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption><span class="tag new">設計 3</span>播放中</figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr">
+                                        <div class="cover"></div>
+                                        <span
+                                            class="round abs"
+                                            style="
+                                                left: calc(var(--u) * 16);
+                                                top: calc(var(--u) * 16);
+                                            "
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M15 5l-7 7 7 7" /></svg></span
+                                        ><span
+                                            class="round abs"
+                                            style="
+                                                right: calc(var(--u) * 16);
+                                                top: calc(var(--u) * 16);
+                                                color: var(--gold);
+                                            "
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9" />
+                                                <path d="M12 11v6M12 7.5v.5" /></svg
+                                        ></span>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 176);
+                                                font-size: calc(var(--u) * 34);
+                                                font-weight: 700;
+                                                color: var(--cream);
+                                            "
+                                        >
+                                            公子會
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 156);
+                                                color: var(--gold);
+                                            "
+                                        >
+                                            現正播放 · 28/11（六）
+                                        </div>
+                                        <div
+                                            class="bar"
+                                            style="
+                                                left: calc(var(--u) * 24);
+                                                right: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 136);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 24);
+                                                right: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 110);
+                                                justify-content: space-between;
+                                            "
+                                        >
+                                            <i>12:40</i><i>44:00</i>
+                                        </div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 24);
+                                                gap: calc(var(--u) * 22);
+                                            "
+                                        >
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 72);
+                                                    height: calc(var(--u) * 72);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 36);
+                                                        height: calc(var(--u) * 36);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                />
+                                            </svg>
+                                        </div>
+                                        <div
+                                            class="listbtn"
+                                            style="
+                                                right: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 38);
+                                                width: calc(var(--u) * 150);
+                                            "
+                                        >
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 7h16M4 12h16M4 17h16" /></svg
+                                            >集數<svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M6 15l6-6 6 6" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption>
+                                <span class="tag new">設計 3</span>撳「集數」：清單由下面升起
+                            </figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr">
+                                        <div class="cover"></div>
+                                        <span
+                                            class="round abs"
+                                            style="
+                                                left: calc(var(--u) * 16);
+                                                top: calc(var(--u) * 16);
+                                            "
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M15 5l-7 7 7 7" /></svg></span
+                                        ><span
+                                            class="round abs"
+                                            style="
+                                                right: calc(var(--u) * 16);
+                                                top: calc(var(--u) * 16);
+                                                color: var(--gold);
+                                            "
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9" />
+                                                <path d="M12 11v6M12 7.5v.5" /></svg
+                                        ></span>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 176);
+                                                font-size: calc(var(--u) * 34);
+                                                font-weight: 700;
+                                                color: var(--cream);
+                                            "
+                                        >
+                                            公子會
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 156);
+                                                color: var(--gold);
+                                            "
+                                        >
+                                            現正播放 · 28/11（六）
+                                        </div>
+                                        <div
+                                            class="bar"
+                                            style="
+                                                left: calc(var(--u) * 24);
+                                                right: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 136);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 24);
+                                                right: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 110);
+                                                justify-content: space-between;
+                                            "
+                                        >
+                                            <i>12:40</i><i>44:00</i>
+                                        </div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 24);
+                                                gap: calc(var(--u) * 22);
+                                            "
+                                        >
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 72);
+                                                    height: calc(var(--u) * 72);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 36);
+                                                        height: calc(var(--u) * 36);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                />
+                                            </svg>
+                                        </div>
+                                        <div
+                                            class="listbtn"
+                                            style="
+                                                right: calc(var(--u) * 24);
+                                                bottom: calc(var(--u) * 38);
+                                                width: calc(var(--u) * 150);
+                                            "
+                                        >
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 7h16M4 12h16M4 17h16" /></svg
+                                            >集數<svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M6 15l6-6 6 6" />
+                                            </svg>
+                                        </div>
+                                        <div class="scrim"></div>
+                                        <div class="sheet">
+                                            <header>
+                                                <span>集數 <small>共 4 集</small></span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M6 6l12 12M18 6L6 18" />
+                                                </svg>
+                                            </header>
+                                            <div class="ep on">
+                                                <span>28/11<small>星期六</small></span
+                                                ><em>播放中 · 12:40 / 44:00</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14M16 5v14" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>21/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>14/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>07/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </figure>
                     </div>
@@ -463,45 +1706,70 @@
                         </thead>
                         <tbody>
                             <tr>
+                                <td>S5</td>
+                                <td>內頁用邊款設計？</td>
+                                <td>
+                                    設計 1。同手機版最一致，日子條保留；設計 3 嘅大字畫面留返畀 9b
+                                    閒置畫面做。
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>S6</td>
+                                <td>今日節目、廣播劇頁跟同一款？</td>
+                                <td>
+                                    跟。今日節目：日子條換成指示點，左右掃轉節目，清單 sheet
+                                    係節目表。廣播劇：日子條換成短篇名，「集數」掣開現有全集表。
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>S7</td>
+                                <td>主頁冇位放橫額，版本號放邊？</td>
+                                <td>放喺播放卡右上角關閉掣旁邊。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3>已定</h3>
+                <div class="scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>項目</th>
+                                <th>決定</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
                                 <td>S1</td>
-                                <td>
-                                    Viewport 假設 544 × 544（2 倍密度），啱唔啱？你有冇 HomeView 嘅
-                                    simulator 或者實測數字？
-                                </td>
-                                <td>
-                                    暫時用 544；規則寫成「接近正方形而且闊
-                                    500–700px」，尺寸有出入都入到。
-                                </td>
+                                <td>Viewport</td>
+                                <td>544 × 544</td>
                             </tr>
                             <tr>
                                 <td>S2</td>
-                                <td>主頁左格右卡各佔一半？</td>
-                                <td>做。</td>
+                                <td>主頁</td>
+                                <td>左 card scroller、右播放卡</td>
                             </tr>
                             <tr>
                                 <td>S3</td>
-                                <td>內頁照用直版，唔另外做方形版面？</td>
-                                <td>唔另外做。</td>
+                                <td>內頁</td>
+                                <td>另做版面：播放器為主，清單收入 sheet</td>
                             </tr>
                             <tr>
                                 <td>S4</td>
-                                <td>
-                                    Plan 寫「字／掣按 7 吋放大」。7 吋 544px 即每吋約
-                                    110px，同一個掣已經比手機大約四成。仲要唔要再放大？
-                                </td>
-                                <td>唔再放大；等 9b 閒置大字畫面先處理「遠睇」。</td>
+                                <td>字／掣放大</td>
+                                <td>唔需要</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
                 <ul class="notes">
                     <li>
-                        9b 閒置大字畫面、9c 夜間低光、9d 睡眠 timer 會各自再出 preview，唔喺呢頁。
+                        清單 sheet
+                        重用現有全集表嘅開閂動畫（由下面滑入、可以向下拖閂），減少動態時直接切換。
                     </li>
                     <li>
-                        所有改動只寫喺新增嘅方形 media query
-                        入面，現有手機、平板、電腦版面唔變（驗收方法見 iPhone Duo
-                        preview「現有裝置」一節）。
+                        所有改動只寫喺新增嘅方形 media query 入面，現有手機、平板、電腦版面唔變。
                     </li>
                 </ul>
             </section>

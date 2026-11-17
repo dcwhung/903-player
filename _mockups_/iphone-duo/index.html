@@ -314,7 +314,7 @@
             <header>
                 <h1>iPhone Duo 四種姿勢</h1>
                 <p class="lede">
-                    P10 #10 preview gate，第 4 版。全部係真 app（v1.37.3，e2e
+                    P10 #10 preview gate，第 5 版。全部係真 app（v1.37.3，e2e
                     假資料）嘅截圖，尺寸、圓角同鏡頭位置係用 headless browser 跑 Progressier
                     simulator 讀返嚟。<span class="legend"></span> 橙色虛線 = 摺位。確認之後先寫
                     code。
@@ -328,7 +328,7 @@
                 ><a href="#seat"><b>Seated／Standing</b><span>612 × 438</span></a
                 ><a href="#ol"><b>打開・橫</b><span>876 × 612</span></a
                 ><a href="#op"><b>打開・直</b><span>612 × 876</span></a
-                ><a href="#questions"><b>待確認</b><span>1 條</span></a>
+                ><a href="#questions"><b>待確認</b><span>0 條</span></a>
             </nav>
             <section id="safe">
                 <header class="sec">
@@ -382,7 +382,8 @@
                 <ul class="notes">
                     <li>版面唔改；加四邊邊框。</li>
                     <li>
-                        「最近收聽」高度跟內容，最高 200px，而且唔超過分頁區 40%；收藏區一定高過佢。
+                        「最近收聽」高度跟內容，最高 200px，而且唔超過分頁區
+                        40%；收藏區一定高過佢。<b>只限 Duo 闔上・直</b>，普通手機照舊固定 200px。
                     </li>
                 </ul>
                 <div class="row">
@@ -712,19 +713,19 @@
                 </header>
                 <ul class="notes">
                     <li>
-                        <b>主頁（已定）：</b>全闊 3 欄 +
+                        <b>主頁：</b>全闊 3 欄 +
                         四邊邊框，一頁放晒。圖入面漏咗最尾嘅「今日節目」格，係臨時 hack
                         嘅副作用，正式版有 9 格。
                     </li>
                     <li>
-                        <b>方案 A：</b>指示點／日子條／短篇選擇照舊喺播放器下面，全部喺摺位以上。
+                        <b>今日節目（方案 A）：</b
+                        >播放卡收窄到近正方形、置中，指示點喺卡下面，全部喺摺位以上。
                     </li>
                     <li>
-                        <b>方案 B：</b>搬去上半屏右邊直排，唱片可以大啲（約 236px →
-                        290px）。日子條一次見 4 日；短篇一次見 7 個，其餘喺欄入面捲。
+                        <b>節目頁、廣播劇頁（方案 B）：</b
+                        >日子條／短篇選擇喺上半屏右邊直排，唱片大啲。直排掣係複製現有掣砌出嚟，間距正式版再調。
                     </li>
-                    <li>方案 B 係概念圖：直排掣係複製現有掣砌出嚟，間距、揀中外框未定稿。</li>
-                    <li><b>全集表／資料表（已定）：</b>最高只到摺位。</li>
+                    <li><b>全集表／資料表：</b>最高只到摺位。</li>
                 </ul>
                 <div class="row">
                     <h3>主頁</h3>
@@ -737,83 +738,45 @@
                         </figure>
                         <figure class="shot">
                             <figcaption>
-                                <span class="tag new">建議</span>全闊 3 欄 + 四邊 24px
+                                <span class="tag new">已定</span>全闊 3 欄 + 四邊 24px
                             </figcaption>
                             <div class="frame inp" style="max-width: 612px">
-                                <img src="new-op-home.webp" alt="打開直 主頁 3 欄" loading="lazy" />
+                                <img src="new-op-home.webp" alt="打開直 主頁" loading="lazy" />
                             </div>
                         </figure>
                     </div>
                 </div>
                 <div class="row">
-                    <h3>今日節目</h3>
+                    <h3>內頁</h3>
                     <div class="pair">
                         <figure class="shot">
                             <figcaption>
-                                <span class="tag new">方案 A：下面</span>指示點喺卡下面
+                                <span class="tag new">已定</span>今日節目：卡近正方形，指示點喺下面
                             </figcaption>
                             <div class="frame inp" style="max-width: 612px">
-                                <img src="new-op-today.webp" alt="今日節目 A" loading="lazy" />
+                                <img src="new-op-today.webp" alt="今日節目" loading="lazy" />
                             </div>
                         </figure>
                         <figure class="shot">
                             <figcaption>
-                                <span class="tag new">方案 B：右邊</span>指示點喺右邊直排
+                                <span class="tag new">已定</span>節目頁：日子條喺右邊直排
                             </figcaption>
                             <div class="frame inp" style="max-width: 612px">
-                                <img src="new-opr-today.webp" alt="今日節目 B" loading="lazy" />
-                            </div>
-                        </figure>
-                    </div>
-                </div>
-                <div class="row">
-                    <h3>節目頁</h3>
-                    <div class="pair">
-                        <figure class="shot">
-                            <figcaption>
-                                <span class="tag new">方案 A：下面</span>日子條喺播放器下面
-                            </figcaption>
-                            <div class="frame inp" style="max-width: 612px">
-                                <img src="new-op-show.webp" alt="節目頁 A" loading="lazy" />
+                                <img src="new-opr-show.webp" alt="節目頁" loading="lazy" />
                             </div>
                         </figure>
                         <figure class="shot">
                             <figcaption>
-                                <span class="tag new">方案 B：右邊</span>日子條喺右邊直排
+                                <span class="tag new">已定</span>廣播劇頁：全集 + 短篇喺右邊直排
                             </figcaption>
                             <div class="frame inp" style="max-width: 612px">
-                                <img src="new-opr-show.webp" alt="節目頁 B" loading="lazy" />
-                            </div>
-                        </figure>
-                    </div>
-                </div>
-                <div class="row">
-                    <h3>廣播劇頁</h3>
-                    <div class="pair">
-                        <figure class="shot">
-                            <figcaption>
-                                <span class="tag new">方案 A：下面</span>全集 +
-                                短篇喺播放器下面（橫向捲）
-                            </figcaption>
-                            <div class="frame inp" style="max-width: 612px">
-                                <img src="new-opb-drama.webp" alt="廣播劇頁 A" loading="lazy" />
+                                <img src="new-opr-drama.webp" alt="廣播劇頁" loading="lazy" />
                             </div>
                         </figure>
                         <figure class="shot">
                             <figcaption>
-                                <span class="tag new">方案 B：右邊</span>全集 + 短篇喺右邊直排
+                                <span class="tag new">已定</span>全集表只佔下半屏
                             </figcaption>
-                            <div class="frame inp" style="max-width: 612px">
-                                <img src="new-opr-drama.webp" alt="廣播劇頁 B" loading="lazy" />
-                            </div>
-                        </figure>
-                    </div>
-                </div>
-                <div class="row">
-                    <h3>全集表</h3>
-                    <div class="pair">
-                        <figure class="shot">
-                            <figcaption><span class="tag new">建議</span>只佔下半屏</figcaption>
                             <div class="frame inp" style="max-width: 612px">
                                 <img src="new-op-drama.webp" alt="全集表" loading="lazy" />
                             </div>
@@ -834,12 +797,9 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Q11</td>
-                                <td>打開・直：指示點／日子條／短篇選擇放下面（A）定右邊（B）？</td>
-                                <td>
-                                    節目頁、廣播劇頁用 B（唱片大啲，上半屏唔再有空位）；今日節目用
-                                    A，因為卡係左右掃，指示點直排方向唔啱。
-                                </td>
+                                <td>—</td>
+                                <td>冇未決定嘅項目。</td>
+                                <td>睇完呢版同 HomeView preview，我再出開發 plan 俾你批。</td>
                             </tr>
                         </tbody>
                     </table>
@@ -906,6 +866,16 @@
                                 <td>Q10</td>
                                 <td>闔上・橫／Seated 左欄</td>
                                 <td>46%</td>
+                            </tr>
+                            <tr>
+                                <td>Q11</td>
+                                <td>打開・直內頁</td>
+                                <td>節目頁、廣播劇頁用 B；今日節目用 A，卡近正方形</td>
+                            </tr>
+                            <tr>
+                                <td>—</td>
+                                <td>「最近收聽」改矮</td>
+                                <td>只限 Duo 闔上・直；普通手機照舊</td>
                             </tr>
                         </tbody>
                     </table>
