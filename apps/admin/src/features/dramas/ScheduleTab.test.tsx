@@ -263,17 +263,19 @@ describe('ScheduleTab — 編輯｜預覽 tabs (用戶 2026-11-12)', () => {
         const preview = screen.getByRole('tab', { name: '預覽' });
         expect(preview).toHaveAttribute('aria-selected', 'false');
         // 同 player 主頁 tabs 一樣：膠囊軌道 + 一粒共用嘅揀中膠囊（墊喺揀中嗰個 tab 底）
-        const pill = screen.getByRole('tablist', { name: '檢視' }).querySelector('.view-pill');
-        expect(pill).toHaveAttribute('aria-hidden', 'true');
-        expect(pill).toHaveAttribute('data-view', 'edit');
+        // 共用 SegmentedTabs：膠囊位置 = tablist 上嘅 --seg-index
+        const tablist = screen.getByRole('tablist', { name: '檢視' });
+        expect(tablist.querySelector('.seg-tabs-pill')).toHaveAttribute('aria-hidden', 'true');
+        expect(tablist.style.getPropertyValue('--seg-index')).toBe('0');
         const panel = document.getElementById(edit.getAttribute('aria-controls') ?? '');
         expect(panel).toHaveAttribute('role', 'tabpanel');
+        expect(panel).toHaveAttribute('aria-labelledby', edit.id);
         expect(panel).toContainElement(screen.getByRole('heading', { name: '上架' }));
         edit.focus();
         fireEvent.keyDown(edit, { key: 'ArrowRight' });
         expect(preview).toHaveAttribute('aria-selected', 'true');
         expect(preview).toHaveFocus();
-        expect(pill).toHaveAttribute('data-view', 'preview');
+        expect(tablist.style.getPropertyValue('--seg-index')).toBe('1');
         expect(screen.queryByRole('heading', { name: '上架' })).not.toBeInTheDocument();
         fireEvent.keyDown(preview, { key: 'ArrowLeft' });
         expect(edit).toHaveAttribute('aria-selected', 'true');

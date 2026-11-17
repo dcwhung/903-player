@@ -180,12 +180,14 @@ const contrastOf = (locator) =>
             b: top.b * alpha + under.b * (1 - alpha),
             a: 1,
         });
-        // 揀咗嘅「編輯｜預覽」tab 本身透明，真正墊底嘅係同層嘅共用膠囊（.view-pill）
+        // 揀咗嘅 SegmentedTabs 掣（「編輯｜預覽」等）本身透明，真正墊底嘅係同層嘅共用膠囊（.seg-tabs-pill）
         const fillOf = (node) => {
-            const pill =
-                node.getAttribute?.('aria-selected') === 'true'
-                    ? node.parentElement?.querySelector(':scope > .view-pill')
-                    : null;
+            const chosen =
+                node.getAttribute?.('aria-selected') === 'true' ||
+                node.getAttribute?.('aria-pressed') === 'true';
+            const pill = chosen
+                ? node.parentElement?.querySelector(':scope > .seg-tabs-pill')
+                : null;
             return getComputedStyle(pill ?? node).backgroundColor;
         };
         const bgOf = (start) => {

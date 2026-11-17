@@ -2,6 +2,19 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.9.3 — 2026-11-17
+
+分段掣統一（用戶 2026-11-17 決定）：新共用元件 `ui/SegmentedTabs`。
+
+### Changed
+
+- 「App 圖示」dialog 嘅裝置掣（iPhone / Android / 瀏覽器分頁）同劇集「類型」（短篇集 / 每日播）改用排程「編輯｜預覽」嘅樣：膠囊軌道 + 一粒共用嘅主色膠囊，換選項時滑過去（減少動態就直接換）；兩組都可以用 ← → / Home / End 換
+- 「所有裝置使用同一裁切」打咗剔時成組裝置掣停用，冇一個顯示揀中（同之前一樣）；停用字色唔再半透明
+
+### Removed
+
+- `ui/Switch` 同舊 `.view-tabs` / `.view-pill` / `.switch` / `.icon-dialog .seg` 樣式（由 `.seg-tabs` 取代）
+
 ## 0.9.2 — 2026-11-17
 
 內建預設 App 圖示嘅 Android maskable 改成滿版（用戶 2026-11-17 決定）。

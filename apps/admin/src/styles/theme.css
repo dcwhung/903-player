@@ -368,7 +368,6 @@ button:disabled {
 .link-btn,
 .handle,
 .chip-remove,
-.switch button,
 .toggle,
 .img-slot,
 .slot-btn,
@@ -1094,45 +1093,43 @@ textarea.autosize {
 }
 
 /*
- * 「編輯｜預覽」tabs（用戶 2026-11-12）：同 player 主頁 tabs 一樣嘅形狀（apps/player HomeTabs）——
- * 膠囊軌道（中性 --surface-2 + 細框）、一粒共用嘅揀中膠囊（--primary 實底，--on-primary 粗體字），未揀嘅冇底色。
+ * SegmentedTabs（ui/SegmentedTabs.tsx）：「編輯｜預覽」、劇集類型、App 圖示裝置共用（用戶 2026-11-17）。
+ * 同 player 主頁 tabs 一樣嘅形狀（apps/player HomeTabs）——膠囊軌道（中性 --surface-2 + 細框）、
+ * 一粒共用嘅揀中膠囊（--primary 實底，--on-primary 粗體字），未揀嘅冇底色。
  * 唔跟 player 嘅奶油黃 / 深藍，改用 admin token（淺深色 --primary 一樣，白字 ≥ 4.5:1）
  */
-.view-tabs {
-    --view-tab-inset: 3px;
+.seg-tabs {
+    --seg-inset: 3px;
     position: relative;
     display: inline-grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--view-tab-inset);
-    padding: var(--view-tab-inset);
+    grid-template-columns: repeat(var(--seg-count), minmax(0, 1fr));
+    gap: var(--seg-inset);
+    width: fit-content;
+    padding: var(--seg-inset);
     border-radius: 999px;
     background: var(--surface-2);
     box-shadow: inset 0 0 0 1px var(--line);
 }
 
-/* 成條軌道得一粒膠囊：用 left / right 定位（兩格一樣闊），換 tab 先可以兩邊分開郁 */
-.view-pill {
+/*
+ * 成條軌道得一粒膠囊：用 left / right 定位，換格先可以兩邊分開郁。
+ * 每格一樣闊，一格加一個 gap = (100% - inset) / 格數（--seg-step），由 --seg-index 數過去
+ */
+.seg-tabs-pill {
+    --seg-step: calc((100% - var(--seg-inset)) / var(--seg-count));
     position: absolute;
-    top: var(--view-tab-inset);
-    bottom: var(--view-tab-inset);
+    top: var(--seg-inset);
+    bottom: var(--seg-inset);
+    left: calc(var(--seg-inset) + var(--seg-index) * var(--seg-step));
+    right: calc(var(--seg-inset) + (var(--seg-count) - 1 - var(--seg-index)) * var(--seg-step));
     border-radius: 999px;
     background: var(--primary);
     box-shadow: var(--shadow-btn);
     pointer-events: none;
 }
 
-.view-pill[data-view='edit'] {
-    left: var(--view-tab-inset);
-    right: calc(50% + var(--view-tab-inset) / 2);
-}
-
-.view-pill[data-view='preview'] {
-    left: calc(50% + var(--view-tab-inset) / 2);
-    right: var(--view-tab-inset);
-}
-
 /* position: relative 令掣疊喺膠囊上面 */
-.view-tabs button {
+.seg-tabs button {
     position: relative;
     gap: 6px;
     padding: 5px 16px;
@@ -1142,20 +1139,36 @@ textarea.autosize {
     color: var(--muted);
     font-size: 14px;
     font-weight: 500;
+    white-space: nowrap;
 }
 
-.view-tabs button:hover:not(:disabled) {
+.seg-tabs button:hover:not(:disabled) {
     background: transparent;
     color: var(--ink);
 }
 
-.view-tabs button[aria-selected='true'],
-.view-tabs button[aria-selected='true']:hover:not(:disabled) {
+.seg-tabs button[aria-selected='true'],
+.seg-tabs button[aria-selected='true']:hover:not(:disabled),
+.seg-tabs button[aria-pressed='true'],
+.seg-tabs button[aria-pressed='true']:hover:not(:disabled) {
     color: var(--on-primary);
     font-weight: 700;
 }
 
-.view-tabs button .lucide {
+/* 成組停用（例如「所有裝置使用同一裁切」）：唔用全域 opacity，--muted 字對 --surface-2 照 ≥ 4.5:1 */
+.seg-tabs button:disabled {
+    opacity: 1;
+    color: var(--muted);
+    cursor: not-allowed;
+}
+
+/* 鎖住但照顯示揀中（上載中，S-1104）：揀中格仲喺主色膠囊上面，字照用 --on-primary */
+.seg-tabs button[aria-pressed='true']:disabled,
+.seg-tabs button[aria-selected='true']:disabled {
+    color: var(--on-primary);
+}
+
+.seg-tabs button .lucide {
     width: 16px;
     height: 16px;
 }
@@ -1165,17 +1178,17 @@ textarea.autosize {
  * 第一次顯示冇 transition 起點，所以唔會滑入；減少動態就冇 transition，即刻換
  */
 @media (prefers-reduced-motion: no-preference) {
-    .view-tabs button {
+    .seg-tabs button {
         transition: color var(--motion-fast) var(--motion-ease);
     }
 
-    .view-pill[data-view='preview'] {
+    .seg-tabs-pill[data-direction='forward'] {
         transition:
             right var(--motion-move) var(--motion-ease),
             left var(--motion-move) var(--motion-ease) var(--motion-trail);
     }
 
-    .view-pill[data-view='edit'] {
+    .seg-tabs-pill[data-direction='back'] {
         transition:
             left var(--motion-move) var(--motion-ease),
             right var(--motion-move) var(--motion-ease) var(--motion-trail);
@@ -1371,14 +1384,6 @@ textarea.autosize {
     color: var(--on-primary);
 }
 
-/* 類型 switch：同一個 hover 問題，揀咗嘅一邊照用實色主色底 + 白字 */
-.switch button[aria-pressed='true'],
-.switch button[aria-pressed='true']:hover:not(:disabled) {
-    background: var(--primary);
-    color: var(--on-primary);
-    box-shadow: var(--shadow-btn);
-}
-
 /* 排程 tab：揀咗嘅短篇 chip 用實色主色底 + 白字（深色主題 --primary 不變，白字對比 ≥ 4.5:1） */
 .arc-tabs button[aria-selected='true'],
 .arc-tabs button[aria-selected='true']:hover:not(:disabled) {
@@ -1396,7 +1401,6 @@ textarea.autosize {
  * （對比淺色深色都 ≥ 4.5:1）；放喺揀咗 rule 後面：揀咗又 disabled 都用呢個樣，狀態由 aria-pressed / aria-selected 報
  */
 .presets button:disabled,
-.switch button:disabled,
 .arc-tabs button:disabled {
     opacity: 1;
     background: var(--surface-2);

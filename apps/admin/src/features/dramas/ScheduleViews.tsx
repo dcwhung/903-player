@@ -7,6 +7,7 @@ import type { SchedulePlan } from '@903-player/catalog';
 import { ChartNoAxesGantt, List, type LucideIcon } from 'lucide-react';
 import { useId, useState, type ReactNode } from 'react';
 import { t } from '../../i18n/t';
+import { segmentTabId } from '../../ui/segmentedTabsModel';
 import { BatchTable } from './BatchTable';
 import { PreviewTimeline } from './PreviewTimeline';
 import { ViewTabs, type ScheduleView } from './ScheduleBars';
@@ -93,7 +94,7 @@ export function ScheduleViews({
     onChange,
 }: ScheduleViewsProps) {
     const [view, setView] = useState<ScheduleView>('edit');
-    const idBase = useId();
+    const panelId = useId();
     const marker = ctx.today;
     const panels = { ctx, form, plan, unreleased, today: marker, onChange };
     return (
@@ -101,14 +102,14 @@ export function ScheduleViews({
             <div className="viewbar">
                 {/* 未儲存講「即將排程…（未儲存）」，唔好扮已排程（用戶 2026-11-12） */}
                 <span className="muted small">{progressText(ctx, { draft })}</span>
-                <ViewTabs view={view} idBase={idBase} onChange={setView} />
+                <ViewTabs view={view} panelId={panelId} onChange={setView} />
             </div>
             {error && <p className="note bad">{t('schedule.planFailed', { error })}</p>}
             <div
-                id={`${idBase}-panel`}
+                id={panelId}
                 className="view-panel"
                 role="tabpanel"
-                aria-labelledby={`${idBase}-tab-${view}`}
+                aria-labelledby={segmentTabId(panelId, view)}
             >
                 {view === 'edit' ? (
                     <div className="split">
