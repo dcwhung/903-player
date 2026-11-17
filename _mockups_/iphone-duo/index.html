@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>iPhone Duo 四種姿勢</title>
+        <meta name="claude:viewport-fit-sides" content="cover" />
+        <style>
+            /* 版面：頂部姿勢導覽；每個姿勢一節，每頁一行「現狀｜建議」真 app 截圖，虛線 = 摺位 */
+            :root {
+                --bg: #eef1f5;
+                --surface: #ffffff;
+                --ink: #18202b;
+                --note: #5d6775;
+                --line: #d3d9e2;
+                --accent: #3b6fb6;
+                --on-accent: #ffffff;
+                --now: #7a8494;
+                --fold: #ff5a3c;
+                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+                --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #10151c;
+                    --surface: #1a212b;
+                    --ink: #e8edf3;
+                    --note: #9aa5b3;
+                    --line: #2e3845;
+                    --accent: #7fa8e6;
+                    --on-accent: #0d1420;
+                    --now: #8b96a6;
+                    --fold: #ff7a60;
+                    color-scheme: dark;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #10151c;
+                --surface: #1a212b;
+                --ink: #e8edf3;
+                --note: #9aa5b3;
+                --line: #2e3845;
+                --accent: #7fa8e6;
+                --on-accent: #0d1420;
+                --now: #8b96a6;
+                --fold: #ff7a60;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html {
+                scroll-behavior: smooth;
+                scroll-padding-top: 76px;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                html {
+                    scroll-behavior: auto;
+                }
+            }
+            body {
+                margin: 0;
+                padding-block: 20px 56px;
+                padding-left: max(16px, env(safe-area-inset-left, 0px));
+                padding-right: max(16px, env(safe-area-inset-right, 0px));
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font);
+                font-size: 15px;
+                line-height: 1.55;
+            }
+            main {
+                display: grid;
+                gap: 28px;
+                max-width: 1840px;
+                margin-inline: auto;
+            }
+            h1 {
+                margin: 0;
+                font-size: 26px;
+                line-height: 1.2;
+            }
+            .lede {
+                margin: 6px 0 0;
+                max-width: 68ch;
+                color: var(--note);
+            }
+            code {
+                font-family: var(--mono);
+                font-size: 0.9em;
+            }
+            nav {
+                position: sticky;
+                top: env(safe-area-inset-top, 0px);
+                z-index: 5;
+                display: flex;
+                gap: 8px;
+                padding-block: 8px;
+                overflow-x: auto;
+                background: var(--bg);
+            }
+            nav a {
+                display: grid;
+                flex: 0 0 auto;
+                padding: 6px 14px;
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                background: var(--surface);
+                color: var(--ink);
+                text-decoration: none;
+                line-height: 1.25;
+            }
+            nav a span {
+                color: var(--note);
+                font-family: var(--mono);
+                font-size: 12px;
+            }
+            nav a:hover,
+            nav a:focus-visible {
+                border-color: var(--accent);
+                outline: none;
+            }
+            section {
+                display: grid;
+                gap: 16px;
+                padding: 20px;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                background: var(--surface);
+            }
+            .sec {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                align-items: baseline;
+            }
+            h2 {
+                margin: 0;
+                font-size: 21px;
+            }
+            .size {
+                color: var(--note);
+                font-family: var(--mono);
+                font-size: 14px;
+            }
+            .notes {
+                display: grid;
+                gap: 4px;
+                margin: 0;
+                padding-left: 20px;
+                max-width: 76ch;
+            }
+            .row {
+                display: grid;
+                gap: 8px;
+                padding-top: 14px;
+                border-top: 1px solid var(--line);
+            }
+            h3 {
+                margin: 0;
+                font-size: 15px;
+            }
+            .pair {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 20px;
+                align-items: flex-start;
+            }
+            .shot {
+                display: grid;
+                gap: 6px;
+                flex: 0 1 auto;
+                min-width: 0;
+                max-width: 100%;
+                margin: 0;
+            }
+            figcaption {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                color: var(--note);
+                font-size: 13px;
+            }
+            .tag {
+                padding: 1px 8px;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            .tag.now {
+                border: 1px solid var(--now);
+                color: var(--now);
+            }
+            .tag.new {
+                background: var(--accent);
+                color: var(--on-accent);
+            }
+            .frame {
+                position: relative;
+                overflow: hidden;
+                border: 1px solid var(--line);
+                border-radius: 18px;
+            }
+            .frame img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+            .frame.fv::after,
+            .frame.fh::after {
+                content: '';
+                position: absolute;
+                pointer-events: none;
+            }
+            .frame.fv::after {
+                inset: 0 auto 0 50%;
+                border-left: 2px dashed var(--fold);
+            }
+            .frame.fh::after {
+                inset: 50% 0 auto 0;
+                border-top: 2px dashed var(--fold);
+            }
+            .legend {
+                display: inline-block;
+                width: 22px;
+                border-top: 2px dashed var(--fold);
+                vertical-align: middle;
+            }
+            .scroll {
+                overflow-x: auto;
+            }
+            table {
+                width: 100%;
+                min-width: 640px;
+                border-collapse: collapse;
+                font-size: 14px;
+            }
+            th,
+            td {
+                padding: 8px 10px;
+                border-bottom: 1px solid var(--line);
+                text-align: left;
+                vertical-align: top;
+            }
+            th {
+                color: var(--note);
+                font-weight: 600;
+            }
+            td:first-child {
+                font-family: var(--mono);
+                white-space: nowrap;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header>
+                <h1>iPhone Duo 四種姿勢</h1>
+                <p class="lede">
+                    P10 #10 preview gate。全部係真 app（v1.37.3，e2e 假資料）喺 Duo viewport
+                    嘅截圖：「現狀」冇改任何嘢，「建議」係臨時改 layout token 影出嚟。<span
+                        class="legend"
+                    ></span>
+                    橙色虛線 = 摺位。確認之後先寫 code。
+                </p>
+            </header>
+            <nav aria-label="姿勢">
+                <a href="#cp"><b>闔上・直</b><span>466 × 678</span></a
+                ><a href="#cl"><b>闔上・橫</b><span>678 × 466</span></a
+                ><a href="#ol"><b>打開・橫</b><span>890 × 626</span></a
+                ><a href="#op"><b>打開・直</b><span>626 × 890</span></a
+                ><a href="#questions"><b>待確認</b><span>6 條</span></a>
+            </nav>
+            <section id="cp">
+                <header class="sec">
+                    <h2>闔上・直</h2>
+                    <span class="size">466 × 678</span>
+                </header>
+                <ul class="notes">
+                    <li>現狀：跌入手機直版（<code>stack</code>），四頁都正常。</li>
+                    <li>主頁每頁得 4 格，9 格要揭 3 頁；格闊咗，封面字俾裁走。</li>
+                    <li><b>建議：主頁轉 3 欄</b>，9 格一頁放晒。其餘三頁唔改。</li>
+                </ul>
+                <div class="row">
+                    <h3>主頁</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame v0" style="max-width: 466px">
+                                <img
+                                    src="now-cp-home.webp"
+                                    alt="闔上・直 主頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag new">建議</span>3 欄，一頁放晒</figcaption>
+                            <div class="frame v0" style="max-width: 466px">
+                                <img
+                                    src="new-cp-home.webp"
+                                    alt="闔上・直 主頁 建議"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>今日節目</h3>
+                    <div class="pair solo">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame v0" style="max-width: 466px">
+                                <img
+                                    src="now-cp-today.webp"
+                                    alt="闔上・直 今日節目 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>節目頁</h3>
+                    <div class="pair solo">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame v0" style="max-width: 466px">
+                                <img
+                                    src="now-cp-show.webp"
+                                    alt="闔上・直 節目頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>廣播劇頁</h3>
+                    <div class="pair solo">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame v0" style="max-width: 466px">
+                                <img
+                                    src="now-cp-drama.webp"
+                                    alt="闔上・直 廣播劇頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section id="cl">
+                <header class="sec">
+                    <h2>闔上・橫</h2>
+                    <span class="size">678 × 466</span>
+                </header>
+                <ul class="notes">
+                    <li>
+                        現狀：同手機打橫一樣（<code>SHORT_LANDSCAPE_QUERY</code>：闊 ≥ 640、高 ≤
+                        561）。
+                    </li>
+                    <li>四頁都放得落，冇裁切。</li>
+                    <li><b>建議：唔改。</b></li>
+                </ul>
+                <div class="row">
+                    <h3>主頁</h3>
+                    <div class="pair solo">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame v0" style="max-width: 678px">
+                                <img
+                                    src="now-cl-home.webp"
+                                    alt="闔上・橫 主頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>今日節目</h3>
+                    <div class="pair solo">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame v0" style="max-width: 678px">
+                                <img
+                                    src="now-cl-today.webp"
+                                    alt="闔上・橫 今日節目 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>節目頁</h3>
+                    <div class="pair solo">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame v0" style="max-width: 678px">
+                                <img
+                                    src="now-cl-show.webp"
+                                    alt="闔上・橫 節目頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>廣播劇頁</h3>
+                    <div class="pair solo">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame v0" style="max-width: 678px">
+                                <img
+                                    src="now-cl-drama.webp"
+                                    alt="闔上・橫 廣播劇頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section id="ol">
+                <header class="sec">
+                    <h2>打開・橫</h2>
+                    <span class="size">890 × 626</span>
+                </header>
+                <ul class="notes">
+                    <li>現狀：闊橫版，清單佔 34–38%，播放器佔其餘。</li>
+                    <li>問題：摺位喺正中（x = 445），而家條摺痕切過播放卡同唱片左邊。</li>
+                    <li>
+                        <b>建議 A：兩欄對齊摺位，各佔一半</b>（左清單 /
+                        節目格，右播放器），冇嘢跨過摺痕。
+                    </li>
+                    <li>
+                        <b>建議 B（可加）：主頁左邊加 rail</b
+                        >，取代頂部「節目｜廣播劇」掣，節目格多一行高度。
+                    </li>
+                </ul>
+                <div class="row">
+                    <h3>主頁</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame fv" style="max-width: 890px">
+                                <img
+                                    src="now-ol-home.webp"
+                                    alt="打開・橫 主頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag new">建議</span>A：對齊摺位</figcaption>
+                            <div class="frame fv" style="max-width: 890px">
+                                <img
+                                    src="new-ol-home.webp"
+                                    alt="打開・橫 主頁 建議"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>主頁 + rail</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame fv" style="max-width: 890px">
+                                <img
+                                    src="now-ol-home.webp"
+                                    alt="打開・橫 主頁 + rail 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption>
+                                <span class="tag new">建議</span>B：左邊 rail（概念圖）
+                            </figcaption>
+                            <div class="frame fv" style="max-width: 890px">
+                                <img
+                                    src="new-ol-home-rail.webp"
+                                    alt="打開・橫 主頁 + rail 建議"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>今日節目</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame fv" style="max-width: 890px">
+                                <img
+                                    src="now-ol-today.webp"
+                                    alt="打開・橫 今日節目 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag new">建議</span>A：對齊摺位</figcaption>
+                            <div class="frame fv" style="max-width: 890px">
+                                <img
+                                    src="new-ol-today.webp"
+                                    alt="打開・橫 今日節目 建議"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>節目頁</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame fv" style="max-width: 890px">
+                                <img
+                                    src="now-ol-show.webp"
+                                    alt="打開・橫 節目頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag new">建議</span>A：對齊摺位</figcaption>
+                            <div class="frame fv" style="max-width: 890px">
+                                <img
+                                    src="new-ol-show.webp"
+                                    alt="打開・橫 節目頁 建議"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>廣播劇頁</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame fv" style="max-width: 890px">
+                                <img
+                                    src="now-ol-drama.webp"
+                                    alt="打開・橫 廣播劇頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag new">建議</span>A：對齊摺位</figcaption>
+                            <div class="frame fv" style="max-width: 890px">
+                                <img
+                                    src="new-ol-drama.webp"
+                                    alt="打開・橫 廣播劇頁 建議"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section id="op">
+                <header class="sec">
+                    <h2>打開・直</h2>
+                    <span class="size">626 × 890</span>
+                </header>
+                <ul class="notes">
+                    <li>現狀：仍然係手機直版，內容限 480px 闊，左右各留白 73px。</li>
+                    <li>摺位打橫喺正中（y = 445）。</li>
+                    <li><b>建議：用盡 626px 闊；主頁 3 欄</b>，9 格一頁放晒。</li>
+                    <li>
+                        <b>節目頁 / 今日節目：播放器喺摺位上面、清單喺下面</b>（正式版會將播放器撐到
+                        445px；截圖未做呢步）。
+                    </li>
+                </ul>
+                <div class="row">
+                    <h3>主頁</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame fh" style="max-width: 626px">
+                                <img
+                                    src="now-op-home.webp"
+                                    alt="打開・直 主頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag new">建議</span>全闊 + 3 欄</figcaption>
+                            <div class="frame fh" style="max-width: 626px">
+                                <img
+                                    src="new-op-home.webp"
+                                    alt="打開・直 主頁 建議"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>今日節目</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame fh" style="max-width: 626px">
+                                <img
+                                    src="now-op-today.webp"
+                                    alt="打開・直 今日節目 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag new">建議</span>全闊</figcaption>
+                            <div class="frame fh" style="max-width: 626px">
+                                <img
+                                    src="new-op-today.webp"
+                                    alt="打開・直 今日節目 建議"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>節目頁</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame fh" style="max-width: 626px">
+                                <img
+                                    src="now-op-show.webp"
+                                    alt="打開・直 節目頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag new">建議</span>全闊</figcaption>
+                            <div class="frame fh" style="max-width: 626px">
+                                <img
+                                    src="new-op-show.webp"
+                                    alt="打開・直 節目頁 建議"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>廣播劇頁</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame fh" style="max-width: 626px">
+                                <img
+                                    src="now-op-drama.webp"
+                                    alt="打開・直 廣播劇頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag new">建議</span>全闊</figcaption>
+                            <div class="frame fh" style="max-width: 626px">
+                                <img
+                                    src="new-op-drama.webp"
+                                    alt="打開・直 廣播劇頁 建議"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section id="questions">
+                <header class="sec"><h2>待確認</h2></header>
+                <div class="scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>問題</th>
+                                <th>我嘅建議</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Q1</td>
+                                <td>
+                                    Viewport 尺寸：Progressier FAQ 寫打開 890 × 626、闔上 466 ×
+                                    678；但佢個 simulator 嘅 iframe 實際係 876 × 612、426 ×
+                                    612。用邊組？
+                                </td>
+                                <td>
+                                    用 FAQ 值做 e2e viewport；斷點留鬆啲，兩組都入到同一個 layout。
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Q2</td>
+                                <td>闔上・直：主頁轉 3 欄、一頁放晒？</td>
+                                <td>做。普通手機（闊 &lt; 440px）照舊 2 欄。</td>
+                            </tr>
+                            <tr>
+                                <td>Q3</td>
+                                <td>打開・橫：A 淨係對齊摺位，定 B 加埋左邊 rail？</td>
+                                <td>
+                                    A。Rail 令右欄唔再正正對住摺位，而且主頁得兩三個分類，得益細。
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Q4</td>
+                                <td>打開・直：用盡全闊 + 主頁 3 欄，播放器喺摺位上、清單喺下？</td>
+                                <td>做。</td>
+                            </tr>
+                            <tr>
+                                <td>Q5</td>
+                                <td>
+                                    Simulator 仲有 Seated（半開放枱）同
+                                    Standing（帳篷）兩種姿勢，做唔做？
+                                </td>
+                                <td>
+                                    v2.0.0 唔另外做：Seated
+                                    上半屏啱啱係「打開・直」摺位以上嗰截（播放器），Standing 用外屏
+                                    = 闔上・橫。
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Q6</td>
+                                <td>P10 入面先做 #10（Duo）定 9a（HomeView square）？</td>
+                                <td>先 #10：只改 token 同斷點，風險細；9a 要新 layout mode。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <ul class="notes">
+                    <li>
+                        「建議」主頁 3 欄截圖漏咗最尾嘅「今日節目」格，係臨時 hack
+                        嘅副作用；正式版會有 9 格。
+                    </li>
+                    <li>Rail 概念圖嘅 icon、位置未定稿，節目格比例亦未調。</li>
+                    <li>
+                        冇真機：摺位位置假設喺正中，Safari 喺 Duo 有冇安全區 / 摺位 API 未驗證。
+                    </li>
+                </ul>
+            </section>
+        </main>
+    </body>
+</html>
