@@ -87,3 +87,44 @@ next_agent: quality-assurance
 branch: "feature/layout/iphone-duo"
 context: "P10 lane 0 visual diff tool pass 95; merge target release/v2.0.0 (no develop); fix W-781 (drama-daily scene captures not-found page) + S-1106..S-1109, S-1112, S-1113 in this PR before merge; QA S1 chain repo-tooling; CI e2e for e0797c9 still running"
 ```
+
+## Re-review — 2026-11-17 — `b47d102`
+
+- 範圍：只驗 `git show b47d102`（6 檔，+118 / −36，全部喺 `apps/player/e2e/`）對 W-781、S-1106 – S-1109、S-1112、S-1113 嘅修正；冇重新 review 成個 branch，冇新 Review Item ID
+- 結果：**✅ pass（100 / 100）**，7 條全部解決，冇新嘅 🔴 / 🟡
+- Hard gates：冇重跑，引用 developer 修正後嘅結果（lint、tsc、unit、`npm run e2e` 925 PASS、`npm run e2e:visual` 對 origin/main 180 / 180 一樣）；CI e2e 仲跑緊，merge 前由 main agent 確認綠
+
+| ID     | 狀態      | 驗證                                                                                                                                                                                                                                                                                                                             |
+| ------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-781  | ✅ 已解決 | 方案 A：`seedDailyCatalog` 用 `E2E_CATALOG_GLOB` + `catalogRoute` 餵一份淨係開返 `c18` 嘅 catalog，`**/c18/*.m4a` 用 `serveWav`（600 秒靜音，夠跳去 60 秒）。睇過 `head/drama-daily@390x844.png`、`@1000x561.png`：真係 18 樓 C 座頁，暫停喺 1:00 / 10:00，有日子條同集數表；18 個 viewport 都有檔（1000×561 由 6 KB 變 155 KB） |
+| S-1106 | ✅ 已解決 | `openTab` 等 `aria-pressed` 嘅掣；`drama-daily` 等標題，而且 `openPaused` 入面 `ensurePlaying` 喺 not-found 頁會 throw → ERROR。其餘情境本身已經有到位條件（`nav[aria-busy="false"]`、`ensurePlaying`、全集表）                                                                                                                  |
+| S-1107 | ✅ 已解決 | `compareShot` 第一次唔同就印 `RETRY <名>`，重影一樣都有痕跡                                                                                                                                                                                                                                                                      |
+| S-1108 | ✅ 已解決 | `pendingCleanup` 喺 `git worktree add` 之前已經設定，SIGINT / SIGTERM handler 停 preview、清 worktree 同暫存 folder，exit 130 / 143；`removeWorktree` 會清返 `pendingCleanup`，唔會清兩次。而家 `git worktree list` 得主 repo、`/tmp` 冇 `903-visual-*`                                                                          |
+| S-1109 | ✅ 已解決 | 撞 port 訊息用 `portEnv`（visual 傳 `VISUAL_PORT`，`run.mjs` 預設 `E2E_PORT`）；`VISUAL_PORT` 經 `parsePort` 驗，唔啱就 throw → `main().catch` 印訊息、exit 1                                                                                                                                                                    |
+| S-1112 | ✅ 已解決 | `visualModel.mjs` 註解唔再指去未有嘅 `deviceQueries.node.test.ts`                                                                                                                                                                                                                                                                |
+| S-1113 | ✅ 已解決 | `previewServer.mjs` export `viteBin()`（`fileURLToPath`），preview 同 build 共用；`parsePort` 都搬咗去共用                                                                                                                                                                                                                       |
+
+### 修正有冇帶嚟新問題
+
+- `visualScenes.mjs`：route 後註冊先試，新嘅 catalog / 音檔 route 蓋過 harness 嘅 404，只影響 `drama-daily` 自己嘅 context。Catalog 同圖兩個 build 都由 head 嘅 source 生成，呢個情境比嘅係版面，資料改動唔會喺呢度反映（其他情境照用各自 build 嘅內建資料）
+- `run.mjs`：`portOrExit` 對外行為同以前一樣（同一句訊息、exit 1）；`parsePort` 邏輯原封搬走，只係由 `process.exit` 變 throw
+- `visualDiff.mjs` signal 處理，兩點只係記錄（冇重現、唔扣分、唔使跟進）：
+    - build 用 `spawnSync`，handler 要等同步 build 完先行。淨係 `kill` node 嗰個 pid 嘅話，會遲啲先停，但清理同 exit code 啱；Ctrl-C 成個 process group 收到，vite 即停，由 `buildBase` 嘅 `catch` 清
+    - `--keep-worktree` 被 signal 打斷時 worktree 都會清走（打斷咗嘅 run 冇嘢好留，合理）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T1
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "100%"
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/layout/iphone-duo"
+context: "Re-review of b47d102: W-781, S-1106..S-1109, S-1112, S-1113 all resolved, no new findings; hard gates cited from developer run (not re-run); merge target release/v2.0.0 (no develop); QA S1 chain repo-tooling; report committed locally, NOT pushed (CI e2e for b47d102 in progress, main agent pushes after green)"
+```
