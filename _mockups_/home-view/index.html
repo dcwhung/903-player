@@ -972,6 +972,50 @@
             .scr.dr .hd.v4 {
                 height: calc(var(--u) * 52);
             }
+            .disc.blank {
+                background: radial-gradient(
+                    circle,
+                    #111 0 3%,
+                    #2a2a2a 3.5% 4%,
+                    #0a0a0a 4.5% 30%,
+                    #1c1c1c 30.5% 31%,
+                    #0a0a0a 31.5%
+                );
+            }
+            .arc.idle {
+                background: conic-gradient(from 225deg, #e9c94f 0 270deg, transparent 270deg);
+                opacity: 0.6;
+            }
+            .ctl.idle {
+                opacity: 0.45;
+            }
+            .allbtn {
+                display: inline-flex;
+                gap: calc(var(--u) * 4);
+                align-items: center;
+                height: calc(var(--u) * 32);
+                padding: 0 calc(var(--u) * 12);
+                border-radius: calc(var(--u) * 16);
+                background: #3b2408;
+                color: #ffe680;
+                font-size: calc(var(--u) * 13);
+            }
+            .allbtn svg {
+                width: calc(var(--u) * 16);
+                height: calc(var(--u) * 16);
+            }
+            .ep em b {
+                display: block;
+                color: #3b2408;
+                font-size: calc(var(--u) * 13);
+            }
+            .scr.dr .ep.on {
+                background: #ffe9a0;
+                box-shadow: inset calc(var(--u) * 3) 0 0 var(--gold);
+            }
+            .scr.dr .ep.on em {
+                color: var(--dim);
+            }
             .legend {
                 display: inline-block;
                 width: 22px;
@@ -1009,7 +1053,7 @@
             <header>
                 <h1>HomeView 方形版面</h1>
                 <p class="lede">
-                    P10 #9a preview gate，第 4 版，544 × 544。「現狀」係真 app
+                    P10 #9a preview gate，第 5 版，544 × 544。「現狀」係真 app
                     截圖；其餘係新版面，用靜態 HTML 砌，顏色、字體、唱片同封面跟 app。確認之後先寫
                     code。
                 </p>
@@ -1019,7 +1063,7 @@
                 ><a href="#show"><b>節目頁</b><span>清單 icon</span></a
                 ><a href="#today"><b>今日節目</b><span>節目 selector</span></a
                 ><a href="#drama"><b>廣播劇頁</b><span>清單 icon</span></a
-                ><a href="#questions"><b>待確認</b><span>1 條</span></a>
+                ><a href="#questions"><b>待確認</b><span>0 條</span></a>
             </nav>
             <section id="home">
                 <header class="sec">
@@ -1145,7 +1189,7 @@
                         撳 icon：集數清單由下面升起，icon 變實色表示開緊；再撳、撳 ✕
                         或者向下拖都閂到。
                     </li>
-                    <li>底部騰出嘅位畀唱片，由 200px 加大到 230px。</li>
+                    <li>內容用盡成個高度：唱片加大到 270px，日子條貼近底邊。</li>
                 </ul>
                 <div class="row">
                     <h3>節目頁</h3>
@@ -1176,19 +1220,19 @@
                                         <div
                                             class="arc"
                                             style="
-                                                left: calc(var(--u) * 111);
-                                                top: calc(var(--u) * 50);
-                                                width: calc(var(--u) * 322);
-                                                height: calc(var(--u) * 322);
+                                                left: calc(var(--u) * 83);
+                                                top: calc(var(--u) * 45);
+                                                width: calc(var(--u) * 378);
+                                                height: calc(var(--u) * 378);
                                             "
                                         ></div>
                                         <div
                                             class="disc"
                                             style="
-                                                left: calc(var(--u) * 157);
-                                                top: calc(var(--u) * 96);
-                                                width: calc(var(--u) * 230);
-                                                height: calc(var(--u) * 230);
+                                                left: calc(var(--u) * 137);
+                                                top: calc(var(--u) * 99);
+                                                width: calc(var(--u) * 270);
+                                                height: calc(var(--u) * 270);
                                                 background-image:
                                                     radial-gradient(
                                                         circle,
@@ -1203,7 +1247,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 336);
+                                                top: calc(var(--u) * 380);
                                             "
                                         >
                                             <i style="margin-right: calc(var(--u) * 24)">12:40</i
@@ -1235,7 +1279,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 410);
+                                                top: calc(var(--u) * 446);
                                             "
                                         >
                                             現正播放
@@ -1245,7 +1289,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 430);
+                                                top: calc(var(--u) * 466);
                                             "
                                         >
                                             <span class="on"><small>六</small>28/11</span
@@ -1285,19 +1329,19 @@
                                         <div
                                             class="arc"
                                             style="
-                                                left: calc(var(--u) * 111);
-                                                top: calc(var(--u) * 50);
-                                                width: calc(var(--u) * 322);
-                                                height: calc(var(--u) * 322);
+                                                left: calc(var(--u) * 83);
+                                                top: calc(var(--u) * 45);
+                                                width: calc(var(--u) * 378);
+                                                height: calc(var(--u) * 378);
                                             "
                                         ></div>
                                         <div
                                             class="disc"
                                             style="
-                                                left: calc(var(--u) * 157);
-                                                top: calc(var(--u) * 96);
-                                                width: calc(var(--u) * 230);
-                                                height: calc(var(--u) * 230);
+                                                left: calc(var(--u) * 137);
+                                                top: calc(var(--u) * 99);
+                                                width: calc(var(--u) * 270);
+                                                height: calc(var(--u) * 270);
                                                 background-image:
                                                     radial-gradient(
                                                         circle,
@@ -1312,7 +1356,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 336);
+                                                top: calc(var(--u) * 380);
                                             "
                                         >
                                             <i style="margin-right: calc(var(--u) * 24)">12:40</i
@@ -1344,7 +1388,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 410);
+                                                top: calc(var(--u) * 446);
                                             "
                                         >
                                             現正播放
@@ -1354,7 +1398,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 430);
+                                                top: calc(var(--u) * 466);
                                             "
                                         >
                                             <span class="on"><small>六</small>28/11</span
@@ -1465,19 +1509,19 @@
                                             <div
                                                 class="arc"
                                                 style="
-                                                    left: calc(var(--u) * 125);
-                                                    top: calc(var(--u) * 50);
-                                                    width: calc(var(--u) * 294);
-                                                    height: calc(var(--u) * 294);
+                                                    left: calc(var(--u) * 97);
+                                                    top: calc(var(--u) * 46);
+                                                    width: calc(var(--u) * 350);
+                                                    height: calc(var(--u) * 350);
                                                 "
                                             ></div>
                                             <div
                                                 class="disc"
                                                 style="
-                                                    left: calc(var(--u) * 167);
-                                                    top: calc(var(--u) * 92);
-                                                    width: calc(var(--u) * 210);
-                                                    height: calc(var(--u) * 210);
+                                                    left: calc(var(--u) * 147);
+                                                    top: calc(var(--u) * 96);
+                                                    width: calc(var(--u) * 250);
+                                                    height: calc(var(--u) * 250);
                                                     background-image:
                                                         radial-gradient(
                                                             circle,
@@ -1493,7 +1537,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 316);
+                                                top: calc(var(--u) * 356);
                                             "
                                         >
                                             <i style="margin-right: calc(var(--u) * 24)">3:10</i
@@ -1525,7 +1569,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 388);
+                                                top: calc(var(--u) * 420);
                                             "
                                         >
                                             現正播放：30/11（一）
@@ -1535,7 +1579,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 410);
+                                                top: calc(var(--u) * 440);
                                             "
                                         >
                                             <span class="on"
@@ -1594,19 +1638,19 @@
                                             <div
                                                 class="arc"
                                                 style="
-                                                    left: calc(var(--u) * 125);
-                                                    top: calc(var(--u) * 50);
-                                                    width: calc(var(--u) * 294);
-                                                    height: calc(var(--u) * 294);
+                                                    left: calc(var(--u) * 97);
+                                                    top: calc(var(--u) * 46);
+                                                    width: calc(var(--u) * 350);
+                                                    height: calc(var(--u) * 350);
                                                 "
                                             ></div>
                                             <div
                                                 class="disc"
                                                 style="
-                                                    left: calc(var(--u) * 167);
-                                                    top: calc(var(--u) * 92);
-                                                    width: calc(var(--u) * 210);
-                                                    height: calc(var(--u) * 210);
+                                                    left: calc(var(--u) * 147);
+                                                    top: calc(var(--u) * 96);
+                                                    width: calc(var(--u) * 250);
+                                                    height: calc(var(--u) * 250);
                                                     background-image:
                                                         radial-gradient(
                                                             circle,
@@ -1622,7 +1666,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 316);
+                                                top: calc(var(--u) * 356);
                                             "
                                         >
                                             <i style="margin-right: calc(var(--u) * 24)">3:10</i
@@ -1654,7 +1698,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 388);
+                                                top: calc(var(--u) * 420);
                                             "
                                         >
                                             現正播放：30/11（一）
@@ -1664,7 +1708,7 @@
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 410);
+                                                top: calc(var(--u) * 440);
                                             "
                                         >
                                             <span class="on"
@@ -1775,20 +1819,24 @@
             <section id="drama">
                 <header class="sec">
                     <h2>廣播劇頁</h2>
-                    <span class="size">清單 icon 開全集表</span>
+                    <span class="size">跟住你喺邊一層</span>
                 </header>
                 <ul class="notes">
-                    <li>日子條換成短篇名同集名。</li>
                     <li>
-                        清單 icon 嘅 badge 係短篇數；撳開係現有全集表（封面 +
-                        短篇清單），喺入面揀短篇同集數，同而家一樣。
+                        <b>入咗劇、未揀短篇：</b>頁面顯示「全集」，唱片空白；badge 係短篇數；清單
+                        icon 撳開係<b>全集表</b>。
                     </li>
+                    <li>
+                        <b>播緊某個短篇：</b>頁面顯示短篇名同集名；badge 係嗰個短篇嘅集數；清單 icon
+                        撳開係<b>短篇表</b>（嗰個短篇嘅集數）。
+                    </li>
+                    <li>短篇表右上有「全集」掣，撳就換返全集表，可以轉去第二個短篇。</li>
                 </ul>
                 <div class="row">
-                    <h3>廣播劇頁</h3>
+                    <h3>未揀短篇</h3>
                     <div class="pair">
                         <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
-                            <figcaption><span class="tag new">建議</span>播放中</figcaption>
+                            <figcaption><span class="tag new">建議</span>顯示全集</figcaption>
                             <div class="frame sq">
                                 <div class="stage">
                                     <div class="scr dr">
@@ -1810,42 +1858,33 @@
                                                         <path d="M12 11v6M12 7.5v.5" /></svg></i
                                             ></span>
                                         </div>
-                                        <div style="--hole: #222">
-                                            <div
-                                                class="arc"
-                                                style="
-                                                    left: calc(var(--u) * 111);
-                                                    top: calc(var(--u) * 58);
-                                                    width: calc(var(--u) * 322);
-                                                    height: calc(var(--u) * 322);
-                                                "
-                                            ></div>
-                                            <div
-                                                class="disc"
-                                                style="
-                                                    left: calc(var(--u) * 157);
-                                                    top: calc(var(--u) * 104);
-                                                    width: calc(var(--u) * 230);
-                                                    height: calc(var(--u) * 230);
-                                                    background-image:
-                                                        radial-gradient(
-                                                            circle,
-                                                            var(--hole, #111) 0 7%,
-                                                            transparent 7.5%
-                                                        ),
-                                                        url('disc-chisee.webp');
-                                                "
-                                            ></div>
-                                        </div>
                                         <div
-                                            class="ctl"
+                                            class="arc idle"
+                                            style="
+                                                left: calc(var(--u) * 97);
+                                                top: calc(var(--u) * 60);
+                                                width: calc(var(--u) * 350);
+                                                height: calc(var(--u) * 350);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="disc blank"
+                                            style="
+                                                left: calc(var(--u) * 147);
+                                                top: calc(var(--u) * 110);
+                                                width: calc(var(--u) * 250);
+                                                height: calc(var(--u) * 250);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl idle"
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 344);
+                                                top: calc(var(--u) * 370);
                                             "
                                         >
-                                            <i style="margin-right: calc(var(--u) * 24)">2:05</i
+                                            <i style="margin-right: calc(var(--u) * 24)">--:--</i
                                             ><svg viewBox="0 0 24 24" aria-hidden="true">
                                                 <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
                                             ><span
@@ -1867,44 +1906,34 @@
                                                 <path
                                                     d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
                                                 /></svg
-                                            ><i style="margin-left: calc(var(--u) * 24)">8:30</i>
-                                        </div>
-                                        <div
-                                            class="nowp"
-                                            style="
-                                                left: calc(var(--u) * 0);
-                                                right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 418);
-                                            "
-                                        >
-                                            現正播放
+                                            ><i style="margin-left: calc(var(--u) * 24)">--:--</i>
                                         </div>
                                         <div
                                             class="abs"
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 438);
+                                                top: calc(var(--u) * 446);
                                                 font-size: calc(var(--u) * 22);
                                                 text-align: center;
                                                 font-weight: 700;
                                                 color: var(--cream);
                                             "
                                         >
-                                            三十六計
+                                            全集
                                         </div>
                                         <div
                                             class="abs"
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 470);
+                                                top: calc(var(--u) * 478);
                                                 font-size: calc(var(--u) * 13);
                                                 text-align: center;
-                                                color: var(--dim);
+                                                color: var(--gold);
                                             "
                                         >
-                                            第 1 集 · 瞞天過海：隱形墨水筆
+                                            揀一個短篇開始收聽
                                         </div>
                                     </div>
                                 </div>
@@ -1912,7 +1941,7 @@
                         </figure>
                         <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
                             <figcaption>
-                                <span class="tag new">建議</span>撳清單 icon：全集表升起
+                                <span class="tag new">建議</span>撳清單 icon：全集表
                             </figcaption>
                             <div class="frame sq">
                                 <div class="stage">
@@ -1935,42 +1964,33 @@
                                                         <path d="M12 11v6M12 7.5v.5" /></svg></i
                                             ></span>
                                         </div>
-                                        <div style="--hole: #222">
-                                            <div
-                                                class="arc"
-                                                style="
-                                                    left: calc(var(--u) * 111);
-                                                    top: calc(var(--u) * 58);
-                                                    width: calc(var(--u) * 322);
-                                                    height: calc(var(--u) * 322);
-                                                "
-                                            ></div>
-                                            <div
-                                                class="disc"
-                                                style="
-                                                    left: calc(var(--u) * 157);
-                                                    top: calc(var(--u) * 104);
-                                                    width: calc(var(--u) * 230);
-                                                    height: calc(var(--u) * 230);
-                                                    background-image:
-                                                        radial-gradient(
-                                                            circle,
-                                                            var(--hole, #111) 0 7%,
-                                                            transparent 7.5%
-                                                        ),
-                                                        url('disc-chisee.webp');
-                                                "
-                                            ></div>
-                                        </div>
                                         <div
-                                            class="ctl"
+                                            class="arc idle"
+                                            style="
+                                                left: calc(var(--u) * 97);
+                                                top: calc(var(--u) * 60);
+                                                width: calc(var(--u) * 350);
+                                                height: calc(var(--u) * 350);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="disc blank"
+                                            style="
+                                                left: calc(var(--u) * 147);
+                                                top: calc(var(--u) * 110);
+                                                width: calc(var(--u) * 250);
+                                                height: calc(var(--u) * 250);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl idle"
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 344);
+                                                top: calc(var(--u) * 370);
                                             "
                                         >
-                                            <i style="margin-right: calc(var(--u) * 24)">2:05</i
+                                            <i style="margin-right: calc(var(--u) * 24)">--:--</i
                                             ><svg viewBox="0 0 24 24" aria-hidden="true">
                                                 <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
                                             ><span
@@ -1992,44 +2012,34 @@
                                                 <path
                                                     d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
                                                 /></svg
-                                            ><i style="margin-left: calc(var(--u) * 24)">8:30</i>
-                                        </div>
-                                        <div
-                                            class="nowp"
-                                            style="
-                                                left: calc(var(--u) * 0);
-                                                right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 418);
-                                            "
-                                        >
-                                            現正播放
+                                            ><i style="margin-left: calc(var(--u) * 24)">--:--</i>
                                         </div>
                                         <div
                                             class="abs"
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 438);
+                                                top: calc(var(--u) * 446);
                                                 font-size: calc(var(--u) * 22);
                                                 text-align: center;
                                                 font-weight: 700;
                                                 color: var(--cream);
                                             "
                                         >
-                                            三十六計
+                                            全集
                                         </div>
                                         <div
                                             class="abs"
                                             style="
                                                 left: calc(var(--u) * 0);
                                                 right: calc(var(--u) * 0);
-                                                top: calc(var(--u) * 470);
+                                                top: calc(var(--u) * 478);
                                                 font-size: calc(var(--u) * 13);
                                                 text-align: center;
-                                                color: var(--dim);
+                                                color: var(--gold);
                                             "
                                         >
-                                            第 1 集 · 瞞天過海：隱形墨水筆
+                                            揀一個短篇開始收聽
                                         </div>
                                         <div class="scrim"></div>
                                         <div class="sheet dsheet">
@@ -2115,6 +2125,318 @@
                         </figure>
                     </div>
                 </div>
+                <div class="row">
+                    <h3>播緊短篇</h3>
+                    <div class="pair">
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption><span class="tag new">建議</span>顯示短篇</figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr dr">
+                                        <div class="hd v4">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>芝See菇Bi Family</b
+                                            ><span
+                                                ><i class=""
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                        /></svg
+                                                    ><em>36</em></i
+                                                ><i
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <circle cx="12" cy="12" r="9" />
+                                                        <path d="M12 11v6M12 7.5v.5" /></svg></i
+                                            ></span>
+                                        </div>
+                                        <div style="--hole: #222">
+                                            <div
+                                                class="arc"
+                                                style="
+                                                    left: calc(var(--u) * 97);
+                                                    top: calc(var(--u) * 60);
+                                                    width: calc(var(--u) * 350);
+                                                    height: calc(var(--u) * 350);
+                                                "
+                                            ></div>
+                                            <div
+                                                class="disc"
+                                                style="
+                                                    left: calc(var(--u) * 147);
+                                                    top: calc(var(--u) * 110);
+                                                    width: calc(var(--u) * 250);
+                                                    height: calc(var(--u) * 250);
+                                                    background-image:
+                                                        radial-gradient(
+                                                            circle,
+                                                            var(--hole, #111) 0 7%,
+                                                            transparent 7.5%
+                                                        ),
+                                                        url('disc-chisee.webp');
+                                                "
+                                            ></div>
+                                        </div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 370);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">2:05</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">8:30</i>
+                                        </div>
+                                        <div
+                                            class="nowp"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 434);
+                                            "
+                                        >
+                                            現正播放
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 452);
+                                                font-size: calc(var(--u) * 22);
+                                                text-align: center;
+                                                font-weight: 700;
+                                                color: var(--cream);
+                                            "
+                                        >
+                                            三十六計
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 484);
+                                                font-size: calc(var(--u) * 13);
+                                                text-align: center;
+                                                color: var(--dim);
+                                            "
+                                        >
+                                            第 1 集 · 瞞天過海：隱形墨水筆
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption>
+                                <span class="tag new">建議</span>撳清單 icon：短篇表
+                            </figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr dr">
+                                        <div class="hd v4">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>芝See菇Bi Family</b
+                                            ><span
+                                                ><i class="open"
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                        /></svg
+                                                    ><em>36</em></i
+                                                ><i
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <circle cx="12" cy="12" r="9" />
+                                                        <path d="M12 11v6M12 7.5v.5" /></svg></i
+                                            ></span>
+                                        </div>
+                                        <div style="--hole: #222">
+                                            <div
+                                                class="arc"
+                                                style="
+                                                    left: calc(var(--u) * 97);
+                                                    top: calc(var(--u) * 60);
+                                                    width: calc(var(--u) * 350);
+                                                    height: calc(var(--u) * 350);
+                                                "
+                                            ></div>
+                                            <div
+                                                class="disc"
+                                                style="
+                                                    left: calc(var(--u) * 147);
+                                                    top: calc(var(--u) * 110);
+                                                    width: calc(var(--u) * 250);
+                                                    height: calc(var(--u) * 250);
+                                                    background-image:
+                                                        radial-gradient(
+                                                            circle,
+                                                            var(--hole, #111) 0 7%,
+                                                            transparent 7.5%
+                                                        ),
+                                                        url('disc-chisee.webp');
+                                                "
+                                            ></div>
+                                        </div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 370);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">2:05</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">8:30</i>
+                                        </div>
+                                        <div
+                                            class="nowp"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 434);
+                                            "
+                                        >
+                                            現正播放
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 452);
+                                                font-size: calc(var(--u) * 22);
+                                                text-align: center;
+                                                font-weight: 700;
+                                                color: var(--cream);
+                                            "
+                                        >
+                                            三十六計
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 484);
+                                                font-size: calc(var(--u) * 13);
+                                                text-align: center;
+                                                color: var(--dim);
+                                            "
+                                        >
+                                            第 1 集 · 瞞天過海：隱形墨水筆
+                                        </div>
+                                        <div class="scrim"></div>
+                                        <div class="sheet">
+                                            <header>
+                                                <span>三十六計 <small>共 36 集</small></span
+                                                ><span class="allbtn"
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                        /></svg
+                                                    >全集</span
+                                                >
+                                            </header>
+                                            <div class="ep on">
+                                                <span>第 1 集</span
+                                                ><em
+                                                    ><b>瞞天過海：隱形墨水筆</b>播放中 · 2:05 /
+                                                    8:30</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14M16 5v14" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>第 2 集</span
+                                                ><em><b>無中生有：你騙我騙你</b>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>第 3 集</span
+                                                ><em><b>聲東擊西：突擊檢查大作戰</b>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>第 4 集</span
+                                                ><em><b>順手牽羊：一代橘王苦榮</b>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                    </div>
+                </div>
             </section>
             <section id="questions">
                 <header class="sec"><h2>待確認</h2></header>
@@ -2129,11 +2451,9 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td>S8</td>
-                                <td>廣播劇頁 badge 顯示乜？圖入面係短篇數（12）。</td>
-                                <td>
-                                    短篇數，因為撳開係全集表；如果你想顯示揀中短篇嘅集數（36）話我知。
-                                </td>
+                                <td>—</td>
+                                <td>冇未決定嘅項目。</td>
+                                <td>確認呢版之後，我出開發 plan 俾你批。</td>
                             </tr>
                         </tbody>
                     </table>
@@ -2183,6 +2503,11 @@
                                 <td>S7</td>
                                 <td>主頁橫額</td>
                                 <td>左欄頂部固定闊版橫額</td>
+                            </tr>
+                            <tr>
+                                <td>S8</td>
+                                <td>廣播劇頁</td>
+                                <td>未揀短篇顯示全集、開全集表；播緊短篇顯示短篇、開短篇表</td>
                             </tr>
                         </tbody>
                     </table>
