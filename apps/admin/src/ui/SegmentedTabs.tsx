@@ -89,13 +89,16 @@ export function SegmentedTabs<T extends string>(props: SegmentedTabsProps<T>) {
     );
     const direction = useSlideDirection(index);
     const isTabs = mode === 'tabs';
+    // 由 focus 嗰格起計（W-780）：toggle 模式每粒掣都可以 Tab 到，focus 未必喺揀中格
     const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-        const target = nextSegmentIndex(event.key, index, options.length);
+        const buttons = [...(groupRef.current?.querySelectorAll('button') ?? [])];
+        const from = Math.max(0, buttons.indexOf(event.currentTarget));
+        const target = nextSegmentIndex(event.key, from, options.length);
         const option = target === null ? undefined : options[target];
         if (disabled || target === null || !option) return;
         event.preventDefault();
         onChange(option.value);
-        groupRef.current?.querySelectorAll('button')[target]?.focus();
+        buttons[target]?.focus();
     };
     const style = { '--seg-index': String(index), '--seg-count': String(options.length) };
     return (

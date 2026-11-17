@@ -126,6 +126,26 @@ describe('SegmentedTabs — toggle mode', () => {
         expect(banana).toHaveAttribute('aria-pressed', 'true');
         expect(banana).toHaveFocus();
     });
+    // W-780：toggle 模式每粒掣都可以 Tab 到，方向鍵要由 focus 嗰格起計，唔係由揀中嗰格
+    it('should navigate from the focused button when it is not the chosen one', () => {
+        render(<Controlled mode="toggle" />);
+        const cherry = screen.getByRole('button', { name: '車厘子' });
+        cherry.focus();
+        fireEvent.keyDown(cherry, { key: 'ArrowLeft' });
+        const banana = screen.getByRole('button', { name: '香蕉' });
+        expect(banana).toHaveAttribute('aria-pressed', 'true');
+        expect(banana).toHaveFocus();
+    });
+
+    it('should move right from a focused, unchosen button', () => {
+        render(<Controlled mode="toggle" />);
+        fireEvent.keyDown(screen.getByRole('button', { name: '香蕉' }), { key: 'ArrowRight' });
+        expect(screen.getByRole('button', { name: '車厘子' })).toHaveAttribute(
+            'aria-pressed',
+            'true',
+        );
+        expect(screen.getByRole('button', { name: '車厘子' })).toHaveFocus();
+    });
 });
 
 describe('SegmentedTabs — disabled', () => {
