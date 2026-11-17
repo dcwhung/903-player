@@ -149,13 +149,19 @@ describe('SegmentedTabs — toggle mode', () => {
 });
 
 describe('SegmentedTabs — disabled', () => {
-    it('should disable every option and show none as chosen', () => {
-        render(<Controlled mode="toggle" disabled />);
-        for (const button of screen.getAllByRole('button')) {
-            expect(button).toBeDisabled();
-            expect(button).toHaveAttribute('aria-pressed', 'false');
-        }
-        expect(pillOf(screen.getByRole('group', { name: '水果' }))).not.toBeInTheDocument();
+    // S-1104：鎖住（例如上載中）照顯示揀中嗰格，同舊實作一樣
+    it('should lock every option but keep showing the chosen one', () => {
+        render(<Controlled mode="toggle" initial="banana" disabled />);
+        for (const button of screen.getAllByRole('button')) expect(button).toBeDisabled();
+        expect(screen.getByRole('button', { name: '香蕉' })).toHaveAttribute(
+            'aria-pressed',
+            'true',
+        );
+        expect(screen.getByRole('button', { name: '蘋果' })).toHaveAttribute(
+            'aria-pressed',
+            'false',
+        );
+        expect(pillOf(screen.getByRole('group', { name: '水果' }))).toBeInTheDocument();
     });
 
     it('should ignore arrow keys while disabled', () => {
@@ -163,7 +169,28 @@ describe('SegmentedTabs — disabled', () => {
         render(<Controlled mode="tabs" disabled onChange={onChange} />);
         fireEvent.keyDown(screen.getByRole('tab', { name: '蘋果' }), { key: 'ArrowRight' });
         expect(onChange).not.toHaveBeenCalled();
-        expect(screen.getByRole('tab', { name: '蘋果' })).toHaveAttribute('aria-selected', 'false');
+        expect(screen.getByRole('tab', { name: '蘋果' })).toHaveAttribute('aria-selected', 'true');
+    });
+});
+
+describe('SegmentedTabs — no selection', () => {
+    // 「所有裝置使用同一裁切」：value = null，冇膠囊、冇一格揀中
+    it('should show no pill and nothing pressed when value is null', () => {
+        render(
+            <SegmentedTabs
+                mode="toggle"
+                label="水果"
+                options={FRUITS}
+                value={null}
+                disabled
+                onChange={() => {}}
+            />,
+        );
+        for (const button of screen.getAllByRole('button')) {
+            expect(button).toBeDisabled();
+            expect(button).toHaveAttribute('aria-pressed', 'false');
+        }
+        expect(pillOf(screen.getByRole('group', { name: '水果' }))).not.toBeInTheDocument();
     });
 });
 

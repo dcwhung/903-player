@@ -36,12 +36,12 @@ export function DeviceTabs({ same, device, onSame, onDevice, disabled }: DeviceT
                 />
                 {t('appearance.icon.same')}
             </label>
-            {/* 同一裁切 = 成組停用，冇一個裝置顯示揀中 */}
+            {/* 同一裁切 = 成組停用、冇一個裝置揀中；上載中（disabled）鎖住但照顯示揀中嗰部（S-1104） */}
             <SegmentedTabs
                 mode="toggle"
                 label={t('appearance.icon.devicesLabel')}
                 options={DEVICE_OPTIONS}
-                value={device}
+                value={same ? null : device}
                 disabled={same || disabled}
                 onChange={onDevice}
             />

@@ -2,7 +2,7 @@
  * 分段 tabs / 切換掣（用戶 2026-11-17）：膠囊軌道 + 一粒共用嘅揀中膠囊，換選項時膠囊滑過去（減少動態就直接換）。
  * mode="tabs"：tablist / tab（aria-selected、aria-controls、roving tabIndex），例如排程「編輯｜預覽」；
  * mode="toggle"：group + aria-pressed 掣，例如劇集類型、App 圖示裝置。兩個模式都有 ←→ / Home / End。
- * disabled：成組停用，冇一個顯示揀中（冇膠囊、aria-pressed / aria-selected 全部 false）。
+ * disabled：成組鎖住，照顯示揀中嗰格（例如上載中）；value = null：冇一格揀中、冇膠囊（例如「同一裁切」）。
  * Design Origin: ScheduleBars「編輯｜預覽」.view-tabs / .view-pill（用戶 2026-11-12）
  */
 import type { LucideIcon } from 'lucide-react';
@@ -23,7 +23,8 @@ export interface SegmentedOption<T extends string> {
 
 interface SegmentedTabsProps<T extends string> {
     options: readonly SegmentedOption<T>[];
-    value: T;
+    /** null = 冇一格揀中（冇膠囊，aria-pressed / aria-selected 全部 false） */
+    value: T | null;
     onChange: (value: T) => void;
     /** 成組嘅 aria-label */
     label: string;
@@ -109,14 +110,14 @@ export function SegmentedTabs<T extends string>(props: SegmentedTabsProps<T>) {
             aria-label={label}
             style={style as CSSProperties}
         >
-            {!disabled && (
+            {value !== null && (
                 <span className="seg-tabs-pill" data-direction={direction} aria-hidden="true" />
             )}
             {options.map((option) => (
                 <SegmentButton
                     key={option.value}
                     option={option}
-                    chosen={!disabled && option.value === value}
+                    chosen={option.value === value}
                     isTabs={isTabs}
                     panelId={panelId}
                     disabled={disabled}

@@ -1162,6 +1162,12 @@ textarea.autosize {
     cursor: not-allowed;
 }
 
+/* 鎖住但照顯示揀中（上載中，S-1104）：揀中格仲喺主色膠囊上面，字照用 --on-primary */
+.seg-tabs button[aria-pressed='true']:disabled,
+.seg-tabs button[aria-selected='true']:disabled {
+    color: var(--on-primary);
+}
+
 .seg-tabs button .lucide {
     width: 16px;
     height: 16px;

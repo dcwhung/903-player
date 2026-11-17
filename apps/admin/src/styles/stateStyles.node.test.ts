@@ -113,6 +113,14 @@ describe('segmented tabs', () => {
         expect(bodyOf(selector)).toMatch(/color:\s*var\(--on-primary\)/);
     });
 
+    // S-1104：鎖住（上載中）照顯示揀中格，揀中格字要留 --on-primary（唔係 --muted 疊喺主色膠囊上）
+    it.each([
+        ".seg-tabs button[aria-pressed='true']:disabled",
+        ".seg-tabs button[aria-selected='true']:disabled",
+    ])('%s should keep --on-primary text over the pill', (selector) => {
+        expect(bodyOf(selector)).toMatch(/color:\s*var\(--on-primary\)/);
+    });
+
     it('should give disabled options muted text, fully opaque', () => {
         const body = bodyOf('.seg-tabs button:disabled');
         expect(body).toMatch(/opacity:\s*1/);
