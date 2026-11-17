@@ -102,3 +102,48 @@ context: >
 blockers:
   - "W-780 toggle-mode arrow keys use selected index, not focused button"
 ```
+
+---
+
+## Re-review — 2026-11-17 — `d16a925..4504739`
+
+- 範圍：只驗 W-780、S-1104 嘅修正（9de31fc、4504739）；S-1105 由 main agent 收做 observation，唔再跟
+- Hard gates：all pass — related unit（`SegmentedTabs`、`features/appearance`、`stateStyles`，16 files / 98 tests）、eslint、`tsc --noEmit`（apps/admin）、prettier；CI run 44037011796 on 4504739 = success（lint / unit / build / e2e）
+- Version：兩個 commit 修同一 session 上一個 commit（35dc592，0.9.3）嘅 review item，符合唔使 bump 嘅例外
+
+| ID     | 結果 | 驗證                                                                                                                                                                                                                                                           |
+| ------ | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-780  | 已修 | `onKeyDown` 用 `event.currentTarget` 喺 group 入面嘅位置做起點；新 test「focus 車厘子 ← → 香蕉」「focus 香蕉（未揀）→ → 車厘子」用舊寫法（由揀中 index 起計）會揀錯格，test 有分辨力                                                                           |
+| S-1104 | 已修 | `disabled` 只鎖、照顯示揀中；`value: T \| null` 先代表冇揀中（冇膠囊、aria 全 false）。`DeviceTabs` 傳 `same ? null : device`，同舊行為一致；揀中 + disabled 字留 `--on-primary`，有 CSS test。其他 caller（ScheduleBars、BasicFields）冇傳 `disabled`，冇影響 |
+
+Observation（唔扣分、唔使跟）：tabs 模式配 `value = null` 會令全部 tab `tabIndex=-1`、鍵盤去唔到；而家冇 caller 咁用（只有 toggle 模式傳 null）。
+
+### Handoff receipt（re-review）
+
+```handoff-receipt
+agent: code-reviewer
+task: /review re-review SegmentedTabs (W-780, S-1104)
+branch: claude/admin-player-fixes-6fzdtw
+commit: 4504739
+report: .proj-docs/reviews/2026-11-17_review_segmented-tabs.md
+protocol: 1
+stage: T2
+score: 100/100
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+  no_critical: pass
+  security: n/a
+status: pass
+next_action: proceed_to_qa
+findings:
+  critical: 0
+  warning: 0
+  suggestion: 0
+context: >
+  W-780 and S-1104 verified fixed; S-1105 closed as observation by main agent. CI run 44037011796 on
+  4504739 green incl. e2e. Re-review appended and committed locally only, not pushed.
+blockers: []
+```
