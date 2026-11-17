@@ -415,7 +415,7 @@
             <header>
                 <h1>iPhone Duo 四種姿勢</h1>
                 <p class="lede">
-                    P10 #10 preview gate，第 6 版。全部係真 app（v1.37.3，e2e
+                    P10 #10 preview gate，第 7 版。全部係真 app（v1.37.3，e2e
                     假資料）嘅截圖，尺寸、圓角同鏡頭位置係用 headless browser 跑 Progressier
                     simulator 讀返嚟。<span class="legend"></span> 橙色虛線 = 摺位。確認之後先寫
                     code。
@@ -706,7 +706,9 @@
                     <li><b>已定：方案 A</b>，兩欄各佔一半，對齊摺位（橙色虛線）。</li>
                     <li>
                         <b>主頁（已定）：</b>改用同 HomeView 一樣嘅版面：左半係固定闊版橫額 + 分類掣
-                        + 疊卡 scroller，右半係播放卡。左半係靜態砌圖，右半係真 app 截圖。
+                        + 疊卡
+                        scroller，右半係播放卡。疊卡用盡左半剩低嘅高度，最尾一張貼近底邊。左半係靜態砌圖，右半係真
+                        app 截圖。
                     </li>
                     <li>加四邊邊框；主頁播放卡嘅關閉掣唔再俾圓角遮住。</li>
                 </ul>
@@ -753,9 +755,19 @@
                                             class="cd rest"
                                             style="
                                                 left: calc(var(--u) * 24);
-                                                top: calc(var(--u) * 358);
+                                                top: calc(var(--u) * 388);
                                                 width: calc(var(--u) * 402);
-                                                height: calc(var(--u) * 190);
+                                                height: calc(var(--u) * 200);
+                                                background-image: url('banner-chisee.webp');
+                                            "
+                                        ></div>
+                                        <div
+                                            class="cd rest"
+                                            style="
+                                                left: calc(var(--u) * 24);
+                                                top: calc(var(--u) * 334);
+                                                width: calc(var(--u) * 402);
+                                                height: calc(var(--u) * 200);
                                                 background-image: url('banner-lancy.webp');
                                             "
                                         ></div>
@@ -763,9 +775,9 @@
                                             class="cd rest"
                                             style="
                                                 left: calc(var(--u) * 24);
-                                                top: calc(var(--u) * 296);
+                                                top: calc(var(--u) * 280);
                                                 width: calc(var(--u) * 402);
-                                                height: calc(var(--u) * 190);
+                                                height: calc(var(--u) * 200);
                                                 background-image: url('banner-wanni.webp');
                                             "
                                         ></div>
@@ -773,9 +785,9 @@
                                             class="cd rest"
                                             style="
                                                 left: calc(var(--u) * 24);
-                                                top: calc(var(--u) * 234);
+                                                top: calc(var(--u) * 226);
                                                 width: calc(var(--u) * 402);
-                                                height: calc(var(--u) * 190);
+                                                height: calc(var(--u) * 200);
                                                 background-image: url('banner-gongzi.webp');
                                             "
                                         ></div>
@@ -785,7 +797,7 @@
                                                 left: calc(var(--u) * 24);
                                                 top: calc(var(--u) * 172);
                                                 width: calc(var(--u) * 402);
-                                                height: calc(var(--u) * 190);
+                                                height: calc(var(--u) * 200);
                                                 background-image: url('banner-badgirl.webp');
                                             "
                                         >
