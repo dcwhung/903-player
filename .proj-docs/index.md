@@ -1,6 +1,6 @@
 # 903-player 項目文件索引
 
-**最後更新**：2026-11-09
+**最後更新**：2026-11-17
 
 ## Backlog
 
@@ -15,6 +15,7 @@
 | 2026-11-07 | [plans/2026-11-07_plan_phase1-runtime-catalog.md](plans/2026-11-07_plan_phase1-runtime-catalog.md) | Backend Phase 1：player 喺 splash 期間讀 runtime `catalog.json`（最多 1.5s，失敗 fallback），`VITE_CATALOG_URL` 未設定就關住；v1.30.0                                               |
 | 2026-11-08 | [plans/2026-11-08_plan_phase2a-backend.md](plans/2026-11-08_plan_phase2a-backend.md)               | Backend Phase 2a：Hono Worker + D1（document 式）+ Google login + migration + publish（Worker 代出 catalog.json）+ 開 flag；附用戶 dashboard 設定清單；2b 留 CRUD / R2 掃描 / 排程  |
 | 2026-11-10 | [plans/2026-11-10_plan_phase2b-backend.md](plans/2026-11-10_plan_phase2b-backend.md)               | Backend Phase 2b：拆 2b-1（CRUD + R2 掃描 + 排程儲存時展開 + backlog S-767/768/770/772/780）同 2b-2（圖片上載 + prebuild snapshot 連圖）；掃描核心抽入 `packages/catalog`，CLI 變薄 |
+| 2026-11-17 | [plans/2026-11-17_plan_p10-duo-homeview.md](plans/2026-11-17_plan_p10-duo-homeview.md)             | P10 開發 plan（v2.0.0）：iPhone Duo 五種姿勢 + HomeView square；新增五個裝置 media query、PostCSS 複製手機打橫規則、8 條 lane、「現有裝置零改變」截圖比對                           |
 
 ## Audits
 
