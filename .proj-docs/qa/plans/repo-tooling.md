@@ -11,6 +11,7 @@
     - AC-6 Lane E（`.proj-docs/backlog.md` S-757 / S-765 / S-852 / S-853 / S-854）：`vercel.json` 入 scope（Vercel build `npm run build -w apps/player` → `apps/player/dist`，agent branch prefix 唔 deploy）；`ci.yml` `player-dist-production` `retention-days: 7`；production smoke 等 preview 30 秒都未起到 → 印 `preview.log` 兼 `exit 1`；smoke / e2e / snapshot unit 分工寫喺 `ci.yml` 注釋；e2e mode `vite preview`（`e2e/run.mjs` 用 `--mode e2e` 起）對 `<base>e2e-catalog/` 答 404、唔做 SPA fallback（`vite.config.ts` `e2eCatalogNotFound`），production / 其他 mode preview 不變
     - AC-7 App 外觀 CI / build（`.proj-docs/plans/2026-11-13_plan_branding.md`「CI」「apps/player」）：`deploy.yml` 加 `repository_dispatch: types: [catalog-branding]`（build 照跑 lint + test）；`vite.config.ts` async config 經 `resolveBuildBranding` 改 `publicDir` / manifest 文字 / `injectBrandingText`（細節屬 catalog-data AC-10）；`e2eCatalogNotFound` 抽去 `scripts/e2eCatalogNotFound.ts`（S-965，行為不變）；player 1.36.0、lockfile 只改 api version
     - AC-8 2026-11-16 刪 CLI（S-751 / S-1015）：root devDeps 刪 `tsx`、player 刪 `drama-from-folder` script（player 1.36.2）；lockfile 只少 `tsx` 頂層條目；`tsconfig.scripts-test.json` 嘅 `types`（S-567 guard）由 `apps/player/scripts/tsconfigTypes.test.ts` 鎖（drama AC-11）
+    - AC-9 內建 icon 生成（player 1.37.3 / admin 0.9.2；review `.proj-docs/reviews/2026-11-17_review_builtin-maskable.md`；用戶 2026-11-17 揀滿版）：`generateIcons.mjs` 由 `design/app-icon.png` 生成；maskable（player `public/icon-maskable-512.png` + admin `src/assets/icon/icon-maskable-192.png`）= 置中正方形裁切畫滿 canvas、底色 `#98bdde` 只喺透明位（同 admin `drawIcon` / `centerCrop`，`centerSquareCrop` 鎖死，S-1103）；其他內建 icon byte-for-byte 不變；manifest / `sw.js` 策略不變
 - Scope files:
     - `package.json` `package-lock.json` `apps/player/package.json` `eslint.config.js`
     - `tsconfig.json` `vitest.config.ts` `apps/player/tsconfig.app.json` `apps/player/tsconfig.node.json`
@@ -19,6 +20,7 @@
     - `apps/player/e2e/run.mjs` `apps/player/e2e/harness.mjs` `apps/player/vite.config.ts` `apps/player/scripts/catalogCaching.{ts,test.ts}`（workbox runtime catalog route，Phase 1）
     - `apps/player/scripts/e2eCatalogNotFound.{ts,test.ts}`（AC-7）
     - `apps/player/scripts/tsconfigTypes.test.ts`（AC-8）
+    - `apps/player/scripts/{generateIcons.mjs,generateIcons.test.ts,iconLayout.mjs,iconLayout.d.mts,pngPixels.ts,chromiumLaunch.mjs}` `design/app-icon.png` `apps/player/public/{icon-192.png,icon-512.png,icon-maskable-512.png,apple-touch-icon.png,favicon.png,og-icon.jpg}`（AC-9；admin 副本屬 admin 鏈）
 - Commands:
     - （Phase 0a；冇 bump version 嗰陣先用）`npm run build`，再喺 `apps/player/dist` 跑 `find . -type f | sort | xargs sha256sum`，同 `origin/main` 獨立 worktree build 嘅清單 `diff`（一次）
     - `npm run lint`；`npm test`（CI 同 SHA 綠就引用）
@@ -26,6 +28,7 @@
     - AC-5：`npm run coverage`（root，一次）；`impact` 確認 `.vscode/` / `arcCover/` 歸 IGNORED
     - AC-6：S-854 用假 `npx`（即刻 exit 1）+ 空 `dist/sw.js` 跑 smoke step 開頭到 `node` 之前（一次：30 秒後印 log、exit 1）；S-765 見 catalog-data e2e「Remote catalog：預設 404 唔入 SW cache」+ PWA 換版 section（連跑多次 full e2e）；`vercel.json` 證據 = 檔案內容對 `apps/player` build / output path（Vercel preview 已停，見 `git.deploymentEnabled`）
     - AC-7：`npm test -- apps/player/scripts`；`deploy.yml` YAML parse `on`；PWA：冇 URL production build manifest / index.html 同 origin/main 比、branded build 見 catalog-data AC-10；PWA 換版 section + production smoke 由 CI 同 SHA 證
+    - AC-9：`npm test`（`generateIcons.test.ts`：centerSquareCrop = admin centerCrop、兩張 maskable 邊位取樣 = 原圖、角位 = 底色）；`git diff --name-only <base>` 確認 `public/` 只改 maskable；IHDR 尺寸；e2e / PWA 換版由 CI 同 code 嘅 run 引用
     - AC-8：`npm test -- apps/player/scripts`（`tsconfigTypes.test.ts`）；root `package.json` 冇 `tsx`、player 冇 `drama-from-folder` script（`git grep`）；lint / unit / build / e2e 由 CI 同 SHA 證
 - PWA gate: no（App 外觀 1.36.0：manifest 文字 / icon 只喺 catalog 有 branding 先變、SW 策略 / 更新邏輯唔變，AC-7 驗；之前：`sw.js` / manifest / 更新邏輯冇改；dist 一樣即係 SW precache 一樣。Phase 1 起 `VITE_CATALOG_URL` 有設先加 catalog runtimeCaching route，production 冇設 → `sw.js` 冇 route；PWA 換版由 e2e section 證。2b-2 `vite.config.ts` 加 `catalogSnapshot()` plugin：只改 precache 內容（snapshot 圖），SW 策略唔變；驗證屬 catalog-data AC-5，PWA 換版由 CI e2e 證）
-- Out of scope: `deploy-api.yml`（屬 api 鏈）、`.vscode/` / `apps/player/scripts/arcCover/`（S-762 起 ledger-ignore）、`apps/player/scripts/generateIcons.mjs`（開發工具，只改相對 path）、各功能鏈（各自 plan）
+- Out of scope: `deploy-api.yml`（屬 api 鏈）、`.vscode/` / `apps/player/scripts/arcCover/`（S-762 起 ledger-ignore）、各功能鏈（各自 plan）

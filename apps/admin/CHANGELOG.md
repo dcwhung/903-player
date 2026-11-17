@@ -2,6 +2,14 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.9.2 — 2026-11-17
+
+內建預設 App 圖示嘅 Android maskable 改成滿版（用戶 2026-11-17 決定）。
+
+### Fixed
+
+- 「App 外觀」卡用「內建預設」圖示時，Android（圓形 / 方形）預覽唔再四邊留空：內建 maskable 預覽（`assets/icon/icon-maskable-192.png`）由 `apps/player/scripts/generateIcons.mjs` 重新生成，同 0.9.1 自訂 maskable 一樣滿版（原圖置中正方形裁切 = 「調整 App 圖示」預設框，底色 `#98bdde` 只喺透明位見到），同調整 dialog 一致；player 1.37.3 嘅內建 `icon-maskable-512.png` 一齊改
+
 ## 0.9.1 — 2026-11-16
 
 App 圖示裁切 dialog 修正（用戶 2026-11-16 報告）。
