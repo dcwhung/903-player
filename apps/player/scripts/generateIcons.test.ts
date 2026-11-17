@@ -2,6 +2,8 @@
 // 內建 Android maskable icon 要滿版（用戶 2026-11-17）：同 admin 0.9.1 自訂 maskable 一樣，原圖置中正方形裁切畫滿成張圖，
 // 底色淨係喺原圖透明位後面見到；唔再縮入 80% 安全區。admin 卡上嘅內建預覽（assets/icon/icon-maskable-192.png）一樣。
 import { readFileSync } from 'node:fs';
+// admin「調整 App 圖示」打開內建原圖時嘅預設框
+import { centerCrop } from '../../admin/src/ui/cropGeometry.ts';
 import { centerSquareCrop, ICON_BACKGROUND } from './iconLayout.mjs';
 import { decodePng, type PngPixels } from './pngPixels.ts';
 
@@ -38,24 +40,20 @@ const sourcePixelFor = (icon: PngPixels, x: number, y: number) => {
     );
 };
 
-describe('centerSquareCrop', () => {
-    it('should match the admin default icon crop (largest centred square) when the source is not square', () => {
-        // admin cropGeometry.centerCrop(502×499, 512×512)：內建原圖嘅預設框
-        expect(centerSquareCrop({ width: 502, height: 499 })).toEqual({
-            x: 2,
-            y: 0,
-            width: 499,
-            height: 499,
-        });
-    });
+/** 內建 icon 用嘅 512 正方形輸出（admin ICON_SQUARE = ASSET_DIMENSIONS.icon512） */
+const ICON_SQUARE = { width: 512, height: 512 };
 
-    it('should crop the middle of a tall source', () => {
-        expect(centerSquareCrop({ width: 100, height: 141 })).toEqual({
-            x: 0,
-            y: 21,
-            width: 100,
-            height: 100,
-        });
+describe('centerSquareCrop', () => {
+    // 直接對 admin 嘅預設框（cropGeometry.centerCrop）：admin 改咗預設裁切，呢度就會紅（S-1103）
+    it.each([
+        { width: 502, height: 499 },
+        { width: 499, height: 502 },
+        { width: 512, height: 512 },
+        { width: 100, height: 141 },
+        { width: 1200, height: 675 },
+        { width: 333, height: 334 },
+    ])('should match the admin default icon crop box for a $width × $height source', (source) => {
+        expect(centerSquareCrop(source)).toEqual(centerCrop(source, ICON_SQUARE));
     });
 });
 
