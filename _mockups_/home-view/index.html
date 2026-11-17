@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>HomeView 方形版面</title>
+        <meta name="claude:viewport-fit-sides" content="cover" />
+        <style>
+            /* 版面：頂部姿勢導覽；每個姿勢一節，每頁一行「現狀｜建議」真 app 截圖，虛線 = 摺位 */
+            :root {
+                --bg: #eef1f5;
+                --surface: #ffffff;
+                --ink: #18202b;
+                --note: #5d6775;
+                --line: #d3d9e2;
+                --accent: #3b6fb6;
+                --on-accent: #ffffff;
+                --now: #7a8494;
+                --fold: #ff5a3c;
+                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+                --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #10151c;
+                    --surface: #1a212b;
+                    --ink: #e8edf3;
+                    --note: #9aa5b3;
+                    --line: #2e3845;
+                    --accent: #7fa8e6;
+                    --on-accent: #0d1420;
+                    --now: #8b96a6;
+                    --fold: #ff7a60;
+                    color-scheme: dark;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #10151c;
+                --surface: #1a212b;
+                --ink: #e8edf3;
+                --note: #9aa5b3;
+                --line: #2e3845;
+                --accent: #7fa8e6;
+                --on-accent: #0d1420;
+                --now: #8b96a6;
+                --fold: #ff7a60;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html {
+                scroll-behavior: smooth;
+                scroll-padding-top: 76px;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                html {
+                    scroll-behavior: auto;
+                }
+            }
+            body {
+                margin: 0;
+                padding-block: 20px 56px;
+                padding-left: max(16px, env(safe-area-inset-left, 0px));
+                padding-right: max(16px, env(safe-area-inset-right, 0px));
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font);
+                font-size: 15px;
+                line-height: 1.55;
+            }
+            main {
+                display: grid;
+                gap: 28px;
+                max-width: 1840px;
+                margin-inline: auto;
+            }
+            h1 {
+                margin: 0;
+                font-size: 26px;
+                line-height: 1.2;
+            }
+            .lede {
+                margin: 6px 0 0;
+                max-width: 68ch;
+                color: var(--note);
+            }
+            code {
+                font-family: var(--mono);
+                font-size: 0.9em;
+            }
+            nav {
+                position: sticky;
+                top: env(safe-area-inset-top, 0px);
+                z-index: 5;
+                display: flex;
+                gap: 8px;
+                padding-block: 8px;
+                overflow-x: auto;
+                background: var(--bg);
+            }
+            nav a {
+                display: grid;
+                flex: 0 0 auto;
+                padding: 6px 14px;
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                background: var(--surface);
+                color: var(--ink);
+                text-decoration: none;
+                line-height: 1.25;
+            }
+            nav a span {
+                color: var(--note);
+                font-family: var(--mono);
+                font-size: 12px;
+            }
+            nav a:hover,
+            nav a:focus-visible {
+                border-color: var(--accent);
+                outline: none;
+            }
+            section {
+                display: grid;
+                gap: 16px;
+                padding: 20px;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                background: var(--surface);
+            }
+            .sec {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                align-items: baseline;
+            }
+            h2 {
+                margin: 0;
+                font-size: 21px;
+            }
+            .size {
+                color: var(--note);
+                font-family: var(--mono);
+                font-size: 14px;
+            }
+            .notes {
+                display: grid;
+                gap: 4px;
+                margin: 0;
+                padding-left: 20px;
+                max-width: 76ch;
+            }
+            .row {
+                display: grid;
+                gap: 8px;
+                padding-top: 14px;
+                border-top: 1px solid var(--line);
+            }
+            h3 {
+                margin: 0;
+                font-size: 15px;
+            }
+            .pair {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 20px;
+                align-items: flex-start;
+            }
+            .shot {
+                display: grid;
+                gap: 6px;
+                flex: 0 1 auto;
+                min-width: 0;
+                max-width: 100%;
+                margin: 0;
+            }
+            figcaption {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                color: var(--note);
+                font-size: 13px;
+            }
+            .tag {
+                padding: 1px 8px;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            .tag.now {
+                border: 1px solid var(--now);
+                color: var(--now);
+            }
+            .tag.new {
+                background: var(--accent);
+                color: var(--on-accent);
+            }
+            .frame {
+                position: relative;
+                overflow: hidden;
+                border: 1px solid var(--line);
+                border-radius: 18px;
+            }
+            .frame img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+            .frame.fv::after,
+            .frame.fh::after {
+                content: '';
+                position: absolute;
+                pointer-events: none;
+            }
+            .frame.fv::after {
+                inset: 0 auto 0 50%;
+                border-left: 2px dashed var(--fold);
+            }
+            .frame.fh::after {
+                inset: 50% 0 auto 0;
+                border-top: 2px dashed var(--fold);
+            }
+
+            .tag.old {
+                border: 1px dashed var(--now);
+                color: var(--now);
+            }
+            /* 裝置外形（Progressier simulator）：圓角 68px、外屏摺位邊 4px；百分比 = px ÷ 螢幕闊 / 高 */
+            .frame.inl {
+                border-radius: 7.76% / 11.11%;
+            }
+            .frame.inp {
+                border-radius: 11.11% / 7.76%;
+            }
+            .frame.outp {
+                border-radius: 0.94% 15.96% 15.96% 0.94% / 0.65% 11.11% 11.11% 0.65%;
+            }
+            .frame.outl {
+                border-radius: 0.65% 0.65% 11.11% 11.11% / 0.94% 0.94% 15.96% 15.96%;
+            }
+            .frame.seat {
+                border-radius: 11.11% 11.11% 0 0 / 15.53% 15.53% 0 0;
+            }
+            .frame.outp::before,
+            .frame.outl::before {
+                content: '';
+                position: absolute;
+                z-index: 1;
+                aspect-ratio: 1;
+                border-radius: 50%;
+                background: #000;
+            }
+            .frame.outp::before {
+                top: 3.92%;
+                right: 6.57%;
+                width: 7.04%;
+            }
+            .frame.outl::before {
+                right: 3.92%;
+                bottom: 6.57%;
+                width: 4.9%;
+            }
+            .frame.inl::after,
+            .frame.inp::after {
+                content: '';
+                position: absolute;
+                pointer-events: none;
+            }
+            .frame.inl::after {
+                inset: 0 auto 0 50%;
+                border-left: 2px dashed var(--fold);
+            }
+            .frame.inp::after {
+                inset: 50% 0 auto 0;
+                border-top: 2px dashed var(--fold);
+            }
+            section > h3 {
+                margin-top: 8px;
+            }
+            .frame.sq::after {
+                content: none;
+            }
+            .legend {
+                display: inline-block;
+                width: 22px;
+                border-top: 2px dashed var(--fold);
+                vertical-align: middle;
+            }
+            .scroll {
+                overflow-x: auto;
+            }
+            table {
+                width: 100%;
+                min-width: 640px;
+                border-collapse: collapse;
+                font-size: 14px;
+            }
+            th,
+            td {
+                padding: 8px 10px;
+                border-bottom: 1px solid var(--line);
+                text-align: left;
+                vertical-align: top;
+            }
+            th {
+                color: var(--note);
+                font-weight: 600;
+            }
+            td:first-child {
+                font-family: var(--mono);
+                white-space: nowrap;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header>
+                <h1>HomeView 方形版面</h1>
+                <p class="lede">
+                    P10 #9a preview gate，第 1 版。真 app（v1.37.3，e2e 假資料）喺 544 × 544
+                    嘅截圖。HomeView 係 1088 × 1088 實體像素，假設 2 倍密度；冇
+                    simulator、冇真機，呢個尺寸未驗證。確認之後先寫 code。
+                </p>
+            </header>
+            <nav aria-label="章節">
+                <a href="#home"><b>主頁</b><span>左格右卡</span></a
+                ><a href="#pages"><b>內頁</b><span>照用直版</span></a
+                ><a href="#questions"><b>待確認</b><span>4 條</span></a>
+            </nav>
+            <section id="home">
+                <header class="sec">
+                    <h2>主頁</h2>
+                    <span class="size">544 × 544</span>
+                </header>
+                <ul class="notes">
+                    <li>現狀：正方形當直版，每頁得 2 格，9 格要揭 4 頁；播放器縮成底部一條。</li>
+                    <li>
+                        <b>建議：左邊節目格（3 × 3 一頁放晒）、右邊播放卡</b>，各佔一半，同 iPad
+                        打橫嘅主頁同一個結構。
+                    </li>
+                    <li>
+                        建議圖係臨時 build
+                        影出嚟：節目格偏窄、封面裁得多，正式版會將橫額搬出格外或者改 2 欄再調。
+                    </li>
+                </ul>
+                <div class="row">
+                    <h3>主頁</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <div class="frame sq" style="max-width: 544px">
+                                <img src="now-home.webp" alt="現狀 v1.37.3" loading="lazy" />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag new">建議</span>左格右卡</figcaption>
+                            <div class="frame sq" style="max-width: 544px">
+                                <img src="new-home.webp" alt="建議 左格右卡" loading="lazy" />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section id="pages">
+                <header class="sec">
+                    <h2>內頁</h2>
+                    <span class="size">544 × 544</span>
+                </header>
+                <ul class="notes">
+                    <li>現狀直版喺正方形已經放得落：播放器喺上、清單喺下，冇裁切。</li>
+                    <li>
+                        我試過套用橫版兩欄（下面「試驗」圖）：左欄清單最少要 340px，右欄得返約
+                        190px，播放器放唔落。
+                    </li>
+                    <li><b>建議：今日節目、節目頁、廣播劇頁照用直版，唔改。</b></li>
+                </ul>
+                <div class="row">
+                    <h3>今日節目</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption>
+                                <span class="tag now">現狀</span>直版（建議保留）
+                            </figcaption>
+                            <div class="frame sq" style="max-width: 544px">
+                                <img
+                                    src="now-today.webp"
+                                    alt="現狀 直版（建議保留）"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption>
+                                <span class="tag old">試驗</span>套用橫版兩欄：放唔落
+                            </figcaption>
+                            <div class="frame sq" style="max-width: 544px">
+                                <img
+                                    src="try-today.webp"
+                                    alt="試驗 套用橫版兩欄：放唔落"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>節目頁</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption>
+                                <span class="tag now">現狀</span>直版（建議保留）
+                            </figcaption>
+                            <div class="frame sq" style="max-width: 544px">
+                                <img
+                                    src="now-show.webp"
+                                    alt="現狀 直版（建議保留）"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption>
+                                <span class="tag old">試驗</span>套用橫版兩欄：放唔落
+                            </figcaption>
+                            <div class="frame sq" style="max-width: 544px">
+                                <img
+                                    src="try-show.webp"
+                                    alt="試驗 套用橫版兩欄：放唔落"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>廣播劇頁</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption>
+                                <span class="tag now">現狀</span>直版（建議保留）
+                            </figcaption>
+                            <div class="frame sq" style="max-width: 544px">
+                                <img
+                                    src="now-drama.webp"
+                                    alt="現狀 直版（建議保留）"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section id="questions">
+                <header class="sec"><h2>待確認</h2></header>
+                <div class="scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>問題</th>
+                                <th>我嘅建議</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>S1</td>
+                                <td>
+                                    Viewport 假設 544 × 544（2 倍密度），啱唔啱？你有冇 HomeView 嘅
+                                    simulator 或者實測數字？
+                                </td>
+                                <td>
+                                    暫時用 544；規則寫成「接近正方形而且闊
+                                    500–700px」，尺寸有出入都入到。
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>S2</td>
+                                <td>主頁左格右卡各佔一半？</td>
+                                <td>做。</td>
+                            </tr>
+                            <tr>
+                                <td>S3</td>
+                                <td>內頁照用直版，唔另外做方形版面？</td>
+                                <td>唔另外做。</td>
+                            </tr>
+                            <tr>
+                                <td>S4</td>
+                                <td>
+                                    Plan 寫「字／掣按 7 吋放大」。7 吋 544px 即每吋約
+                                    110px，同一個掣已經比手機大約四成。仲要唔要再放大？
+                                </td>
+                                <td>唔再放大；等 9b 閒置大字畫面先處理「遠睇」。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <ul class="notes">
+                    <li>
+                        9b 閒置大字畫面、9c 夜間低光、9d 睡眠 timer 會各自再出 preview，唔喺呢頁。
+                    </li>
+                    <li>
+                        所有改動只寫喺新增嘅方形 media query
+                        入面，現有手機、平板、電腦版面唔變（驗收方法見 iPhone Duo
+                        preview「現有裝置」一節）。
+                    </li>
+                </ul>
+            </section>
+        </main>
+    </body>
+</html>

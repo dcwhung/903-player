@@ -314,21 +314,45 @@
             <header>
                 <h1>iPhone Duo 四種姿勢</h1>
                 <p class="lede">
-                    P10 #10 preview gate，第 3 版。全部係真 app（v1.37.3，e2e
+                    P10 #10 preview gate，第 4 版。全部係真 app（v1.37.3，e2e
                     假資料）嘅截圖，尺寸、圓角同鏡頭位置係用 headless browser 跑 Progressier
                     simulator 讀返嚟。<span class="legend"></span> 橙色虛線 = 摺位。確認之後先寫
                     code。
                 </p>
             </header>
             <nav aria-label="姿勢">
-                <a href="#edge"><b>邊框</b><span>全部</span></a
+                <a href="#safe"><b>現有裝置</b><span>唔變</span></a
+                ><a href="#edge"><b>邊框</b><span>全部</span></a
                 ><a href="#cp"><b>闔上・直</b><span>426 × 612</span></a
                 ><a href="#cl"><b>闔上・橫</b><span>612 × 426</span></a
                 ><a href="#seat"><b>Seated／Standing</b><span>612 × 438</span></a
                 ><a href="#ol"><b>打開・橫</b><span>876 × 612</span></a
                 ><a href="#op"><b>打開・直</b><span>612 × 876</span></a
-                ><a href="#questions"><b>待確認</b><span>5 條</span></a>
+                ><a href="#questions"><b>待確認</b><span>1 條</span></a>
             </nav>
+            <section id="safe">
+                <header class="sec">
+                    <h2>唔影響現有裝置</h2>
+                    <span class="size">硬性要求</span>
+                </header>
+                <ul class="notes">
+                    <li>
+                        所有 Duo／HomeView 改動只寫喺<b>新增</b>嘅 media query
+                        入面，條件鎖死喺呢幾個 viewport 範圍；現有規則一行都唔改。
+                    </li>
+                    <li>
+                        <b>更正：</b>上一版講「橫版斷點由 640px 降到 600px」會影響其他 600–639px
+                        闊嘅裝置，唔再咁做。改為另加一條只啱 Duo 外屏打橫／Seated（闊 600–639px、高
+                        ≤ 450px）嘅規則，640px 斷點保持原樣。
+                    </li>
+                    <li>四邊 24px 邊框、摺位對齊、3 欄主頁同樣只喺 Duo 範圍生效。</li>
+                    <li>
+                        驗收：現有 e2e viewport（手機直 390 × 844、320 × 568，手機橫 844 × 390，iPad
+                        橫 1180 × 820，電腦 1300 × 800）全部照跑；另外喺改動前後各影一次呢批
+                        viewport，逐張比對要完全一樣。平板直版而家冇 e2e viewport，會加 820 × 1180。
+                    </li>
+                </ul>
+            </section>
             <section id="edge">
                 <header class="sec">
                     <h2>共通：四邊邊框</h2>
@@ -413,8 +437,8 @@
                 </header>
                 <ul class="notes">
                     <li>
-                        現狀：612px 未夠橫版斷點（640px），跌入直版。<b>建議：斷點降到 600px</b
-                        >，入手機打橫版面。
+                        現狀：612px
+                        未夠橫版斷點（640px），跌入直版。<b>建議：另加一條只啱呢個尺寸嘅規則</b>，入手機打橫版面。
                     </li>
                     <li>
                         <b>今日節目卡貼右邊（你指出嗰個問題）：</b>左欄清單佔 54%，612px
@@ -538,8 +562,8 @@
                     </li>
                     <li>
                         <b>Seated（半開放枱）</b>網頁只佔上半屏，612 ×
-                        438；下半屏係系統控制區，網頁用唔到。斷點降到 600px
-                        之後，上半屏自動入手機打橫版面。
+                        438；下半屏係系統控制區，網頁用唔到。同一條 Duo
+                        規則覆蓋埋，上半屏入手機打橫版面。
                     </li>
                     <li>上面兩隻角係 68px 圓角，下面貼住摺位係直角。</li>
                 </ul>
@@ -688,17 +712,19 @@
                 </header>
                 <ul class="notes">
                     <li>
-                        <b>主頁：</b>全闊 2 欄（你想睇嘅版本）每頁 4 格，9 格要揭 3 頁；3
-                        欄一頁放晒。你揀（Q4）。
+                        <b>主頁（已定）：</b>全闊 3 欄 +
+                        四邊邊框，一頁放晒。圖入面漏咗最尾嘅「今日節目」格，係臨時 hack
+                        嘅副作用，正式版有 9 格。
                     </li>
                     <li>
-                        <b>今日節目／節目頁：</b
-                        >播放器連指示點、日子條全部喺摺位以上，清單由摺位以下開始。
+                        <b>方案 A：</b>指示點／日子條／短篇選擇照舊喺播放器下面，全部喺摺位以上。
                     </li>
                     <li>
-                        <b>全集表／資料表：</b
-                        >最高只到摺位（下半屏）。資料表用同一條規則，冇另外影。
+                        <b>方案 B：</b>搬去上半屏右邊直排，唱片可以大啲（約 236px →
+                        290px）。日子條一次見 4 日；短篇一次見 7 個，其餘喺欄入面捲。
                     </li>
+                    <li>方案 B 係概念圖：直排掣係複製現有掣砌出嚟，間距、揀中外框未定稿。</li>
+                    <li><b>全集表／資料表（已定）：</b>最高只到摺位。</li>
                 </ul>
                 <div class="row">
                     <h3>主頁</h3>
@@ -710,22 +736,11 @@
                             </div>
                         </figure>
                         <figure class="shot">
-                            <figcaption><span class="tag new">建議</span>全闊 2 欄</figcaption>
-                            <div class="frame inp" style="max-width: 612px">
-                                <img src="new-op-home.webp" alt="打開直 主頁 2 欄" loading="lazy" />
-                            </div>
-                        </figure>
-                        <figure class="shot">
                             <figcaption>
-                                <span class="tag old">上一版</span>全闊 3 欄（626 ×
-                                890，未加邊框，漏咗今日節目格）
+                                <span class="tag new">建議</span>全闊 3 欄 + 四邊 24px
                             </figcaption>
                             <div class="frame inp" style="max-width: 612px">
-                                <img
-                                    src="old-op-home3.webp"
-                                    alt="打開直 主頁 3 欄"
-                                    loading="lazy"
-                                />
+                                <img src="new-op-home.webp" alt="打開直 主頁 3 欄" loading="lazy" />
                             </div>
                         </figure>
                     </div>
@@ -734,25 +749,19 @@
                     <h3>今日節目</h3>
                     <div class="pair">
                         <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <figcaption>
+                                <span class="tag new">方案 A：下面</span>指示點喺卡下面
+                            </figcaption>
                             <div class="frame inp" style="max-width: 612px">
-                                <img
-                                    src="now-op-today.webp"
-                                    alt="打開直 今日節目 現狀"
-                                    loading="lazy"
-                                />
+                                <img src="new-op-today.webp" alt="今日節目 A" loading="lazy" />
                             </div>
                         </figure>
                         <figure class="shot">
                             <figcaption>
-                                <span class="tag new">建議</span>卡 + 指示點喺上半
+                                <span class="tag new">方案 B：右邊</span>指示點喺右邊直排
                             </figcaption>
                             <div class="frame inp" style="max-width: 612px">
-                                <img
-                                    src="new-op-today.webp"
-                                    alt="打開直 今日節目 建議"
-                                    loading="lazy"
-                                />
+                                <img src="new-opr-today.webp" alt="今日節目 B" loading="lazy" />
                             </div>
                         </figure>
                     </div>
@@ -761,25 +770,19 @@
                     <h3>節目頁</h3>
                     <div class="pair">
                         <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <figcaption>
+                                <span class="tag new">方案 A：下面</span>日子條喺播放器下面
+                            </figcaption>
                             <div class="frame inp" style="max-width: 612px">
-                                <img
-                                    src="now-op-show.webp"
-                                    alt="打開直 節目頁 現狀"
-                                    loading="lazy"
-                                />
+                                <img src="new-op-show.webp" alt="節目頁 A" loading="lazy" />
                             </div>
                         </figure>
                         <figure class="shot">
                             <figcaption>
-                                <span class="tag new">建議</span>播放器 + 日子條喺上半
+                                <span class="tag new">方案 B：右邊</span>日子條喺右邊直排
                             </figcaption>
                             <div class="frame inp" style="max-width: 612px">
-                                <img
-                                    src="new-op-show.webp"
-                                    alt="打開直 節目頁 建議"
-                                    loading="lazy"
-                                />
+                                <img src="new-opr-show.webp" alt="節目頁 B" loading="lazy" />
                             </div>
                         </figure>
                     </div>
@@ -788,23 +791,31 @@
                     <h3>廣播劇頁</h3>
                     <div class="pair">
                         <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <figcaption>
+                                <span class="tag new">方案 A：下面</span>全集 +
+                                短篇喺播放器下面（橫向捲）
+                            </figcaption>
                             <div class="frame inp" style="max-width: 612px">
-                                <img
-                                    src="now-op-drama.webp"
-                                    alt="打開直 廣播劇頁 現狀"
-                                    loading="lazy"
-                                />
+                                <img src="new-opb-drama.webp" alt="廣播劇頁 A" loading="lazy" />
                             </div>
                         </figure>
                         <figure class="shot">
-                            <figcaption><span class="tag new">建議</span>全集表只佔下半</figcaption>
+                            <figcaption>
+                                <span class="tag new">方案 B：右邊</span>全集 + 短篇喺右邊直排
+                            </figcaption>
                             <div class="frame inp" style="max-width: 612px">
-                                <img
-                                    src="new-op-drama.webp"
-                                    alt="打開直 廣播劇頁 建議"
-                                    loading="lazy"
-                                />
+                                <img src="new-opr-drama.webp" alt="廣播劇頁 B" loading="lazy" />
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>全集表</h3>
+                    <div class="pair">
+                        <figure class="shot">
+                            <figcaption><span class="tag new">建議</span>只佔下半屏</figcaption>
+                            <div class="frame inp" style="max-width: 612px">
+                                <img src="new-op-drama.webp" alt="全集表" loading="lazy" />
                             </div>
                         </figure>
                     </div>
@@ -823,41 +834,12 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Q4</td>
-                                <td>打開・直主頁：2 欄定 3 欄？</td>
-                                <td>3 欄。2 欄每格好大，但要揭 3 頁。</td>
-                            </tr>
-                            <tr>
-                                <td>Q6</td>
-                                <td>HomeView square 同步做？</td>
+                                <td>Q11</td>
+                                <td>打開・直：指示點／日子條／短篇選擇放下面（A）定右邊（B）？</td>
                                 <td>
-                                    同一條 lane 連住做（Duo 先、square
-                                    後），唔平行開兩條：兩樣都改同一批斷點同
-                                    token，平行反而會撞。Square 都要先出 preview。
+                                    節目頁、廣播劇頁用 B（唱片大啲，上半屏唔再有空位）；今日節目用
+                                    A，因為卡係左右掃，指示點直排方向唔啱。
                                 </td>
-                            </tr>
-                            <tr>
-                                <td>Q8</td>
-                                <td>
-                                    外屏鏡頭會遮住內容（闔上・直右上角橫額、闔上・橫右下角播放掣）。
-                                </td>
-                                <td>
-                                    靠 <code>env(safe-area-inset-*)</code>：真機有報 app
-                                    就自動避開，唔寫死位置。如果你想 simulator 入面都避開，我可以按
-                                    Duo 尺寸寫死預留位。
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Q9</td>
-                                <td>四邊統一 24px 邊框啱唔啱？</td>
-                                <td>啱。再細（20px）方角清單行會啱啱掂到圓角。</td>
-                            </tr>
-                            <tr>
-                                <td>Q10</td>
-                                <td>
-                                    闔上・橫／Seated 左欄 46%、右欄 54%（淨係闊 &lt; 640px 時）？
-                                </td>
-                                <td>做，否則今日節目卡放唔落。</td>
                             </tr>
                         </tbody>
                     </table>
@@ -876,7 +858,7 @@
                             <tr>
                                 <td>Q1</td>
                                 <td>尺寸</td>
-                                <td>用 simulator 實測值（headless 跑過 simulator 讀返嚟）</td>
+                                <td>用 simulator 實測值</td>
                             </tr>
                             <tr>
                                 <td>Q2</td>
@@ -886,17 +868,44 @@
                             <tr>
                                 <td>Q3</td>
                                 <td>打開・橫</td>
-                                <td>方案 A</td>
+                                <td>方案 A，各佔一半</td>
+                            </tr>
+                            <tr>
+                                <td>Q4</td>
+                                <td>打開・直主頁</td>
+                                <td>3 欄 + 四邊邊框</td>
                             </tr>
                             <tr>
                                 <td>Q5</td>
                                 <td>Seated／Standing</td>
-                                <td>做；靠斷點覆蓋，冇新版面</td>
+                                <td>做；冇新版面</td>
+                            </tr>
+                            <tr>
+                                <td>Q6</td>
+                                <td>HomeView square</td>
+                                <td>
+                                    同一條 lane 連住做；preview 喺 <code>_mockups_/home-view</code>
+                                </td>
                             </tr>
                             <tr>
                                 <td>Q7</td>
                                 <td>提早喺 1.x 出</td>
                                 <td>唔使，全部留 v2.0.0</td>
+                            </tr>
+                            <tr>
+                                <td>Q8</td>
+                                <td>外屏鏡頭</td>
+                                <td>靠安全區，真機有報就自動避開</td>
+                            </tr>
+                            <tr>
+                                <td>Q9</td>
+                                <td>四邊邊框</td>
+                                <td>24px</td>
+                            </tr>
+                            <tr>
+                                <td>Q10</td>
+                                <td>闔上・橫／Seated 左欄</td>
+                                <td>46%</td>
                             </tr>
                         </tbody>
                     </table>
