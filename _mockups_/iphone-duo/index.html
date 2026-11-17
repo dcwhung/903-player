@@ -265,56 +265,48 @@
                 </p>
             </header>
             <nav aria-label="姿勢">
-                <a href="#cp"><b>闔上・直</b><span>466 × 678</span></a
-                ><a href="#cl"><b>闔上・橫</b><span>678 × 466</span></a
+                <a href="#cp"><b>闔上・直</b><span>426 × 612</span></a
+                ><a href="#cl"><b>闔上・橫</b><span>612 × 426</span></a
                 ><a href="#ol"><b>打開・橫</b><span>890 × 626</span></a
                 ><a href="#op"><b>打開・直</b><span>626 × 890</span></a
-                ><a href="#questions"><b>待確認</b><span>6 條</span></a>
+                ><a href="#questions"><b>待確認</b><span>7 條</span></a>
             </nav>
             <section id="cp">
                 <header class="sec">
                     <h2>闔上・直</h2>
-                    <span class="size">466 × 678</span>
+                    <span class="size">426 × 612（simulator 實測）／466 × 678（FAQ）</span>
                 </header>
                 <ul class="notes">
-                    <li>現狀：跌入手機直版（<code>stack</code>），四頁都正常。</li>
-                    <li>主頁每頁得 4 格，9 格要揭 3 頁；格闊咗，封面字俾裁走。</li>
-                    <li><b>建議：主頁轉 3 欄</b>，9 格一頁放晒。其餘三頁唔改。</li>
+                    <li>版面唔改（你實測後決定）；3 欄建議取消。</li>
+                    <li>
+                        <b>新增：「我的收藏」入面「最近收聽」改矮。</b>現狀固定 200px 高，喺 612px
+                        高嘅外屏，收藏區得返約 100px，連集數行都睇唔到。
+                    </li>
+                    <li>
+                        建議：最近收聽嘅高度跟內容，最高 200px，而且唔超過分頁區
+                        40%；多過放得落就喺框入面捲。收藏區一定高過最近收聽。
+                    </li>
+                    <li>呢項所有直版手機都受影響，唔止 Duo。</li>
                 </ul>
                 <div class="row">
-                    <h3>主頁</h3>
+                    <h3>我的收藏：1 個最近收聽</h3>
                     <div class="pair">
                         <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
-                            <div class="frame v0" style="max-width: 466px">
+                            <figcaption><span class="tag now">現狀</span>固定 200px</figcaption>
+                            <div class="frame v0" style="max-width: 426px">
                                 <img
-                                    src="now-cp-home.webp"
-                                    alt="闔上・直 主頁 現狀"
+                                    src="now-cp-saved1.webp"
+                                    alt="闔上直 收藏 現狀"
                                     loading="lazy"
                                 />
                             </div>
                         </figure>
                         <figure class="shot">
-                            <figcaption><span class="tag new">建議</span>3 欄，一頁放晒</figcaption>
-                            <div class="frame v0" style="max-width: 466px">
+                            <figcaption><span class="tag new">建議</span>跟內容</figcaption>
+                            <div class="frame v0" style="max-width: 426px">
                                 <img
-                                    src="new-cp-home.webp"
-                                    alt="闔上・直 主頁 建議"
-                                    loading="lazy"
-                                />
-                            </div>
-                        </figure>
-                    </div>
-                </div>
-                <div class="row">
-                    <h3>今日節目</h3>
-                    <div class="pair solo">
-                        <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
-                            <div class="frame v0" style="max-width: 466px">
-                                <img
-                                    src="now-cp-today.webp"
-                                    alt="闔上・直 今日節目 現狀"
+                                    src="new-cp-saved1.webp"
+                                    alt="闔上直 收藏 建議"
                                     loading="lazy"
                                 />
                             </div>
@@ -322,14 +314,26 @@
                     </div>
                 </div>
                 <div class="row">
-                    <h3>節目頁</h3>
-                    <div class="pair solo">
+                    <h3>我的收藏：4 個最近收聽</h3>
+                    <div class="pair">
                         <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
-                            <div class="frame v0" style="max-width: 466px">
+                            <figcaption><span class="tag now">現狀</span>固定 200px</figcaption>
+                            <div class="frame v0" style="max-width: 426px">
                                 <img
-                                    src="now-cp-show.webp"
-                                    alt="闔上・直 節目頁 現狀"
+                                    src="now-cp-saved4.webp"
+                                    alt="闔上直 收藏 4 個 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption>
+                                <span class="tag new">建議</span>最高 40%，框內捲
+                            </figcaption>
+                            <div class="frame v0" style="max-width: 426px">
+                                <img
+                                    src="new-cp-saved4.webp"
+                                    alt="闔上直 收藏 4 個 建議"
                                     loading="lazy"
                                 />
                             </div>
@@ -337,16 +341,30 @@
                     </div>
                 </div>
                 <div class="row">
-                    <h3>廣播劇頁</h3>
-                    <div class="pair solo">
+                    <h3>其餘四頁（466 × 678，唔改）</h3>
+                    <div class="pair">
                         <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
+                            <figcaption><span class="tag now">現狀</span>主頁</figcaption>
                             <div class="frame v0" style="max-width: 466px">
-                                <img
-                                    src="now-cp-drama.webp"
-                                    alt="闔上・直 廣播劇頁 現狀"
-                                    loading="lazy"
-                                />
+                                <img src="now-cp-home.webp" alt="闔上直 主頁" loading="lazy" />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>今日節目</figcaption>
+                            <div class="frame v0" style="max-width: 466px">
+                                <img src="now-cp-today.webp" alt="闔上直 今日節目" loading="lazy" />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>節目頁</figcaption>
+                            <div class="frame v0" style="max-width: 466px">
+                                <img src="now-cp-show.webp" alt="闔上直 節目頁" loading="lazy" />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption><span class="tag now">現狀</span>廣播劇頁</figcaption>
+                            <div class="frame v0" style="max-width: 466px">
+                                <img src="now-cp-drama.webp" alt="闔上直 廣播劇頁" loading="lazy" />
                             </div>
                         </figure>
                     </div>
@@ -355,25 +373,46 @@
             <section id="cl">
                 <header class="sec">
                     <h2>闔上・橫</h2>
-                    <span class="size">678 × 466</span>
+                    <span class="size">612 × 426（simulator 實測）／678 × 466（FAQ）</span>
                 </header>
                 <ul class="notes">
                     <li>
-                        現狀：同手機打橫一樣（<code>SHORT_LANDSCAPE_QUERY</code>：闊 ≥ 640、高 ≤
-                        561）。
+                        你實測啱：simulator 外屏打橫係 612px 闊，未夠橫版斷點（≥
+                        640px），所以跌返入直版，播放器同清單都好迫。
                     </li>
-                    <li>四頁都放得落，冇裁切。</li>
-                    <li><b>建議：唔改。</b></li>
+                    <li>我上一版用 FAQ 嘅 678 × 466 影，啱啱過咗斷點，所以同你睇到嘅唔同。</li>
+                    <li>
+                        <b>建議：橫版斷點由 640px 降到 600px。</b>612 同 678
+                        兩個闊度都入手機打橫版面，版面本身唔改。
+                    </li>
+                    <li>
+                        影響範圍：只多咗「打橫而且 600–639px 闊」嘅畫面轉橫版；iPhone SE
+                        打橫（568px）照舊直版。
+                    </li>
                 </ul>
                 <div class="row">
                     <h3>主頁</h3>
-                    <div class="pair solo">
+                    <div class="pair">
                         <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
-                            <div class="frame v0" style="max-width: 678px">
+                            <figcaption>
+                                <span class="tag now">現狀</span>612 × 426，直版
+                            </figcaption>
+                            <div class="frame v0" style="max-width: 612px">
                                 <img
-                                    src="now-cl-home.webp"
-                                    alt="闔上・橫 主頁 現狀"
+                                    src="now-cl612-home.webp"
+                                    alt="闔上橫 主頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption>
+                                <span class="tag new">建議</span>612 × 426，斷點 600px
+                            </figcaption>
+                            <div class="frame v0" style="max-width: 612px">
+                                <img
+                                    src="new-cl612-home.webp"
+                                    alt="闔上橫 主頁 建議"
                                     loading="lazy"
                                 />
                             </div>
@@ -382,13 +421,27 @@
                 </div>
                 <div class="row">
                     <h3>今日節目</h3>
-                    <div class="pair solo">
+                    <div class="pair">
                         <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
-                            <div class="frame v0" style="max-width: 678px">
+                            <figcaption>
+                                <span class="tag now">現狀</span>612 × 426，直版
+                            </figcaption>
+                            <div class="frame v0" style="max-width: 612px">
                                 <img
-                                    src="now-cl-today.webp"
-                                    alt="闔上・橫 今日節目 現狀"
+                                    src="now-cl612-today.webp"
+                                    alt="闔上橫 今日節目 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption>
+                                <span class="tag new">建議</span>612 × 426，斷點 600px
+                            </figcaption>
+                            <div class="frame v0" style="max-width: 612px">
+                                <img
+                                    src="new-cl612-today.webp"
+                                    alt="闔上橫 今日節目 建議"
                                     loading="lazy"
                                 />
                             </div>
@@ -397,13 +450,27 @@
                 </div>
                 <div class="row">
                     <h3>節目頁</h3>
-                    <div class="pair solo">
+                    <div class="pair">
                         <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
-                            <div class="frame v0" style="max-width: 678px">
+                            <figcaption>
+                                <span class="tag now">現狀</span>612 × 426，直版
+                            </figcaption>
+                            <div class="frame v0" style="max-width: 612px">
                                 <img
-                                    src="now-cl-show.webp"
-                                    alt="闔上・橫 節目頁 現狀"
+                                    src="now-cl612-show.webp"
+                                    alt="闔上橫 節目頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption>
+                                <span class="tag new">建議</span>612 × 426，斷點 600px
+                            </figcaption>
+                            <div class="frame v0" style="max-width: 612px">
+                                <img
+                                    src="new-cl612-show.webp"
+                                    alt="闔上橫 節目頁 建議"
                                     loading="lazy"
                                 />
                             </div>
@@ -412,13 +479,27 @@
                 </div>
                 <div class="row">
                     <h3>廣播劇頁</h3>
-                    <div class="pair solo">
+                    <div class="pair">
                         <figure class="shot">
-                            <figcaption><span class="tag now">現狀</span>v1.37.3</figcaption>
-                            <div class="frame v0" style="max-width: 678px">
+                            <figcaption>
+                                <span class="tag now">現狀</span>612 × 426，直版
+                            </figcaption>
+                            <div class="frame v0" style="max-width: 612px">
                                 <img
-                                    src="now-cl-drama.webp"
-                                    alt="闔上・橫 廣播劇頁 現狀"
+                                    src="now-cl612-drama.webp"
+                                    alt="闔上橫 廣播劇頁 現狀"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot">
+                            <figcaption>
+                                <span class="tag new">建議</span>612 × 426，斷點 600px
+                            </figcaption>
+                            <div class="frame v0" style="max-width: 612px">
+                                <img
+                                    src="new-cl612-drama.webp"
+                                    alt="闔上橫 廣播劇頁 建議"
                                     loading="lazy"
                                 />
                             </div>
@@ -701,25 +782,20 @@
                             <tr>
                                 <td>Q1</td>
                                 <td>
-                                    Viewport 尺寸：Progressier FAQ 寫打開 890 × 626、闔上 466 ×
-                                    678；但佢個 simulator 嘅 iframe 實際係 876 × 612、426 ×
-                                    612。用邊組？
+                                    Viewport 尺寸：FAQ（890 × 626、466 × 678）同 simulator 實測（876
+                                    × 612、426 × 612）唔同。
                                 </td>
-                                <td>
-                                    用 FAQ 值做 e2e viewport；斷點留鬆啲，兩組都入到同一個 layout。
-                                </td>
+                                <td><b>已定：</b>兩組都要啱。e2e 兩組都測；橫版斷點降到 600px。</td>
                             </tr>
                             <tr>
                                 <td>Q2</td>
-                                <td>闔上・直：主頁轉 3 欄、一頁放晒？</td>
-                                <td>做。普通手機（闊 &lt; 440px）照舊 2 欄。</td>
+                                <td>闔上・直主頁轉 3 欄？</td>
+                                <td><b>已定：</b>唔改。</td>
                             </tr>
                             <tr>
                                 <td>Q3</td>
                                 <td>打開・橫：A 淨係對齊摺位，定 B 加埋左邊 rail？</td>
-                                <td>
-                                    A。Rail 令右欄唔再正正對住摺位，而且主頁得兩三個分類，得益細。
-                                </td>
+                                <td>A。Rail 令右欄唔再對正摺位，而且主頁得兩三個分類，得益細。</td>
                             </tr>
                             <tr>
                                 <td>Q4</td>
@@ -734,8 +810,8 @@
                                 </td>
                                 <td>
                                     v2.0.0 唔另外做：Seated
-                                    上半屏啱啱係「打開・直」摺位以上嗰截（播放器），Standing 用外屏
-                                    = 闔上・橫。
+                                    上半屏啱啱係「打開・直」摺位以上嗰截，Standing 用外屏 =
+                                    闔上・橫。
                                 </td>
                             </tr>
                             <tr>
@@ -743,12 +819,20 @@
                                 <td>P10 入面先做 #10（Duo）定 9a（HomeView square）？</td>
                                 <td>先 #10：只改 token 同斷點，風險細；9a 要新 layout mode。</td>
                             </tr>
+                            <tr>
+                                <td>Q7</td>
+                                <td>
+                                    「最近收聽」改矮同「斷點降到 600px」唔使等 v2.0.0，要唔要先喺
+                                    1.x 出？
+                                </td>
+                                <td>要。兩項都細、而家嘅手機已經受惠；Q3、Q4 先留喺 v2.0.0。</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
                 <ul class="notes">
                     <li>
-                        「建議」主頁 3 欄截圖漏咗最尾嘅「今日節目」格，係臨時 hack
+                        打開・直「建議」主頁 3 欄截圖漏咗最尾嘅「今日節目」格，係臨時 hack
                         嘅副作用；正式版會有 9 格。
                     </li>
                     <li>Rail 概念圖嘅 icon、位置未定稿，節目格比例亦未調。</li>
