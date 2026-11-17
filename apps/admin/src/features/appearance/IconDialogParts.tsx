@@ -5,6 +5,7 @@
 import { Upload, X } from 'lucide-react';
 import type { RefObject } from 'react';
 import { t } from '../../i18n/t';
+import { SegmentedTabs } from '../../ui/SegmentedTabs';
 import { BLACK, WHITE } from './iconColours';
 import { ICON_DEVICES, type IconDevice } from './iconModel';
 
@@ -13,6 +14,7 @@ const DEVICE_LABEL: Record<IconDevice, string> = {
     android: t('appearance.icon.deviceAndroid'),
     tab: t('appearance.icon.deviceTab'),
 };
+const DEVICE_OPTIONS = ICON_DEVICES.map((value) => ({ value, label: DEVICE_LABEL[value] }));
 
 interface DeviceTabsProps {
     same: boolean;
@@ -34,19 +36,15 @@ export function DeviceTabs({ same, device, onSame, onDevice, disabled }: DeviceT
                 />
                 {t('appearance.icon.same')}
             </label>
-            <div className="seg" role="group" aria-label={t('appearance.icon.devicesLabel')}>
-                {ICON_DEVICES.map((value) => (
-                    <button
-                        key={value}
-                        type="button"
-                        aria-pressed={!same && value === device}
-                        disabled={same || disabled}
-                        onClick={() => onDevice(value)}
-                    >
-                        {DEVICE_LABEL[value]}
-                    </button>
-                ))}
-            </div>
+            {/* 同一裁切 = 成組停用，冇一個裝置顯示揀中 */}
+            <SegmentedTabs
+                mode="toggle"
+                label={t('appearance.icon.devicesLabel')}
+                options={DEVICE_OPTIONS}
+                value={device}
+                disabled={same || disabled}
+                onChange={onDevice}
+            />
         </div>
     );
 }

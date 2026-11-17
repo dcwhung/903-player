@@ -1,11 +1,11 @@
-/* 基本資料：類型 switch（發佈咗 = 實色 pill）/ 上架日期 / 狀態 同一行（mockup ⑧ .row3） */
+/* 基本資料：類型 SegmentedTabs（發佈咗 = 實色 pill）/ 上架日期 / 狀態 同一行（mockup ⑧ .row3） */
 import { useId } from 'react';
 import type { RawDefinition } from '../../api/types';
 import { t } from '../../i18n/t';
 import { str } from '../../model/raw';
 import { DateField } from '../../ui/DateField';
 import { Pill } from '../../ui/Pill';
-import { Switch } from '../../ui/Switch';
+import { SegmentedTabs } from '../../ui/SegmentedTabs';
 import { Tip } from '../../ui/Tip';
 import { Toggle } from '../../ui/Toggle';
 import { PublishedHint } from '../revert/FieldRevert';
@@ -60,12 +60,13 @@ export function BasicFields({ definition, kindLocked, onChange, revert }: BasicF
                         {kindLocked && <Tip text={t('drama.kindLockedTip')} />}
                     </RevertLabel>
                     {kindLocked ? (
-                        // 鎖住：直接顯示目前類型（實色 pill），唔出 disabled switch
+                        // 鎖住：直接顯示目前類型（實色 pill），唔出 disabled 分段掣
                         <span>
                             <Pill tone="solid">{t(`drama.${kind}`)}</Pill>
                         </span>
                     ) : (
-                        <Switch
+                        <SegmentedTabs
+                            mode="toggle"
                             label={t('drama.kind')}
                             value={kind}
                             options={KIND_OPTIONS}

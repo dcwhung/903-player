@@ -59,12 +59,12 @@ describe('state colours survive hover', () => {
 });
 
 /*
- * chip 類掣（快速套用、類型 switch、排程短篇 tab）：
+ * chip 類掣（快速套用、排程短篇 tab）：
  * - 揀咗（aria-pressed）用實色 --primary 底 + --on-primary 白字，hover 都唔變（之前 hover 蓋咗底色 → 白字淺底睇唔到）
  * - disabled 唔用 opacity（0.45 透明令對比跌穿 3:1），改用 --muted 字 + --surface-2 淺底
  */
 describe('chip buttons', () => {
-    it.each(['.presets', '.switch'])(
+    it.each(['.presets'])(
         'should paint the pressed %s chip solid primary, hover included',
         (group) => {
             for (const selector of [
@@ -78,7 +78,7 @@ describe('chip buttons', () => {
         },
     );
 
-    it.each(['.presets', '.switch', '.arc-tabs'])(
+    it.each(['.presets', '.arc-tabs'])(
         'should give disabled %s chips muted text on a light surface, fully opaque',
         (group) => {
             const body = bodyOf(`${group} button:disabled`);
@@ -87,6 +87,42 @@ describe('chip buttons', () => {
             expect(body).toMatch(/background:\s*var\(--surface-2\)/);
         },
     );
+});
+
+/*
+ * SegmentedTabs（編輯｜預覽、類型、App 圖示裝置）：共用膠囊用實色 --primary，揀咗嘅字 --on-primary（hover 都唔變）；
+ * 膠囊位置由 --seg-index / --seg-count 計（2 / 3 格都得）；disabled 唔用 opacity，--muted 字照 ≥ 4.5:1
+ */
+describe('segmented tabs', () => {
+    it('should paint the shared pill solid primary', () => {
+        expect(bodyOf('.seg-tabs-pill')).toMatch(/background:\s*var\(--primary\)/);
+    });
+
+    it('should place the pill from --seg-index and --seg-count', () => {
+        expect(bodyOf('.seg-tabs')).toMatch(/repeat\(var\(--seg-count\)/);
+        const pill = bodyOf('.seg-tabs-pill');
+        expect(pill).toMatch(/left:\s*calc\([^;]*var\(--seg-index\)/);
+        expect(pill).toMatch(/right:\s*calc\([^;]*var\(--seg-count\)[^;]*var\(--seg-index\)/);
+    });
+
+    it.each([
+        ".seg-tabs button[aria-selected='true']",
+        ".seg-tabs button[aria-pressed='true']",
+        ".seg-tabs button[aria-pressed='true']:hover:not(:disabled)",
+    ])('%s should read --on-primary over the pill', (selector) => {
+        expect(bodyOf(selector)).toMatch(/color:\s*var\(--on-primary\)/);
+    });
+
+    it('should give disabled options muted text, fully opaque', () => {
+        const body = bodyOf('.seg-tabs button:disabled');
+        expect(body).toMatch(/opacity:\s*1/);
+        expect(body).toMatch(/color:\s*var\(--muted\)/);
+    });
+
+    it('should drop the old one-off segmented styles', () => {
+        for (const selector of ['.view-tabs', '.view-pill', '.switch', '.icon-dialog .seg'])
+            expect(bodyOf(selector)).toBe('');
+    });
 });
 
 /*
