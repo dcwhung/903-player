@@ -11,7 +11,7 @@ import { runComingSoonChecks } from './comingSoon.mjs';
 import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runHomeWideChecks } from './homeWide.mjs';
 import { runItemInfoChecks } from './itemInfo.mjs';
-import { previewUrl, startPreview } from './previewServer.mjs';
+import { parsePort, previewUrl, startPreview } from './previewServer.mjs';
 import { runPwaUpdateChecks } from './pwaUpdate.mjs';
 import { runRemoteCatalogChecks } from './remoteCatalog.mjs';
 import { runShowGridCountChecks } from './showGridCounts.mjs';
@@ -34,20 +34,18 @@ import { runStorageMigrationChecks } from './storageMigration.mjs';
 import { runTouchChecks } from './touch.mjs';
 
 const DEFAULT_PORT = 4173;
-const MAX_PORT = 65535;
 
 /** 多個 worktree 同時跑 e2e 時可以用 E2E_PORT 避開撞 port（strictPort 會令人誤測別人嘅 build） */
-const parsePort = (raw) => {
-    if (raw === undefined || raw === '') return DEFAULT_PORT;
-    const port = Number(raw);
-    if (!/^\d+$/.test(raw) || port < 1 || port > MAX_PORT) {
-        console.error(`E2E_PORT 要係 1–${MAX_PORT} 嘅整數，收到「${raw}」`);
-        process.exit(1);
+const portOrExit = () => {
+    try {
+        return parsePort(process.env.E2E_PORT, DEFAULT_PORT, 'E2E_PORT');
+    } catch (error) {
+        console.error(error.message);
+        return process.exit(1);
     }
-    return port;
 };
 
-const PORT = parsePort(process.env.E2E_PORT);
+const PORT = portOrExit();
 const BASE = previewUrl(PORT);
 const OUT = new URL('./screenshots', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });

@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { chromiumExecutablePath } from '../scripts/chromiumLaunch.mjs';
 import { SHOT, newE2EContext } from './harness.mjs';
-import { previewUrl, startPreview } from './previewServer.mjs';
+import { parsePort, previewUrl, startPreview, viteBin } from './previewServer.mjs';
 import {
     VERSION_PLACEHOLDER,
     VERSION_TEXT,
@@ -36,6 +36,7 @@ import { VISUAL_SCENES } from './visualScenes.mjs';
 const APP_DIR = fileURLToPath(new URL('..', import.meta.url));
 const OUT_DIR = fileURLToPath(new URL('./screenshots/visual', import.meta.url));
 const DEFAULT_PORT = 4183;
+const PORT_ENV = 'VISUAL_PORT';
 const DEFAULT_BASE_BRANCH = 'origin/main';
 const WORKSPACE_SCOPE = '@903-player';
 /** 同時影幾多張：每張一個 context；多咗 CPU 爭用，settle 等耐咗反而慢 */
@@ -88,13 +89,13 @@ const linkNodeModules = (repoRoot, worktree) => {
 };
 
 const viteBuild = (appDir) => {
-    const viteBin = fileURLToPath(new URL('bin/vite.js', import.meta.resolve('vite/package.json')));
-    run(process.execPath, [viteBin, 'build', '--mode', 'e2e'], appDir);
+    run(process.execPath, [viteBin(), 'build', '--mode', 'e2e'], appDir);
 };
 
 /** 喺暫存 folder 開 base 嘅 worktree 並 build；回傳 worktree 同入面 app folder 嘅位置 */
 const buildBase = (repoRoot, sha) => {
     const worktree = join(mkdtempSync(join(tmpdir(), '903-visual-')), 'base');
+    pendingCleanup = () => removeWorktree(repoRoot, worktree);
     git(['worktree', 'add', '--detach', worktree, sha], repoRoot);
     try {
         linkNodeModules(repoRoot, worktree);
@@ -107,7 +108,22 @@ const buildBase = (repoRoot, sha) => {
     }
 };
 
+/** 開咗未清嘅 base worktree：俾 Ctrl-C / kill 打斷時都要清（build 階段冇 finally 行得到，S-1108） */
+let pendingCleanup = null;
+/** 起咗嘅 vite preview（打斷時要一齊停） */
+const previews = [];
+const SIGNAL_EXIT_BASE = 128;
+const SIGNALS = { SIGINT: 2, SIGTERM: 15 };
+for (const [signal, number] of Object.entries(SIGNALS)) {
+    process.once(signal, () => {
+        for (const child of previews) child.kill();
+        pendingCleanup?.();
+        process.exit(SIGNAL_EXIT_BASE + number);
+    });
+}
+
 const removeWorktree = (repoRoot, worktree) => {
+    pendingCleanup = null;
     try {
         git(['worktree', 'remove', '--force', worktree], repoRoot);
     } catch {
@@ -209,7 +225,7 @@ const capture = async (browser, base, { scene, viewport }, file) => {
         scene.now ? { now: scene.now } : {},
     );
     try {
-        await scene.seed?.(ctx);
+        await scene.seed?.(ctx, base);
         const p = await ctx.newPage();
         await scene.run(p, base);
         await p.waitForTimeout(SETTLE_MS);
@@ -296,6 +312,8 @@ const compareShot = async (env, shot) => {
         const pixels = await comparePng(env.comparer, base.png, head.png, file('diff'));
         result = { name: shot.name, pixels, geometry: diffGeometry(base.geometry, head.geometry) };
         if (pixels === 0 && result.geometry.length === 0) break;
+        // 重影先一樣都要留痕：間中出現嘅差異唔好無聲無息 PASS（S-1107）
+        if (attempt < RETRIES) console.log(`RETRY ${shot.name}：${pixels} 個 pixel 唔同，重影`);
     }
     return result;
 };
@@ -336,7 +354,7 @@ const main = async () => {
         'rev-parse',
         args.base ?? git(['merge-base', 'HEAD', DEFAULT_BASE_BRANCH]),
     ]);
-    const port = Number(process.env.VISUAL_PORT || DEFAULT_PORT);
+    const port = parsePort(process.env.VISUAL_PORT, DEFAULT_PORT, PORT_ENV);
     console.log(
         `base ${baseSha.slice(0, 7)} ↔ working tree（${git(['rev-parse', '--short', 'HEAD'])}）`,
     );
@@ -350,7 +368,6 @@ const main = async () => {
 
     console.log('build base…');
     const base = buildBase(repoRoot, baseSha);
-    const servers = [];
     let browser;
     try {
         console.log('build head…');
@@ -358,8 +375,8 @@ const main = async () => {
         if (!existsSync(join(base.appDir, 'dist')) || !existsSync(join(APP_DIR, 'dist'))) {
             throw new Error('build 冇出 dist');
         }
-        servers.push(await startPreview({ port, cwd: base.appDir }));
-        servers.push(await startPreview({ port: port + 1, cwd: APP_DIR }));
+        previews.push(await startPreview({ port, cwd: base.appDir, portEnv: PORT_ENV }));
+        previews.push(await startPreview({ port: port + 1, cwd: APP_DIR, portEnv: PORT_ENV }));
         browser = await chromium.launch({
             executablePath: chromiumExecutablePath(),
             args: ['--autoplay-policy=no-user-gesture-required', ...DETERMINISTIC_RASTER_ARGS],
@@ -376,7 +393,7 @@ const main = async () => {
         process.exitCode = summary.ok ? 0 : 1;
     } finally {
         await browser?.close();
-        for (const server of servers) server.kill();
+        for (const server of previews) server.kill();
         if (args.keepWorktree) console.log(`base worktree 留喺 ${base.worktree}`);
         else removeWorktree(repoRoot, base.worktree);
     }

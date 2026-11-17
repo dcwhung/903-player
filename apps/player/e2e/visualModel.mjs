@@ -11,7 +11,7 @@ const viewport = (kind, width, height) => ({
 
 /**
  * 凍結嘅現有裝置清單：v2.0.0 嘅 iPhone Duo / HomeView 改動喺呢啲 viewport 一定要同 main 逐 pixel 一樣。
- * 只可以加、唔好改或者刪（刪咗就少咗保障）；src/styles/deviceQueries.node.test.ts 會鎖住新 query 全部唔 match 呢度。
+ * 只可以加、唔好改或者刪（刪咗就少咗保障）；新嘅裝置 query 一定唔可以 match 呢度任何一個。
  * 640x360、1000x561、1000x562：現有三個斷點（src/config/layout.ts）嘅邊界
  */
 export const VISUAL_VIEWPORTS = Object.freeze([
