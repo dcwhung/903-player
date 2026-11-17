@@ -11,7 +11,7 @@ import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPa
 import { ItemInfoSheet } from '../../components/shared/common/ItemInfo/ItemInfoSheet';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import { LANDSCAPE_QUERY } from '../../config/layout';
+import { LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
 import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useGoHome } from '../../hooks/useGoHome';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -99,7 +99,7 @@ export const ShowPage = () => {
     const focusId = useEpisodeFocus(); // 由「我的收藏」撳行入嚟：唔播，捲去嗰集
     const data = useShowPage(showId, focusId);
     const { show, theme, status, isSearching, episodeItems } = data;
-    const landscape = useMediaQuery(LANDSCAPE_QUERY);
+    const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
     // 有集數（包括未上架）就列清單
     const listed = show && status === 'ready' && episodeItems.length > 0;
     // 橫版有清單：頁頭喺左欄清單上面；否則（直版 / 未有清單）喺播放器上面

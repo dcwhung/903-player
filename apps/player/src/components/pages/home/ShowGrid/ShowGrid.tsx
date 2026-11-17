@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { LANDSCAPE_QUERY } from '../../../../config/layout';
+import { LANDSCAPE_LAYOUT_QUERY } from '../../../../config/layout';
 import { useMediaQuery } from '../../../../hooks/useMediaQuery';
 import { t } from '../../../../i18n/t';
 import { HomeLandscapeGrid } from '../HomeLandscapeGrid/HomeLandscapeGrid';
@@ -41,7 +41,7 @@ const flag = (on: boolean): '' | undefined => (on ? '' : undefined);
  */
 const useShowGridPages = (tiles: ReactNode[]) => {
     // 橫版一頁放晒（ShowGrid.module.css 排成幾欄 × 兩行填滿），唔使量高度分頁
-    const landscape = useMediaQuery(LANDSCAPE_QUERY);
+    const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
     const count = tiles.length;
     const columns = portraitColumns(count);
     const { rows, rowPx, ...refs } = useRowsPerPage(count, columns, !landscape);

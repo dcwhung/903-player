@@ -1,7 +1,7 @@
 import { hkToday } from '@903-player/catalog';
 import { ShowTile } from '../../components/pages/home/ShowTile/ShowTile';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import { SHORT_LANDSCAPE_QUERY, WIDE_BANNER_QUERY } from '../../config/layout';
+import { SHORT_LANDSCAPE_LAYOUT_QUERY, WIDE_BANNER_QUERY } from '../../config/layout';
 import { allShows } from '../../catalog/shows';
 import { HOME_THEME } from '../../config/showThemes';
 import { useRecordings } from '../../data/useRecordings';
@@ -108,7 +108,7 @@ const useLayoutMode = (hasMiniPlayer: boolean) => {
 
 /** 收藏 tab 版面：闊橫版 wide；手機打橫 land；其他（直版）phone */
 const useSavedLayout = (mode: ReturnType<typeof homeLayoutMode>): SavedLayout => {
-    const sideways = useMediaQuery(SHORT_LANDSCAPE_QUERY);
+    const sideways = useMediaQuery(SHORT_LANDSCAPE_LAYOUT_QUERY);
     if (mode !== 'stack') return 'wide';
     return sideways ? 'land' : 'phone';
 };

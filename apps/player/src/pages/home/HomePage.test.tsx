@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import packageJson from '../../../package.json';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
+import { PHONE_SIDEWAYS_VIEWPORT, stubViewport } from '../../../tests/landscape';
 import { HOME_THEME } from '../../config/showThemes';
 import { restoreMiniPlayer } from '../../hooks/miniPlayerDismissed';
 import { usePlayer } from '../../player/usePlayer';
@@ -61,20 +62,8 @@ const arriveHomeWith = async (target: Track, recordings = RECORDINGS, autoplay =
     return view;
 };
 
-/** 手機打橫（SHORT_LANDSCAPE_QUERY 同 LANDSCAPE_QUERY 都符合） */
-const stubPhoneSideways = () => {
-    vi.stubGlobal(
-        'matchMedia',
-        vi.fn((query: string) => ({
-            // 手機打橫唔夠高，闊橫版（min-height: 562px）唔符合
-            matches:
-                query.includes('max-height: 561px') ||
-                (query.includes('landscape') && !query.includes('min-height: 562px')),
-            addEventListener: vi.fn(),
-            removeEventListener: vi.fn(),
-        })),
-    );
-};
+/** 手機打橫（SHORT_LANDSCAPE_QUERY 同 LANDSCAPE_QUERY 都符合；唔夠高，闊橫版唔符合） */
+const stubPhoneSideways = () => stubViewport(PHONE_SIDEWAYS_VIEWPORT);
 
 // 真 catalog 嘅劇集 / 短篇 addedAt 係 10/24–10/27：之前嘅日子佢哋仲係「即將上架」（P8 #6），所以劇集測試用 16/11（一）
 const CATALOG_LIVE = '2026-11-16T08:00:00Z';

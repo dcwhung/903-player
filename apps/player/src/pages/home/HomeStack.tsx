@@ -11,7 +11,7 @@ import {
 import { miniPlayerMode } from '../../components/pages/home/MiniPlayer/miniPlayerMode';
 import { ShowGrid } from '../../components/pages/home/ShowGrid/ShowGrid';
 import { APP_VERSION } from '../../config/appVersion';
-import { SHORT_LANDSCAPE_QUERY } from '../../config/layout';
+import { SHORT_LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
 import type { HomeTab } from '../../hooks/useHomeTab';
 import type { ThirdTab } from '../../selectors/bookmarks';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -44,7 +44,7 @@ export const HomeStack = ({
     saved,
 }: HomeStackProps) => {
     // 手機打橫：橫額變成節目 / 劇集格第一格（HomeLandscapeGrid 按卡數排）；其他情況釘喺頂
-    const bannerInGrid = useMediaQuery(SHORT_LANDSCAPE_QUERY);
+    const bannerInGrid = useMediaQuery(SHORT_LANDSCAPE_LAYOUT_QUERY);
     const version = <AppVersion version={APP_VERSION} />;
     const renderBanner = bannerInGrid
         ? (count: number) => (

@@ -266,3 +266,37 @@
     height: 100%;
     background: var(--color-accent);
 }
+
+/*
+ * iPhone Duo（DUO_QUERY）：mini player 浮喺畫面上面，唔跟 ThemeScope .scope 嘅 padding，
+ * 左右自己加返 --duo-edge-inset（底部由 tokens.css 嘅 --mini-player-offset-bottom 加）
+ */
+@media (orientation: portrait) and (min-width: 420px) and (max-width: 470px) and (min-height: 590px) and (max-height: 690px),
+    (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px),
+    (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px),
+    (orientation: portrait) and (min-width: 600px) and (max-width: 640px) and (min-height: 860px) and (max-height: 900px) {
+    .wrapper {
+        right: calc(
+            var(--duo-edge-inset) +
+                max(
+                    var(--space-3),
+                    calc((100vw - var(--mini-player-max-width)) / 2 + var(--space-3))
+                )
+        );
+        left: calc(
+            var(--duo-edge-inset) +
+                max(
+                    var(--space-3),
+                    calc((100vw - var(--mini-player-max-width)) / 2 + var(--space-3))
+                )
+        );
+    }
+}
+
+/* Duo 闔上・橫（DUO_COVER_LANDSCAPE_QUERY）：同手機打橫一樣對齊格邊，再加邊框 */
+@media (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px) {
+    .wrapper {
+        right: calc(env(safe-area-inset-right) + var(--home-gutter) + var(--duo-edge-inset));
+        left: calc(env(safe-area-inset-left) + var(--home-gutter) + var(--duo-edge-inset));
+    }
+}

@@ -4,7 +4,7 @@ import { PageHeader } from '../../components/shared/common/PageHeader/PageHeader
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
 import { TodayShowList } from '../../components/pages/today/TodayShowList/TodayShowList';
 import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
-import { LANDSCAPE_QUERY, SHORT_LANDSCAPE_QUERY } from '../../config/layout';
+import { LANDSCAPE_LAYOUT_QUERY, SHORT_LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
 import { useGoHome } from '../../hooks/useGoHome';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { t } from '../../i18n/t';
@@ -38,9 +38,9 @@ export const TodayPage = () => {
     const names = cards.map((card) => card.title);
     const listed = status === 'ready' && items.length > 0;
     const info = useTodayInfoExpanded(listed && items.some((item) => item.info));
-    const landscape = useMediaQuery(LANDSCAPE_QUERY);
+    const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
     // 手機打橫：指示點搬上頁頭右邊，騰返高度畀唱片
-    const dotsInHeader = useMediaQuery(SHORT_LANDSCAPE_QUERY);
+    const dotsInHeader = useMediaQuery(SHORT_LANDSCAPE_LAYOUT_QUERY);
     const dots = listed && current && (
         <PageDots keys={cardKeys} labels={names} index={index} onSelect={state.selectIndex} />
     );
