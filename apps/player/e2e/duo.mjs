@@ -392,10 +392,12 @@ const recentLook = async (env, viewport, count) => {
         const tab = el.closest('[data-saved-mode]').getBoundingClientRect();
         const panel = el.getBoundingClientRect();
         const list = el.querySelector('ul').parentElement;
+        // 收藏 box 嘅捲動區（同一個 tab 入面最近收聽前面嗰格；唔連 --saved-gap，S-1123）
+        const savedBox = el.previousElementSibling.getBoundingClientRect();
         return {
             tab: tab.height,
             recent: panel.height,
-            saved: panel.top - tab.top,
+            saved: savedBox.height,
             overflows: list.scrollHeight > list.clientHeight + 1,
         };
     });
@@ -413,8 +415,8 @@ const checkRecentPanel = async (env) => {
     const many = await recentLook(env, COVER_PORTRAIT, RECENT_MAX);
     const cap = Math.min(RECENT_HEIGHT_PX, many.tab * RECENT_TAB_SHARE);
     env.log(
-        many.recent <= cap + EDGE_TOLERANCE_PX && many.saved > many.recent,
-        `Duo 闔上・直我的收藏：聽過 ${RECENT_MAX} 集，最近收聽最高 ${cap.toFixed(1)}px（${many.recent}），收藏區高過佢（${many.saved}）`,
+        many.recent <= cap + EDGE_TOLERANCE_PX && many.saved > many.recent && many.overflows,
+        `Duo 闔上・直我的收藏：聽過 ${RECENT_MAX} 集，最近收聽最高 ${cap.toFixed(1)}px（${many.recent}），收藏區高過佢（${many.saved}），清單喺入面捲（${many.overflows}）`,
     );
     const phone = await recentLook(env, PHONE, FEW_LISTENED);
     env.log(
