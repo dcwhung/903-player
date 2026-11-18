@@ -8,7 +8,8 @@
 | 1    | ✅ merge 入 `release/v2.0.0`（PR #269）：裝置常數、PostCSS plugin、24px 邊框、闔上・橫；review W-782–W-786、QA CUI-0025 已修 |
 | 2    | ✅ merge 入 `release/v2.0.0`（PR #270）：Duo 闔上・直「最近收聽」改矮                                                        |
 | 3    | ✅ merge 入 `release/v2.0.0`（PR #271）：新主頁（Duo 打開・橫 + HomeView）；冇播放卡用返原本填滿格（用戶 2026-11-18）        |
-| 4–7  | 未開始                                                                                                                       |
+| 4    | ✅ merge 入 `release/v2.0.0`（PR #272）：Duo 打開・橫內頁兩欄對齊摺位                                                        |
+| 5–7  | 未開始                                                                                                                       |
 
 用戶決定（2026-11-18，lane 1 review）：
 

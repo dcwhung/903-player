@@ -425,7 +425,44 @@ const checkRecentPanel = async (env) => {
     );
 };
 
+// 打開・橫摺位（畫面正中）：內頁清單欄右邊分隔線對齊佢（lane 4）
+const HINGE_X = OPEN_LANDSCAPE.width / 2;
+const INNER_ROUTES = [
+    ['節目頁', SHOW_ROUTE],
+    ['今日節目', TODAY_ROUTE],
+    ['廣播劇頁', '#/drama/jim'],
+];
+
+/** 打開・橫內頁：清單欄（左欄，分隔線喺佢右邊）右邊 = 摺位，播放掣喺右半 */
+const checkOpenLandscapeHinge = async (env, label, route) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: OPEN_LANDSCAPE });
+    await p.goto(`${env.base}${route}`);
+    const sheet = p.getByRole('dialog', { name: '全集' });
+    if (await sheet.isVisible().catch(() => false)) await p.keyboard.press('Escape');
+    await p.locator('main [class*="_listColumn_"]').waitFor({ timeout: WAIT_MS });
+    const look = await p.evaluate(() => {
+        // 左欄清單（Page.module.css .listColumn，分隔線係佢右邊框）：直接搵欄，唔靠第一個清單（S-1128）
+        const column = document.querySelector('main [class*="_listColumn_"]');
+        const play = [...document.querySelectorAll('button')].find((el) =>
+            ['播放', '暫停'].includes(el.getAttribute('aria-label')),
+        );
+        return {
+            divider: column ? column.getBoundingClientRect().right : null,
+            playLeft: play ? play.getBoundingClientRect().left : null,
+        };
+    });
+    env.log(
+        look.divider !== null && near(look.divider, HINGE_X) && look.playLeft > HINGE_X,
+        `Duo 打開・橫${label}：清單欄分隔線對齊摺位 ${HINGE_X}（${look.divider}），播放掣喺右半（${look.playLeft}）`,
+    );
+    await ctx.close();
+};
+
 const SCENARIOS = [
+    ...INNER_ROUTES.map(([label, route]) => [
+        `Duo 打開・橫${label}摺位`,
+        (env) => checkOpenLandscapeHinge(env, label, route),
+    ]),
     ...POSTURES.map(([label, viewport]) => [
         `Duo ${label} 主頁邊框`,
         (env) => checkHomeEdges(env, label, viewport),
