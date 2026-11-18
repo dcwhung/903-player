@@ -53,7 +53,7 @@ export const DateColumn = ({ days, current, onPick, connecting, dateLabel }: Dat
                             <button
                                 ref={isCurrent ? currentRef : undefined}
                                 type="button"
-                                className={`${strip.cell} ${isCurrent ? strip.current : strip.day} ${styles.cell}`}
+                                className={`${strip.cell} ${isCurrent ? strip.current : strip.day} ${styles.cell}${isCurrent ? ` ${styles.currentDay}` : ''}`}
                                 aria-current={isCurrent ? 'date' : undefined}
                                 aria-disabled={isCurrent || undefined}
                                 aria-label={t('episodes.pickDay', {

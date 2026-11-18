@@ -310,6 +310,15 @@
             calc(var(--player-disc-size) + 2 * var(--card-stack-gutter) + 2 * var(--space-6))
         );
     }
+
+    /*
+     * 廣播劇頁唱片 + 直排短篇（.sideRow）：左右同下面清單（EpisodeList .section padding --space-4）對齊，
+     * 右欄右邊 = 畫面闊 − --duo-edge-inset − --space-4 = 588（mockup new-opr-show，S-QA-2）；
+     * 兩邊一樣多，唱片置中位置唔變
+     */
+    .sideRow {
+        padding-inline: var(--space-4);
+    }
 }
 
 /*

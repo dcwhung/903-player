@@ -40,7 +40,8 @@
     color: var(--color-text);
 }
 
-.current {
+/* 現正播放嗰格加框（CUI-0026）：同日子條 .current 分開名；.cell.currentDay 蓋過 strip .cell 嘅 border: none，唔靠 bundle 次序 */
+.cell.currentDay {
     border: 1px solid var(--color-accent-text);
     cursor: default;
 }

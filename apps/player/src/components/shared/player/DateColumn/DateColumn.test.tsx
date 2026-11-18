@@ -58,6 +58,14 @@ describe('DateColumn', () => {
         );
     });
 
+    // CUI-0026：現正播放嗰格要有 DateColumn 自己嘅框（class 名同日子條嘅 current 分開，non-scoped 都分得出）
+    it('should frame the playing day only', () => {
+        renderColumn();
+
+        expect(screen.getByRole('button', { name: /30\/11/ })).toHaveClass('currentDay');
+        expect(screen.getByRole('button', { name: /28\/11/ })).not.toHaveClass('currentDay');
+    });
+
     // W-792：撳完焦點留喺同一粒掣（變咗現正播放），轉集讀出嚟
     it('should keep focus on the tapped day and announce the switch', async () => {
         renderColumn();

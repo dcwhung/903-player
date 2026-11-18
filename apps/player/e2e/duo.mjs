@@ -517,6 +517,11 @@ const checkOpenPortraitDramas = async (env) => {
 // 打開・直摺位（畫面正中）：播放器同日子 / 短篇選擇喺上半，清單同全集表喺下半（lane 5b）
 const FOLD_Y = OPEN_PORTRAIT.height / 2;
 
+/** 打開・直右欄（日子 / 短篇）右邊同清單一樣離畫面邊 24px（mockup new-opr-show，S-QA-2） */
+const SIDE_RIGHT_MAX = OPEN_PORTRAIT.width - DUO_EDGE_PX;
+const sideAlignedWithList = (right) =>
+    right !== null && right <= SIDE_RIGHT_MAX + EDGE_TOLERANCE_PX;
+
 /** 打開・直內頁：播放掣喺摺位以上；有右欄（日子 / 短篇）就喺唱片右邊；清單由摺位附近開始 */
 const openPortraitPage = async (env, route) => {
     const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: OPEN_PORTRAIT });
@@ -537,10 +542,14 @@ const openPortraitPage = async (env, route) => {
         const side =
             document.querySelector('[data-vertical]') ??
             document.querySelector('[aria-current="date"]')?.closest('div');
+        const current = document.querySelector('[aria-current="date"]');
         return {
             playBottom: box(play)?.bottom ?? null,
             playRight: box(play)?.right ?? null,
             sideLeft: box(side)?.left ?? null,
+            sideRight: box(side)?.right ?? null,
+            // CUI-0026：現正播放嗰格嘅框（DateColumn .currentDay）
+            currentBorder: current ? getComputedStyle(current).borderTopWidth : null,
         };
     });
     return { ctx, p, look, sheetTop, sheetBox };
@@ -552,6 +561,14 @@ const checkOpenPortraitShow = async (env) => {
         look.playBottom < FOLD_Y && look.sideLeft > look.playRight,
         `Duo 打開・直節目頁：播放器喺上半、日子直排喺右邊（播放掣底 ${look.playBottom}、右 ${look.playRight}，日子欄左 ${look.sideLeft}）`,
     );
+    env.log(
+        sideAlignedWithList(look.sideRight),
+        `Duo 打開・直節目頁：日子欄右邊同清單對齊（${look.sideRight} ≤ ${SIDE_RIGHT_MAX}，S-QA-2）`,
+    );
+    env.log(
+        look.currentBorder === '1px',
+        `Duo 打開・直節目頁：現正播放嗰日有框（border ${look.currentBorder}，CUI-0026）`,
+    );
     await ctx.close();
 };
 
@@ -560,6 +577,10 @@ const checkOpenPortraitDrama = async (env) => {
     env.log(
         look.playBottom < FOLD_Y && look.sideLeft > look.playRight,
         `Duo 打開・直廣播劇頁：播放器喺上半、短篇選擇直排喺右邊（播放掣底 ${look.playBottom}，短篇欄左 ${look.sideLeft}）`,
+    );
+    env.log(
+        sideAlignedWithList(look.sideRight),
+        `Duo 打開・直廣播劇頁：短篇欄右邊同清單對齊（${look.sideRight} ≤ ${SIDE_RIGHT_MAX}，S-QA-2）`,
     );
     env.log(
         sheetTop !== null && sheetTop >= FOLD_Y - EDGE_TOLERANCE_PX,
