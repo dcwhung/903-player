@@ -239,6 +239,11 @@ export const zhHK = {
         // 橫版唱片下面「現正播放：好朋友手牽手 · 第 2 / 4 集」（下一行集名）
         nowPlayingArc: '{arc}{sep}第 {no} / {total} 集',
     },
+    // HomeView（P10 lane 6）：頁頭清單掣（讀屏名包埋數量，badge 數字唔另外讀）同清單 sheet
+    listSheet: {
+        showEpisodes: '集數清單，共 {count} 集',
+        close: '關閉清單',
+    },
     // 節目 / 劇集資料（P9.5 #12）：資料 sheet 小標題、chip 組標籤、ⓘ / 箭咀讀屏名
     info: {
         airTime: '播放時間',

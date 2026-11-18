@@ -1,144 +1,132 @@
 import { useParams } from 'react-router-dom';
-import type { ReactNode } from 'react';
-import {
-    EpisodeList,
-    type EpisodeItem,
-} from '../../components/shared/player/EpisodeList/EpisodeList';
-import { NowPlaying } from '../../components/shared/player/NowPlaying/NowPlaying';
+import type { ComponentProps, ReactNode } from 'react';
 import { PageHeader } from '../../components/shared/common/PageHeader/PageHeader';
 import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
-import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPanel';
-import { ItemInfoSheet } from '../../components/shared/common/ItemInfo/ItemInfoSheet';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import { DUO_OPEN_PORTRAIT_QUERY, LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
+import { LANDSCAPE_LAYOUT_QUERY, SQUARE_QUERY } from '../../config/layout';
 import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useGoHome } from '../../hooks/useGoHome';
+import { useListSheet } from '../../hooks/useListSheet';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { t } from '../../i18n/t';
-import { usePlayer } from '../../player/usePlayer';
-import { formatDateLabel, formatSpokenDate } from '../../utils/date';
-import { hasKnownDuration } from '../../utils/time';
 import { LoadState } from '../shared/LoadState';
 import page from '../shared/Page.module.css';
+import { ShowEpisodes, ShowHeaderActions } from './ShowEpisodes';
+import { ShowPlayer } from './ShowPlayer';
 import { useShowPage } from './useShowPage';
 
-type ShowPlayerProps = Pick<
-    ReturnType<typeof useShowPage>,
-    'theme' | 'current' | 'start' | 'strip' | 'selectEpisode' | 'info'
-> & { title: string; landscape: boolean };
+type ShowData = ReturnType<typeof useShowPage>;
 
-/**
- * 有集數播得就係播放器（橫版下面加「現正播放」，直版喺日子條上面）；
- * 未有就講「未有集數上架」（清單照列出未上架嘅，撳唔到）。
- * 播緊其他嘢（start 有值）：節目碟面、未開始樣，撳播放先開始播呢個節目
- */
-const ShowPlayer = ({
-    title,
-    theme,
-    current,
-    start,
-    strip,
-    selectEpisode,
-    info,
-    landscape,
-}: ShowPlayerProps) => {
-    const { duration } = usePlayer();
-    // Duo 打開・直（P10 lane 5b）：日子直排喺唱片右邊
-    const stripSide = useMediaQuery(DUO_OPEN_PORTRAIT_QUERY);
-    if (!current) {
-        return <StatusMessage message={t('episodes.noneUp')} />;
-    }
-    const dateLabel = formatDateLabel(current.date);
+interface ShowPlayerColumnProps {
+    data: ShowData;
+    /** 播放器上面嘅頁頭（橫版有清單時喺左欄，呢度冇） */
+    header: ReactNode;
+    landscape: boolean;
+    square: boolean;
+}
+
+/** 播放器欄：（頁頭 +）載入 / 搵唔到訊息 + 播放器 */
+const ShowPlayerColumn = ({ data, header, landscape, square }: ShowPlayerColumnProps) => {
+    const { show, status, isSearching, episodeItems } = data;
     return (
-        <>
-            <PlayerPanel
-                title={title}
-                // 日子條嘅日子淨係畀讀屏用：讀「17/10 星期六」
-                dateLabel={formatSpokenDate(current.date)}
-                // 未揀集 / 播緊其他嘢（未開始樣）都照顯示節目碟面，唔再用黑碟（劇集頁唔變）
-                art={theme.art}
-                days={strip.days}
-                currentDay={strip.current}
-                onPick={selectEpisode}
-                onStart={start}
-                bookmark={current}
-                stripSide={stripSide}
-                {...info.gaugeInfo}
-            />
-            {landscape && (
-                <NowPlaying
-                    label={dateLabel}
-                    spokenLabel={formatSpokenDate(current.date)}
-                    connecting={!start && !hasKnownDuration(duration)}
+        <div className={page.playerColumn}>
+            {header}
+            {!show ? (
+                <StatusMessage message={t('common.showNotFound')} />
+            ) : (
+                // 乜都冇先講「暫時未有錄音」/ 搵緊；有未上架嘅就由下面講「未有集數上架」
+                <LoadState
+                    status={status}
+                    isEmpty={episodeItems.length === 0}
+                    isSearching={isSearching}
                 />
             )}
-            {/* 節目資料：橫版喺唱片嗰欄（docked），直版由畫面底彈出 */}
-            <ItemInfoSheet {...info.sheet} onClose={info.sheet.close} docked={landscape} />
-        </>
+            {show && status === 'ready' && episodeItems.length > 0 && (
+                <ShowPlayer
+                    {...data}
+                    title={show.name}
+                    landscape={landscape}
+                    infoInHeader={square}
+                />
+            )}
+        </div>
     );
 };
 
-interface ShowListProps {
-    /** 橫版頁頭（直版喺播放器上面，呢度冇） */
-    header: ReactNode;
-    items: EpisodeItem[];
-    onSelect: (url: string) => void;
-    /** 由「我的收藏」撳入嚟嗰集：捲過去、短暫 highlight */
-    focusKey: string | undefined;
+/**
+ * 版面：橫版（左清單右播放器）/ HomeView（544×544，P10 lane 6：播放器為主，集數清單收入頁頭清單掣開嘅
+ * sheet，ⓘ 搬上頁頭）/ 直版。有集數（包括未上架）就列清單；橫版有清單：頁頭喺左欄清單上面
+ */
+const useShowLayout = ({ show, status, episodeItems, focusKey }: ShowData) => {
+    const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
+    const square = useMediaQuery(SQUARE_QUERY);
+    const list = useListSheet(focusKey);
+    const listed = show !== undefined && status === 'ready' && episodeItems.length > 0;
+    return { landscape, square, list, listed, headerInList: landscape && listed };
+};
+
+interface ShowHeaderProps {
+    title: string;
+    onBack: () => void;
+    /** HomeView 頁頭右邊（清單掣 + ⓘ）；冇就留返空位，標題置中 */
+    actions: ComponentProps<typeof ShowHeaderActions> | undefined;
 }
 
-/** 清單欄：（橫版頁頭 +）集數清單 */
-const ShowList = ({ header, items, onSelect, focusKey }: ShowListProps) => (
-    <div className={page.listColumn}>
-        {header}
-        <EpisodeList items={items} onSelect={onSelect} focusKey={focusKey} />
+const ShowHeader = ({ title, onBack, actions }: ShowHeaderProps) => (
+    <div className={page.header}>
+        <PageHeader
+            title={title}
+            variant="title"
+            onBack={onBack}
+            trailing={actions && <ShowHeaderActions {...actions} />}
+        />
     </div>
 );
 
+/**
+ * 成頁固定唔捲，得集數清單自己捲（見 Page.module.css .locked / .fixed）；
+ * 節目名喺頁頭（取代「正在播放」），唱片下面變成日子條。
+ * 橫版左欄（頁頭 + 集數）、右欄（播放器 + 現正播放）；直版兩欄 display: contents，次序照舊；
+ * HomeView 清單收入 sheet（ShowEpisodes）
+ */
 export const ShowPage = () => {
     const { showId = '' } = useParams();
     const goHome = useGoHome({ kind: 'show', showId });
     const focusId = useEpisodeFocus(); // 由「我的收藏」撳行入嚟：唔播，捲去嗰集
     const data = useShowPage(showId, focusId);
-    const { show, theme, status, isSearching, episodeItems } = data;
-    const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
-    // 有集數（包括未上架）就列清單
-    const listed = show && status === 'ready' && episodeItems.length > 0;
-    // 橫版有清單：頁頭喺左欄清單上面；否則（直版 / 未有清單）喺播放器上面
-    const headerInList = landscape && listed;
+    const { show, theme, episodeItems } = data;
+    const { landscape, square, list, listed, headerInList } = useShowLayout(data);
+    const actions = { items: episodeItems, list, info: data.info.gaugeInfo };
     const header = (
-        <div className={page.header}>
-            <PageHeader title={show?.name ?? ''} variant="title" onBack={goHome} />
-        </div>
+        <ShowHeader
+            title={show?.name ?? ''}
+            onBack={goHome}
+            actions={square && listed ? actions : undefined}
+        />
     );
 
-    // 成頁固定唔捲，得集數清單自己捲（見 Page.module.css .locked / .fixed）；
-    // 節目名喺頁頭（取代「正在播放」），唱片下面變成日子條。
-    // 橫版左欄（頁頭 + 集數）、右欄（播放器 + 現正播放）；直版兩欄 display: contents，次序照舊
     return (
         <ThemeScope theme={theme}>
-            <main className={`${page.page} ${page.locked} ${page.fixed}`} data-player-page="">
-                <div className={page.playerColumn}>
-                    {!headerInList && header}
-                    {!show ? (
-                        <StatusMessage message={t('common.showNotFound')} />
-                    ) : (
-                        // 乜都冇先講「暫時未有錄音」/ 搵緊；有未上架嘅就由下面講「未有集數上架」
-                        <LoadState
-                            status={status}
-                            isEmpty={episodeItems.length === 0}
-                            isSearching={isSearching}
-                        />
-                    )}
-                    {listed && <ShowPlayer {...data} title={show.name} landscape={landscape} />}
-                </div>
+            <main
+                className={`${page.page} ${page.locked} ${page.fixed}`}
+                data-player-page=""
+                data-square-player={square ? '' : undefined}
+            >
+                <ShowPlayerColumn
+                    data={data}
+                    header={!headerInList && header}
+                    landscape={landscape}
+                    square={square}
+                />
                 {listed && (
-                    <ShowList
+                    <ShowEpisodes
+                        square={square}
                         header={headerInList && header}
                         items={episodeItems}
                         onSelect={data.pressEpisode}
                         focusKey={data.focusKey}
+                        list={list}
                     />
                 )}
                 <InnerPageHandle page={{ kind: 'show', showId }} />

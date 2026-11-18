@@ -18,6 +18,7 @@ import { runShelfSplitChecks } from './shelfSplit.mjs';
 import { runShowGridCountChecks } from './showGridCounts.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
 import { runDuoChecks } from './duo.mjs';
+import { runSquareChecks } from './square.mjs';
 import {
     AUDIO_HOST,
     BANNER_ALT,
@@ -1635,6 +1636,8 @@ try {
     await runHomeWideChecks({ browser, base: BASE, errors, log });
     await runDuoChecks({ browser, base: BASE, errors, log });
     await runShelfSplitChecks({ browser, base: BASE, errors, log });
+    // HomeView 節目頁（P10 lane 6）：播放器為主、頁頭清單掣 + badge、清單 sheet 開閂
+    await runSquareChecks({ browser, base: BASE, errors, log });
 
     // 主頁格仔 zoom 入內頁（P6 #2 Z3）：直版 zoom / 返回 unzoom、闊橫版都係 zoom（唔係 expand）
     await runCardZoomChecks({ browser, base: BASE, errors, log });

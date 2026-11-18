@@ -50,6 +50,13 @@ export const ListIcon = (props: IconProps) => (
     </StrokeIcon>
 );
 
+/** 清單（三點三線）：HomeView 頁頭清單掣（_mockups_/home-view 第 4 版） */
+export const BulletListIcon = (props: IconProps) => (
+    <StrokeIcon {...props}>
+        <path d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01" />
+    </StrokeIcon>
+);
+
 export const CheckIcon = (props: IconProps) => (
     <StrokeIcon strokeWidth={4} {...props}>
         <path d="M20 6L9 17l-5-5" />
