@@ -2,7 +2,9 @@
 // 闔上・橫（612×426，窄過橫版斷點 640）行手機打橫兩欄版面；四種姿勢四邊邊框 24px。
 // 現有裝置唔受影響由 `npm run e2e:visual` 驗；呢度只留一個現有手機做對照。
 // 每個情境用獨立 context
+import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
 import { BANNER_ALT, PHONE, ensurePlaying, newE2EPage, runSection } from './harness.mjs';
+import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 
 /** Progressier simulator 實測（_mockups_/iphone-duo）；刻意寫死做獨立對照，唔 import src 常數 */
 const COVER_PORTRAIT = { width: 426, height: 612 };
@@ -34,6 +36,10 @@ const SHOW_ROUTE = '#/show/gongzi';
 const SERIES_ROUTE = '#/drama/chisee';
 // 等全集表滑入完（減少動態以外都夠）
 const SHEET_SETTLE_MS = 800;
+// 闊橫版（打開・橫）右邊預留嘅把手位（tokens.css --home-handle-reserve；同現有闊橫版一樣）
+const HANDLE_RESERVE_PX = 30;
+// 資料表：公子會有簡介先會自己彈出（catalog.json 加返）
+const INFO_SHOW_ID = 'gongzi';
 const TODAY_ROUTE = '#/today';
 const WAIT_MS = 5000;
 
@@ -64,7 +70,14 @@ const homeEdges = (p) =>
         const tops = [banner?.top, tabs?.top, ...tiles.map((rect) => rect.top)].filter(
             (top) => top !== undefined,
         );
+        // 短提示離底（--toast-offset-bottom 跟 mini player，用戶 2026-11-18 揀 B）
+        const probe = document.createElement('div');
+        probe.style.width = 'var(--toast-offset-bottom)';
+        document.body.append(probe);
+        const toastBottom = probe.getBoundingClientRect().width;
+        probe.remove();
         return {
+            toastBottom,
             viewport: window.innerWidth,
             left: Math.min(...tiles.map((rect) => rect.left)),
             right: window.innerWidth - Math.max(...rights),
@@ -85,6 +98,10 @@ const checkHomeEdges = async (env, label, viewport) => {
     const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport });
     await openHome(p, env.base);
     const edges = await homeEdges(p);
+    env.log(
+        near(edges.toastBottom, DUO_EDGE_PX),
+        `Duo ${label} 主頁：短提示離底 ${DUO_EDGE_PX}px（${edges.toastBottom}）`,
+    );
     // mini player（闊橫版係播放卡，冇 mini player）：左右底同格邊一樣 24px（用戶 2026-11-18 揀 B）
     if (edges.mini) {
         env.log(
@@ -220,6 +237,49 @@ const checkDockedSheetFlush = async (env, label, viewport) => {
     await ctx.close();
 };
 
+/** catalog.json：公子會加簡介、主持、時間，節目頁資料表先會自己彈出（同 itemInfo.mjs 一樣做法） */
+const infoCatalog = (base) => {
+    const doc = buildCatalogDocument({
+        catalogDir: CATALOG_DIR.pathname,
+        imageBase: new URL(CATALOG_FOLDER, base).pathname,
+    });
+    const shows = doc.shows.map((show) =>
+        show.id === INFO_SHOW_ID
+            ? {
+                  ...show,
+                  definition: {
+                      ...show.definition,
+                      summary: 'E2E 簡介',
+                      hosts: ['甲'],
+                      airTime: { start: '23:00', end: '23:45' },
+                  },
+              }
+            : show,
+    );
+    return JSON.stringify({ ...doc, shows });
+};
+
+/** 打橫姿勢嘅節目頁：右欄資料表貼畫面底同右邊（打開・橫右邊留把手位；CUI-0025） */
+const checkInfoSheetFlush = async (env, label, viewport, rightGap) => {
+    const { ctx, p } = await openWithCatalog(env, {
+        catalogBody: infoCatalog(env.base),
+        contextOptions: { viewport },
+    });
+    await p.goto(`${env.base}${SHOW_ROUTE}`);
+    const sheet = p.getByRole('dialog', { name: '節目資料' });
+    await sheet.waitFor({ timeout: WAIT_MS });
+    await p.waitForTimeout(SHEET_SETTLE_MS);
+    const gap = await sheet.evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        return { right: window.innerWidth - rect.right, bottom: window.innerHeight - rect.bottom };
+    });
+    env.log(
+        near(gap.right, rightGap) && near(gap.bottom, 0),
+        `Duo ${label}節目頁：資料表離右邊 ${rightGap}px、貼畫面底（右 ${gap.right}、底 ${gap.bottom}）`,
+    );
+    await ctx.close();
+};
+
 /** 打開・橫主頁閂咗播放卡：右邊緣把手貼住畫面右邊（W-783） */
 const checkOpenLandscapeHandle = async (env) => {
     const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: OPEN_LANDSCAPE });
@@ -260,6 +320,12 @@ const SCENARIOS = [
     ['Duo 打開・橫把手', checkOpenLandscapeHandle],
     ['Duo 闔上・橫全集表', (env) => checkDockedSheetFlush(env, '闔上・橫', COVER_LANDSCAPE)],
     ['Duo 打開・橫全集表', (env) => checkDockedSheetFlush(env, '打開・橫', OPEN_LANDSCAPE)],
+    ['Duo 闔上・橫資料表', (env) => checkInfoSheetFlush(env, '闔上・橫', COVER_LANDSCAPE, 0)],
+    ['Duo Seated 資料表', (env) => checkInfoSheetFlush(env, 'Seated', SEATED, 0)],
+    [
+        'Duo 打開・橫資料表',
+        (env) => checkInfoSheetFlush(env, '打開・橫', OPEN_LANDSCAPE, HANDLE_RESERVE_PX),
+    ],
 ];
 
 export const runDuoChecks = async (env) => {
