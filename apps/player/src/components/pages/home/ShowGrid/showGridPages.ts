@@ -5,12 +5,24 @@
  */
 /** 最多兩欄（橫跨格嘅 CSS 後備比例跟呢個數，showGridCss.node.test.ts 鎖住） */
 export const PORTRAIT_MAX_COLUMNS = 2;
+/** Duo 打開・直（DUO_OPEN_PORTRAIT_QUERY，P10 lane 5）最多幾多欄 */
+export const DUO_OPEN_PORTRAIT_MAX_COLUMNS = 3;
 /** 幾多格先轉兩欄 */
 const PORTRAIT_MULTI_COLUMN_MIN_TILES = 3;
 
-/** 直版幾多欄：≤ 2 格一欄，≥ 3 格兩欄 */
-export const portraitColumns = (count: number): number =>
-    count >= PORTRAIT_MULTI_COLUMN_MIN_TILES ? PORTRAIT_MAX_COLUMNS : 1;
+/**
+ * 直版幾多欄：≤ 2 格一欄，≥ 3 格兩欄。
+ * maxColumns：Duo 打開・直（P10 lane 5，DUO_OPEN_PORTRAIT_QUERY）畫面闊，最多 3 欄
+ */
+export const portraitColumns = (count: number, maxColumns = PORTRAIT_MAX_COLUMNS): number =>
+    count >= PORTRAIT_MULTI_COLUMN_MIN_TILES ? maxColumns : 1;
+
+/**
+ * 最尾一格（今日節目，spansFullRow 先用到）橫跨幾多欄：填返佢嗰行剩低嘅欄。
+ * 兩欄單數格就係成行（同以前一樣）；三欄 8 格係兩欄，唔會擠去自己一行
+ */
+export const spanLastColumns = (count: number, columns: number): number =>
+    columns - ((count - 1) % columns);
 
 /**
  * 第 index 格（由 0 計）使唔使橫跨成行：多過一欄而格數唔夠排滿尾行，最尾一格（今日節目）就成行咁闊。

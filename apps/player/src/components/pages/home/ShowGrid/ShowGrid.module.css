@@ -126,3 +126,14 @@
         height: auto;
     }
 }
+
+/*
+ * Duo 打開・直（DUO_OPEN_PORTRAIT_QUERY，P10 lane 5）：最多 3 欄（ShowGrid portraitColumns）。
+ * 最尾一格（今日節目）只填返佢嗰行剩低嘅欄（inline --show-grid-span-last，spanLastColumns），
+ * 唔好成行咁闊擠去自己一行（8 格 3 欄：聖艾粒 + 今日節目佔兩欄）
+ */
+@media (orientation: portrait) and (min-width: 600px) and (max-width: 640px) and (min-height: 860px) and (max-height: 900px) {
+    .grid[data-span-last] > :last-child {
+        grid-column: span var(--show-grid-span-last, 1);
+    }
+}

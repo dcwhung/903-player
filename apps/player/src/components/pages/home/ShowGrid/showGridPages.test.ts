@@ -3,6 +3,7 @@ import {
     portraitColumns,
     rowsPerPage,
     shrunkGridWidth,
+    spanLastColumns,
     spanningPage,
     spansFullRow,
 } from './showGridPages';
@@ -102,6 +103,31 @@ describe('portraitColumns', () => {
         [12, 2],
     ])('should lay %i tiles out in %i column(s)', (count, columns) => {
         expect(portraitColumns(count)).toBe(columns);
+    });
+
+    // Duo 打開・直（P10 lane 5）：最多 3 欄；格少照舊一欄
+    it.each([
+        [2, 1],
+        [3, 3],
+        [8, 3],
+        [12, 3],
+    ])('should lay %i tiles out in %i column(s) when up to 3 are allowed', (count, columns) => {
+        expect(portraitColumns(count, 3)).toBe(columns);
+    });
+});
+
+/** 最尾一格（今日節目）橫跨幾多欄：填返佢嗰行剩低嘅欄，唔會擠去自己一行 */
+describe('spanLastColumns', () => {
+    it.each([
+        // 兩欄：單數格最尾一格成行（同以前一樣）
+        [3, 2, 2],
+        [7, 2, 2],
+        // 三欄：8 格 → 第 7 格之後剩兩欄，今日節目佔兩欄；7 格 → 最尾一格自己一行，佔三欄
+        [8, 3, 2],
+        [7, 3, 3],
+        [9, 3, 1],
+    ])('should span %i tiles in %i columns over %i column(s)', (count, columns, span) => {
+        expect(spanLastColumns(count, columns)).toBe(span);
     });
 });
 
