@@ -89,11 +89,11 @@
 }
 
 /*
- * iPhone Duo 打開・橫（DUO_OPEN_LANDSCAPE_QUERY）：成頁俾 ThemeScope .scope 四邊推入咗 --duo-edge-inset，
- * 把手要貼返畫面右邊（W-783）
+ * iPhone Duo 打開・橫（DUO_OPEN_LANDSCAPE_QUERY）：主頁把手對住 main 定位，main 俾 ThemeScope .scope 推入咗
+ * --duo-edge-inset，要推返出去貼畫面右邊（W-783）。內頁把手對住 .scope 本身定位，已經貼邊，唔使郁（W-785）
  */
 @media (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px) {
-    .handleScope {
+    .handleScope:has([data-home-handle]) {
         right: calc(-1 * var(--duo-edge-inset));
     }
 }

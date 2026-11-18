@@ -36,6 +36,10 @@ const SHOW_ROUTE = '#/show/gongzi';
 const SERIES_ROUTE = '#/drama/chisee';
 // 等全集表滑入完（減少動態以外都夠）
 const SHEET_SETTLE_MS = 800;
+// 主頁內容底同 mini player 之間（HomePage.module.css --space-3；W-786）
+const MINI_GAP_PX = 12;
+// 播緊公子會時入另一個節目頁，右邊出內頁把手
+const OTHER_SHOW_ROUTE = '#/show/sunnyday';
 // 闊橫版（打開・橫）右邊預留嘅把手位（tokens.css --home-handle-reserve；同現有闊橫版一樣）
 const HANDLE_RESERVE_PX = 30;
 // 資料表：公子會有簡介先會自己彈出（catalog.json 加返）
@@ -81,6 +85,18 @@ const homeEdges = (p) =>
             viewport: window.innerWidth,
             left: Math.min(...tiles.map((rect) => rect.left)),
             right: window.innerWidth - Math.max(...rights),
+            cardBottom: card ? window.innerHeight - card.bottom : null,
+            // main 內容底（扣 padding）同 mini player 頂之間（現有手機 = --space-3 = 12）
+            miniGap: mini
+                ? mini.top -
+                  (() => {
+                      const main = document.querySelector('main');
+                      return (
+                          main.getBoundingClientRect().bottom -
+                          parseFloat(getComputedStyle(main).paddingBottom)
+                      );
+                  })()
+                : null,
             top: Math.min(...tops),
             bannerTop: banner?.top ?? null,
             firstTileTop: tiles[0]?.top ?? null,
@@ -102,6 +118,18 @@ const checkHomeEdges = async (env, label, viewport) => {
         near(edges.toastBottom, DUO_EDGE_PX),
         `Duo ${label} 主頁：短提示離底 ${DUO_EDGE_PX}px（${edges.toastBottom}）`,
     );
+    if (edges.cardBottom !== null) {
+        env.log(
+            near(edges.cardBottom, DUO_EDGE_PX),
+            `Duo ${label} 主頁：播放卡離底 ${DUO_EDGE_PX}px（${edges.cardBottom}）`,
+        );
+    }
+    if (edges.miniGap !== null) {
+        env.log(
+            near(edges.miniGap, MINI_GAP_PX),
+            `Duo ${label} 主頁：內容底同 mini player 之間 ${MINI_GAP_PX}px，同現有手機一樣（${edges.miniGap}）`,
+        );
+    }
     // mini player（闊橫版係播放卡，冇 mini player）：左右底同格邊一樣 24px（用戶 2026-11-18 揀 B）
     if (edges.mini) {
         env.log(
@@ -280,6 +308,19 @@ const checkInfoSheetFlush = async (env, label, viewport, rightGap) => {
     await ctx.close();
 };
 
+/** 打開・橫內頁把手（播緊其他節目）：貼畫面右邊，冇俾推出畫面（W-785） */
+const checkOpenLandscapePageHandle = async (env) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: OPEN_LANDSCAPE });
+    await p.goto(`${env.base}${SHOW_ROUTE}`);
+    await ensurePlaying(p);
+    await p.goto(`${env.base}${OTHER_SHOW_ROUTE}`);
+    const handle = p.locator('[data-page-handle]');
+    await handle.waitFor({ timeout: WAIT_MS });
+    const gap = await handle.evaluate((el) => window.innerWidth - el.getBoundingClientRect().right);
+    env.log(near(gap, 0), `Duo 打開・橫節目頁：內頁把手貼住畫面右邊（離邊 ${gap}px）`);
+    await ctx.close();
+};
+
 /** 打開・橫主頁閂咗播放卡：右邊緣把手貼住畫面右邊（W-783） */
 const checkOpenLandscapeHandle = async (env) => {
     const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: OPEN_LANDSCAPE });
@@ -318,6 +359,7 @@ const SCENARIOS = [
     ['Duo 闔上・橫今日節目 icon', (env) => checkTodayRowIcons(env, '闔上・橫', COVER_LANDSCAPE)],
     ['Duo Seated 今日節目 icon', (env) => checkTodayRowIcons(env, 'Seated', SEATED)],
     ['Duo 打開・橫把手', checkOpenLandscapeHandle],
+    ['Duo 打開・橫內頁把手', checkOpenLandscapePageHandle],
     ['Duo 闔上・橫全集表', (env) => checkDockedSheetFlush(env, '闔上・橫', COVER_LANDSCAPE)],
     ['Duo 打開・橫全集表', (env) => checkDockedSheetFlush(env, '打開・橫', OPEN_LANDSCAPE)],
     ['Duo 闔上・橫資料表', (env) => checkInfoSheetFlush(env, '闔上・橫', COVER_LANDSCAPE, 0)],

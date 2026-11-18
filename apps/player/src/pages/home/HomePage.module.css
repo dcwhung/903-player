@@ -80,3 +80,28 @@ main.wide {
 main.wide[data-layout='fillWithHandle'] {
     padding-right: calc(env(safe-area-inset-right) + var(--home-handle-reserve));
 }
+
+/*
+ * iPhone Duo（DUO_QUERY）：main 已經喺 ThemeScope .scope 嘅邊框入面（離畫面底 --duo-edge-inset），
+ * 而 --mini-player-offset-bottom 係由畫面底計（W-786）：底部留位扣返邊框，唔好計兩次。
+ * 同上面三條一樣嘅 selector 同次序，cascade 唔變
+ */
+@media (orientation: portrait) and (min-width: 420px) and (max-width: 470px) and (min-height: 590px) and (max-height: 690px),
+    (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px),
+    (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px),
+    (orientation: portrait) and (min-width: 600px) and (max-width: 640px) and (min-height: 860px) and (max-height: 900px) {
+    main.home {
+        padding-bottom: calc(var(--mini-player-offset-bottom) - var(--duo-edge-inset));
+    }
+
+    main.home[data-mini-player] {
+        padding-bottom: calc(
+            var(--home-mini-player-height) + var(--mini-player-offset-bottom) -
+                var(--duo-edge-inset) + var(--space-3)
+        );
+    }
+
+    main.wide {
+        padding-bottom: calc(var(--mini-player-offset-bottom) - var(--duo-edge-inset));
+    }
+}
