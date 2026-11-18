@@ -11,13 +11,16 @@
 }
 
 .list {
+    /* 放唔晒時底部淡出，提示下面仲有（S-1137） */
+    mask-image: linear-gradient(to bottom, #000 calc(100% - var(--space-6)), transparent);
+    /* 最尾一格唔會停喺淡出位入面（放得晒或者捲到底都睇得清） */
+    padding-bottom: var(--space-6);
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
     gap: var(--space-2);
     min-height: 0;
     margin: 0;
-    padding: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     list-style: none;
@@ -39,4 +42,5 @@
 
 .current {
     border: 1px solid var(--color-accent-text);
+    cursor: default;
 }

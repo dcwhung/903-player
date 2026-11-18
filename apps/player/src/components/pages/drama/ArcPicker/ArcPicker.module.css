@@ -208,12 +208,15 @@
 }
 
 .group[data-vertical] .chips {
+    /* 放唔晒時底部淡出，提示下面仲有短篇（S-1137） */
+    mask-image: linear-gradient(to bottom, #000 calc(100% - var(--space-6)), transparent);
+    /* 最尾一格唔會停喺淡出位入面（下面 padding-bottom），放得晒或者捲到底都睇得清 */
     flex: 1 1 0;
     flex-direction: column;
     align-items: stretch;
     height: auto;
     min-height: 0;
-    padding: 0;
+    padding: 0 0 var(--space-6);
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;

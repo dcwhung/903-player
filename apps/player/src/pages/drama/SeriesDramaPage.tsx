@@ -111,8 +111,8 @@ export const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const view = useSeriesDramaPage(drama, focusId);
     const { duration } = usePlayer();
     const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
-    // Duo 打開・直（P10 lane 5b）：短篇選擇直排喺唱片右邊
-    const pickerSide = useMediaQuery(DUO_OPEN_PORTRAIT_QUERY);
+    // Duo 打開・直（P10 lane 5b）：短篇選擇直排喺唱片右邊；冇唱片（冇集數）就照舊喺清單上面（S-1136）
+    const pickerSide = useMediaQuery(DUO_OPEN_PORTRAIT_QUERY) && view.upNext !== undefined;
     // 「連線中…」只講呢套劇嘅一集載緊 / 緩衝緊；未載入呢套劇（start 有值）唔講，亦冇 chip 係「播緊」
     const connecting = !view.start && !hasKnownDuration(duration);
     const arcSheet = (

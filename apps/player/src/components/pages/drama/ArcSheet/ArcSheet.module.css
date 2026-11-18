@@ -373,3 +373,13 @@
         inset: 0 0 calc(-1 * var(--duo-edge-inset)) calc(-1 * var(--duo-edge-inset));
     }
 }
+
+/*
+ * iPhone Duo 打開・直（DUO_OPEN_PORTRAIT_QUERY，P10 lane 5b）：表貼兩邊畫面邊（同其他頁用全闊、
+ * 用戶 2026-11-18「表貼畫面邊」一致，W-794）；高度上限喺 tokens.css（最高到摺位）
+ */
+@media (orientation: portrait) and (min-width: 600px) and (max-width: 640px) and (min-height: 860px) and (max-height: 900px) {
+    .sheet {
+        max-width: none;
+    }
+}

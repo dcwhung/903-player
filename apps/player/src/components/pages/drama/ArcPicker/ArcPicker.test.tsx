@@ -172,4 +172,25 @@ describe('ArcPicker', () => {
         await userEvent.click(screen.getByRole('button', { name: '顯示名' }));
         expect(onPick).toHaveBeenCalledWith('R2 名');
     });
+
+    // Duo 打開・直（P10 lane 5b，S-1135）：直排時捲到見到揀中嗰粒（上下），唔用橫向置中
+    it('should scroll the selected chip into view vertically when vertical', () => {
+        const scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollIntoView = scrollIntoView;
+        const { container } = render(
+            <ArcPicker
+                arcs={ARCS}
+                selected="X時mas時小提議"
+                playing={undefined}
+                label=""
+                onPick={() => {}}
+                onOpenAll={() => {}}
+                vertical
+            />,
+        );
+
+        expect(container.querySelector('[data-vertical]')).not.toBeNull();
+        expect(scrollIntoView).toHaveBeenCalledWith(expect.objectContaining({ block: 'nearest' }));
+        expect(HTMLElement.prototype.scrollTo).not.toHaveBeenCalled();
+    });
 });

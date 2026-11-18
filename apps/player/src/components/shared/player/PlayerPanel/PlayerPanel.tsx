@@ -41,6 +41,7 @@ const PanelStrip = ({ side, ...strip }: PanelStripProps) =>
             current={strip.current}
             onPick={strip.onPick}
             connecting={strip.connecting ?? false}
+            dateLabel={strip.dateLabel}
         />
     ) : (
         <DateStrip {...strip} />
