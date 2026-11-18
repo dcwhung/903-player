@@ -128,3 +128,13 @@ main.wide[data-shelf][data-layout='split'] .gridColumn > :nth-child(2) {
         padding-bottom: calc(var(--mini-player-offset-bottom) - var(--duo-edge-inset));
     }
 }
+
+/*
+ * iPhone Duo 打開・直（DUO_OPEN_PORTRAIT_QUERY，P10 lane 5a）：主頁橫額、分類掣、節目格用盡闊度
+ * （用戶 2026-11-18），唔再收喺直版嘅 --page-max-width 中間；節目格最多 3 欄（ShowGrid）
+ */
+@media (orientation: portrait) and (min-width: 600px) and (max-width: 640px) and (min-height: 860px) and (max-height: 900px) {
+    main.home {
+        max-width: none;
+    }
+}

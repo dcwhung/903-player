@@ -142,13 +142,11 @@ const checkHomeEdges = async (env, label, viewport) => {
             `Duo ${label} 主頁：mini player 左右底 ${DUO_EDGE_PX}px（左 ${edges.mini.left}、右 ${edges.mini.right}、底 ${edges.mini.bottom}）`,
         );
     }
-    // 打開・直（612 闊）主頁仲係收喺 --page-max-width 中間（lane 5 先改全闊 3 欄），左右暫時唔驗
-    if (viewport !== OPEN_PORTRAIT) {
-        env.log(
-            near(edges.left, DUO_EDGE_PX) && near(edges.right, DUO_EDGE_PX),
-            `Duo ${label} 主頁：左右邊框 ${DUO_EDGE_PX}px（左 ${edges.left}、右 ${edges.right}）`,
-        );
-    }
+    env.log(
+        near(edges.left, DUO_EDGE_PX) && near(edges.right, DUO_EDGE_PX),
+        `Duo ${label} 主頁：左右邊框 ${DUO_EDGE_PX}px（左 ${edges.left}、右 ${edges.right}）`,
+    );
+
     env.log(
         near(edges.top, DUO_EDGE_PX),
         `Duo ${label} 主頁：頂部邊框 ${DUO_EDGE_PX}px（${edges.top}）`,
@@ -458,7 +456,67 @@ const checkOpenLandscapeHinge = async (env, label, route) => {
     await ctx.close();
 };
 
+/** 打開・直主頁（lane 5a）：橫額 / 分類掣 / 節目格用盡闊度，節目格 3 欄，今日節目同最後一個節目同一行 */
+const checkOpenPortraitHome = async (env) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: OPEN_PORTRAIT });
+    await openHome(p, env.base);
+    const look = await p.evaluate(() => {
+        const tiles = [...document.querySelectorAll('nav button')]
+            .map((el) => ({
+                label: el.getAttribute('aria-label') ?? el.textContent,
+                r: el.getBoundingClientRect(),
+            }))
+            .filter(({ r }) => r.width > 0 && r.left < window.innerWidth && r.right > 0);
+        const tops = [...new Set(tiles.map(({ r }) => Math.round(r.top)))];
+        const firstRow = tiles.filter(({ r }) => Math.round(r.top) === tops[0]).length;
+        const today = tiles.find(({ label }) => label === '今日節目');
+        const before = tiles.at(-2);
+        const tabs = document.querySelector('[data-tab-id]')?.parentElement.getBoundingClientRect();
+        // 今日節目填滿尾行：右邊同最右嗰格對齊（S-1131）
+        const rightmost = Math.max(...tiles.map(({ r }) => r.right));
+        return {
+            todayFillsRow: today ? Math.abs(today.r.right - rightmost) <= 1 : false,
+            firstRow,
+            todaySharesRow:
+                today && before ? Math.round(today.r.top) === Math.round(before.r.top) : false,
+            tabsRight: tabs ? window.innerWidth - tabs.right : null,
+        };
+    });
+    env.log(
+        look.firstRow === 3 &&
+            look.todaySharesRow &&
+            look.todayFillsRow &&
+            near(look.tabsRight, DUO_EDGE_PX),
+        `Duo 打開・直主頁：3 欄、今日節目同最後一個節目同一行並填滿尾行、分類掣用盡闊度（${JSON.stringify(look)}）`,
+    );
+    await ctx.close();
+};
+
+/** 打開・直廣播劇分頁（lane 5a，用戶 2026-11-18）：唔疊，兩欄並排 */
+const checkOpenPortraitDramas = async (env) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: OPEN_PORTRAIT });
+    await openHome(p, env.base);
+    await p.getByRole('button', { name: '廣播劇', exact: true }).first().click();
+    const shelf = p.getByRole('navigation', { name: '廣播劇' });
+    await shelf.waitFor({ timeout: WAIT_MS });
+    const look = await shelf.evaluate((nav) => {
+        const [a, b] = [...nav.children].map((el) => el.getBoundingClientRect());
+        return {
+            stacked: nav.hasAttribute('data-stacked'),
+            sideBySide: a && b ? Math.abs(a.top - b.top) <= 1 && b.left > a.right : false,
+            overlap: a && b ? a.bottom > b.top && Math.abs(a.top - b.top) > 1 : false,
+        };
+    });
+    env.log(
+        !look.stacked && look.sideBySide && !look.overlap,
+        `Duo 打開・直廣播劇：兩欄 grid、唔疊（${JSON.stringify(look)}）`,
+    );
+    await ctx.close();
+};
+
 const SCENARIOS = [
+    ['Duo 打開・直主頁', checkOpenPortraitHome],
+    ['Duo 打開・直廣播劇', checkOpenPortraitDramas],
     ...INNER_ROUTES.map(([label, route]) => [
         `Duo 打開・橫${label}摺位`,
         (env) => checkOpenLandscapeHinge(env, label, route),

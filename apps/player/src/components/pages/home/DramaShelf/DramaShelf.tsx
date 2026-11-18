@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { LANDSCAPE_LAYOUT_QUERY } from '../../../../config/layout';
+import { DUO_OPEN_PORTRAIT_QUERY, LANDSCAPE_LAYOUT_QUERY } from '../../../../config/layout';
 import { useMediaQuery } from '../../../../hooks/useMediaQuery';
 import { HomeLandscapeGrid } from '../HomeLandscapeGrid/HomeLandscapeGrid';
 import { t } from '../../../../i18n/t';
@@ -34,7 +34,9 @@ interface ShelfColumnProps {
 
 export const ShelfColumn = ({ items, stacked: forced, label, busy }: ShelfColumnProps) => {
     const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
-    const stacked = forced ?? !landscape;
+    // Duo 打開・直（P10 lane 5a）畫面闊：兩欄 grid，唔疊（用戶 2026-11-18：兩欄以上用 grid）
+    const wide = useMediaQuery(DUO_OPEN_PORTRAIT_QUERY);
+    const stacked = forced ?? !(landscape || wide);
     const focus = useShelfFocus(items.length, stacked);
     const { shelfRef, style, scrolls, onScroll, tileProps, scrubProps } = focus;
     const focusedIndex = focus.focus;

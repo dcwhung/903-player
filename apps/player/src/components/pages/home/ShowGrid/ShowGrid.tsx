@@ -1,11 +1,17 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { LANDSCAPE_LAYOUT_QUERY } from '../../../../config/layout';
+import { DUO_OPEN_PORTRAIT_QUERY, LANDSCAPE_LAYOUT_QUERY } from '../../../../config/layout';
 import { useMediaQuery } from '../../../../hooks/useMediaQuery';
 import { t } from '../../../../i18n/t';
 import { HomeLandscapeGrid } from '../HomeLandscapeGrid/HomeLandscapeGrid';
 import { PageDots } from '../../../shared/common/PageDots/PageDots';
 import styles from './ShowGrid.module.css';
-import { paginate, portraitColumns, spanningPage } from './showGridPages';
+import {
+    DUO_OPEN_PORTRAIT_MAX_COLUMNS,
+    paginate,
+    portraitColumns,
+    spanLastColumns,
+    spanningPage,
+} from './showGridPages';
 import { useGridPager } from './useGridPager';
 import { useRowsPerPage } from './useRowsPerPage';
 
@@ -28,29 +34,33 @@ const fillStyle = (rows: number, rowPx?: number): CSSProperties =>
  * 直版欄數（dynamic-show-grid）：只經 --show-grid-columns 畀 CSS（S-935），CSS 用佢排欄、
  * 計未量到時橫跨格嘅高，改欄數（portraitColumns）唔使再改 CSS。橫版唔畀，由 CSS 排 4 欄
  */
-const columnsStyle = (columns: number): CSSProperties =>
-    ({ '--show-grid-columns': columns }) as CSSProperties;
+const columnsStyle = (columns: number, spanLast: number): CSSProperties =>
+    ({ '--show-grid-columns': columns, '--show-grid-span-last': spanLast }) as CSSProperties;
 
 /** data attribute 開關：true → ''（有 attribute），false → 冇 */
 const flag = (on: boolean): '' | undefined => (on ? '' : undefined);
 
 /**
- * 按格數同畫面計分頁：直版按格數揀欄數（portraitColumns：≤ 2 格一欄，否則兩欄），
- * 單數格最尾一格（今日節目）喺佢嗰頁橫跨成行；橫版（LANDSCAPE_QUERY）唔分頁、唔加直版欄數 / 橫跨。
+ * 按格數同畫面計分頁：直版按格數揀欄數（portraitColumns：≤ 2 格一欄，否則兩欄；Duo 打開・直最多 3 欄），
+ * 尾行唔滿嘅話最尾一格（今日節目）橫跨（兩欄成行；3 欄填返剩低嘅欄，spanLastColumns）；橫版（LANDSCAPE_QUERY）唔分頁、唔加直版欄數 / 橫跨。
  * gridProps(i)：第 i 頁 grid 嘅 data attribute 同 inline style
  */
 const useShowGridPages = (tiles: ReactNode[]) => {
     // 橫版一頁放晒（ShowGrid.module.css 排成幾欄 × 兩行填滿），唔使量高度分頁
     const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
+    // Duo 打開・直（P10 lane 5）畫面闊：最多 3 欄
+    const wideColumns = useMediaQuery(DUO_OPEN_PORTRAIT_QUERY);
     const count = tiles.length;
-    const columns = portraitColumns(count);
+    const columns = portraitColumns(count, wideColumns ? DUO_OPEN_PORTRAIT_MAX_COLUMNS : undefined);
     const { rows, rowPx, ...refs } = useRowsPerPage(count, columns, !landscape);
     const perPage = rows * columns;
     const pages = paginate(tiles, perPage);
     const paged = pages.length > 1;
     // 橫跨嗰格喺邊頁（冇就 -1）：直版先有，唔好漏入闊橫版嘅 4 欄
     const spanPage = landscape ? -1 : spanningPage(count, columns, perPage);
-    const style = landscape ? undefined : { ...columnsStyle(columns), ...fillStyle(rows, rowPx) };
+    const style = landscape
+        ? undefined
+        : { ...columnsStyle(columns, spanLastColumns(count, columns)), ...fillStyle(rows, rowPx) };
     const gridProps = (i: number) => ({
         'data-fill': flag(rowPx !== undefined),
         'data-paged': flag(paged),

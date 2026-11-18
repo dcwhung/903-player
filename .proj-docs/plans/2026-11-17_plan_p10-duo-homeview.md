@@ -9,7 +9,9 @@
 | 2    | ✅ merge 入 `release/v2.0.0`（PR #270）：Duo 闔上・直「最近收聽」改矮                                                        |
 | 3    | ✅ merge 入 `release/v2.0.0`（PR #271）：新主頁（Duo 打開・橫 + HomeView）；冇播放卡用返原本填滿格（用戶 2026-11-18）        |
 | 4    | ✅ merge 入 `release/v2.0.0`（PR #272）：Duo 打開・橫內頁兩欄對齊摺位                                                        |
-| 5–7  | 未開始                                                                                                                       |
+| 5a   | ✅ merge 入 `release/v2.0.0`（PR #273）：Duo 打開・直主頁全闊 3 欄、廣播劇兩欄                                               |
+| 5b   | 未開始：打開・直三個內頁；連帶清 S-1133（cssRule.ts 註解位置）、S-1134（DramaShelf 兩欄 unit test）                          |
+| 6–7  | 未開始                                                                                                                       |
 
 用戶決定（2026-11-18，lane 1 review）：
 
@@ -17,6 +19,7 @@
 - **打開・直主頁**：橫額、分類掣、節目格都要用盡闊度（lane 5 嘅全闊 3 欄一齊做），做完先同 mini player 對齊
 - **打橫嘅全集表 / 資料表**：伸出邊框貼畫面邊（同 preview、同直向姿勢一致）
 - **新主頁冇播放卡**（2026-11-18）：只有一欄（有播放卡）先用疊卡 scroller；冇卡 / 閂咗卡用返原本闊橫版填滿格
+- **打開・直主頁**（2026-11-18，lane 5a）：節目 3 欄，尾行唔滿時今日節目填返剩低嘅欄（同手機單數格橫跨、闊橫版最後一張拉闊同一原則）；廣播劇分頁改兩欄 grid，唔疊卡
 - **S-1121**：打開・直範圍可能撞到 7–8 吋 Android 平板直放（約 600×890），接受，唔收窄範圍
 
 - Preview：iPhone Duo https://claude.ai/artifact/RXUj9gRYWfXREpJdMfGBiU 、HomeView https://claude.ai/artifact/9Y2LPEHhPeJuSqo3rkjxFB

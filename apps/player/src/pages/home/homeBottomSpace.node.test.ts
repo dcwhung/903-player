@@ -1,7 +1,7 @@
 // @vitest-environment node
 // 要用 node:fs 讀 CSS 原文：*.node.test.ts 行 tsconfig.node.json（有 Node 型別），唔會漏入 app 程式
 import { cssDeclarations, mediaQueries, readCss } from '../../../tests/cssRule';
-import { DUO_QUERY } from '../../config/layout';
+import { DUO_OPEN_PORTRAIT_QUERY, DUO_QUERY } from '../../config/layout';
 
 const css = readCss(new URL('./HomePage.module.css', import.meta.url));
 
@@ -41,9 +41,13 @@ describe('home bottom space', () => {
         ).toBe(height);
     });
 
-    // iPhone Duo（P10）唯一例外：main 喺 ThemeScope 邊框入面，留位扣返邊框（W-786），唔係按方向改規則
+    // iPhone Duo（P10）例外：main 喺 ThemeScope 邊框入面，留位扣返邊框（W-786），唔係按方向改規則；
+    // 打開・直嗰段淨係放寬主頁闊度（lane 5a），唔郁底部留位
     it('should use the same rule in every orientation (no @media override except the Duo inset)', () => {
-        expect(mediaQueries(css)).toEqual([DUO_QUERY]);
+        expect(mediaQueries(css)).toEqual([DUO_QUERY, DUO_OPEN_PORTRAIT_QUERY]);
+        expect(
+            cssDeclarations(css, 'main.home', DUO_OPEN_PORTRAIT_QUERY)['padding-bottom'],
+        ).toBeUndefined();
     });
 
     it('should only subtract the Duo edge inset inside the Duo block', () => {
