@@ -1,9 +1,20 @@
 # P10 開發 plan：iPhone Duo + HomeView square（v2.0.0）
 
-## 進度（2026-11-17）
+## 進度（2026-11-18）
 
-- `release/v2.0.0` 已由 `main`（e3d6952）開好並 push，未有任何 commit
-- Mockup 喺 `claude/upbeat-edison-725niw`（未入 release）：下一步開 PR 將 mockup 帶入 `release/v2.0.0`，再由 release 開 `feature/layout/iphone-duo` 做 lane 0
+| Lane | 狀態                                                                                                                         |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 0    | ✅ merge 入 `release/v2.0.0`（PR #268）：`npm run e2e:visual`                                                                |
+| 1    | ✅ merge 入 `release/v2.0.0`（PR #269）：裝置常數、PostCSS plugin、24px 邊框、闔上・橫；review W-782–W-786、QA CUI-0025 已修 |
+| 2–7  | 未開始                                                                                                                       |
+
+用戶決定（2026-11-18，lane 1 review）：
+
+- **Mini player / 短提示**：Duo 四種姿勢左右底一律 24px，同主頁格邊對齊（揀 B）
+- **打開・直主頁**：橫額、分類掣、節目格都要用盡闊度（lane 5 嘅全闊 3 欄一齊做），做完先同 mini player 對齊
+- **打橫嘅全集表 / 資料表**：伸出邊框貼畫面邊（同 preview、同直向姿勢一致）
+- **S-1121**：打開・直範圍可能撞到 7–8 吋 Android 平板直放（約 600×890），接受，唔收窄範圍
+
 - Preview：iPhone Duo https://claude.ai/artifact/RXUj9gRYWfXREpJdMfGBiU 、HomeView https://claude.ai/artifact/9Y2LPEHhPeJuSqo3rkjxFB
 - 量度方法：headless Chromium 開 `progressier.com/iphone-duo-simulator`（three.js 由 npm `three@0.128.0` 經 Playwright route 本地餵），讀 iframe 嘅 `innerWidth` / `innerHeight`
 
@@ -62,6 +73,8 @@ Branch：lane 0–5 喺 `feature/layout/iphone-duo` 逐段出 PR；lane 6–7 �
 - **鎖定測試**：擴充 `styles/landscapeBreakpoint.node.test.ts`、`shortHeightBreakpoint.node.test.ts`；新 `styles/deviceQueries.node.test.ts`（CSS 入面嘅 Duo／square 條件必須同常數一字不差；五個常數對一份凍結嘅現有 viewport 清單全部唔 match）。
 
 ## 已知風險
+
+- **打開・直範圍可能撞到 7–8 吋 Android 平板直放**（約 600×890，冇實機驗證）：用戶 2026-11-18 接受，呢類平板用 3 欄主頁都合理
 
 - **範圍比對唔係絕對**：電腦視窗啱啱拉到呢啲尺寸、或者 Android 手機開鍵盤時高度縮到範圍內，會入到新版面。App 冇文字輸入位，實際機會好低。
 - **Duo 版面只對安裝咗嘅 PWA 生效**：尺寸係全屏量嘅；喺 Safari 分頁開，工具列會令高度跌出範圍，退返現有版面。

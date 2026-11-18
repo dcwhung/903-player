@@ -248,3 +248,26 @@
         --today-stack-reserve: var(--card-stack-offset);
     }
 }
+
+/*
+ * iPhone Duo 闔上・橫 / Standing / Seated（DUO_COVER_LANDSCAPE_QUERY，612px 闊）：行手機打橫兩欄版面
+ * （上面嘅橫版區塊由 scripts/postcssDuoLandscape.ts 喺 build 時複製入呢個範圍）。
+ * 比現有手機打橫（最窄 667px）仲窄，左欄清單 54% 會令右欄嘅今日節目卡貼住右邊；收到 46% 張卡先喺右欄置中
+ */
+@media (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px) {
+    .fixed {
+        grid-template-columns: minmax(0, 46%) minmax(0, 1fr);
+    }
+}
+
+/*
+ * iPhone Duo 打橫（DUO_LANDSCAPE_QUERY）：左欄全集表 / 右欄資料表要伸返出 ThemeScope 嘅邊框貼畫面邊
+ * （同 preview、同直向姿勢嘅底部表一樣；用戶 2026-11-18）。main 唔可以剪走佢哋；
+ * 成頁仍然唔會捲（global.css html / body / #root overflow hidden）
+ */
+@media (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px),
+    (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px) {
+    .locked {
+        overflow: visible;
+    }
+}

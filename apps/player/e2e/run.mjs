@@ -16,6 +16,7 @@ import { runPwaUpdateChecks } from './pwaUpdate.mjs';
 import { runRemoteCatalogChecks } from './remoteCatalog.mjs';
 import { runShowGridCountChecks } from './showGridCounts.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
+import { runDuoChecks } from './duo.mjs';
 import {
     AUDIO_HOST,
     BANNER_ALT,
@@ -1631,6 +1632,7 @@ try {
 
     // 闊橫版主頁（iPad 打橫）：fill / split、卡闊 + 卡清單、✕ 閂卡 → 把手 → 開返（每個情境各自一個 section）
     await runHomeWideChecks({ browser, base: BASE, errors, log });
+    await runDuoChecks({ browser, base: BASE, errors, log });
 
     // 主頁格仔 zoom 入內頁（P6 #2 Z3）：直版 zoom / 返回 unzoom、闊橫版都係 zoom（唔係 expand）
     await runCardZoomChecks({ browser, base: BASE, errors, log });

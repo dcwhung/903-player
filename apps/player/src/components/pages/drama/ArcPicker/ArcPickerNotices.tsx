@@ -1,6 +1,6 @@
 /* 短篇 chips 嘅即將上架 chip 同成套劇快將下架標籤（P8 #6，_mockups_/coming-soon ① ⑧） */
 import { arcLabelOf } from '@903-player/catalog';
-import { LANDSCAPE_QUERY } from '../../../../config/layout';
+import { LANDSCAPE_LAYOUT_QUERY } from '../../../../config/layout';
 import { useMediaQuery } from '../../../../hooks/useMediaQuery';
 import { t } from '../../../../i18n/t';
 import { ClockIcon, HourglassIcon, ListIcon } from '../../../shared/common/icons/icons';
@@ -43,7 +43,7 @@ export const AllChip = ({
     notice: ArcPickerNotice | undefined;
     onOpenAll: () => void;
 }) => {
-    const landscape = useMediaQuery(LANDSCAPE_QUERY);
+    const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
     const tagged = notice && !notice.replace && !landscape ? notice : undefined;
     const name = t('drama.allArcs');
     return (

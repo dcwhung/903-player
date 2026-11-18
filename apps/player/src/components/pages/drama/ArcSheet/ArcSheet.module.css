@@ -365,3 +365,11 @@
 .sheet[data-banner='true'] {
     padding-top: 0;
 }
+
+/* iPhone Duo 打橫（DUO_LANDSCAPE_QUERY）：全集表伸出左邊同底邊嘅邊框，貼畫面邊（Page.module.css 同一段） */
+@media (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px),
+    (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px) {
+    .docked {
+        inset: 0 0 calc(-1 * var(--duo-edge-inset)) calc(-1 * var(--duo-edge-inset));
+    }
+}

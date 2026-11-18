@@ -8,6 +8,7 @@ import { injectBrandingText, manifestText } from './scripts/brandingConfig.ts';
 import { catalogRuntimeCaching } from './scripts/catalogCaching.ts';
 import { catalogSnapshot } from './scripts/catalogSnapshot.ts';
 import { e2eCatalogNotFound } from './scripts/e2eCatalogNotFound.ts';
+import { duoLandscape } from './scripts/postcssDuoLandscape.ts';
 import { buildSocialTags, resolveSiteUrl } from './scripts/socialMeta.ts';
 import { episodeOptionsFor } from './src/catalog/dramas/lib/episodeOptionsFor.ts';
 import { LAUNCH_THEME_COLOR } from './src/config/launchTheme.ts';
@@ -68,6 +69,8 @@ export default defineConfig(async ({ command, mode }): Promise<ViteUserConfig> =
             __APP_VERSION__: JSON.stringify(APP_VERSION),
             __CATALOG_URL__: JSON.stringify(catalogUrl),
         },
+        // Duo 闔上・橫重用手機打橫版面：build 時複製橫版 @media 區塊（scripts/postcssDuoLandscape.ts）
+        css: { postcss: { plugins: [duoLandscape()] } },
         plugins: [
             react(),
             injectAppVersion(),

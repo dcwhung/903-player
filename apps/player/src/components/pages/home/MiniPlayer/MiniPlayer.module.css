@@ -266,3 +266,18 @@
     height: 100%;
     background: var(--color-accent);
 }
+
+/*
+ * iPhone Duo（DUO_QUERY）：mini player 浮喺畫面上面，唔跟 ThemeScope .scope 嘅 padding。
+ * 左右同主頁格邊對齊（--home-gutter + --duo-edge-inset = 24px，用戶 2026-11-18 揀 B），
+ * 底部由 tokens.css 嘅 --mini-player-offset-bottom 定（同樣 24px）
+ */
+@media (orientation: portrait) and (min-width: 420px) and (max-width: 470px) and (min-height: 590px) and (max-height: 690px),
+    (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px),
+    (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px),
+    (orientation: portrait) and (min-width: 600px) and (max-width: 640px) and (min-height: 860px) and (max-height: 900px) {
+    .wrapper {
+        right: calc(env(safe-area-inset-right) + var(--home-gutter) + var(--duo-edge-inset));
+        left: calc(env(safe-area-inset-left) + var(--home-gutter) + var(--duo-edge-inset));
+    }
+}

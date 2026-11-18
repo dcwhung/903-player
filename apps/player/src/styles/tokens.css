@@ -732,3 +732,20 @@
         --color-watched: color-mix(in srgb, var(--color-text-muted) 75%, var(--color-bg));
     }
 }
+
+/*
+ * iPhone Duo（DUO_QUERY，四種姿勢；P10）：四邊多留 8px。頁面內容由 ThemeScope .scope 嘅 padding 推入；
+ * 浮喺畫面上面（position: fixed）嘅 mini player / 短提示唔跟 .scope，自己對齊 24px 格邊。
+ */
+@media (orientation: portrait) and (min-width: 420px) and (max-width: 470px) and (min-height: 590px) and (max-height: 690px),
+    (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px),
+    (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px),
+    (orientation: portrait) and (min-width: 600px) and (max-width: 640px) and (min-height: 860px) and (max-height: 900px) {
+    :root {
+        --duo-edge-inset: var(--space-2);
+        /* 離畫面底同格邊一樣 24px（--home-gutter + --duo-edge-inset，用戶 2026-11-18 揀 B）；短提示跟住佢 */
+        --mini-player-offset-bottom: calc(
+            var(--safe-area-bottom-visible) + var(--home-gutter) + var(--duo-edge-inset)
+        );
+    }
+}

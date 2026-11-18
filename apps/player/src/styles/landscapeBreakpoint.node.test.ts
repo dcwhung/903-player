@@ -8,7 +8,16 @@ import {
     mediaQueries,
     readCss,
 } from '../../tests/cssRule';
-import { LANDSCAPE_QUERY, SHORT_LANDSCAPE_QUERY, WIDE_BANNER_QUERY } from '../config/layout';
+import {
+    DUO_COVER_LANDSCAPE_QUERY,
+    DUO_LANDSCAPE_QUERY,
+    DUO_OPEN_LANDSCAPE_QUERY,
+    DUO_QUERY,
+    LANDSCAPE_QUERY,
+    SHELF_SPLIT_QUERY,
+    SHORT_LANDSCAPE_QUERY,
+    WIDE_BANNER_QUERY,
+} from '../config/layout';
 
 /*
  * 橫版斷點：@media 條件用唔到變數，JS（useMediaQuery、<source media>）同 CSS 各自寫一次，
@@ -20,10 +29,22 @@ const CSS_FILES = readdirSync(SRC, { recursive: true })
     .map(String)
     .filter((path) => path.endsWith('.css'));
 
+/**
+ * iPhone Duo / HomeView 嘅裝置 query（P10）：另一套範圍，唔係現有橫版斷點嘅變體；
+ * 寫法由 deviceQueries.node.test.ts 鎖住，呢度唔理
+ */
+const DEVICE_QUERIES: readonly string[] = [
+    DUO_COVER_LANDSCAPE_QUERY,
+    DUO_OPEN_LANDSCAPE_QUERY,
+    DUO_LANDSCAPE_QUERY,
+    DUO_QUERY,
+    SHELF_SPLIT_QUERY,
+];
+
 const landscapeQueries = (): string[] =>
     CSS_FILES.flatMap((path) =>
-        mediaQueries(readCss(new URL(path, SRC))).filter((query) =>
-            query.includes('orientation: landscape'),
+        mediaQueries(readCss(new URL(path, SRC))).filter(
+            (query) => query.includes('orientation: landscape') && !DEVICE_QUERIES.includes(query),
         ),
     );
 

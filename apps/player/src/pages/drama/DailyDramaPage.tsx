@@ -6,7 +6,7 @@ import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPa
 import { ItemInfoSheet } from '../../components/shared/common/ItemInfo/ItemInfoSheet';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import { LANDSCAPE_QUERY } from '../../config/layout';
+import { LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
 import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePlayer } from '../../player/usePlayer';
@@ -65,7 +65,7 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const focusId = useEpisodeFocus();
     const view = useDailyDramaPage(drama, focusId);
     const { current } = view;
-    const landscape = useMediaQuery(LANDSCAPE_QUERY);
+    const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
     // 橫版頁頭喺左欄清單上面（清單成日都有）
     return (
         <ThemeScope theme={view.theme}>

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { LANDSCAPE_QUERY } from '../../../../config/layout';
+import { LANDSCAPE_LAYOUT_QUERY } from '../../../../config/layout';
 import { useMediaQuery } from '../../../../hooks/useMediaQuery';
 import { HomeLandscapeGrid } from '../HomeLandscapeGrid/HomeLandscapeGrid';
 import { t } from '../../../../i18n/t';
@@ -22,7 +22,7 @@ interface DramaShelfProps {
  * 闊橫版（iPad / 桌面）兩套並排，唔疊、唔 focus
  */
 const ShelfColumn = ({ items }: { items: readonly DramaShelfItem[] }) => {
-    const stacked = !useMediaQuery(LANDSCAPE_QUERY);
+    const stacked = !useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
     const focus = useShelfFocus(items.length, stacked);
     const { shelfRef, style, scrolls, onScroll, tileProps, scrubProps } = focus;
     const focusedIndex = focus.focus;

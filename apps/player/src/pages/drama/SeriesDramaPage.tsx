@@ -5,7 +5,7 @@ import { PlayerGauge } from '../../components/shared/player/PlayerPanel/PlayerGa
 import { ItemInfoSheet } from '../../components/shared/common/ItemInfo/ItemInfoSheet';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import { LANDSCAPE_QUERY } from '../../config/layout';
+import { LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
 import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePlayer } from '../../player/usePlayer';
@@ -98,7 +98,7 @@ export const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const focusId = useEpisodeFocus();
     const view = useSeriesDramaPage(drama, focusId);
     const { duration } = usePlayer();
-    const landscape = useMediaQuery(LANDSCAPE_QUERY);
+    const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
     // 「連線中…」只講呢套劇嘅一集載緊 / 緩衝緊；未載入呢套劇（start 有值）唔講，亦冇 chip 係「播緊」
     const connecting = !view.start && !hasKnownDuration(duration);
     const arcSheet = (
