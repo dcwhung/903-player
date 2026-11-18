@@ -117,3 +117,60 @@ status: pass
 next_action: main_agent_commit_push_after_ci
 context: "P10 lane 6c re-verify @7853b3b (PR #276): auto-opened ArcSheet returns focus to 全集 (e2e 390x844 + 844x390, unit incl. Duo), auto-opened info sheet returns to ⓘ (e2e show portrait/landscape/Duo + HomeView header; daily drama unit only, same code path, no probe needed). Visual 18/180 drama-series = 2px 全集 focus ring, user-accepted. CI 44382319672 in_progress. Ledger S1 re-frozen 4 chains, 2652 rows, none lost. No findings."
 ```
+
+---
+
+# Re-verify — P10 lane 6c — 2026-11-18 — S1 @`9763748`
+
+- Tier: T2 | Commit: `9763748`（`7853b3b..9763748` code 只有 `9763748`：C-025 自動開嘅表滑鼠 / 觸控閂唔搬焦點、冇 ring，淨係鍵盤閂先返入口掣；S-1143 / S-1144 註解）| Verdict: ✅ pass
+- Ledger（`impact --since e3d6952`）：S1 STALE 只有 coming-soon、drama、show-today-page（`useSheetBehaviour{,.test}`、`SeriesDramaPageInfo.test.tsx`、`e2e/{arcSheet,itemInfo,square,focusTrap}.mjs`）；player-core 同其餘 SKIP；home / ui-foundation 只係 S3 行；UNCOVERED 0
+
+## Runs
+
+| Command / 證據                                                                                                                     | Result                                                         | Time |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ---- |
+| 引用 developer：`npm run lint`、`npm test`（scratchpad `lint-lane6f.log` / `unit-lane6f.log`）                                     | 0 error；485 檔 5066 passed（+8 = diff 新增 8 個 test）        | —    |
+| 引用 developer：`npm run e2e`（`e2e-lane6f.log`）                                                                                  | 1053 PASS / 0 FAIL；新 pointer check 16 條全 PASS              | —    |
+| 引用 developer：`npm run e2e:visual` vs `e3d6952`（`visual-lane6f.log`）                                                           | exit 1：180 張 18 張唔同，全部 `drama-series`（見下）          | —    |
+| `npx vitest run --coverage` plan AC-17 / AC-10 unit（Sheet、ItemInfo、ListSheet、Series / DailyDramaPageInfo、ShowPageInfo，HEAD） | 110/110；`useSheetBehaviour.ts` lines / branch 100%            | 9s   |
+| CI run [44392120890](https://github.com/dcwhung/903-player/actions/runs/44392120890) @`9763748`                                    | changes ✅；lint + unit + build 報告時 in_progress；e2e 未開始 | —    |
+
+- 證據對應 `9763748`：7 個改動檔 mtime 最遲 20:06:26，早過所有 log（lint 20:09 → visual 20:32:17），commit 20:32:31；working tree clean；e2e log 嘅 check 名同 commit 入面一致
+
+## AC（drama AC-17 / show-today-page AC-10，C-025）
+
+- 自動開全集表（390×844）：滑鼠撳遮罩 / 觸控 tap 遮罩 / 觸控向下拉閂 → 入口掣焦點 false、`:focus-visible` false；再撳「全集」開再閂都冇 ring（e2e arcSheet，12 條）
+- 自動彈「節目資料」直版滑鼠撳遮罩、HomeView 收藏自動開 ListSheet 滑鼠撳遮罩（544×544）→ 冇搬焦點、冇 ring（e2e itemInfo / square）
+- 鍵盤閂照返「全集」/ ⓘ / 清單掣：原有 e2e + unit（modality 分支）全 PASS；有 opener 嘅路徑冇改
+- 每日劇 ⓘ 同一個 hook：unit `DailyDramaPageInfo.test.tsx`
+
+## 視覺改變（用戶 2026-11-18 接受，同上次一樣）
+
+- `drama-series` 18 個 viewport、每張 488–708 pixel、0 個元素位置唔同 = 鍵盤閂後「全集」2px focus ring；其餘 162 張一樣
+
+## Hard Gates
+
+all pass（CI 未完：main agent push / merge 前睇 run 44392120890）
+
+## Findings
+
+- none
+
+## 建議補測
+
+- none
+
+## Freeze
+
+- S1 re-freeze @`9763748`（全條 chain + stage 清單由 ledger 攞）：coming-soon 163、drama 220、show-today-page 195（前後一樣）
+- chain + stage + path 比對：ledger 2652 → 2652 行，set 完全一樣；freeze 後 S1 全部 FROZEN
+- Plan 更新：`drama.md` AC-17、`show-today-page.md` AC-10 加 C-025（只限鍵盤閂）+ 對應 e2e section
+
+```handoff-receipt
+from: quality-assurance
+to: main-agent
+stage: S1
+status: pass
+next_action: main_agent_commit_push_after_ci
+context: "P10 lane 6c re-verify @9763748 (PR #276, C-025): auto-opened ArcSheet/ItemInfoSheet/ListSheet closed by mouse/touch keep focus off trigger, no ring (e2e 16 new checks PASS); keyboard close still returns focus. Logs match 9763748 (mtimes before logs). lint 0, unit 5066, e2e 1053/0, visual 18/180 drama-series ring (user-accepted). CI 44392120890 in_progress. Ledger S1 re-frozen 3 chains, 2652 rows, none lost. No findings."
+```
