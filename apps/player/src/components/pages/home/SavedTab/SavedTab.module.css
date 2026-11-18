@@ -488,3 +488,19 @@
 .box[data-removed] .bannerArt {
     filter: grayscale(1);
 }
+
+/*
+ * iPhone Duo 闔上・直（DUO_COVER_PORTRAIT_QUERY，P10 lane 2，_mockups_/iphone-duo）：畫面矮，
+ * 「最近收聽」高度跟內容，最高同平時一樣（--saved-recent-height），而且唔超過分頁區 40%，收藏區一定高過佢。
+ * 冇收藏版（data-fill）照舊佔滿成個 tab。清單跟內容高，超過上限先自己捲
+ */
+@media (orientation: portrait) and (min-width: 420px) and (max-width: 470px) and (min-height: 590px) and (max-height: 690px) {
+    .recent:not([data-fill='true']) {
+        height: auto;
+        max-height: min(var(--saved-recent-height), 40%);
+    }
+
+    .recent:not([data-fill='true']) .recentScroll {
+        flex: 0 1 auto;
+    }
+}

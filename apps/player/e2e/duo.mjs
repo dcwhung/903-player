@@ -4,7 +4,10 @@
 // 每個情境用獨立 context
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
 import { BANNER_ALT, PHONE, ensurePlaying, newE2EPage, runSection } from './harness.mjs';
+import { BOOKMARK_STORAGE_KEY, BOOKMARK_STORE_VERSION } from './bookmark.mjs';
+import { PROGRESS_STORAGE_KEY } from './hiddenPlayback.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
+import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 
 /** Progressier simulator 實測（_mockups_/iphone-duo）；刻意寫死做獨立對照，唔 import src 常數 */
 const COVER_PORTRAIT = { width: 426, height: 612 };
@@ -336,6 +339,92 @@ const checkOpenLandscapeHandle = async (env) => {
     await ctx.close();
 };
 
+// 「最近收聽」平時固定高（tokens.css --saved-recent-height）；Duo 闔上・直跟內容、最高佢同分頁區 40%
+const RECENT_HEIGHT_PX = 200;
+const RECENT_TAB_SHARE = 0.4;
+const SAVED_TAB = '我的收藏';
+// 最近收聽最多 10 集（src/selectors/bookmarks.ts RECENT_MAX）
+const RECENT_MAX = 10;
+const FEW_LISTENED = 2;
+
+/** 收藏咗最新一集、聽過最新 count 集（入主頁之前寫入 localStorage） */
+const seedSavedAndListened = (ctx, count) => {
+    const listened = SAMPLE_RECORDINGS.slice(-count);
+    const latest = SAMPLE_RECORDINGS.at(-1);
+    const bookmark = {
+        kind: 'show',
+        id: latest.id,
+        url: latest.url,
+        showId: latest.showId,
+        date: latest.date,
+        time: latest.time,
+        addedAt: 1,
+    };
+    const progress = Object.fromEntries(
+        listened.map((r, i) => [
+            r.id,
+            { position: 60, duration: 600, watched: false, updatedAt: 1000 + i },
+        ]),
+    );
+    return ctx.addInitScript(
+        (entries) => {
+            for (const [key, value] of entries) localStorage.setItem(key, value);
+        },
+        [
+            [
+                BOOKMARK_STORAGE_KEY,
+                JSON.stringify({ version: BOOKMARK_STORE_VERSION, items: [bookmark] }),
+            ],
+            [PROGRESS_STORAGE_KEY, JSON.stringify(progress)],
+        ],
+    );
+};
+
+/** 我的收藏 tab：成個 tab 區、最近收聽 panel、佢入面清單有冇溢出 */
+const recentLook = async (env, viewport, count) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport });
+    await seedSavedAndListened(ctx, count);
+    await openHome(p, env.base);
+    await p.getByRole('button', { name: SAVED_TAB, exact: true }).click();
+    const recent = p.locator('section[data-fill]');
+    await recent.waitFor({ timeout: WAIT_MS });
+    const look = await recent.evaluate((el) => {
+        const tab = el.closest('[data-saved-mode]').getBoundingClientRect();
+        const panel = el.getBoundingClientRect();
+        const list = el.querySelector('ul').parentElement;
+        // 收藏 box 嘅捲動區（同一個 tab 入面最近收聽前面嗰格；唔連 --saved-gap，S-1123）
+        const savedBox = el.previousElementSibling.getBoundingClientRect();
+        return {
+            tab: tab.height,
+            recent: panel.height,
+            saved: savedBox.height,
+            overflows: list.scrollHeight > list.clientHeight + 1,
+        };
+    });
+    await ctx.close();
+    return look;
+};
+
+/** Duo 闔上・直：最近收聽跟內容、最高 200px 同分頁區 40%，收藏區高過佢；現有手機照舊 200px */
+const checkRecentPanel = async (env) => {
+    const few = await recentLook(env, COVER_PORTRAIT, FEW_LISTENED);
+    env.log(
+        few.recent < RECENT_HEIGHT_PX && !few.overflows,
+        `Duo 闔上・直我的收藏：聽過 ${FEW_LISTENED} 集，最近收聽跟內容高（${few.recent}px，清單冇溢出 ${!few.overflows}）`,
+    );
+    const many = await recentLook(env, COVER_PORTRAIT, RECENT_MAX);
+    const cap = Math.min(RECENT_HEIGHT_PX, many.tab * RECENT_TAB_SHARE);
+    env.log(
+        many.recent <= cap + EDGE_TOLERANCE_PX && many.saved > many.recent && many.overflows,
+        `Duo 闔上・直我的收藏：聽過 ${RECENT_MAX} 集，最近收聽最高 ${cap.toFixed(1)}px（${many.recent}），收藏區高過佢（${many.saved}），清單喺入面捲（${many.overflows}）`,
+    );
+    const phone = await recentLook(env, PHONE, FEW_LISTENED);
+    env.log(
+        near(phone.recent, RECENT_HEIGHT_PX),
+        `現有手機我的收藏：最近收聽照舊固定 ${RECENT_HEIGHT_PX}px（${phone.recent}）`,
+    );
+};
+
 const SCENARIOS = [
     ...POSTURES.map(([label, viewport]) => [
         `Duo ${label} 主頁邊框`,
@@ -356,6 +445,7 @@ const SCENARIOS = [
         (env) => checkCoverLandscapeColumns(env, 'Seated 節目頁', SEATED, SHOW_ROUTE),
     ],
     ['Duo 闔上・直節目頁', checkCoverPortraitStacked],
+    ['Duo 闔上・直最近收聽', checkRecentPanel],
     ['Duo 闔上・橫今日節目 icon', (env) => checkTodayRowIcons(env, '闔上・橫', COVER_LANDSCAPE)],
     ['Duo Seated 今日節目 icon', (env) => checkTodayRowIcons(env, 'Seated', SEATED)],
     ['Duo 打開・橫把手', checkOpenLandscapeHandle],
