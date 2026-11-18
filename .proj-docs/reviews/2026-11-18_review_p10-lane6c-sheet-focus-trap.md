@@ -119,3 +119,72 @@ branch: "fix/a11y/sheet-focus-trap"
 context: "Re-review @9dde826 (PR #276 -> release/v2.0.0): S-1141 fixed (two-modal unit), S-1142 fixed (ItemInfoSheet returnFocusTo = single 全集 chip ref, attached in every layout; other pages unchanged). Open user decision (non-blocking): auto-opened ArcSheet Escape still drops focus to <body>. Report committed locally, not pushed"
 blockers: []
 ```
+
+---
+
+# Re-review — 2026-11-18 — @7853b3b
+
+- 範圍：只驗 `9dde826..7853b3b` 嘅 code diff（用戶 2026-11-18 決定：自動開嘅表閂咗焦點返入口掣，接受**鍵盤** focus ring）同 QA Observation 2（`focusTrap.mjs` markEnds），唔重新 review 成個 branch
+- Hard gates（引用 developer log，冇重跑）：lint 0；type check pass（e2e build）；unit 5058 passed；e2e 1037 / 0；visual exit 1：18 / 180 唔同，全部 `drama-series`
+- Status：❌ fail，85/100（C-025）
+
+## Visual diff 核實
+
+- 自己逐 pixel 計 4 張（390×844、844×390、1024×768、1920×1080）：diff pixel 數 = bbox 2px 外框周界（488 / 488、620 / 620、708 / 708），全部喺外框 2px 帶入面，head 色一致（`168,72,0`）；crop 睇到外框圍住「☰ 全集」掣，base 冇框；0 個元素位置唔同。即係 `button:focus-visible`（`global.css` 2px outline、offset 2px），同 developer 講法一致
+
+## Ref plumbing — 正確
+
+- ArcSheet：`useSeriesInfo` `allRef` → `SeriesArcSheet` `returnFocusTo={sheet.allRef}` → `useSheetBehaviour`；「全集」掣同一時間只有一粒（上一輪已驗）
+- ItemInfoSheet：`useItemInfoSheet` `useRef` → `sheet.returnFocusTo` + `gaugeInfo.infoRef`；`ShowPlayer` `infoInHeader` 時唔傳 gaugeInfo 畀唱片圈，HomeView 頁頭（`square && listed`）先出 `HeaderInfoButton`，兩粒 ⓘ 互斥；`DailyDramaPage` spread `info.gaugeInfo` 入 `PlayerPanel` → `PlayerGauge` → `GaugeInfoRow` → `InfoButton ref`
+- Series 劇集 `gaugeInfo` 冇 `infoRef`（佢自動開嘅係全集表，由 `allRef` 負責），正確；`restoreFocus` 仍然先用有效 opener，撳 ⓘ / 「全集」開嘅路徑唔變
+- `focusTrap.mjs` first / last 拆兩個 attribute：1 粒時 `first+last`，`isEnd` 判斷正確（Observation 2 已修）
+
+## 🔴 C-025 — 撳 / 拉閂自動開嘅表都會出 focus ring，而且之後一直跟住
+
+- **L1**：用戶 2026-11-18 決定只接受**鍵盤**閂嘅 focus ring；P10「現有裝置零改變」；commit 自己嘅 test 註解（`SeriesDramaPageInfo.test.tsx`「撳 / 拉閂就冇，:focus-visible」）同實際唔符
+- **L2**（Playwright，scratch e2e build，390×844，`#/drama/chisee` 自動開全集表）：
+
+    | 閂法          | 焦點     | `:focus-visible` |
+    | ------------- | -------- | ---------------- |
+    | Escape        | 「全集」 | true（已接受）   |
+    | 滑鼠撳遮罩    | 「全集」 | **true**         |
+    | 觸控 tap 遮罩 | 「全集」 | **true**         |
+    | 觸控向下拉閂  | 「全集」 | **true**         |
+    | 滑鼠撳 ✕      | 「全集」 | false            |
+
+    之後再用滑鼠撳「全集」開、撳遮罩閂：仍然 `true`（ring 黐住；base 呢條路焦點喺 `<body>` / 滑鼠撳嘅掣，冇 ring）
+
+- **L3 成因**：自動開時頁面未有任何互動，`useSheetFocus` 用 script focus 張表，Chromium 當佢 `:focus-visible`；撳遮罩 / 拉 grab bar 撳嘅係唔可 focus 嘅元素，焦點冇變，閂時 `restoreFocus` 由一個 focus-visible 元素用 script 轉去「全集」，啟發式沿用 → ring。✕ 係可 focus 嘅掣，滑鼠 mousedown 已經重設咗，所以冇。ItemInfoSheet（節目資料 / 劇集資料 ⓘ）用同一個 hook，同一機制（呢條冇另外跑，L3）
+- **影響**：手機第一次入節目頁 / 連續劇頁，最常見嘅閂法（tap 遮罩、向下拉）會喺「全集」/ ⓘ 出 2px 框，現有裝置畫面改變，超出用戶接受範圍；visual scene 只用 Escape，所以冇捉到
+- **方案 A（推薦）**：`useSheetFocus` 開住時記低最後輸入（`keydown` vs `pointerdown`，capture listener，閂時一齊拆）；冇有效 opener 時，**最後輸入係鍵盤先**行 `returnFocusTo`，pointer / 觸控就照舊（唔搬焦點，同 base 一樣冇 ring）。Trade-off：滑鼠 / 觸控閂後焦點喺 `<body>`（同改之前一樣，冇退步）；鍵盤 Escape / Enter ✕ 照樣返入口掣。加 e2e：遮罩 tap / 拉閂後 `:focus-visible` = false，Escape 後 = true
+- **方案 B**：照搬焦點，pointer 時用 `focus({ focusVisible: false })`。Trade-off：保留焦點位置；但 probe 入面喺呢個 Chromium 試過 blur 再 `focus({ focusVisible: false })` 仍然 `true`，Safari 支援亦未確定，靠唔住
+- **方案 C**：用戶改為接受滑鼠 / 觸控都見 ring。要 main agent 問用戶；揀呢個要改返 test 註解同補 e2e 鎖住現況
+
+## 🟢 / Observation
+
+- S-1143 `e2e/itemInfo.mjs:197`：`checkShowLandscape` 嘅 JSDoc（「節目頁橫版：sheet 喺右欄…」）被新函數夾開，而家擺喺 `checkShowAutoOpenFocus` 上面，`checkShowLandscape` 冇 doc；搬返落去
+- S-1144 `useSheetBehaviour.ts:63`：註解「唔傳（ArcSheet / ItemInfoSheet）行為不變」已過時（兩個都傳），改做「唔傳就行為不變」
+- Observation（L3，唔喺呢個 diff）：W-795 ListSheet 自動開（HomeView 由「我的收藏」入）用同一個 fallback，理論上有同樣 pointer ring；方案 A 改喺 `useSheetFocus` 會一齊修
+
+## Handoff receipt（re-review @7853b3b）
+
+```handoff-receipt
+protocol: 1
+status: fail
+score: 85/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "auto-open focus return covered by 8 unit + 6 e2e checks (Escape only); pointer/touch close not covered"
+  no_critical: fail
+  security_scan: n/a
+next_action: invoke_developer
+next_agent: developer
+branch: "fix/a11y/sheet-focus-trap"
+context: "Re-review @7853b3b (PR #276 -> release/v2.0.0): ref plumbing correct (allRef / infoRef single attachment per layout, opener path unchanged); visual 18/180 verified = 2px :focus-visible ring around 全集 only (Escape scene, user-accepted). C-025: auto-opened sheet closed by mouse/touch backdrop or drag-down also shows the ring on 全集 (Playwright: :focus-visible true; sticky on later pointer open/close) - exceeds user's keyboard-only acceptance. Recommend A: fallback returnFocusTo only when last input was keyboard. If user prefers C (accept ring for pointer), main agent asks. S-1143/S-1144 comment fixes, same session. Report committed locally, not pushed"
+blockers:
+  - "C-025: pointer/touch close of auto-opened ArcSheet/ItemInfoSheet shows focus ring"
+```
