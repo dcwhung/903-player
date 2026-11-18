@@ -48,3 +48,45 @@
 
 - S1 freeze @`8770311`：bookmark、catalog-data、coming-soon、home、player-core、ui-foundation（ledger 原有 chain + stage 全部 path，freeze 前後 chain + stage + path 一樣：2624 行）
 - 未 freeze：show-today-page、drama（QA-1）；plan 加 AC-8 / AC-16 + `DateColumn` / `SideRow` scope。CUI-0026 修好後只重驗呢兩條（`DateColumn` unit + `duo.mjs` 打開・直 + visual）
+
+---
+
+# Re-verify — CUI-0026 + S-QA-2 — 2026-11-18 — S1
+
+- Tier: T1 | Commit: `7e11982`（HEAD `93ed781` = reviewer 淨 docs commit，code 一樣）| Verdict: ✅ pass
+- Ledger（`impact --since $(git merge-base HEAD origin/main)`）：SKIP 9 / REVERIFY 5（show-today-page、drama + bookmark、home、ui-foundation：後三條 S1 STALE 只係 `e2e/duo.mjs`）/ UNCOVERED 5（`DateColumn/*`、`pages/shared/SideRow*`，歸入 show-today-page + drama）/ IGNORED 21
+- Freeze 後 S1 全部 FROZEN；`impact` 仲列 drama / home / show-today-page / ui-foundation REVERIFY 只因 S3 行（release 前已 STALE，屬 S3，唔喺今次範圍）
+
+## Runs
+
+| Command / 證據                                                                                    | Result                                         | Time |
+| ------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---- |
+| 引用 developer @`7e11982`：lint、`npm test`（scratchpad `lint-lane5b3.log` / `unit-lane5b3.log`） | 0 error、5014 passed                           | —    |
+| 引用 developer @`7e11982`：`npm run e2e`（`e2e-lane5b3.log`）                                     | All passed；新斷言 588 ≤ 588 ×2、border 1px    | —    |
+| 引用 developer @`7e11982`：`npm run e2e:visual` vs origin/main（`visual-lane5b3.log`）            | 180/180 一樣                                   | —    |
+| CI run [44340502692](https://github.com/dcwhung/903-player/actions/runs/44340502692) @`7e11982`   | changes ✅；lint+unit+build 報告時 in_progress | —    |
+| `npx vitest run --project @903-player/player` DateColumn、SideRow、PlayerPanel、ArcPicker         | 8 檔 70/70                                     | 6s   |
+| scratchpad `qa5c/reProbe.mjs` / `dailyProbe.mjs`（612×876，dist @ e2e build）                     | 見下                                           | 30s  |
+
+## AC（show-today-page AC-8 / drama AC-16）
+
+- CUI-0026：現正播放格 className 有 DateColumn `_currentDay_`、`border 1px solid` — 節目頁 `#/show/badgirl` 同每日劇集頁 `#/drama/c18`（runtime catalog，同 `duo.mjs`）；unit「should frame the playing day only」鎖住（只現正播放格有 `currentDay`）
+- S-QA-2：日子欄 / 短篇欄右邊 588（節目頁、每日劇集頁、系列劇集頁 `#/drama/chisee`），同清單一樣；每日劇集日子欄底 420 < 摺位 438；唱片中心 246 / 218（兩邊對稱 padding，置中冇變）；現有裝置零改變（visual 180/180）
+- 改動行（`DateColumn.tsx` className 三元式）兩個 branch 由新 unit 覆蓋；CSS 改動由 e2e + probe 覆蓋
+
+## Hard Gates
+
+all pass（CI E2E 未完，main agent push 前睇 run 44340502692）
+
+## Findings
+
+- 無新 finding；QA-1 → CUI-0026 completed；S-QA-2 resolved（`7e11982`）
+
+## 建議補測
+
+- none（`DateColumn.test.tsx` 已加，`duo.mjs` 已加 border / 右邊斷言）
+
+## Freeze
+
+- S1 freeze（report 同上）：show-today-page 175 → 180、drama 213 → 218（各加 `DateColumn/*` 3 + `SideRow*` 2）；bookmark 56、home 176、ui-foundation 130（前後一樣）
+- chain + stage + path 比對：ledger 2624 → 2634 行，`diff` 只多咗上面 10 行，冇少行
