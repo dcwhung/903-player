@@ -1,4 +1,4 @@
-import { useRef, useState, type ComponentProps } from 'react';
+import { useRef, useState, type ComponentProps, type Ref } from 'react';
 import { usePlayer } from '../../../../player/usePlayer';
 import type { Track } from '../../../../types/track';
 import { hasKnownDuration } from '../../../../utils/time';
@@ -27,6 +27,7 @@ interface PlayerPanelProps {
     /** 有資料先傳：唱片圈右上角 ⓘ（見 PlayerGauge） */
     onInfo?: (() => void) | undefined;
     infoLabel?: string | undefined;
+    infoRef?: Ref<HTMLButtonElement> | undefined;
     /** 日子直排喺唱片右邊（DateColumn，Duo 打開・直，P10 lane 5b）；冇就照舊喺下面嘅日子條 */
     stripSide?: boolean;
 }
@@ -59,6 +60,7 @@ export const PlayerPanel = ({
     bookmark,
     onInfo,
     infoLabel,
+    infoRef,
     stripSide = false,
 }: PlayerPanelProps) => {
     // 日子條拖動時跟住轉嘅節目圖
@@ -76,6 +78,7 @@ export const PlayerPanel = ({
                 bookmark={bookmark}
                 onInfo={onInfo}
                 infoLabel={infoLabel}
+                infoRef={infoRef}
             />
             <PanelStrip
                 side={stripSide}

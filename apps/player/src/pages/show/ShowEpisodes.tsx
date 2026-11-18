@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { ListButton } from '../../components/shared/common/ListSheet/ListButton';
 import { ListSheet } from '../../components/shared/common/ListSheet/ListSheet';
 import { PageHeaderActions } from '../../components/shared/common/PageHeader/PageHeaderActions';
@@ -59,7 +59,7 @@ interface ShowHeaderActionsProps {
     items: EpisodeItem[];
     list: ListSheetState;
     /** 有節目資料先有 ⓘ（useItemInfoSheet gaugeInfo） */
-    info: { onInfo: () => void; infoLabel: string } | undefined;
+    info: ComponentProps<typeof PageHeaderActions>['info'];
 }
 
 /** HomeView 頁頭右邊：清單掣（badge = 集數）+ ⓘ（_mockups_/home-view S5） */

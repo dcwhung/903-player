@@ -4,6 +4,7 @@
 // 檢查：節目頁第一次入自動彈 sheet、ⓘ 位置、橫版右欄；全集 sheet 箭咀展開 / 收合（減少動態直接切換）、
 // 揀未聽短篇彈短篇 sheet；今日節目表箭咀、第一次展開之後收合、橫版標題列
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
+import { checkNoPointerRing, checkTabWrap, focusedName, scrimPoint } from './focusTrap.mjs';
 import { isShown, runSection, succeeds } from './harness.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 
@@ -12,6 +13,8 @@ const ABSENT_WAIT_MS = 1500;
 const LANDSCAPE = { viewport: { width: 1280, height: 800 } };
 /** 窄橫版：唱片按欄闊計（T7b：ⓘ 喺進度圈外面都要放得落欄入面） */
 const NARROW_LANDSCAPE = { viewport: { width: 1024, height: 768 } };
+/** Duo 打開・直（_mockups_/iphone-duo）：日子直排喺唱片右邊，ⓘ 照喺唱片圈 */
+const DUO_OPEN_PORTRAIT = { viewport: { width: 612, height: 876 } };
 /** 手機打橫（iPhone 14 類）：撳 ⓘ 成頁彈上彈落嘅實機尺寸 */
 const PHONE_LANDSCAPE = { viewport: { width: 844, height: 390 } };
 /** 彈出動畫（--view-transition-fade）期間 + 之後都要量：開表之後量幾耐 */
@@ -191,6 +194,50 @@ const checkInfoOutsideRing = async (env, p, label) => {
     );
 };
 
+/**
+ * 第一次入自動彈嘅「節目資料」（冇撳過掣）Escape 閂咗，焦點返 ⓘ，唔好跌去 <body>
+ *（用戶 2026-11-18 決定，QA Observation 1）。modal（直版 / Duo）先測 Tab 困喺表入面：
+ * 表入面只得 ✕ 一粒，順便驗 focusTrap.mjs 1 粒時最頭 = 最尾
+ */
+const checkShowAutoOpenFocus = async (env, json, contextOptions, label) => {
+    const { p } = await open(env, json, contextOptions);
+    await p.goto(`${env.base}#/show/gongzi`);
+    const sheet = infoSheet(p, '節目資料');
+    await sheet.waitFor({ timeout: WAIT_MS });
+    await settleAnimations(sheet);
+    if ((await sheet.getAttribute('aria-modal')) === 'true') {
+        await checkTabWrap(p, sheet, env.log, `${label}「節目資料」`);
+    }
+    await p.keyboard.press('Escape');
+    await sheet.waitFor({ state: 'detached', timeout: WAIT_MS });
+    const focused = await focusedName(p);
+    env.log(
+        focused === 'BUTTON 節目資料',
+        `${label}：自動彈嘅「節目資料」Escape 閂咗，焦點返 ⓘ（${focused}）`,
+    );
+};
+
+/**
+ * C-025：第一次入自動彈嘅「節目資料」（直版，有遮罩）用滑鼠撳遮罩閂，
+ * ⓘ 唔可以被搬焦點、唔可以出 focus ring（用戶只接受鍵盤閂見到 ring）
+ */
+const checkShowAutoOpenPointerClose = async (env, json) => {
+    const { p } = await open(env, json, {});
+    await p.goto(`${env.base}#/show/gongzi`);
+    const sheet = infoSheet(p, '節目資料');
+    await sheet.waitFor({ timeout: WAIT_MS });
+    await settleAnimations(sheet);
+    const point = await scrimPoint(p, p.getByTestId('info-sheet-backdrop'), sheet);
+    if (point.onScrim) await p.mouse.click(point.x, point.y);
+    const closed = await succeeds(sheet.waitFor({ state: 'detached', timeout: WAIT_MS }));
+    env.log(
+        point.onScrim && closed,
+        `節目資料直版：自動彈嘅「節目資料」滑鼠撳遮罩閂咗（撳中遮罩 ${point.onScrim}、閂咗 ${closed}）`,
+    );
+    const info = p.getByRole('button', { name: '節目資料', exact: true });
+    await checkNoPointerRing(info, env.log, '節目資料直版滑鼠撳遮罩（自動彈）');
+};
+
 /** 節目頁橫版：sheet 喺右欄（唱片嗰欄），唔蓋左欄清單、冇遮罩 */
 const checkShowLandscape = async (env, json) => {
     const { p } = await open(env, json, LANDSCAPE);
@@ -315,12 +362,43 @@ const checkArcSheet = async (env, json, reducedMotion) => {
     return p;
 };
 
+/**
+ * S-1142：由全集表揀短篇彈出嘅「劇集資料」Escape 閂咗，焦點返「全集」掣，唔好跌去 <body>
+ *（打開佢嗰粒短篇行已隨全集表 unmount）
+ */
+const logEscapeFocusReturn = async (env, p, sheet, label) => {
+    await p.keyboard.press('Escape');
+    await sheet.waitFor({ state: 'detached', timeout: WAIT_MS });
+    const focused = await p.evaluate(() => {
+        const el = document.activeElement;
+        return el === null || el === document.body
+            ? 'body'
+            : `${el.tagName} ${el.textContent?.trim() ?? ''}`;
+    });
+    env.log(
+        focused.startsWith('BUTTON 全集'),
+        `${label}：「劇集資料」Escape 閂咗，焦點返「全集」掣（${focused}）`,
+    );
+};
+
+/** S-1142 橫版（兩張表都 docked）：第一次入自動開嘅全集表揀未聽短篇，閂「劇集資料」 */
+const checkArcPickFocusReturn = async (env, p, label) => {
+    await arcSheet(p)
+        .getByRole('button', { name: new RegExp(`^${ARC_WITH_INFO}，`) })
+        .click();
+    const sheet = infoSheet(p, '劇集資料');
+    await sheet.waitFor({ timeout: WAIT_MS });
+    await arcSheet(p).waitFor({ state: 'detached', timeout: WAIT_MS });
+    await logEscapeFocusReturn(env, p, sheet, label);
+};
+
 /** 橫版全集 sheet（docked 左欄）：頂部劇集 banner 貼頂、左右貼邊（G1） */
 const checkArcSheetLandscape = async (env, json) => {
     const { p } = await open(env, json, LANDSCAPE);
     await p.goto(`${env.base}#/drama/lancy`);
     await arcSheet(p).waitFor({ timeout: WAIT_MS });
     await checkBanner(env, arcSheet(p), '劇集資料橫版：全集 sheet');
+    await checkArcPickFocusReturn(env, p, '劇集資料橫版');
 };
 
 /** 揀未聽過又有資料嘅短篇：彈嗰個短篇嘅資料 sheet */
@@ -344,6 +422,7 @@ const checkArcPick = async (env, json) => {
         );
         await checkBanner(env, sheet, '劇集資料');
     }
+    await logEscapeFocusReturn(env, p, sheet, '劇集資料');
 };
 
 /**
@@ -434,6 +513,12 @@ const checkArcOpenNoPageScroll = async (env, json) => {
     await arcSheet(p).waitFor({ timeout: WAIT_MS });
     await p.keyboard.press('Escape');
     await arcSheet(p).waitFor({ state: 'detached', timeout: WAIT_MS });
+    // 自動開嘅全集表（冇撳過掣）閂咗返「全集」掣（用戶 2026-11-18 決定）
+    const focused = await focusedName(p);
+    env.log(
+        focused.startsWith('BUTTON 全集'),
+        `劇集資料手機橫版：自動開嘅全集表 Escape 閂咗，焦點返「全集」掣（${focused}）`,
+    );
     const button = p.getByRole('button', { name: '全集', exact: true });
     await watchPageScroll(p, button);
     await button.click();
@@ -482,6 +567,14 @@ export const runItemInfoChecks = async (env) => {
     await section('節目資料：節目頁直版', () => checkShowPortrait(env, json));
     await section('節目資料：節目頁橫版', () => checkShowLandscape(env, json));
     await section('節目資料：節目頁窄橫版', () => checkShowNarrowLandscape(env, json));
+    await section('節目資料：自動彈 Escape 焦點返 ⓘ', async () => {
+        await checkShowAutoOpenFocus(env, json, {}, '節目資料直版');
+        await checkShowAutoOpenFocus(env, json, LANDSCAPE, '節目資料橫版');
+        await checkShowAutoOpenFocus(env, json, DUO_OPEN_PORTRAIT, '節目資料 Duo 打開・直');
+    });
+    await section('節目資料：自動彈滑鼠撳遮罩冇 focus ring', () =>
+        checkShowAutoOpenPointerClose(env, json),
+    );
     await section('節目資料：手機橫版撳 ⓘ 成頁唔捲', () =>
         checkInfoOpenNoPageScroll(env, json, PHONE_LANDSCAPE, '節目資料手機橫版：撳 ⓘ'),
     );

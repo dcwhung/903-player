@@ -95,6 +95,7 @@ const SeriesPlayerColumn = ({
                 banner={view.infoSheet.banner}
                 label={t('info.dramaInfo')}
                 onClose={view.infoSheet.close}
+                returnFocusTo={view.infoSheet.returnFocusTo}
             />
         </div>
     );

@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import type { Ref, RefObject } from 'react';
 import { t } from '../../../../i18n/t';
 import type { Track } from '../../../../types/track';
 import { formatDuration } from '../../../../utils/time';
@@ -39,6 +39,8 @@ interface PlayerGaugeProps {
     onInfo?: (() => void) | undefined;
     /** ⓘ 讀屏名 */
     infoLabel?: string | undefined;
+    /** ⓘ 嘅 ref（自動彈嘅資料表閂咗焦點返呢粒） */
+    infoRef?: Ref<HTMLButtonElement> | undefined;
 }
 
 /** 未開始樣時要顯示嘅續播位置 / 總長（秒） */
@@ -108,6 +110,7 @@ export const PlayerGauge = ({
     empty = false,
     onInfo,
     infoLabel,
+    infoRef,
 }: PlayerGaugeProps) => {
     const { known, shownTime, max, isPlaying, ...view } = useGaugeView(held, onStart, standbyTime);
     // 讀屏同畫面一樣：未知時長讀佔位，唔讀 0:00
@@ -115,7 +118,7 @@ export const PlayerGauge = ({
     const formatValueText = (seconds: number) =>
         t('player.progressText', { current: formatClock(seconds, known), total });
     return (
-        <GaugeInfoRow onInfo={onInfo} label={infoLabel}>
+        <GaugeInfoRow onInfo={onInfo} label={infoLabel} infoRef={infoRef}>
             <div
                 className={styles.gauge}
                 style={{ viewTransitionName: transitionName }}
