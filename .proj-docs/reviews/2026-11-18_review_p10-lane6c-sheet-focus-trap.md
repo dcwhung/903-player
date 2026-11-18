@@ -77,3 +77,45 @@ branch: "fix/a11y/sheet-focus-trap"
 context: "P10 lane 6c @c6b5f3a (PR #276 -> release/v2.0.0): Tab trapped only while open and aria-modal=true; closing/docked untouched (Playwright: ItemInfoSheet docked Tab leaves sheet, portrait stays); Escape/drag unaffected; checkVisibility-less run identical. S-1141: add unit for other-modal branch (fix in this PR, lane backlog same session). S-1142 Observation (pre-existing): closing 劇集資料 opened from ArcSheet arc pick drops focus to <body>; main agent asks user whether to open a lane. Report committed locally, not pushed"
 blockers: []
 ```
+
+---
+
+# Re-review — 2026-11-18 — @9dde826
+
+- 範圍：只驗 S-1141 / S-1142 嘅修正同 `9dde826` diff（10 檔，+149 / −9），唔重新 review 成個 branch
+- Hard gates（引用 developer log，冇重跑）：lint 0（`eslint . && prettier --check .`）；type check pass（e2e build = `tsc -b && vite build`）；unit 5050 passed；e2e All passed（新增 `劇集資料` / `劇集資料橫版`：Escape 閂咗焦點返 `BUTTON 全集`）；visual 180/180 一樣
+- Status：✅ pass，100/100
+
+## S-1141 — 已修
+
+- `useSheetBehaviour.test.tsx`：兩張 `aria-modal` `TrapSheet` 同開，焦點喺先掛 listener 嗰張；中間 Tab 交返瀏覽器、最尾 Tab → ✕、Shift+Tab 由最頭 → 最尾，全部留喺第一張。冇 `isInOtherModal` 分支時第二張嘅 listener 會將焦點扯走，test 會紅
+
+## S-1142 — 已修
+
+- Ref 路徑：`useSeriesInfo`（`useRef`，穩定）→ `infoSheet.returnFocusTo` + `allRef` → `useDramaPage` `sheet.allRef` → `SeriesArcPicker` → `ArcPicker` → `AllChip` `<button ref>`；另一頭 `SeriesDramaPage` → `ItemInfoSheet` → `useSheetBehaviour(open, onClose, returnFocusTo)`
+- 「全集」掣同一時間只有一粒：`SeriesListColumn` 只喺 `!pickerSide` 出 picker，`SeriesDramaPage` 只喺 `pickerSide` 出直排 picker，兩者互斥；`ArcPicker` 冇 early return，`AllChip` 一定 render，所以 ref 喺直版 / 橫版 docked / Duo 打開・直都有掛（unit 三個 layout 都驗，Duo 加驗 `[data-vertical]`）
+- 冇唱片（`upNext` 冇值）時 `pickerSide` false，picker 照舊喺清單上面，ref 一樣有掛
+- 行為不變：`restoreFocus` 仍然先用打開前嗰粒掣，靠唔住先 fallback；由 ⓘ 打開「劇集資料」opener 有效，唔受影響。`DailyDramaPage` / `ShowPlayer` 冇傳 `returnFocusTo`，同之前一樣；`returnFocusTo` 係 ref object，effect deps 唔會因每次 render 新 object 重跑
+- 已知未做（main agent 問緊用戶，唔 block）：第一次入自動開嘅 ArcSheet 本身 Escape 仍跌去 `<body>`（加 `returnFocusTo` 會令 visual scene `drama-series` 多一個 focus ring）
+
+## Handoff receipt（re-review）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "S-1141 branch covered by new unit; S-1142 covered by 3 unit (portrait / landscape / Duo open portrait) + 2 e2e"
+  no_critical: pass
+  security_scan: n/a
+next_action: proceed_to_qa
+next_agent: quality-assurance
+branch: "fix/a11y/sheet-focus-trap"
+context: "Re-review @9dde826 (PR #276 -> release/v2.0.0): S-1141 fixed (two-modal unit), S-1142 fixed (ItemInfoSheet returnFocusTo = single 全集 chip ref, attached in every layout; other pages unchanged). Open user decision (non-blocking): auto-opened ArcSheet Escape still drops focus to <body>. Report committed locally, not pushed"
+blockers: []
+```
