@@ -275,11 +275,14 @@
 /*
  * iPhone Duo 打開・橫（DUO_OPEN_LANDSCAPE_QUERY，P10 lane 4，_mockups_/iphone-duo 方案 A）：
  * 節目頁 / 今日節目頁 / 廣播劇頁兩欄各佔一半，左欄清單嘅分隔線（右邊框）對齊摺位（畫面正中）。
- * main 由 ThemeScope 邊框（--duo-edge-inset）開始，所以左欄闊 = 半個畫面扣返邊框；
+ * main 由 ThemeScope 邊框（--duo-edge-inset）開始，.fixed 再有左安全區 padding，所以左欄闊 = 半個畫面
+ * 扣返邊框同左安全區（真機有報鏡頭位都照對齊，S-1127）；
  * 右欄照舊有把手預留位，唔可以直接用 50%
  */
 @media (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px) {
     .fixed {
-        grid-template-columns: calc(50vw - var(--duo-edge-inset)) minmax(0, 1fr);
+        grid-template-columns:
+            calc(50vw - var(--duo-edge-inset) - env(safe-area-inset-left))
+            minmax(0, 1fr);
     }
 }

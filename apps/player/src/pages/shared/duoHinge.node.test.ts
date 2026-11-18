@@ -6,9 +6,9 @@ import { DUO_OPEN_LANDSCAPE_QUERY } from '../../config/layout';
 const css = readCss(new URL('./Page.module.css', import.meta.url));
 
 describe('Duo open landscape inner pages', () => {
-    it('should end the list column at the hinge (half the screen, minus the Duo edge inset)', () => {
+    it('should end the list column at the hinge (half the screen, minus the Duo inset and left safe area)', () => {
         expect(
             cssDeclarations(css, '.fixed', DUO_OPEN_LANDSCAPE_QUERY)['grid-template-columns'],
-        ).toBe('calc(50vw - var(--duo-edge-inset)) minmax(0, 1fr)');
+        ).toBe('calc(50vw - var(--duo-edge-inset) - env(safe-area-inset-left)) minmax(0, 1fr)');
     });
 });

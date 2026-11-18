@@ -439,13 +439,10 @@ const checkOpenLandscapeHinge = async (env, label, route) => {
     await p.goto(`${env.base}${route}`);
     const sheet = p.getByRole('dialog', { name: '全集' });
     if (await sheet.isVisible().catch(() => false)) await p.keyboard.press('Escape');
-    await p.locator('ul, ol').first().waitFor({ timeout: WAIT_MS });
+    await p.locator('main [class*="_listColumn_"]').waitFor({ timeout: WAIT_MS });
     const look = await p.evaluate(() => {
-        const list = document.querySelector('ul, ol');
-        let column = list;
-        while (column && getComputedStyle(column).borderRightStyle !== 'solid') {
-            column = column.parentElement;
-        }
+        // 左欄清單（Page.module.css .listColumn，分隔線係佢右邊框）：直接搵欄，唔靠第一個清單（S-1128）
+        const column = document.querySelector('main [class*="_listColumn_"]');
         const play = [...document.querySelectorAll('button')].find((el) =>
             ['播放', '暫停'].includes(el.getAttribute('aria-label')),
         );
