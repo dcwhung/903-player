@@ -9,7 +9,9 @@
 | 2    | ✅ merge 入 `release/v2.0.0`（PR #270）：Duo 闔上・直「最近收聽」改矮                                                        |
 | 3    | ✅ merge 入 `release/v2.0.0`（PR #271）：新主頁（Duo 打開・橫 + HomeView）；冇播放卡用返原本填滿格（用戶 2026-11-18）        |
 | 4    | ✅ merge 入 `release/v2.0.0`（PR #272）：Duo 打開・橫內頁兩欄對齊摺位                                                        |
-| 5–7  | 未開始                                                                                                                       |
+| 5a   | ✅ merge 入 `release/v2.0.0`（PR #273）：Duo 打開・直主頁全闊 3 欄、廣播劇兩欄                                               |
+| 5b   | 未開始：打開・直三個內頁；連帶清 S-1133（cssRule.ts 註解位置）、S-1134（DramaShelf 兩欄 unit test）                          |
+| 6–7  | 未開始                                                                                                                       |
 
 用戶決定（2026-11-18，lane 1 review）：
 
