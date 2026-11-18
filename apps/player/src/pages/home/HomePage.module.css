@@ -82,6 +82,29 @@ main.wide[data-layout='fillWithHandle'] {
 }
 
 /*
+ * 新主頁（P10 lane 3，HomeWide data-shelf：Duo 打開・橫、HomeView）：左右各佔一半
+ * （Duo 打開・橫對齊摺位；_mockups_/iphone-duo、_mockups_/home-view）。
+ * 有播放卡（split）先有左欄頂嘅闊版橫額，分類掣先係第二格：tab 嘅過場名跟返分類掣；
+ * 冇卡用返原本填滿格，分類掣照舊係第一格（W-791）
+ */
+main.wide[data-shelf] {
+    /* HomeView 唔係橫向：直版嘅 --page-max-width（Page.module.css .page）唔適用，用晒成個闊度 */
+    max-width: none;
+}
+
+main.wide[data-shelf] .cardColumn {
+    flex-basis: 50%;
+}
+
+main.wide[data-shelf][data-layout='split'] .gridColumn > :first-child {
+    view-transition-name: none;
+}
+
+main.wide[data-shelf][data-layout='split'] .gridColumn > :nth-child(2) {
+    view-transition-name: home-tabs;
+}
+
+/*
  * iPhone Duo（DUO_QUERY）：main 已經喺 ThemeScope .scope 嘅邊框入面（離畫面底 --duo-edge-inset），
  * 而 --mini-player-offset-bottom 係由畫面底計（W-786）：底部留位扣返邊框，唔好計兩次。
  * 同上面三條一樣嘅 selector 同次序，cascade 唔變

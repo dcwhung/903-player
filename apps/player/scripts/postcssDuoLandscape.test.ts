@@ -1,13 +1,15 @@
 // @vitest-environment node
+import { readFileSync } from 'node:fs';
 import postcss from 'postcss';
 import {
     DUO_COVER_LANDSCAPE_QUERY,
     LANDSCAPE_QUERY,
     SHORT_LANDSCAPE_QUERY,
+    SQUARE_QUERY,
     WIDE_BANNER_QUERY,
 } from '../src/config/layout';
 import { mediaQueries } from '../tests/cssRule';
-import { duoLandscape } from './postcssDuoLandscape';
+import { SQUARE_CLONE_MARKER, duoLandscape } from './postcssDuoLandscape';
 
 const transform = (css: string): string =>
     postcss([duoLandscape()]).process(css, { from: undefined }).css;
@@ -94,5 +96,49 @@ describe('duoLandscape（PostCSS plugin）', () => {
         expect(out.indexOf('color: blue', out.indexOf(DUO_COVER_LANDSCAPE_QUERY))).toBeLessThan(
             out.indexOf('width: 46%'),
         );
+    });
+
+    describe('HomeView（SQUARE_QUERY）', () => {
+        const marked = `/* ${SQUARE_CLONE_MARKER} */ @media ${WIDE_BANNER_QUERY} { .a { color: blue; } }`;
+
+        it('闊橫版區塊前面有記號：緊跟住加一份 HomeView 複製品', () => {
+            expect(mediaQueries(transform(marked))).toEqual([WIDE_BANNER_QUERY, SQUARE_QUERY]);
+            expect(transform(marked).match(/color: blue/g)).toHaveLength(2);
+        });
+
+        it('冇記號嘅闊橫版區塊：唔複製', () => {
+            const css = `/* 普通註解 */ @media ${WIDE_BANNER_QUERY} { .a { color: blue; } }`;
+
+            expect(mediaQueries(transform(css))).toEqual([WIDE_BANNER_QUERY]);
+        });
+
+        it('記號只認闊橫版區塊（其他條件唔複製去 HomeView）', () => {
+            const css = `/* ${SQUARE_CLONE_MARKER} */ @media ${LANDSCAPE_QUERY} { .a { color: blue; } }`;
+
+            expect(mediaQueries(transform(css))).toEqual([
+                LANDSCAPE_QUERY,
+                DUO_COVER_LANDSCAPE_QUERY,
+            ]);
+        });
+
+        it('行兩次都只得一份複製品', () => {
+            expect(mediaQueries(transform(transform(marked)))).toEqual([
+                WIDE_BANNER_QUERY,
+                SQUARE_QUERY,
+            ]);
+        });
+    });
+
+    // S-1124：記號寫錯位會靜靜雞唔複製，用真檔鎖住 HomeView 需要嘅兩段
+    it.each([
+        [
+            'EpisodeList.module.css',
+            '../src/components/shared/player/EpisodeList/EpisodeList.module.css',
+        ],
+        ['tokens.css', '../src/styles/tokens.css'],
+    ])('%s 嘅闊橫版區塊真係複製咗去 HomeView', (_name, path) => {
+        const css = readFileSync(new URL(path, import.meta.url), 'utf8');
+
+        expect(mediaQueries(transform(css))).toContain(SQUARE_QUERY);
     });
 });

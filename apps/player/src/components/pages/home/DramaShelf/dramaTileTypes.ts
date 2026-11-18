@@ -39,6 +39,10 @@ export interface DramaShelfItem {
         | undefined;
     /** 整套劇即將上架：灰階 + 底部深色條「⏱ 即將上架 · 01/12」，aria-disabled，撳唔到（書架最尾） */
     upcoming?: TileNotice | undefined;
+    /** 撳入頁時 zoom 嘅格（utils/cardZoom）；冇就係劇集（zoomKey.drama）。新主頁節目卡用 zoomKey.show / today */
+    zoomKey?: string;
+    /** 圖上面嘅字（新主頁「今日節目」卡：插畫冇字，同節目格一樣喺米色帶寫） */
+    caption?: string;
     /** 撳格（「繼續收聽」條以外）：入劇集頁 */
     onOpen: () => void;
     /** 撳「繼續收聽」條：唔入頁，淨係播續聽嗰集（有 resume 先用到） */
