@@ -58,3 +58,62 @@ status: pass
 next_action: main_agent_commit_push_after_ci
 context: "P10 lane 6c @9dde826 (PR #276): modal sheets trap Tab (ArcSheet/ListSheet e2e, ItemInfoSheet probe incl. Duo open portrait); docked not trapped; S-1142 focus returns to 全集 (portrait/landscape e2e, Duo probe+unit); visual 180/180. CI 44375914684 in_progress at report time. Ledger S1 frozen 6 chains, +4 rows, none lost. 2 Observations, no tickets."
 ```
+
+---
+
+# Re-verify — P10 lane 6c — 2026-11-18 — S1 @`7853b3b`
+
+- Tier: T2 | Commit: `7853b3b`（`9dde826..7853b3b` code 只有 `7853b3b`：自動開嘅表閂咗焦點返入口掣，用戶 2026-11-18 決定）| Verdict: ✅ pass
+- Ledger（`impact --since e3d6952`）：S1 STALE 只有 coming-soon、drama、player-core、show-today-page（`7853b3b` 改嘅 16 個檔）；其餘 SKIP；home / ui-foundation 只係 S3 行；UNCOVERED `apps/player/e2e/.rr-probe.tmp.mjs` = reviewer 平行跑緊嘅 untracked probe，唔屬今次 diff
+
+## Runs
+
+| Command / 證據                                                                                                          | Result                                                         | Time |
+| ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ---- |
+| 引用 developer：`npm run lint`、`npm test`（scratchpad `lint-lane6e.log` / `unit-lane6e.log`）                          | 0 error；485 檔 5058 passed                                    | —    |
+| 引用 developer：`npm run e2e`（`e2e-lane6e.log`）                                                                       | 1037 PASS / 0 FAIL                                             | —    |
+| 引用 developer：`npm run e2e:visual` vs `e3d6952`（`visual-lane6e.log`，crop `scratchpad/l6e/`）                        | exit 1：180 張 18 張唔同（見下，用戶已接受）                   | —    |
+| `npx vitest run --coverage`（plan AC-10 / AC-17 unit + PlayerPanel + ShowPageInfo / Series / DailyDramaPageInfo，HEAD） | 16 檔 156/156；改動 10 個 src 檔 lines 99.2%、branch 93.3%     | 10s  |
+| CI run [44382319672](https://github.com/dcwhung/903-player/actions/runs/44382319672) @`7853b3b`                         | changes ✅；lint + unit + build 報告時 in_progress；e2e 未開始 | —    |
+
+- 證據時間：developer log 19:15–19:37 跑 working tree（visual log 寫 `769e58c` + 未 commit 改動），`7853b3b` 19:38 commit；HEAD 嘅 unit 由上面 coverage run 再證
+
+## AC（drama AC-17 / show-today-page AC-10 補充）
+
+- 自動開全集表 → 「全集」：e2e 390×844 鍵盤（arcSheet）、手機橫 844×390（itemInfo）`BUTTON 全集`；unit 直 / 橫 docked / Duo 打開・直
+- 自動彈「節目資料」→ ⓘ：e2e 直 / 1280×800 docked / Duo 612×876（itemInfo）、HomeView 頁頭 ⓘ（square）；modal 表 1 粒 ✕ Tab 循環 PASS（Observation 2 `markEnds` 修好，`first+last`）
+- 每日劇「劇集資料」→ 唱片 ⓘ：只有 unit（`DailyDramaPageInfo.test.tsx`）；唔另做 probe：同節目頁共用 `useItemInfoSheet` → `PlayerPanel` → `InfoButton` ref 同一條路（`DailyDramaPage.tsx:47` spread `gaugeInfo`、`:56` spread `sheet` 連 `returnFocusTo`），瀏覽器行為已由節目頁 e2e 證
+- Escape / 拉閂 / Tab 困 / docked 唔困：e2e 原有 check 全 PASS
+- 上次 Observation 1（自動開 Escape 跌 `<body>`）：已解決
+
+## 視覺改變（用戶 2026-11-18 接受，唔係 finding）
+
+- `drama-series` 全部 18 個 viewport：320×568、375×667、390×844、430×932、568×320、640×360、667×375、844×390、932×430、1000×561、1000×562、768×1024、820×1180、1024×768、1180×820、1280×800、1440×900、1920×1080
+- 每張 488–708 pixel、0 個元素位置唔同；crop（例 `drama-series@390x844-{base,head}-crop.png`）只係「全集」外圍 2px focus ring；其餘 162 張一樣
+
+## Hard Gates
+
+all pass（CI 未完：main agent push / merge 前睇 run 44382319672）
+
+## Findings
+
+- none（上次 2 個 Observation 已解決）
+
+## 建議補測
+
+- none
+
+## Freeze
+
+- S1 re-freeze @`7853b3b`（全條 chain + stage 清單由 ledger 攞）：coming-soon 163、drama 220、player-core 102、show-today-page 195（前後一樣）
+- chain + stage + path 比對：ledger 2652 → 2652 行，冇少冇多；freeze 後 S1 全部 FROZEN，`impact` 仲列 REVERIFY 只因 S3 行
+- Plan 更新：`drama.md` AC-17、`show-today-page.md` AC-10 加自動開焦點返入口掣 + 指令（ItemInfoSheet probe 改由 e2e 取代）
+
+```handoff-receipt
+from: quality-assurance
+to: main-agent
+stage: S1
+status: pass
+next_action: main_agent_commit_push_after_ci
+context: "P10 lane 6c re-verify @7853b3b (PR #276): auto-opened ArcSheet returns focus to 全集 (e2e 390x844 + 844x390, unit incl. Duo), auto-opened info sheet returns to ⓘ (e2e show portrait/landscape/Duo + HomeView header; daily drama unit only, same code path, no probe needed). Visual 18/180 drama-series = 2px 全集 focus ring, user-accepted. CI 44382319672 in_progress. Ledger S1 re-frozen 4 chains, 2652 rows, none lost. No findings."
+```
