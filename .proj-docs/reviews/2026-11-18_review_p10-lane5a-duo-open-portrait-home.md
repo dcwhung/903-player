@@ -68,3 +68,48 @@ next_agent: quality-assurance
 branch: "feature/layout/iphone-duo"
 context: "P10 lane 5a @86e3c4c: Duo open-portrait home full width, 3 columns, today tile spans rest of last row (e2e 994/0, visual 180/180, related unit 113/113). No C/W. Clear in-session: S-1129 ask user to confirm today-tile 2-column span (mockup said 9 tiles), S-1130 stale 2-column comments, S-1131 e2e assert today fills row, S-1132 screenshot drama/saved tabs at 612x876. Merge target release/v2.0.0 (no develop); report committed locally, not pushed"
 ```
+
+---
+
+## Re-review — 2026-11-18 — commit `eec1f19`
+
+- 範圍：上一輪 S-1129 – S-1132 嘅處理 + 用戶 2026-11-18 決定嘅廣播劇分頁兩欄（7 檔 +55 / −9）。冇新 C / W / S ID
+- Hard Gates：all pass。引用 developer 喺 `eec1f19` 嘅結果：lint、`npm test` 5002、`npm run e2e` 995 / 0（log 769：`Duo 打開・直廣播劇：兩欄 grid、唔疊 {"stacked":false,"sideBySide":true,"overlap":false}`）、`npm run e2e:visual` 180 / 180（現有裝置零改變）。自己跑 `vitest related` DramaShelf.tsx + module.css：12 檔 211 / 211
+- **結果：✅ pass（100 / 100）**
+
+| ID     | 處理                                                                                                                                              | 結果 |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| S-1129 | 用戶確認今日節目填返尾行剩低嘅欄，plan 進度第 20 行有記                                                                                           | ✅   |
+| S-1130 | `showGridPages.ts` 頂部 / `PORTRAIT_MAX_COLUMNS` / `spansFullRow`、`ShowGrid.tsx` jsdoc、`ShowGrid.module.css` cqi 後備五處都補咗 Duo 3 欄例外    | ✅   |
+| S-1131 | `todayFillsRow`：今日節目右邊同所有格最右邊差 ≤ 1px，併入 PASS 條件；span 失效變一格會 FAIL                                                       | ✅   |
+| S-1132 | 用戶睇咗三個 tab 612×876 截圖，決定廣播劇改兩欄 grid（實作見下）；截圖 `l5/op-dramas-2col.png` 兩欄、由頂排、同橫額 / 分類掣 / mini player 邊對齊 | ✅   |
+
+### 廣播劇兩欄（新行為核對）
+
+- **Focus / scrub 關閉**：`stacked = forced ?? !(landscape || wide)` → `useShelfFocus(count, false)`：`useShelfLayout` 唔量（layout undefined）→ 冇 inline style、`scrolls` false；`scrubStart` 見 `!layout` 回 null，`onPointerMove` 早退；`onScroll` 只喺 stacked 先掛；`focus` prop 係 undefined → 卡照舊撳落即 open。同 iPad 橫版兩欄同一條路 ✅
+- **HomeWide `ShelfGrid`**：兩個 call site 都傳 `stacked`（forced），`??` 唔受 `wide` 影響；Duo 打開・直唔入 `SHELF_SPLIT_QUERY`，兩個 media 區塊唔重疊 ✅
+- **CSS**：新區塊只揀 `.shelf:not([data-stacked])`，query 同 `DUO_OPEN_PORTRAIT_QUERY` 一字不差（deviceQueries lock）；`grid-auto-rows: max-content` 令 2:1 卡唔會喺定高書架被壓扁，放唔晒用 `.shelf` 原有 `overflow-y: auto` 捲 ✅
+- **即將上架格 / 繼續收聽條**：`UpcomingTile` / `ContinueButton` 冇讀 `data-stacked`，格闊約 276px 入 `@container drama-tile (max-width: 280px)` 短版字（W-533 本身就係為窄格設計，同手機打橫格闊相若）✅
+- **Card-zoom**：`data-zoom-key` 喺 `OpenTile` 外框，同 stacked 無關；`zoomInto` 量 `getBoundingClientRect()` ✅
+- **5 套劇最後一套單獨喺左欄**：同 iPad 橫版兩欄一樣，冇橫跨；用戶睇過截圖 ✅
+
+### Observation（唔扣分、唔入 backlog）
+
+- `DramaShelf.test.tsx` 有「landscape 唔疊、撳即 open」(line 565)，`wide` 分支冇對應 unit test，靠 e2e `checkOpenPortraitDramas` 鎖；日後有人改 `stacked` 公式時 unit 層冇即時反饋，有需要可以照 `stubLandscape` 補一個
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/layout/iphone-duo"
+context: "Re-review P10 lane 5a @eec1f19: S-1129..S-1132 all resolved (user confirmed today-tile span; comments fixed; e2e todayFillsRow; drama tab 2-col grid on Duo open portrait per user). Drama 2-col verified: focus/scrub/onScroll off when not stacked, ShelfGrid forced stacked unaffected, upcoming/continue use drama-tile container query, card-zoom unchanged. e2e 995/0, visual 180/180, related unit 211/211. No backlog. Merge target release/v2.0.0 (no develop); report committed locally, not pushed"
+```
