@@ -52,6 +52,9 @@ export const DUO_QUERY = [
     DUO_OPEN_PORTRAIT_QUERY,
 ].join(', ');
 
+/** Duo 打橫（闔上・橫 / 打開・橫）：橫版兩欄嘅頁，貼邊嘅表要伸返出邊框 */
+export const DUO_LANDSCAPE_QUERY = `${DUO_COVER_LANDSCAPE_QUERY}, ${DUO_OPEN_LANDSCAPE_QUERY}`;
+
 /** 新主頁（左橫額 + 疊卡、右播放卡）：Duo 打開・橫 + HomeView */
 export const SHELF_SPLIT_QUERY = `${DUO_OPEN_LANDSCAPE_QUERY}, ${SQUARE_QUERY}`;
 

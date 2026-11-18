@@ -157,3 +157,13 @@
 .unavailable .name {
     opacity: var(--unavailable-opacity);
 }
+
+/*
+ * iPhone Duo 闔上・橫（DUO_COVER_LANDSCAPE_QUERY）：左欄得 240px 左右，長節目名開跑馬燈時
+ * 行尾播放 / 暫停 icon 會同文字一齊俾擠窄（W-782）；icon 唔縮，由文字讓位
+ */
+@media (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px) {
+    .item > svg {
+        flex-shrink: 0;
+    }
+}

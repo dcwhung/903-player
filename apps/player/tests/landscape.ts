@@ -1,4 +1,3 @@
-import { LANDSCAPE_LAYOUT_QUERY, LANDSCAPE_QUERY } from '../src/config/layout';
 import { matchesQuery, type ViewportSize } from './mediaQuery';
 
 /** iPad 打橫：闊橫版（WIDE_BANNER_QUERY）；轉直之後 */
@@ -7,14 +6,19 @@ const ROTATED_VIEWPORT: ViewportSize = { width: 820, height: 1180 };
 /** 手機打橫（SHORT_LANDSCAPE_QUERY） */
 export const PHONE_SIDEWAYS_VIEWPORT: ViewportSize = { width: 844, height: 390 };
 
-const REDUCED_MOTION = 'prefers-reduced-motion';
+const REDUCED_MOTION_REDUCE = '(prefers-reduced-motion: reduce)';
+const REDUCED_MOTION_NO_PREFERENCE = '(prefers-reduced-motion: no-preference)';
 
 /**
  * 照真實 viewport 尺寸計 media query（同瀏覽器一樣），唔靠估 query 入面有冇某個字：
- * 加咗新嘅裝置 query（iPhone Duo / HomeView）都唔會誤中。尺寸以外嘅 query 只識減少動畫
+ * 加咗新嘅裝置 query（iPhone Duo / HomeView）都唔會誤中。尺寸以外嘅 query 只識減少動畫兩句
+ * （no-preference 同 reduce 相反，S-1119）
  */
-const matchesViewport = (query: string, viewport: ViewportSize, reducedMotion: boolean) =>
-    query.includes(REDUCED_MOTION) ? reducedMotion : matchesQuery(query, viewport);
+const matchesViewport = (query: string, viewport: ViewportSize, reducedMotion: boolean) => {
+    if (query === REDUCED_MOTION_REDUCE) return reducedMotion;
+    if (query === REDUCED_MOTION_NO_PREFERENCE) return !reducedMotion;
+    return matchesQuery(query, viewport);
+};
 
 /**
  * 當畫面係某個尺寸。用完要 vi.unstubAllGlobals()
@@ -32,20 +36,11 @@ export const stubViewport = (viewport: ViewportSize, { reducedMotion = false } =
 };
 
 /**
- * 當畫面打橫（行橫版版面：LANDSCAPE_QUERY / LANDSCAPE_LAYOUT_QUERY 符合，其他 media query 唔符合，
- * 例如手機打橫、闊橫版、減少動畫）。用完要 vi.unstubAllGlobals()
+ * 當畫面打橫：手機打橫（844×390；橫版版面 + 手機打橫，唔係闊橫版、唔減少動畫）。
+ * 以前淨係令 LANDSCAPE_QUERY 一句中，係真實 viewport 唔會出現嘅狀態（≥ 640 闊嘅橫版一定係手機打橫或者闊橫版，S-1120）。
+ * 用完要 vi.unstubAllGlobals()
  */
-export const stubLandscape = () => {
-    vi.stubGlobal(
-        'matchMedia',
-        vi.fn((query: string) => ({
-            matches: query === LANDSCAPE_QUERY || query === LANDSCAPE_LAYOUT_QUERY,
-            media: query,
-            addEventListener: vi.fn(),
-            removeEventListener: vi.fn(),
-        })),
-    );
-};
+export const stubLandscape = () => stubViewport(PHONE_SIDEWAYS_VIEWPORT);
 
 /**
  * 闊橫版（WIDE_BANNER_QUERY：打橫、≥ 640 闊、≥ 562 高）。

@@ -87,3 +87,13 @@
         animation: none;
     }
 }
+
+/*
+ * iPhone Duo 打開・橫（DUO_OPEN_LANDSCAPE_QUERY）：成頁俾 ThemeScope .scope 四邊推入咗 --duo-edge-inset，
+ * 把手要貼返畫面右邊（W-783）
+ */
+@media (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px) {
+    .handleScope {
+        right: calc(-1 * var(--duo-edge-inset));
+    }
+}

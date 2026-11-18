@@ -173,3 +173,11 @@
 .sheet[data-banner='true'] .section:first-child {
     padding-top: var(--space-1);
 }
+
+/* iPhone Duo 打橫（DUO_LANDSCAPE_QUERY）：資料表伸出底邊嘅邊框，貼畫面底（Page.module.css 同一段） */
+@media (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px),
+    (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px) {
+    .docked {
+        bottom: calc(-1 * var(--duo-edge-inset));
+    }
+}

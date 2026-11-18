@@ -16,13 +16,17 @@ const CLONED_QUERIES: ReadonlySet<string> = new Set([LANDSCAPE_QUERY, SHORT_LAND
 
 const normalize = (params: string): string => params.replace(/\s+/g, ' ').trim();
 
-/** 下一個 node 已經係呢份嘅複製品（同一個檔行第二次） */
-const alreadyCloned = (rule: AtRule): boolean => {
+/**
+ * 下一個 node 已經係呢份嘅複製品（同一個檔行第二次）：條件係 Duo、內容都一模一樣先算。
+ * 只睇條件唔夠：原本嗰份後面緊接人手寫嘅 Duo 區塊（內容唔同）就會靜靜雞唔複製（S-1115）
+ */
+const alreadyCloned = (rule: AtRule, clone: AtRule): boolean => {
     const next = rule.next();
     return (
         next?.type === 'atrule' &&
         next.name === 'media' &&
-        normalize(next.params) === DUO_COVER_LANDSCAPE_QUERY
+        normalize(next.params) === DUO_COVER_LANDSCAPE_QUERY &&
+        next.nodes?.toString() === clone.nodes?.toString()
     );
 };
 
@@ -30,8 +34,9 @@ export const duoLandscape = (): Plugin => ({
     postcssPlugin: 'duo-landscape',
     AtRule: {
         media: (rule) => {
-            if (!CLONED_QUERIES.has(normalize(rule.params)) || alreadyCloned(rule)) return;
-            rule.after(rule.clone({ params: DUO_COVER_LANDSCAPE_QUERY }));
+            if (!CLONED_QUERIES.has(normalize(rule.params))) return;
+            const clone = rule.clone({ params: DUO_COVER_LANDSCAPE_QUERY });
+            if (!alreadyCloned(rule, clone)) rule.after(clone);
         },
     },
 });

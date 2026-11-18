@@ -8,6 +8,7 @@ import { matchesQuery } from '../../tests/mediaQuery';
 import {
     DUO_COVER_LANDSCAPE_QUERY,
     DUO_COVER_PORTRAIT_QUERY,
+    DUO_LANDSCAPE_QUERY,
     DUO_OPEN_LANDSCAPE_QUERY,
     DUO_OPEN_PORTRAIT_QUERY,
     DUO_QUERY,
@@ -56,6 +57,7 @@ describe('裝置 query', () => {
                 expect(matchesQuery(query, viewport), name).toBe(false);
             }
             expect(matchesQuery(DUO_QUERY, viewport)).toBe(false);
+            expect(matchesQuery(DUO_LANDSCAPE_QUERY, viewport)).toBe(false);
             expect(matchesQuery(SHELF_SPLIT_QUERY, viewport)).toBe(false);
         },
     );
@@ -109,7 +111,12 @@ describe('CSS 入面嘅裝置 query', () => {
             .filter((query) => query.includes('max-width'));
 
     it('同 layout.ts 嘅常數一字不差（@media 用唔到變數，CSS 要寫返同一句）', () => {
-        const allowed = [...Object.values(DEVICE_QUERIES), DUO_QUERY, SHELF_SPLIT_QUERY];
+        const allowed = [
+            ...Object.values(DEVICE_QUERIES),
+            DUO_QUERY,
+            DUO_LANDSCAPE_QUERY,
+            SHELF_SPLIT_QUERY,
+        ];
         const queries = deviceMediaQueries();
 
         expect(queries.length).toBeGreaterThan(0);

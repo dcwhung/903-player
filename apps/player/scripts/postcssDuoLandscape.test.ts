@@ -79,4 +79,20 @@ describe('duoLandscape（PostCSS plugin）', () => {
             DUO_COVER_LANDSCAPE_QUERY,
         ]);
     });
+
+    it('原本嗰份後面緊接人手寫嘅 Duo 區塊（內容唔同）：照樣複製，人手嗰份留喺後面', () => {
+        const css =
+            `@media ${LANDSCAPE_QUERY} { .a { color: blue; } } ` +
+            `@media ${DUO_COVER_LANDSCAPE_QUERY} { .a { width: 46%; } }`;
+
+        const out = transform(css);
+        expect(mediaQueries(out)).toEqual([
+            LANDSCAPE_QUERY,
+            DUO_COVER_LANDSCAPE_QUERY,
+            DUO_COVER_LANDSCAPE_QUERY,
+        ]);
+        expect(out.indexOf('color: blue', out.indexOf(DUO_COVER_LANDSCAPE_QUERY))).toBeLessThan(
+            out.indexOf('width: 46%'),
+        );
+    });
 });

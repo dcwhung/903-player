@@ -25,7 +25,15 @@ const COVER_LIST_SHARE = 0.46;
 // subpixel 捨入容差
 const EDGE_TOLERANCE_PX = 1;
 const SHARE_TOLERANCE = 0.01;
+// 今日節目行尾播放 / 暫停 icon（TodayShowList --today-row-icon）；長名開跑馬燈都唔可以俾擠窄（W-782）
+const ROW_ICON_PX = 22;
+// 等跑馬燈開始（開咗先會撐闊文字，擠窄 icon）
+const MARQUEE_SETTLE_MS = 2500;
 const SHOW_ROUTE = '#/show/gongzi';
+// 第一次入短篇劇集頁，全集表自己彈出（dramaPages.mjs SERIES_ROUTE）
+const SERIES_ROUTE = '#/drama/chisee';
+// 等全集表滑入完（減少動態以外都夠）
+const SHEET_SETTLE_MS = 800;
 const TODAY_ROUTE = '#/today';
 const WAIT_MS = 5000;
 
@@ -47,9 +55,11 @@ const homeEdges = (p) =>
         const banner = document.querySelector(`img[alt="${bannerAlt}"]`)?.getBoundingClientRect();
         // 分類掣外面嗰條底（掣本身喺入面縮咗少少）
         const tabs = document.querySelector('[data-tab-id]')?.parentElement.getBoundingClientRect();
-        const mini = document.querySelector('[aria-label^="正在播放"]')?.getBoundingClientRect();
-        // 闊橫版：右邊係播放卡
+        // 闊橫版：右邊係播放卡（入面都有「正在播放」region），冇 mini player
         const card = document.querySelector('section[data-home-card]')?.getBoundingClientRect();
+        const mini = card
+            ? undefined
+            : document.querySelector('[aria-label^="正在播放"]')?.getBoundingClientRect();
         const rights = [...tiles.map((rect) => rect.right), ...(card ? [card.right] : [])];
         const tops = [banner?.top, tabs?.top, ...tiles.map((rect) => rect.top)].filter(
             (top) => top !== undefined,
@@ -61,7 +71,13 @@ const homeEdges = (p) =>
             top: Math.min(...tops),
             bannerTop: banner?.top ?? null,
             firstTileTop: tiles[0]?.top ?? null,
-            mini: mini ? { left: mini.left, right: window.innerWidth - mini.right } : null,
+            mini: mini
+                ? {
+                      left: mini.left,
+                      right: window.innerWidth - mini.right,
+                      bottom: window.innerHeight - mini.bottom,
+                  }
+                : null,
         };
     }, BANNER_ALT);
 
@@ -69,6 +85,15 @@ const checkHomeEdges = async (env, label, viewport) => {
     const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport });
     await openHome(p, env.base);
     const edges = await homeEdges(p);
+    // mini player（闊橫版係播放卡，冇 mini player）：左右底同格邊一樣 24px（用戶 2026-11-18 揀 B）
+    if (edges.mini) {
+        env.log(
+            near(edges.mini.left, DUO_EDGE_PX) &&
+                near(edges.mini.right, DUO_EDGE_PX) &&
+                near(edges.mini.bottom, DUO_EDGE_PX),
+            `Duo ${label} 主頁：mini player 左右底 ${DUO_EDGE_PX}px（左 ${edges.mini.left}、右 ${edges.mini.right}、底 ${edges.mini.bottom}）`,
+        );
+    }
     // 打開・直（612 闊）主頁仲係收喺 --page-max-width 中間（lane 5 先改全闊 3 欄），左右暫時唔驗
     if (viewport !== OPEN_PORTRAIT) {
         env.log(
@@ -95,7 +120,7 @@ const checkPhoneUnchanged = async (env) => {
     await ctx.close();
 };
 
-/** 闔上・橫主頁：同手機打橫一樣橫額入格（同第一行節目格同一行），mini player 對齊格邊 */
+/** 闔上・橫主頁：同手機打橫一樣橫額入格（同第一行節目格同一行） */
 const checkCoverLandscapeHome = async (env) => {
     const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: COVER_LANDSCAPE });
     await openHome(p, env.base);
@@ -103,12 +128,6 @@ const checkCoverLandscapeHome = async (env) => {
     env.log(
         edges.bannerTop !== null && near(edges.bannerTop, edges.firstTileTop),
         `Duo 闔上・橫主頁：橫額入格、同第一格同一行（橫額頂 ${edges.bannerTop}、第一格頂 ${edges.firstTileTop}）`,
-    );
-    env.log(
-        edges.mini !== null &&
-            near(edges.mini.left, DUO_EDGE_PX) &&
-            near(edges.mini.right, DUO_EDGE_PX),
-        `Duo 闔上・橫主頁：mini player 對齊格邊（左 ${edges.mini?.left}、右 ${edges.mini?.right}）`,
     );
     await ctx.close();
 };
@@ -165,6 +184,57 @@ const checkCoverPortraitStacked = async (env) => {
     await ctx.close();
 };
 
+/** 今日節目：每行行尾 icon 都係 ROW_ICON_PX 闊 */
+const checkTodayRowIcons = async (env, label, viewport) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport });
+    await p.goto(`${env.base}${TODAY_ROUTE}`);
+    await ensurePlaying(p);
+    await p.waitForTimeout(MARQUEE_SETTLE_MS);
+    const widths = await p.evaluate(() =>
+        [...document.querySelectorAll('li button > svg')].map(
+            (svg) => Math.round(svg.getBoundingClientRect().width * 10) / 10,
+        ),
+    );
+    env.log(
+        widths.length > 0 && widths.every((width) => near(width, ROW_ICON_PX)),
+        `Duo ${label}今日節目：行尾 icon 全部 ${ROW_ICON_PX}px 闊（${widths.join('、')}）`,
+    );
+    await ctx.close();
+};
+
+/** 打橫姿勢嘅廣播劇頁：左欄全集表貼畫面左邊同底邊（伸出邊框，用戶 2026-11-18） */
+const checkDockedSheetFlush = async (env, label, viewport) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport });
+    await p.goto(`${env.base}${SERIES_ROUTE}`);
+    const sheet = p.getByRole('dialog', { name: '全集' });
+    await sheet.waitFor({ timeout: WAIT_MS });
+    await p.waitForTimeout(SHEET_SETTLE_MS);
+    const gap = await sheet.evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        return { left: rect.left, bottom: window.innerHeight - rect.bottom };
+    });
+    env.log(
+        near(gap.left, 0) && near(gap.bottom, 0),
+        `Duo ${label}廣播劇頁：全集表貼畫面左邊同底邊（左 ${gap.left}、底 ${gap.bottom}）`,
+    );
+    await ctx.close();
+};
+
+/** 打開・橫主頁閂咗播放卡：右邊緣把手貼住畫面右邊（W-783） */
+const checkOpenLandscapeHandle = async (env) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: OPEN_LANDSCAPE });
+    await p.goto(`${env.base}${SHOW_ROUTE}`);
+    await ensurePlaying(p);
+    await p.goto(env.base);
+    await p.locator('nav[aria-busy="false"]').waitFor({ timeout: WAIT_MS });
+    await p.getByRole('button', { name: '關閉播放器', exact: true }).click();
+    const handle = p.locator('[data-home-handle]');
+    await handle.waitFor({ timeout: WAIT_MS });
+    const gap = await handle.evaluate((el) => window.innerWidth - el.getBoundingClientRect().right);
+    env.log(near(gap, 0), `Duo 打開・橫主頁：閂咗卡嘅把手貼住畫面右邊（離邊 ${gap}px）`);
+    await ctx.close();
+};
+
 const SCENARIOS = [
     ...POSTURES.map(([label, viewport]) => [
         `Duo ${label} 主頁邊框`,
@@ -185,6 +255,11 @@ const SCENARIOS = [
         (env) => checkCoverLandscapeColumns(env, 'Seated 節目頁', SEATED, SHOW_ROUTE),
     ],
     ['Duo 闔上・直節目頁', checkCoverPortraitStacked],
+    ['Duo 闔上・橫今日節目 icon', (env) => checkTodayRowIcons(env, '闔上・橫', COVER_LANDSCAPE)],
+    ['Duo Seated 今日節目 icon', (env) => checkTodayRowIcons(env, 'Seated', SEATED)],
+    ['Duo 打開・橫把手', checkOpenLandscapeHandle],
+    ['Duo 闔上・橫全集表', (env) => checkDockedSheetFlush(env, '闔上・橫', COVER_LANDSCAPE)],
+    ['Duo 打開・橫全集表', (env) => checkDockedSheetFlush(env, '打開・橫', OPEN_LANDSCAPE)],
 ];
 
 export const runDuoChecks = async (env) => {

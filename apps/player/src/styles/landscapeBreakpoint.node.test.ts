@@ -10,6 +10,7 @@ import {
 } from '../../tests/cssRule';
 import {
     DUO_COVER_LANDSCAPE_QUERY,
+    DUO_LANDSCAPE_QUERY,
     DUO_OPEN_LANDSCAPE_QUERY,
     DUO_QUERY,
     LANDSCAPE_QUERY,
@@ -35,6 +36,7 @@ const CSS_FILES = readdirSync(SRC, { recursive: true })
 const DEVICE_QUERIES: readonly string[] = [
     DUO_COVER_LANDSCAPE_QUERY,
     DUO_OPEN_LANDSCAPE_QUERY,
+    DUO_LANDSCAPE_QUERY,
     DUO_QUERY,
     SHELF_SPLIT_QUERY,
 ];
