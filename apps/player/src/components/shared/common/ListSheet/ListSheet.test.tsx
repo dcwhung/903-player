@@ -1,21 +1,36 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ListButton } from './ListButton';
 import { ListSheet } from './ListSheet';
 
 /** 頁頭清單掣 + 清單 sheet（同節目頁 HomeView 一樣嘅砌法） */
-const Harness = ({ initialOpen = false }: { initialOpen?: boolean }) => {
+const Harness = ({
+    initialOpen = false,
+    withReturn = false,
+}: {
+    initialOpen?: boolean;
+    /** 傳 returnFocusTo（清單掣）：自動開（冇撳過掣）閂咗都返清單掣 */
+    withReturn?: boolean;
+}) => {
     const [open, setOpen] = useState(initialOpen);
+    const buttonRef = useRef<HTMLButtonElement>(null);
     return (
         <>
             <ListButton
+                ref={buttonRef}
                 label="集數清單，共 2 集"
                 count={2}
                 open={open}
                 onToggle={() => setOpen((o) => !o)}
             />
-            <ListSheet open={open} onClose={() => setOpen(false)} title="集數" summary="共 2 集">
+            <ListSheet
+                open={open}
+                onClose={() => setOpen(false)}
+                title="集數"
+                summary="共 2 集"
+                returnFocusTo={withReturn ? buttonRef : undefined}
+            >
                 <ul>
                     <li>28/11</li>
                     <li>21/11</li>
@@ -77,6 +92,15 @@ describe('ListSheet', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(opener).toHaveAttribute('aria-expanded', 'false');
         expect(opener).toHaveFocus();
+    });
+
+    it('should give focus to returnFocusTo when it opened with nothing focused', async () => {
+        // W-795：一入頁就開（由「我的收藏」入嚟）：打開前焦點喺 <body>
+        render(<Harness initialOpen withReturn />);
+
+        await userEvent.keyboard('{Escape}');
+
+        expect(screen.getByRole('button', { name: '集數清單，共 2 集' })).toHaveFocus();
     });
 
     it('should switch off at once when the user asks for reduced motion', async () => {

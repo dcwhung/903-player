@@ -108,6 +108,18 @@ describe('ShowPage HomeView（P10 lane 6）', () => {
         );
     });
 
+    it('should give focus to the list button when the sheet auto-opened from 我的收藏 closes', async () => {
+        // W-795：自動開冇「撳過嘅掣」，閂咗唔可以跌去 <body>
+        stubViewport(SQUARE);
+        renderWithProviders(<ShowPage />, { ...ROUTE, state: { focusId: RECORDINGS[1]?.id } });
+        await screen.findByRole('dialog', { name: '集數' });
+
+        await userEvent.keyboard('{Escape}');
+
+        expect(screen.queryByRole('dialog', { name: '集數' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: LIST_BUTTON })).toHaveFocus();
+    });
+
     it('should keep the phone layout unchanged: list on the page, ⓘ on the disc, no list button', async () => {
         stubViewport(PHONE);
         withProgress();

@@ -1,4 +1,4 @@
-import { useCallback, useId, type ReactNode } from 'react';
+import { useCallback, useId, type ReactNode, type RefObject } from 'react';
 import { t } from '../../../../i18n/t';
 import { CloseIcon } from '../icons/icons';
 import { SheetOverlay } from '../Sheet/SheetOverlay';
@@ -62,13 +62,15 @@ interface ListSheetProps {
     closeLabel?: string | undefined;
     /** 清單本身（例如 EpisodeList heading={false}）：表入面唯一捲動嘅 panel */
     children: ReactNode;
+    /** 自動開（冇撳過掣，例如由「我的收藏」入頁）閂咗焦點返去邊（通常係頁頭清單掣） */
+    returnFocusTo?: RefObject<HTMLElement | null> | undefined;
 }
 
 /**
  * 清單 sheet（HomeView，P10 lane 6，_mockups_/home-view 節目頁）：由畫面底升起，蓋住播放器下半；
  * 閂：✕、撳遮罩、Escape、向下拉（同全集表 ArcSheet 一樣，useSheetBehaviour），再撳頁頭清單掣
  * 喺遮罩上面都閂到。開 / 閂動畫同全集表共用（useSheetPresence + SheetMotion.module.css），
- * 減少動態即刻切換。開咗焦點入表，閂咗返去清單掣
+ * 減少動態即刻切換。開咗焦點入表，閂咗返去清單掣（自動開嘅就靠 returnFocusTo）
  */
 export const ListSheet = ({
     open,
@@ -77,9 +79,14 @@ export const ListSheet = ({
     summary,
     closeLabel,
     children,
+    returnFocusTo,
 }: ListSheetProps) => {
     const titleId = useId();
-    const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(open, onClose);
+    const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(
+        open,
+        onClose,
+        returnFocusTo,
+    );
     const bindList = useCallback((el: HTMLElement | null) => listRef(scrollPanelOf(el)), [listRef]);
     const { mounted, state, inert, overlayRef } = useSheetPresence(open);
     if (!mounted) return null;

@@ -1,8 +1,28 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { useSheetDrag } from './useSheetDrag';
 
-/** 打開時焦點入表；Escape 收埋；收埋之後焦點返去打開前嗰粒掣 */
-const useSheetFocus = (open: boolean, onClose: () => void) => {
+/** 打開前嘅焦點靠唔住（冇 / <body> / 已經唔喺 DOM）：自動開（例如由「我的收藏」入頁）冇撳過掣 */
+const isUsableOpener = (el: HTMLElement | null): el is HTMLElement =>
+    el !== null && el !== document.body && el.isConnected;
+
+/** 收埋之後焦點去邊：打開前嗰粒掣；靠唔住就 fallback（閂嗰刻先讀 ref，嗰陣掣一定喺 DOM） */
+const restoreFocus = (
+    opener: HTMLElement | null,
+    fallback: RefObject<HTMLElement | null> | undefined,
+) => {
+    const target = isUsableOpener(opener) ? opener : fallback?.current;
+    target?.focus?.({ preventScroll: true });
+};
+
+/**
+ * 打開時焦點入表；Escape 收埋；收埋之後焦點返去打開前嗰粒掣。
+ * W-795：打開前冇焦點（自動開）就返 returnFocusTo（例如頁頭清單掣），唔好跌去 <body>
+ */
+const useSheetFocus = (
+    open: boolean,
+    onClose: () => void,
+    returnFocusTo: RefObject<HTMLElement | null> | undefined,
+) => {
     const sheetRef = useRef<HTMLElement>(null);
     // W-747：onClose 用 ref（同 useCloseTimer 一樣）；caller 每次 render 傳新 function，
     // 播放時每秒 re-render 唔可以重跑 effect，否則 cleanup 將焦點由 sheet 入面扯走
@@ -22,18 +42,24 @@ const useSheetFocus = (open: boolean, onClose: () => void) => {
         document.addEventListener('keydown', onKey);
         return () => {
             document.removeEventListener('keydown', onKey);
-            opener?.focus?.({ preventScroll: true });
+            restoreFocus(opener, returnFocusTo);
         };
-    }, [open]);
+        // returnFocusTo 係 useRef 物件（穩定），放入 deps 都唔會令 effect 重跑
+    }, [open, returnFocusTo]);
     return sheetRef;
 };
 
 /**
  * 焦點（useSheetFocus）同向下拉閂（useSheetDrag）共用同一張表：
- * 穩定嘅 callback ref 同時填兩邊，唔會每次 render（播放時間每秒更新）重掛
+ * 穩定嘅 callback ref 同時填兩邊，唔會每次 render（播放時間每秒更新）重掛。
+ * returnFocusTo 可選：唔傳（ArcSheet / ItemInfoSheet）行為不變
  */
-export const useSheetBehaviour = (open: boolean, onClose: () => void) => {
-    const sheetRef = useSheetFocus(open, onClose);
+export const useSheetBehaviour = (
+    open: boolean,
+    onClose: () => void,
+    returnFocusTo?: RefObject<HTMLElement | null>,
+) => {
+    const sheetRef = useSheetFocus(open, onClose, returnFocusTo);
     const { sheetRef: bindSheet, ...drag } = useSheetDrag(open, onClose);
     const setSheet = useCallback(
         (el: HTMLElement | null) => {

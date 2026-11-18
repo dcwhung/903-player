@@ -7,13 +7,13 @@ import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope
 import { LANDSCAPE_LAYOUT_QUERY, SQUARE_QUERY } from '../../config/layout';
 import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useGoHome } from '../../hooks/useGoHome';
+import { useListSheet } from '../../hooks/useListSheet';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { t } from '../../i18n/t';
 import { LoadState } from '../shared/LoadState';
 import page from '../shared/Page.module.css';
 import { ShowEpisodes, ShowHeaderActions } from './ShowEpisodes';
 import { ShowPlayer } from './ShowPlayer';
-import { useListSheet } from './useListSheet';
 import { useShowPage } from './useShowPage';
 
 type ShowData = ReturnType<typeof useShowPage>;

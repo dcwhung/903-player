@@ -21,7 +21,7 @@ const SHOW_HASH = '#/show/gongzi';
 const SAVED_TAB = '我的收藏';
 // 公子會（星期六）28/11：sampleData 有嘅最近一集；行嘅讀屏名（src/i18n/zh-HK.ts bookmark.*）刻意寫死做獨立對照
 const GONGZI = SAMPLE_RECORDINGS.find((r) => r.showId === 'gongzi' && r.date === '2026-11-28');
-const ROW_OPEN = /^開啟 公子會 28\/11 星期六/;
+export const ROW_OPEN = /^開啟 公子會 28\/11 星期六/;
 const ROW_PLAY = '播放 公子會 28/11 星期六';
 const ROW_PAUSE = '暫停 公子會 28/11 星期六';
 const LIST_STAR = '收藏 28/11 星期六';
@@ -35,7 +35,7 @@ const SWIPE_PAST_RATIO = SWIPE_REMOVE_RATIO + 0.2;
 const SWIPE_STEPS = 12;
 
 /** 用戶之前已經收藏咗公子會 28/11（入主頁之前寫入 localStorage） */
-const seedBookmark = async (ctx) => {
+export const seedBookmark = async (ctx) => {
     const item = {
         kind: 'show',
         id: GONGZI.id,
@@ -58,7 +58,7 @@ const seedBookmark = async (ctx) => {
 
 const savedTab = (p) => p.getByRole('button', { name: SAVED_TAB, exact: true });
 
-const openSavedTab = async (p, base) => {
+export const openSavedTab = async (p, base) => {
     await p.goto(base);
     await savedTab(p).click({ timeout: UI_WAIT_MS });
     await p.getByRole('region', { name: SAVED_TAB }).waitFor({ timeout: UI_WAIT_MS });

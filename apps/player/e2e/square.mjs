@@ -3,6 +3,7 @@
 // 開嘅 sheet：由底升起、icon 變實色；再撳掣、✕、Escape、向下拉都閂到，閂咗焦點返清單掣；減少動態即刻切換。
 // 現有裝置唔受影響由 `npm run e2e:visual` 驗；呢度只留一個現有手機做對照。每個情境用獨立 context
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
+import { ROW_OPEN, openSavedTab, seedBookmark } from './bookmark.mjs';
 import { PHONE, ensurePlaying, isShown, newE2EPage, runSection } from './harness.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
@@ -199,6 +200,19 @@ const checkSheet = async (env) => {
     await ctx.close();
 };
 
+/** W-795：由「我的收藏」入頁 sheet 自動開（冇撳過清單掣），Escape 閂咗焦點都返清單掣，唔係 <body> */
+const checkAutoOpenedFocus = async (env) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: SQUARE });
+    await seedBookmark(ctx);
+    await openSavedTab(p, env.base);
+    await p.getByRole('button', { name: ROW_OPEN }).click();
+    const opened = await isShown(sheet(p), { timeout: SHEET_WAIT_MS });
+    env.log(opened, 'HomeView 由我的收藏入節目頁：清單 sheet 自動開');
+    await p.keyboard.press('Escape');
+    await checkClosed(env, p, '收藏自動開後 Escape ');
+    await ctx.close();
+};
+
 /** 減少動態：開 / 閂都冇動畫，即刻切換 */
 const checkReducedMotion = async (env) => {
     const { ctx, p } = await openShow(env, { reducedMotion: 'reduce' });
@@ -278,6 +292,7 @@ const checkPhoneUnchanged = async (env) => {
 const SCENARIOS = [
     ['HomeView 節目頁版面', checkLayout],
     ['HomeView 清單 sheet 開閂', checkSheet],
+    ['HomeView 清單 sheet 收藏自動開', checkAutoOpenedFocus],
     ['HomeView 清單 sheet 減少動態', checkReducedMotion],
     ['HomeView 頁頭 ⓘ', checkInfoInHeader],
     ['HomeView 現有手機對照', checkPhoneUnchanged],

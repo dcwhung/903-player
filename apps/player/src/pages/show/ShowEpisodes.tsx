@@ -8,9 +8,9 @@ import {
     episodeCountText,
     type EpisodeItem,
 } from '../../components/shared/player/EpisodeList/EpisodeList';
+import type { useListSheet } from '../../hooks/useListSheet';
 import { t } from '../../i18n/t';
 import page from '../shared/Page.module.css';
-import type { useListSheet } from './useListSheet';
 
 type ListSheetState = ReturnType<typeof useListSheet>;
 
@@ -44,6 +44,7 @@ export const ShowEpisodes = ({
             onClose={list.close}
             title={t('episodes.title')}
             summary={episodeCountText(items)}
+            returnFocusTo={list.buttonRef}
         >
             <EpisodeList items={items} onSelect={onSelect} focusKey={focusKey} heading={false} />
         </ListSheet>
@@ -64,13 +65,15 @@ interface ShowHeaderActionsProps {
 /** HomeView 頁頭右邊：清單掣（badge = 集數）+ ⓘ（_mockups_/home-view S5） */
 export const ShowHeaderActions = ({ items, list, info }: ShowHeaderActionsProps) => {
     const count = episodeCount(items);
+    const { buttonRef, open, toggle } = list;
     return (
         <PageHeaderActions info={info}>
             <ListButton
+                ref={buttonRef}
                 label={t('listSheet.showEpisodes', { count })}
                 count={count}
-                open={list.open}
-                onToggle={list.toggle}
+                open={open}
+                onToggle={toggle}
             />
         </PageHeaderActions>
     );
