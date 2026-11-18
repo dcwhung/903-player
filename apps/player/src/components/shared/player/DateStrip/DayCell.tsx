@@ -13,8 +13,8 @@ interface DayCellProps {
     isCurrent: boolean;
 }
 
-/** 上面星期（一、二…），下面日/月 */
-const DayText = ({ date }: { date: string }) => (
+/** 上面星期（一、二…），下面日/月（直排日子 DateColumn 都用） */
+export const DayText = ({ date }: { date: string }) => (
     <>
         <span className={styles.weekday}>{WEEKDAYS[weekdayOf(date)]}</span>
         <span className={styles.dayMonth}>{formatDayMonth(date)}</span>

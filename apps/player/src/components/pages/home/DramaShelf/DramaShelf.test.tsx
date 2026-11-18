@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { stubLandscape } from '../../../../../tests/landscape';
+import { stubLandscape, stubViewport } from '../../../../../tests/landscape';
 import { DramaShelf, type DramaShelfItem } from './DramaShelf';
 
 const item = (overrides: Partial<DramaShelfItem> = {}): DramaShelfItem => ({
@@ -568,6 +568,18 @@ describe('DramaShelf focus (portrait stacked cards)', () => {
 
         await userEvent.click(tile('劇 3'));
 
+        expect(onOpen[2]).toHaveBeenCalledTimes(1);
+        expect(focused()).toEqual([]);
+    });
+
+    // Duo 打開・直（P10 lane 5a，用戶 2026-11-18）：畫面闊，兩欄 grid、唔疊，撳格即入頁（S-1134）
+    it('keeps plain tiles that open on tap on Duo open portrait (no stacked focus)', async () => {
+        stubViewport({ width: 612, height: 876 });
+        const onOpen = renderShelf();
+
+        await userEvent.click(tile('劇 3'));
+
+        expect(screen.getByRole('navigation')).not.toHaveAttribute('data-stacked');
         expect(onOpen[2]).toHaveBeenCalledTimes(1);
         expect(focused()).toEqual([]);
     });

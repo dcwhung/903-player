@@ -11,7 +11,7 @@ import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPa
 import { ItemInfoSheet } from '../../components/shared/common/ItemInfo/ItemInfoSheet';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import { LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
+import { DUO_OPEN_PORTRAIT_QUERY, LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
 import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useGoHome } from '../../hooks/useGoHome';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -44,6 +44,8 @@ const ShowPlayer = ({
     landscape,
 }: ShowPlayerProps) => {
     const { duration } = usePlayer();
+    // Duo 打開・直（P10 lane 5b）：日子直排喺唱片右邊
+    const stripSide = useMediaQuery(DUO_OPEN_PORTRAIT_QUERY);
     if (!current) {
         return <StatusMessage message={t('episodes.noneUp')} />;
     }
@@ -61,6 +63,7 @@ const ShowPlayer = ({
                 onPick={selectEpisode}
                 onStart={start}
                 bookmark={current}
+                stripSide={stripSide}
                 {...info.gaugeInfo}
             />
             {landscape && (

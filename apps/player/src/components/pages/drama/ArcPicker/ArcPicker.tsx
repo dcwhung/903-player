@@ -46,6 +46,8 @@ interface ArcPickerProps {
     onPick: (arc: string) => void;
     /** 「全集」：打開全集一覽表 */
     onOpenAll: () => void;
+    /** 直排喺唱片右邊（Duo 打開・直，P10 lane 5b，_mockups_/iphone-duo 方案 B）；冇就一行橫向 */
+    vertical?: boolean;
 }
 
 /** chip 讀屏名：短篇名（+ 快將下架日子） */
@@ -101,6 +103,7 @@ export const ArcPicker = ({
     spokenLabel,
     notice,
     onOpenAll,
+    vertical = false,
     ...chipProps
 }: ArcPickerProps) => {
     const rowRef = useRef<HTMLDivElement>(null);
@@ -110,11 +113,14 @@ export const ArcPicker = ({
     useEffect(() => {
         const row = rowRef.current;
         const chip = row?.querySelector<HTMLElement>('[aria-pressed="true"]');
-        if (row && chip) scrollChipToCentre(row, chip, scrollBehavior());
-    }, [chipProps.selected]);
+        if (!row || !chip) return;
+        // 直排：上下捲到見到揀中嗰粒（唔使正中）
+        if (vertical) chip.scrollIntoView?.({ block: 'nearest', behavior: scrollBehavior() });
+        else scrollChipToCentre(row, chip, scrollBehavior());
+    }, [chipProps.selected, vertical]);
 
     return (
-        <div className={styles.group}>
+        <div className={styles.group} data-vertical={vertical ? '' : undefined}>
             <PickerLabel label={label} spokenLabel={spokenLabel} notice={notice} />
             <div className={styles.row} role="group" aria-label={t('drama.arcs')}>
                 <AllChip notice={notice} onOpenAll={onOpenAll} />

@@ -6,7 +6,7 @@ import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPa
 import { ItemInfoSheet } from '../../components/shared/common/ItemInfo/ItemInfoSheet';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import { LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
+import { DUO_OPEN_PORTRAIT_QUERY, LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
 import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePlayer } from '../../player/usePlayer';
@@ -30,6 +30,8 @@ interface DailyPlayerProps {
 const DailyPlayer = ({ drama, view, current, landscape }: DailyPlayerProps) => {
     const { duration } = usePlayer();
     const { theme, start, strip, info } = view;
+    // Duo 打開・直（P10 lane 5b，W-793）：日子直排喺唱片右邊，同節目頁一樣
+    const stripSide = useMediaQuery(DUO_OPEN_PORTRAIT_QUERY);
     return (
         <>
             <PlayerPanel
@@ -41,6 +43,7 @@ const DailyPlayer = ({ drama, view, current, landscape }: DailyPlayerProps) => {
                 onPick={view.selectEpisode}
                 onStart={start}
                 bookmark={current}
+                stripSide={stripSide}
                 {...info.gaugeInfo}
             />
             {landscape && (
