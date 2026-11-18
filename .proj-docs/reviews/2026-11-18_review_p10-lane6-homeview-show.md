@@ -86,3 +86,40 @@ context: "P10 lane 6 @75a97e8 (PR #275 -> release/v2.0.0): HomeView show page ma
 blockers:
   - "W-795: ListSheet auto-opened via focusKey returns focus to BODY on close; must return to ListButton (add unit assertion)"
 ```
+
+---
+
+## Re-review — 2026-11-18 @7b77d12
+
+- 範圍：只驗 W-795 + S-1138 / S-1139 修正同佢哋嘅 diff（15 檔，+176 / −44），唔搵新 🟢
+- 證據（developer 喺 7b77d12 跑，引用唔重跑）：lint 0、unit 5038 passed、e2e 1023 PASS / 0 FAIL、visual 180/180 一樣（`*-lane6b.log`）；reviewer 另跑 diff 相關 unit（ArcSheet、ItemInfo、ListSheet、Sheet、useListSheet、ShowPageSquare）143/143
+
+| ID     | 結果 | 驗證                                                                                                                                                                                                                                                                              |
+| ------ | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-795  | ✅   | `useSheetFocus` 打開前焦點係 `<body>` / 唔喺 DOM 先 fallback 去 `returnFocusTo`（閂嗰刻讀 ref）；`useListSheet.buttonRef` → `ListButton ref`（React 19 ref prop）→ `ListSheet returnFocusTo`。unit（ListSheet、ShowPageSquare）+ e2e「由收藏自動開後 Escape 閂…焦點返清單掣」PASS |
+| S-1138 | ✅   | `useListSheet` 搬去 `src/hooks/`，`pages/show/useListSheet.ts` 刪咗，加 unit（toggle / close、每個新 focusKey 開一次）                                                                                                                                                            |
+| S-1139 | ✅   | `.large { width: calc(var(--disc-large-share) * 100%) }`；token 喺 `tokens.css` `:root`（唯一定義 0.72），`dist` CSS 一致；visual 180/180 → 現有裝置 large 唱片闊度不變，HomeView 由 e2e square 版面驗                                                                            |
+| S-1140 | ✅   | PR body 第一行 `Design Origin: mockup: _mockups_/home-view/index.html`                                                                                                                                                                                                            |
+
+- **ArcSheet / ItemInfoSheet 不變**：兩者仍叫 `useSheetBehaviour(open, onClose)`（`returnFocusTo` optional → `undefined`）；opener 可用時 `restoreFocus` 同舊 `opener?.focus?.({ preventScroll: true })` 一樣，只係 opener 靠唔住時多咗 `fallback?.current` → undefined → 冇動作，同舊行為一致；相關 unit 全綠
+- **用戶決定（2026-11-18）**：日期條偏差（#4，保留現有 7 日置中、底 8px）接受；所有 bottom sheet 嘅 focus trap → lane 6 merge 後另開清理 lane（已決定，唔 block 本 PR）
+
+**結果：✅ pass（100/100）**
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "99%"
+next_action: proceed_to_qa
+next_agent: quality-assurance
+branch: "feature/layout/home-view-square"
+context: "Re-review P10 lane 6 @7b77d12 (PR #275 -> release/v2.0.0): W-795 fixed (auto-opened ListSheet returns focus to ListButton via optional returnFocusTo; unit + e2e), S-1138 / S-1139 / S-1140 done. ArcSheet / ItemInfoSheet unchanged (no returnFocusTo), Disc .large computed width unchanged (visual 180/180). User decisions: date-strip deviation accepted; bottom-sheet focus trap -> cleanup lane after lane 6 merges. Report committed locally, not pushed"
+blockers: []
+```
