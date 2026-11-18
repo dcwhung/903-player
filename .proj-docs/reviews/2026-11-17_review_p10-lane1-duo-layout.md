@@ -125,6 +125,7 @@ context: "P10 lane 1 pass 90; merge target release/v2.0.0 (no develop); fix in t
 ### 🟡 W-784 Duo 闔上・橫：資料表右邊離畫面 8px，同手機打橫唔一致
 
 - 位置：`ItemInfoSheet.module.css:177-183`（Duo 區塊淨係改 `bottom`）
+- 同 QA S1 嘅 **CUI-0025**（`5de5659`）係同一個問題，修一次、兩個 ID 一齊關；我交報告時 working tree 已經有未 commit 嘅修正（`right: -8px`，兩個打橫姿勢都套），打開・橫右邊會變 30，同現有闊橫版嘅把手預留位一樣，可以接受
 - **L1**：plan `:15` 用戶決定「打橫嘅全集表 / 資料表：伸出邊框貼畫面邊」
 - **L2**：`#/show/gongzi` 自動彈資料表：612×426 `dialog` 右 8 / 底 0；844×390 右 0 / 底 0（截圖 `rr/info-cover.png` 對 `rr/info-phone.png`，見到右邊一條底色）
 - **L3**：闔上・橫行手機打橫版面，右欄右邊就係 `main` 右邊（冇把手預留位），所以要補右邊；打開・橫右欄有把手預留位（右 38 = 30 + 8），同現有闊橫版一樣唔貼邊，唔使改
