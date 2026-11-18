@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { readFileSync } from 'node:fs';
 import postcss from 'postcss';
 import {
     DUO_COVER_LANDSCAPE_QUERY,
@@ -126,5 +127,18 @@ describe('duoLandscape（PostCSS plugin）', () => {
                 SQUARE_QUERY,
             ]);
         });
+    });
+
+    // S-1124：記號寫錯位會靜靜雞唔複製，用真檔鎖住 HomeView 需要嘅兩段
+    it.each([
+        [
+            'EpisodeList.module.css',
+            '../src/components/shared/player/EpisodeList/EpisodeList.module.css',
+        ],
+        ['tokens.css', '../src/styles/tokens.css'],
+    ])('%s 嘅闊橫版區塊真係複製咗去 HomeView', (_name, path) => {
+        const css = readFileSync(new URL(path, import.meta.url), 'utf8');
+
+        expect(mediaQueries(transform(css))).toContain(SQUARE_QUERY);
     });
 });

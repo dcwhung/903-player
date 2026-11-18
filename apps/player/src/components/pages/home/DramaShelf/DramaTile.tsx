@@ -26,7 +26,9 @@ const TileCorners = ({ item }: { item: DramaShelfItem }) => {
         fitsWithoutOverflow,
         sharesRow ? TOP_BAR_STEPS : META_STEPS,
     );
-    const meta = (
+    // 冇角落字（新主頁「今日節目」卡）就唔出個空白 pill（W-789）
+    const hasMeta = item.meta !== '' || item.release !== undefined;
+    const meta = hasMeta && (
         <span
             ref={metaRef}
             className={`${styles.meta} ${item.resume ? styles.metaTop : ''}`}

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { stubViewport, stubWideLandscape } from '../../../tests/landscape';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
 import { openHomePlayerCard } from '../../hooks/homePlayerCardClosed';
+import { addBookmark } from '../../services/bookmarkStore';
 import { restoreMiniPlayer } from '../../hooks/miniPlayerDismissed';
 import { usePlayer } from '../../player/usePlayer';
 import type { Track } from '../../types/track';
@@ -13,7 +14,8 @@ import { HomePage } from './HomePage';
 
 /*
  * 新主頁（P10 lane 3，_mockups_/iphone-duo 打開・橫、_mockups_/home-view 主頁）：
- * 左欄頂固定闊版橫額 + 分類掣 + 疊卡 scroller，右欄播放卡；冇播放卡就橫額同分類掣拉到全闊、卡改兩欄。
+ * 有播放卡（一欄）：左欄頂固定闊版橫額 + 分類掣 + 疊卡 scroller，右欄播放卡；
+ * 冇播放卡 / 閂咗卡（兩欄或以上）：用返原本闊橫版填滿格（用戶 2026-11-18）。
  * Duo 打開・橫（876×612）同 HomeView（544×544）用同一套；現有闊橫版（1180×820）唔變
  */
 const DUO_OPEN_LANDSCAPE = { width: 876, height: 612 };
@@ -78,8 +80,8 @@ describe.each([
         restoreMiniPlayer();
     });
 
-    it('should pin the wide banner above the tabs, outside the card list', () => {
-        renderWithProviders(<HomePage />);
+    it('should pin the wide banner above the tabs, outside the card list', async () => {
+        await arriveHomeWith(BADGIRL_TODAY);
 
         const banner = screen.getByRole('img', { name: BANNER_ALT });
         expect(banner).toHaveAttribute('src', bannerWide);
@@ -87,20 +89,33 @@ describe.each([
         expect(screen.getByRole('main')).toHaveAttribute('data-shelf');
     });
 
-    it('should list every show and today as cards in the shows tab', () => {
-        renderWithProviders(<HomePage />);
+    it('should list every show and today as cards in the shows tab', async () => {
+        await arriveHomeWith(BADGIRL_TODAY);
 
         const names = within(shelf())
             .getAllByRole('button')
             .map((b) => b.getAttribute('aria-label'));
-        expect(names).toEqual([...SHOW_NAMES, t('home.today')]);
+        // 讀屏名同節目格一樣（今日有新一集就講埋，home.showNew）
+        expect(names).toEqual([
+            t('home.showNew', { name: SHOW_NAMES[0] ?? '' }),
+            ...SHOW_NAMES.slice(1),
+            t('home.today'),
+        ]);
     });
 
-    it('should lay the cards in two columns when there is no player card', () => {
+    it('should not draw an empty corner pill on the today card', async () => {
+        await arriveHomeWith(BADGIRL_TODAY);
+
+        const today = within(shelf()).getByRole('button', { name: t('home.today') });
+        expect(today.closest('[data-zoom-key]')?.querySelector('[data-corner]')).toBeNull();
+    });
+
+    it('should use the original fill grid, banner first, when there is no player card', () => {
         renderWithProviders(<HomePage />);
 
         expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'fill');
         expect(shelf()).not.toHaveAttribute('data-stacked');
+        expect(shelf()).toContainElement(screen.getByRole('img', { name: BANNER_ALT }));
     });
 
     it('should stack the cards beside the player card while something plays', async () => {
@@ -141,5 +156,31 @@ describe('HomePage on an existing wide landscape screen', () => {
         renderWithProviders(<HomePage />);
 
         expect(screen.getByRole('main')).not.toHaveAttribute('data-shelf');
+    });
+});
+
+// W-788：HomeView 有播放卡時左欄得半個方形畫面闊，收藏 tab 用直版排法；Duo 打開・橫左欄夠闊，照用闊版
+describe.each([
+    ['Duo 打開・橫', DUO_OPEN_LANDSCAPE, 'wide'],
+    ['HomeView', HOME_VIEW, 'phone'],
+])('HomePage saved tab beside the player card on %s', (_name, viewport, layout) => {
+    beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-19T08:00:00Z'));
+        stubViewport(viewport);
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+        openHomePlayerCard();
+        restoreMiniPlayer();
+    });
+
+    it(`should lay the saved tab out as ${layout}`, async () => {
+        addBookmark(BADGIRL_TODAY);
+        await arriveHomeWith(BADGIRL_TODAY);
+        await userEvent.click(screen.getByRole('button', { name: t('home.tabSaved') }));
+
+        expect(document.querySelector('[data-saved-mode]')).toHaveAttribute('data-layout', layout);
     });
 });

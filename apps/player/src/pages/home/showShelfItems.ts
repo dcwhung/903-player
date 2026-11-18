@@ -2,11 +2,9 @@ import { formatAirDays } from '@903-player/catalog';
 import todayArt from '../../assets/today-tile.webp';
 import type { DramaShelfItem } from '../../components/pages/home/DramaShelf/DramaShelf';
 import { allShows } from '../../catalog/shows';
-import { useNewShowIds } from '../../hooks/useNewShowIds';
 import { t } from '../../i18n/t';
 import { zoomKey } from '../../utils/cardZoom';
-import { useShowOpeners } from './useShowOpeners';
-import type { HomeRight } from './useTileOpen';
+import type { ShowOpeners } from './useShowOpeners';
 
 /** 節目卡冇「繼續收聽」條：撳卡任何位都係入頁 */
 const noResume = () => undefined;
@@ -16,9 +14,10 @@ const noResume = () => undefined;
  * 次序同節目格一樣；轉做書架卡（DramaShelfItem），同「廣播劇」tab 共用 DramaShelf 嘅疊卡 scroller。
  * 角落字係播放日（「星期一至五」），今日有新一集就左上角「新」；撳卡同節目格一樣（useShowOpeners）
  */
-export const useShowShelfItems = (right: HomeRight): DramaShelfItem[] => {
-    const { openShow, openToday } = useShowOpeners(right);
-    const newShowIds = useNewShowIds();
+export const showShelfItems = (
+    { openShow, openToday }: ShowOpeners,
+    newShowIds: ReadonlySet<string>,
+): DramaShelfItem[] => {
     const shows = allShows().map((show): DramaShelfItem => ({
         id: show.id,
         name: show.name,

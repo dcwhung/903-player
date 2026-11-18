@@ -8,23 +8,15 @@ interface ShelfGridProps {
     showItems: readonly DramaShelfItem[];
     dramaItems: readonly DramaShelfItem[];
     busy: boolean;
-    /** 有播放卡（split）先疊；冇就兩欄（用戶 2026-11-17：疊卡變兩欄鋪滿） */
-    stacked: boolean;
 }
 
 /**
  * 新主頁（P10 lane 3，SHELF_SPLIT_QUERY：Duo 打開・橫、HomeView）左欄：節目 / 廣播劇都係 DramaShelf 書架，
- * 疊卡用盡橫額同分類掣下面剩低嘅高度；換 tab 由第一張開始
+ * 有播放卡（一欄）先用：一欄疊卡，用盡橫額同分類掣下面剩低嘅高度；換 tab 由第一張開始
  */
-export const ShelfGrid = ({ tab, showItems, dramaItems, busy, stacked }: ShelfGridProps) =>
+export const ShelfGrid = ({ tab, showItems, dramaItems, busy }: ShelfGridProps) =>
     tab === 'shows' ? (
-        <ShelfColumn
-            key={tab}
-            items={showItems}
-            stacked={stacked}
-            label={t('home.showsNav')}
-            busy={busy}
-        />
+        <ShelfColumn key={tab} items={showItems} stacked label={t('home.showsNav')} busy={busy} />
     ) : (
-        <ShelfColumn key={tab} items={dramaItems} stacked={stacked} />
+        <ShelfColumn key={tab} items={dramaItems} stacked />
     );

@@ -51,3 +51,5 @@ export const useShowOpeners = (right: HomeRight) => {
         },
     };
 };
+
+export type ShowOpeners = ReturnType<typeof useShowOpeners>;
