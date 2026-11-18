@@ -180,3 +180,47 @@ next_agent: frontend-developer
 branch: "feature/layout/iphone-duo"
 context: "P10 lane 1 re-review of f01f02e: W-782, S-1115, S-1116, S-1118..S-1121 resolved; W-783 home handle fixed but rule also moves inner-page handle 8px off-screen (W-785, 876x612 show/drama/today right=-8); S-1117 info sheet still 8px off right at 612x426 (W-784); --mini-player-offset-bottom change double-counts .scope inset in main.home/main.wide padding, open-landscape card bottom 32 vs 24 (W-786). Fix in this PR + re-review W-784..W-786 only; gates cited from developer run on f01f02e; report committed locally, NOT pushed (code CI running)"
 ```
+
+## Re-review 2（2026-11-18，`ffccc59` `19da287` `d796cf3`；只驗 W-784 – W-786）
+
+- Tier：T3（Duo 範圍 CSS + lock test + e2e）；Hard gates：all pass（`npm test` 4956 passed + lint 喺 `d796cf3`；`npm run e2e` 966 PASS / 0 FAIL、`e2e:visual` 對 `origin/main` 180 / 180 喺 `19da287`，`d796cf3` 淨改 node test；log 由 developer 提供，我核對過內容）；我只重跑 `homeBottomSpace.node.test.ts`：8 passed
+- `19da287` push 時 lock test 紅、`d796cf3` 修返；以最終狀態判斷
+
+| ID               | 狀態        | 證據                                                                                                                                                                                                                                                                                                                                               |
+| ---------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-784 / CUI-0025 | ✅ resolved | `ItemInfoSheet.module.css` Duo 打橫區塊加 `right: -inset`；e2e：闔上・橫 / Seated 資料表右 0 底 0，打開・橫右 30（= 把手預留位，同上輪接受嘅一樣）底 0                                                                                                                                                                                             |
+| W-785            | ✅ resolved | `.handleScope:has([data-home-handle])`：`data-home-handle` 由 `PlayerHandle.tsx` 按 `variant` 常設喺 `.handleScope` 入面嘅 button（唔係只喺過場先有），內頁把手冇呢個 attribute；`:has()` app 已經用咗 17 處（例如 `Toast.module.css:26`），目標 iOS Safari 支援；e2e：打開・橫內頁把手離邊 0、主頁把手照舊 0（W-783 冇回歸）                      |
+| W-786            | ✅ resolved | `HomePage.module.css` Duo 區塊 media 字串同 `tokens.css` `--duo-edge-inset` 定義嗰段一樣，非 Duo 唔會命中（`e2e:visual` 180 / 180 佐證）；三條 selector / 次序同 base 一樣，cascade 唔變；e2e：打開・橫播放卡底 24、四姿勢內容底到 mini player 12、短提示 24。Lock test 只放行 `[DUO_QUERY]`（完全相等）兼斷言三個值，原意「唔准按方向改規則」保留 |
+
+- 冇新 🔴 / 🟡；冇新 🟢（re-review 唔再搵）
+
+### 評分（re-review 2）
+
+| 維度     | 得分    | 滿分    | 備注                |
+| -------- | ------- | ------- | ------------------- |
+| 正確性   | 25      | 25      | W-784 – W-786 已修  |
+| 安全性   | 20      | 20      |                     |
+| 可維護性 | 20      | 20      |                     |
+| 測試覆蓋 | 15      | 15      | 每條修正有 e2e 斷言 |
+| 性能     | 10      | 10      |                     |
+| 代碼風格 | 10      | 10      |                     |
+| **總分** | **100** | **100** |                     |
+
+**結果：✅ pass**
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T3
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: proceed_to_qa
+next_agent: quality-assurance
+branch: "feature/layout/iphone-duo"
+context: "P10 lane 1 re-review 2 of ffccc59/19da287/d796cf3: W-784 (=CUI-0025), W-785, W-786 resolved, no new findings. Gates cited from developer runs (unit+lint on d796cf3; e2e 966/0 and e2e:visual 180/180 on 19da287, d796cf3 node-test only). Report committed locally, NOT pushed"
+```
