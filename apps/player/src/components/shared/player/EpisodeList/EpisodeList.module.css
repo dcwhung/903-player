@@ -351,6 +351,7 @@
  * 最少闊度 = 時間一行（min-content）；有快將下架嘅行照舊 container（LE1 窄欄短標籤），最少放得落時間
  * （--episode-time-min）。手機打橫、直版唔郁（☆ 40px、間距照舊）
  */
+/* @square-clone：HomeView 主頁播放卡都用闊行（scripts/postcssDuoLandscape.ts，P10） */
 @media (orientation: landscape) and (min-width: 640px) and (min-height: 562px) {
     .section {
         --episode-bookmark-size: calc(32px * var(--ui-scale));

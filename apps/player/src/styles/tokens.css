@@ -525,6 +525,7 @@
  * 我的收藏闊橫版（同 WIDE_BANNER_QUERY）：mockup 喺 1300×800（--ui-scale 1.3）量到
  * ★ tab 120、banner 96、碟 60、間距 14、最近收聽高 236；除返 1.3 再跟 --ui-scale
  */
+/* @square-clone：HomeView 主頁同樣用闊版收藏 tab（scripts/postcssDuoLandscape.ts，P10） */
 @media (orientation: landscape) and (min-width: 640px) and (min-height: 562px) {
     :root {
         --home-tab-icon-width: calc(92px * var(--ui-scale));

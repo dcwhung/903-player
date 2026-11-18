@@ -12,6 +12,8 @@ interface HomeBannerProps {
     art?: ReactNode;
     /** 放喺格仔入面（闊橫版填滿格）：唔留左右白邊，拉滿個格，art 自己填滿 */
     fill?: boolean;
+    /** 新主頁（P10，HomeWide shelf）左欄頂：一定用闊版圖（5:1），跟欄闊、唔填高 */
+    wide?: boolean;
 }
 
 /**
@@ -20,22 +22,29 @@ interface HomeBannerProps {
  * 橫版成行（WIDE_BANNER_QUERY）換闊版圖（5:1，原圖喺 design/banner-wide.webp），內容集中喺中間，
  * 大部分畫面 cover 只裁走兩邊天空；好闊好矮嘅視窗（扁過 5:1）先會裁走少少上下。
  */
-export const HomeBanner = ({ corner, art, fill = false }: HomeBannerProps) => (
-    <div className={styles.banner} data-fill={fill ? '' : undefined}>
-        <h1 className={styles.heading}>{art ?? <DefaultArt />}</h1>
+export const HomeBanner = ({ corner, art, fill = false, wide = false }: HomeBannerProps) => (
+    <div
+        className={styles.banner}
+        data-fill={fill ? '' : undefined}
+        data-wide={wide ? '' : undefined}
+    >
+        <h1 className={styles.heading}>{art ?? <DefaultArt wide={wide} />}</h1>
         {corner && <div className={styles.corner}>{corner}</div>}
     </div>
 );
 
-/** 預設 <picture>：窄版 + 橫版成行換闊版；catalog 圖載入失敗兩張一齊換返內建圖（S-929） */
-const DefaultArt = () => {
+/**
+ * 預設 <picture>：窄版 + 橫版成行換闊版；catalog 圖載入失敗兩張一齊換返內建圖（S-929）。
+ * wide：一定用闊版圖（新主頁左欄頂）
+ */
+const DefaultArt = ({ wide }: { wide: boolean }) => {
     const { images, onError } = useBannerImages();
     return (
         <picture>
-            <source media={WIDE_BANNER_QUERY} srcSet={images.long.src} />
+            {!wide && <source media={WIDE_BANNER_QUERY} srcSet={images.long.src} />}
             <img
                 className={styles.image}
-                src={images.standard.src}
+                src={wide ? images.long.src : images.standard.src}
                 alt={t('home.bannerAlt')}
                 crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
                 onError={onError}

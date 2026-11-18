@@ -23,6 +23,7 @@ import { useHomeCardToggle } from './useHomeCardToggle';
 import { useCardMotion } from './useCardMotion';
 import { useHeldWhile } from './useHeldWhile';
 import { HomeWideCard } from './HomeWideCard';
+import { ShelfGrid } from './ShelfGrid';
 
 interface WideGridProps {
     tab: HomeTab;
@@ -67,6 +68,10 @@ const WideGrid = ({ tab, showTiles, dramaItems, busy, mode }: WideGridLayoutProp
 
 interface HomeWideProps extends WideGridProps {
     mode: Exclude<HomeLayoutMode, 'stack'>;
+    /** 新主頁（useWideHome shelf）：左欄頂固定闊版橫額 + 書架，唔用填滿格 */
+    shelf: boolean;
+    /** 新主頁「節目」tab 嘅疊卡（useShowShelfItems） */
+    showItems: readonly DramaShelfItem[];
     onTab: (tab: HomeTab) => void;
     miniPlayer: MiniPlayerProps | null;
     /** 第三個 tab：★ 我的收藏 / 最近收聽 / null 唔出（thirdTabOf） */
@@ -82,6 +87,8 @@ interface HomeWideProps extends WideGridProps {
  */
 export const HomeWide = ({
     mode: latestMode,
+    shelf,
+    showItems,
     onTab,
     miniPlayer,
     third,
@@ -93,10 +100,21 @@ export const HomeWide = ({
     // 開始播就即刻清走閂咗嘅卡（useReopenHomePlayerCardOnPlay），但 O1 影舊畫面前把手要仲喺度先淡得走
     const closed = useHeldWhile(useClosedHomePlayerCard(), holding);
     return (
-        <main className={`${page.page} ${page.locked} ${styles.wide}`} data-layout={mode}>
+        <main
+            className={`${page.page} ${page.locked} ${styles.wide}`}
+            data-layout={mode}
+            data-shelf={shelf ? '' : undefined}
+        >
             <div className={styles.gridColumn}>
+                {shelf && <HomeBanner wide corner={<AppVersion version={APP_VERSION} />} />}
                 <HomeTabs tab={grid.tab} onChange={onTab} third={third} />
-                {grid.tab === 'saved' ? saved : <WideGrid {...grid} mode={mode} />}
+                {grid.tab === 'saved' && saved}
+                {grid.tab !== 'saved' &&
+                    (shelf ? (
+                        <ShelfGrid {...grid} showItems={showItems} stacked={mode === 'split'} />
+                    ) : (
+                        <WideGrid {...grid} mode={mode} />
+                    ))}
             </div>
             {mode === 'split' && miniPlayer && (
                 <HomeWideCard

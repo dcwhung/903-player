@@ -61,7 +61,7 @@ const OpenTile = ({ item, focus }: DramaTileProps) => (
     <div
         className={styles.tile}
         data-focused={focus?.focused ? '' : undefined}
-        data-zoom-key={zoomKey.drama(item.id)}
+        data-zoom-key={item.zoomKey ?? zoomKey.drama(item.id)}
     >
         <button
             type="button"
@@ -78,6 +78,11 @@ const OpenTile = ({ item, focus }: DramaTileProps) => (
                 draggable={false}
                 crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
             />
+            {item.caption && (
+                <span className={styles.caption} aria-hidden="true">
+                    {item.caption}
+                </span>
+            )}
             <TileCorners item={item} />
         </button>
         {item.resume && (
