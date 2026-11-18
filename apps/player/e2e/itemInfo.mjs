@@ -315,12 +315,43 @@ const checkArcSheet = async (env, json, reducedMotion) => {
     return p;
 };
 
+/**
+ * S-1142：由全集表揀短篇彈出嘅「劇集資料」Escape 閂咗，焦點返「全集」掣，唔好跌去 <body>
+ *（打開佢嗰粒短篇行已隨全集表 unmount）
+ */
+const logEscapeFocusReturn = async (env, p, sheet, label) => {
+    await p.keyboard.press('Escape');
+    await sheet.waitFor({ state: 'detached', timeout: WAIT_MS });
+    const focused = await p.evaluate(() => {
+        const el = document.activeElement;
+        return el === null || el === document.body
+            ? 'body'
+            : `${el.tagName} ${el.textContent?.trim() ?? ''}`;
+    });
+    env.log(
+        focused.startsWith('BUTTON 全集'),
+        `${label}：「劇集資料」Escape 閂咗，焦點返「全集」掣（${focused}）`,
+    );
+};
+
+/** S-1142 橫版（兩張表都 docked）：第一次入自動開嘅全集表揀未聽短篇，閂「劇集資料」 */
+const checkArcPickFocusReturn = async (env, p, label) => {
+    await arcSheet(p)
+        .getByRole('button', { name: new RegExp(`^${ARC_WITH_INFO}，`) })
+        .click();
+    const sheet = infoSheet(p, '劇集資料');
+    await sheet.waitFor({ timeout: WAIT_MS });
+    await arcSheet(p).waitFor({ state: 'detached', timeout: WAIT_MS });
+    await logEscapeFocusReturn(env, p, sheet, label);
+};
+
 /** 橫版全集 sheet（docked 左欄）：頂部劇集 banner 貼頂、左右貼邊（G1） */
 const checkArcSheetLandscape = async (env, json) => {
     const { p } = await open(env, json, LANDSCAPE);
     await p.goto(`${env.base}#/drama/lancy`);
     await arcSheet(p).waitFor({ timeout: WAIT_MS });
     await checkBanner(env, arcSheet(p), '劇集資料橫版：全集 sheet');
+    await checkArcPickFocusReturn(env, p, '劇集資料橫版');
 };
 
 /** 揀未聽過又有資料嘅短篇：彈嗰個短篇嘅資料 sheet */
@@ -344,6 +375,7 @@ const checkArcPick = async (env, json) => {
         );
         await checkBanner(env, sheet, '劇集資料');
     }
+    await logEscapeFocusReturn(env, p, sheet, '劇集資料');
 };
 
 /**

@@ -394,6 +394,7 @@ const useSeriesSheetView = (
             ...sheetAvailability(arcs.availability),
             ...sheetActions,
             openSheet: info.openSheet,
+            allRef: info.allRef,
             info: info.sheetInfo,
             banner: info.sheetBanner,
         },

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { DramaConfig, SeriesEpisode } from '@903-player/catalog';
 import {
     arcAvailabilityOf,
@@ -133,6 +133,9 @@ export const useSeriesInfo = (drama: DramaConfig, options: SeriesInfoOptions) =>
     const summaries = useMemo(() => groups.flatMap((g) => g.items), [groups]);
     const { hasInfo, sheetInfo, openAll } = useSheetInfo(drama, summaries, sheet);
     const arcSheet = useArcInfoSheet(drama, summaries, options.pickArc);
+    // S-1142（同 W-795 同類）：喺全集表揀未聽短篇 → 全集表收埋、短篇資料表彈出；打開佢嗰粒短篇行
+    // 隨全集表消失，閂咗資料表就返「全集」掣（全集表入口；直版 / 橫版 / Duo 直排同一時間只有一粒）
+    const allRef = useRef<HTMLButtonElement>(null);
     const pickedArc = upNext?.arc;
     const canOpen = empty
         ? hasInfo
@@ -147,7 +150,9 @@ export const useSeriesInfo = (drama: DramaConfig, options: SeriesInfoOptions) =>
         /** 全集 sheet 頂嘅劇集 banner（G1）：同有冇資料無關 */
         sheetBanner,
         gaugeInfo: canOpen ? { onInfo, infoLabel: t('info.dramaInfo') } : undefined,
-        infoSheet: arcSheet.infoSheet,
+        infoSheet: { ...arcSheet.infoSheet, returnFocusTo: allRef },
+        /** 「全集」掣（ArcPicker）：資料表 returnFocusTo */
+        allRef,
         /** 由「全集」掣開：資料預設收合 */
         openSheet: () => openAll(false),
         pickArc: arcSheet.pickArc,

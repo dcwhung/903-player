@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useSheetBehaviour } from './useSheetBehaviour';
 
 const Sheet = ({ open }: { open: boolean }) => {
@@ -140,6 +140,32 @@ describe('useSheetBehaviour focus trap', () => {
         behind.focus();
         expect(tab(behind)).toBe(true);
         expect(behind).toHaveFocus();
+    });
+
+    /*
+     * S-1141（sheetFocusTrap isInOtherModal）：兩張 aria-modal 表同時開，兩個 keydown listener 都掛住。
+     * 焦點喺邊張就由嗰張處理，另一張唔可以當「走咗出去」搶返入自己度。
+     * 用先掛 listener 嗰張（第一張）：第二張嘅 listener 喺之後跑，冇分支就會將焦點扯過去
+     */
+    it('should leave Tab to the other open modal sheet that holds focus', () => {
+        render(
+            <>
+                <TrapSheet open />
+                <TrapSheet open />
+            </>,
+        );
+        const [owner, other] = screen.getAllByRole('dialog');
+        if (!owner || !other) throw new Error('expected two sheets');
+        const middle = within(owner).getByRole('button', { name: 'row 0' });
+        middle.focus();
+        expect(tab(middle)).toBe(true);
+        expect(middle).toHaveFocus();
+        const last = within(owner).getByRole('button', { name: 'row 1' });
+        last.focus();
+        expect(tab(last)).toBe(false);
+        expect(within(owner).getByRole('button', { name: 'close' })).toHaveFocus();
+        expect(tab(last, true)).toBe(false);
+        expect(within(owner).getByRole('button', { name: 'row 1' })).toHaveFocus();
     });
 
     it('should not trap Tab when the sheet is docked (not aria-modal)', () => {

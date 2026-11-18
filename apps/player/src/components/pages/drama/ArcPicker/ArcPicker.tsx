@@ -1,5 +1,5 @@
 import { arcLabelOf } from '@903-player/catalog';
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, type Ref } from 'react';
 import { t } from '../../../../i18n/t';
 import { scrollBehavior } from '../../../../utils/motion';
 import { scrollChipToCentre } from '../../../../utils/scroll';
@@ -46,6 +46,8 @@ interface ArcPickerProps {
     onPick: (arc: string) => void;
     /** 「全集」：打開全集一覽表 */
     onOpenAll: () => void;
+    /** 「全集」掣嘅 ref（頁面做資料表 returnFocusTo 用，S-1142） */
+    allRef?: Ref<HTMLButtonElement> | undefined;
     /** 直排喺唱片右邊（Duo 打開・直，P10 lane 5b，_mockups_/iphone-duo 方案 B）；冇就一行橫向 */
     vertical?: boolean;
 }
@@ -103,6 +105,7 @@ export const ArcPicker = ({
     spokenLabel,
     notice,
     onOpenAll,
+    allRef,
     vertical = false,
     ...chipProps
 }: ArcPickerProps) => {
@@ -123,7 +126,7 @@ export const ArcPicker = ({
         <div className={styles.group} data-vertical={vertical ? '' : undefined}>
             <PickerLabel label={label} spokenLabel={spokenLabel} notice={notice} />
             <div className={styles.row} role="group" aria-label={t('drama.arcs')}>
-                <AllChip notice={notice} onOpenAll={onOpenAll} />
+                <AllChip notice={notice} onOpenAll={onOpenAll} allRef={allRef} />
                 <div ref={rowRef} className={styles.chips}>
                     {arcs.map((chip) => (
                         <Chip key={chip.arc} chip={chip} ids={ids} {...chipProps} />

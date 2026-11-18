@@ -104,6 +104,7 @@ export const SeriesArcPicker = ({
         spokenLabel={spokenLabel}
         onPick={view.pickArc}
         onOpenAll={view.sheet.openSheet}
+        allRef={view.sheet.allRef}
         vertical={vertical}
     />
 );

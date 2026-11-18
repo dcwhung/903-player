@@ -1,7 +1,7 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ArcInfo, Drama } from '@903-player/catalog';
-import { stubLandscape } from '../../../tests/landscape';
+import { stubLandscape, stubViewport } from '../../../tests/landscape';
 import { renderWithProviders } from '../../../tests/renderWithProviders';
 import { seriesEpisodesOf } from '../../catalog/dramas';
 import { saveProgress } from '../../services/progressStore';
@@ -154,6 +154,62 @@ describe('SeriesDramaPage item info（P9.5 #12）', () => {
         expect(dialog).toHaveAttribute('aria-modal', 'false');
         expect(dialog.closest('[data-player-gauge]')).toBeNull();
         expect(screen.queryByTestId('info-sheet-backdrop')).not.toBeInTheDocument();
+    });
+});
+
+/** Duo 打開・直（_mockups_/iphone-duo）：短篇選擇（連「全集」）直排喺唱片右邊 */
+const DUO_OPEN_PORTRAIT = { width: 612, height: 876 };
+
+/*
+ * S-1142（同 W-795 同類）：第一次入自動開全集表（打開前冇焦點），喺表入面揀未聽短篇 →
+ * 全集表收埋、「劇集資料」彈出；打開「劇集資料」嗰粒短篇行隨全集表 unmount，
+ * 閂「劇集資料」之後焦點要返「全集」掣（全集表嘅入口），唔好跌去 <body>
+ */
+describe('SeriesDramaPage arc info sheet focus return (S-1142)', () => {
+    beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-11-13T08:00:00Z'));
+        Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
+        info.dramaSummary = '劇集示範簡介';
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+    });
+
+    const pickArcThenEscape = async () => {
+        openChisee();
+        await userEvent.click(
+            within(await arcSheet()).getByRole('button', { name: /^三十六計，/ }),
+        );
+        await screen.findByRole('dialog', { name: '劇集資料' });
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog', { name: '全集' })).not.toBeInTheDocument(),
+        );
+        await userEvent.keyboard('{Escape}');
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog', { name: '劇集資料' })).not.toBeInTheDocument(),
+        );
+    };
+
+    it('should return focus to the 全集 chip when the arc info sheet closes', async () => {
+        await pickArcThenEscape();
+        expect(screen.getByRole('button', { name: /^全集/ })).toHaveFocus();
+    });
+
+    it('should return focus to the 全集 chip in landscape (docked sheets)', async () => {
+        stubLandscape();
+        await pickArcThenEscape();
+        expect(screen.getByRole('button', { name: /^全集/ })).toHaveFocus();
+    });
+
+    it('should return focus to the side picker 全集 chip on Duo open portrait', async () => {
+        stubViewport(DUO_OPEN_PORTRAIT);
+        await pickArcThenEscape();
+        const all = screen.getByRole('button', { name: /^全集/ });
+        expect(all.closest('[data-vertical]')).not.toBeNull();
+        expect(all).toHaveFocus();
     });
 });
 
