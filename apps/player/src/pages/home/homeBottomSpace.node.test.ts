@@ -1,6 +1,7 @@
 // @vitest-environment node
 // 要用 node:fs 讀 CSS 原文：*.node.test.ts 行 tsconfig.node.json（有 Node 型別），唔會漏入 app 程式
 import { cssDeclarations, mediaQueries, readCss } from '../../../tests/cssRule';
+import { DUO_QUERY } from '../../config/layout';
 
 const css = readCss(new URL('./HomePage.module.css', import.meta.url));
 
@@ -40,8 +41,24 @@ describe('home bottom space', () => {
         ).toBe(height);
     });
 
-    it('should use the same rule in every orientation (no @media override)', () => {
-        expect(mediaQueries(css)).toEqual([]);
+    // iPhone Duo（P10）唯一例外：main 喺 ThemeScope 邊框入面，留位扣返邊框（W-786），唔係按方向改規則
+    it('should use the same rule in every orientation (no @media override except the Duo inset)', () => {
+        expect(mediaQueries(css)).toEqual([DUO_QUERY]);
+    });
+
+    it('should only subtract the Duo edge inset inside the Duo block', () => {
+        const duo = (selector: string) =>
+            cssDeclarations(css, selector, DUO_QUERY)['padding-bottom'];
+
+        expect(duo('main.home')).toBe(
+            'calc(var(--mini-player-offset-bottom) - var(--duo-edge-inset))',
+        );
+        expect(duo('main.wide')).toBe(
+            'calc(var(--mini-player-offset-bottom) - var(--duo-edge-inset))',
+        );
+        expect(duo('main.home[data-mini-player]')).toBe(
+            'calc( var(--home-mini-player-height) + var(--mini-player-offset-bottom) - var(--duo-edge-inset) + var(--space-3) )',
+        );
     });
 
     // 收藏 tab 以前自己一條規則（v1.28.2）：而家所有 tab 共用 main.home，唔再分開
