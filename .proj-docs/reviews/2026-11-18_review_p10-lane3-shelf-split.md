@@ -86,3 +86,48 @@ next_agent: frontend-developer
 branch: "feature/layout/iphone-duo"
 context: "P10 lane 3 @3ef9b86: Duo open-landscape OK; fix W-787 (HomeView side=card/handle vs narrow inner pages: zoom-handle with no page handle, expand with no back), W-788 (HomeView split saved tab uses 'wide' 2-col recent, text width 0), W-789 (empty meta pill on today card), W-790 (no e2e/unit for shelf-card zoom); clear S-1124..S-1126 in-session; apps/player/dist is stale vs HEAD, rebuild before QA; report committed locally, not pushed"
 ```
+
+## Re-review — 2026-11-18 @ `35fa781`
+
+- 範圍：只驗 W-787 – W-790、S-1124 – S-1126 嘅修正同 `35fa781` 本身嘅 diff（15 檔 +377 / −180），包括用戶 2026-11-18 設計改動（疊卡只限有播放卡嘅一欄 `split`；冇卡 / 閂卡用返原本填滿格）
+- Hard Gates：all pass，引用 developer 喺 `35fa781` 嘅 log（lint、tsc、`npm test` 4990、`npm run e2e` 985 / 0、`npm run e2e:visual` 180 / 180：`scratchpad/{e2e,visual}-lane3b.log`）；自己跑 diff 相關 unit（`npx vitest run …/pages/home …/useWideHome …/useHomeSide …/postcssDuoLandscape …/DramaShelf`）321 / 321
+- 評分：**95 / 100**（正確性 20 / 25：W-791；其餘滿分）
+- 結果：**⚠️ warn**。分數過 90，但 W-791 係呢個 commit 帶入嘅新 🟡，而用戶規定 lane backlog 要同一個 session 清晒，所以唔當 pass
+
+| ID     | 狀態        | 驗證                                                                                                                                                                                                                                                                  |
+| ------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-787  | ✅ resolved | `transitionSide(mode, pageHandles)` 喺 `HomePage` `right.side` 同 `useHomeSide` 共用，同 `usePageHandle` 一樣睇 `WIDE_BANNER_QUERY`；unit 8 例；e2e HomeView 其他節目 / 播緊嘅節目都係 `zoom` / `unzoom`，Duo 照舊 `zoom-handle` / `unzoom-handle`、`expand` / `back` |
+| W-788  | ✅ resolved | `shelf && split && !pageHandles` → `'phone'`；unit 鎖住 Duo `wide` / HomeView `phone`                                                                                                                                                                                 |
+| W-789  | ✅ resolved | `hasMeta` 為 false 就唔出 meta span；unit 斷言今日卡冇 `[data-corner]`                                                                                                                                                                                                |
+| W-790  | ✅ resolved | `shelfSplit.mjs` `checkZoom` 兩部機 × 兩款（其他節目 / 自己節目），用返 `cardZoom.mjs` 嘅 probe 同 `single()`；log 4 條 PASS，`ran: true`、`clean: true`                                                                                                              |
+| S-1124 | ✅ resolved | plugin 用真 `EpisodeList.module.css` / `tokens.css` 跑，斷言有 `SQUARE_QUERY` 複製品                                                                                                                                                                                  |
+| S-1125 | ✅ resolved | `useWideHome` 得一次；兩份都計嘅理由（`HomeWide` 過場期間用 `useCardMotion` 凍結嘅 mode，同 `HomePage` 唔一定同步）成立，`showShelfItems` 變 pure、openers 共用                                                                                                       |
+| S-1126 | ✅ 接受唔改 | 同意：用戶決定之後開 / 閂卡成個左欄喺「固定橫額 + 疊卡」同填滿格之間換，同現有 iPad 格仔重排一樣，橫額冇共同對象唔使硬配名。但見 W-791：而家 tab 過場名喺換版時指錯元素                                                                                               |
+
+**W-791** 冇播放卡 / 閂咗卡時（新主頁填滿格）`home-tabs` 過場名落咗去成個格仔，分類掣冇名（`pages/home/HomePage.module.css` L85–104、`pages/home/HomeWide.tsx` `data-shelf`、`pages/home/HomeWideLeft.tsx`）
+
+- L1：`HomePage.module.css` `.gridColumn > :first-child { view-transition-name: home-tabs }` 係闊版「分類掣保持原位」嘅契約；`main.wide[data-shelf]` 兩條位置 selector 寫明前提「左欄頂多咗闊版橫額，分類掣先係第二格」
+- L2（DOM + selector 決定性對照）：`HomeWide` 喺 shelf 時**唔理 mode** 都有 `data-shelf`；`HomeWideLeft` 只喺 `shelfColumn` 先出橫額。所以 fill / fillWithHandle 時 `.gridColumn` 子元素係 `[HomeTabs .wrap, HomeFillGrid nav]` → 分類掣中 `:first-child` 變 `none`，`nav` 中 `:nth-child(2)` 變 `home-tabs`。現有 unit（`HomePageShelfSplit.test.tsx`：fill 時 main 有 `data-shelf`、橫額喺 nav 入面）同 e2e log（`bannerInGrid: true`）證實呢個 DOM。用瀏覽器量 computed `view-transition-name` 被 reviewer-test-scope hook 擋咗，交 QA S1 補截（876×612、544×544 星期日冇卡，`.gridColumn` 兩個子元素）
+- L3：閂 / 開卡（`useCardMotion` 過場）時 `home-tabs` group 由分類掣個框變形去成個格仔個框（分類掣快照拉到成格咁大）；填滿格撳格入頁時，成個格仔做獨立 group 疊喺展開緊嘅內頁上面淡出，唔係同 root 一齊 dim
+- 方案 A（推薦）：兩條位置 selector 收窄到有橫額嗰陣，例如 `main.wide[data-shelf][data-layout='split']`（`data-layout` 同 `HomeWideLeft` 一樣用 `useCardMotion` 凍結 mode，兩者同步）；fill 時跌返去通用 `:first-child` = 分類掣。Trade-off：靠 `split` ⇔ 有橫額嘅約定，要喺註解寫明
+- 方案 B：唔用位置 selector，`HomeTabs` 外層（或 `HomeWideLeft` 包一層）直接帶 class / `data-home-tabs` 定過場名。Trade-off：要改通用 `.gridColumn > :first-child`，會影響現有闊橫版，要靠 `e2e:visual` 證明零改變
+- 修嗰陣順手更新過時註解：`HomeWide.tsx` L25、`DramaShelf.module.css` L73 仲寫 `useShowShelfItems`；`HomePage.module.css` L85 註解要講明只係有播放卡嗰陣先有橫額。加 unit：fill 時分類掣係 `.gridColumn` 第一格（或者 node test 對 CSS selector）
+
+### Handoff receipt（re-review）
+
+```handoff-receipt
+protocol: 1
+status: warn
+score: 95/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+next_action: invoke_developer
+next_agent: frontend-developer
+branch: "feature/layout/iphone-duo"
+context: "P10 lane 3 re-review @35fa781: W-787, W-788, W-789, W-790, S-1124, S-1125 resolved; S-1126 accepted as is (user design). New W-791 from this commit: with data-shelf but no card (fill / fillWithHandle), HomePage.module.css main.wide[data-shelf] .gridColumn > :first-child / :nth-child(2) put view-transition-name home-tabs on the fill-grid nav and none on the tabs (banner only renders in split now); scope the two rules to data-layout='split' (or name tabs explicitly), fix stale useShowShelfItems comments, add a unit. QA S1 to capture computed view-transition-name at 876x612 / 544x544 without a card (browser probe blocked for reviewer). Report committed locally, not pushed"
+```
