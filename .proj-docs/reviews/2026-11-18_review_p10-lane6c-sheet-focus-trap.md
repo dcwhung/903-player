@@ -188,3 +188,66 @@ context: "Re-review @7853b3b (PR #276 -> release/v2.0.0): ref plumbing correct (
 blockers:
   - "C-025: pointer/touch close of auto-opened ArcSheet/ItemInfoSheet shows focus ring"
 ```
+
+---
+
+# Re-review — 2026-11-18 — @9763748
+
+- 範圍：只驗 C-025 / S-1143 / S-1144 嘅修正同 `7853b3b..9763748` code diff（`useSheetBehaviour.ts` +35、unit +84 / +14、e2e `arcSheet` / `focusTrap` / `itemInfo` / `square`），唔重新 review 成個 branch
+- Hard gates：lint 0（`eslint . && prettier --check .`，developer log）；自己跑 `tsc --noEmit -p tsconfig.app.json` 0、改動檔 eslint 0、`npx vitest run useSheetBehaviour.test.tsx SeriesDramaPageInfo.test.tsx` 36 / 36；unit 5066 passed、e2e 1053 / 0（developer log）；visual 18 / 180 全部 `drama-series`，pixel 數（488 / 620 / 708）同 @7853b3b 一模一樣、0 個元素位置唔同 = 同一個已接受嘅 Escape 2px ring
+- Red proof：`probe-red-lane6f.log` 用 @7853b3b 跑新 e2e，6 個 ArcSheet pointer check 全 FAIL（焦點 true、`:focus-visible` true），修正後全 PASS
+- Status：✅ pass，100/100
+
+## C-025 — 已修（方案 A）
+
+- `trackInputModality()`：開住先掛 `keydown` / `pointerdown` capture listener，cleanup 一齊拆；只喺**冇有效 opener** 時先睇，最後輸入係鍵盤先行 `returnFocusTo`。有 opener 嘅路徑（撳 ⓘ / 「全集」開）完全唔變（unit「usable opener after a pointer close」鎖住）
+- 次序：capture 喺 document bubble 嘅 `sheetKeyHandler` 之前行，Escape 嗰下已經記咗 keyboard 先觸發 `onClose`；Enter ✕ 同理。每次開都係新 closure，上一次嘅 modality 唔會帶落嚟（unit 有）
+- **L2**（自己 Playwright，scratch `dist-rr6f` e2e build、port 4211，390×844 `#/drama/chisee` 自動開）：
+
+    | 閂法                                   | 焦點     | `:focus-visible` |
+    | -------------------------------------- | -------- | ---------------- |
+    | Escape                                 | 「全集」 | true（已接受）   |
+    | Tab 去 ✕ 再 Enter                      | 「全集」 | true（鍵盤）     |
+    | 滑鼠撳遮罩                             | `<body>` | false            |
+    | 觸控 tap 遮罩                          | `<body>` | false            |
+    | 滑鼠撳 ✕                               | `<body>` | false            |
+    | 先 Tab、再滑鼠撳遮罩（最後係 pointer） | `<body>` | false            |
+    | 滑鼠撳表入面、再 Escape                | 「全集」 | true（鍵盤）     |
+
+    page error 0。觸控向下拉閂由 e2e `觸控向下拉閂（自動開）` 覆蓋（PASS）
+
+## W-795 行為改變 — 接受
+
+- HomeView 收藏自動開嘅清單 sheet 用滑鼠 / 觸控閂，焦點唔再去清單掣、留喺 `<body>`：即係返 `main` base 嘅行為（冇退步），亦同用戶「只接受鍵盤見 ring」一致；鍵盤閂照返清單掣（e2e `HomeView 清單 sheet 收藏自動開` 仍 PASS、新增滑鼠撳遮罩 check PASS）。pointer 用戶唔靠焦點位置導航，冇實際損失
+
+## S-1143 / S-1144 — 已修
+
+- S-1143：`checkShowLandscape` JSDoc 搬返佢上面
+- S-1144：註解改做「唔傳就行為不變」
+
+## Observation（唔開 ID）
+
+- L3：螢幕閱讀器 browse mode（例如 NVDA）啟動 ✕ 可能只送 `click`、冇 `keydown`，自動開閂後焦點會留喺 `<body>`，同 `main` base 一樣，唔係退步
+- L2：先用鍵盤閂（「全集」已有 ring）、再用滑鼠撳「全集」開 / 撳遮罩閂，ring 仍然喺度。Chromium 原生行為（空白頁：Tab 聚焦掣再用滑鼠撳，`:focus-visible` 仍 true），要用戶先用過鍵盤先會出現，唔係本 PR 範圍
+
+## Handoff receipt（re-review @9763748）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "modality branch covered by 7 unit (keyboard / pointer / none / mixed both orders / fresh per open / usable opener) + 1 SeriesDramaPage unit + 8 e2e pointer checks"
+  no_critical: pass
+  security_scan: n/a
+next_action: proceed_to_qa
+next_agent: quality-assurance
+branch: "fix/a11y/sheet-focus-trap"
+context: "Re-review @9763748 (PR #276 -> release/v2.0.0): C-025 fixed with option A (capture keydown/pointerdown while open; returnFocusTo only after keyboard when no usable opener). Own Playwright on scratch build: Escape / Enter on X -> 全集 + ring (accepted); mouse scrim / touch tap / mouse X / Tab-then-scrim -> <body>, no ring. Red proof probe-red-lane6f.log. Visual 18/180 identical to @7853b3b accepted Escape ring. W-795 ListSheet pointer close back to main baseline (<body>), keyboard unchanged - accepted. S-1143 / S-1144 fixed. No new IDs. Report committed locally, not pushed"
+blockers: []
+```
