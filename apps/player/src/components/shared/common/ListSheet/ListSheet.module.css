@@ -1,0 +1,110 @@
+/*
+ * HomeView 清單 sheet（_mockups_/home-view 節目頁 .sheet）：成頁上面嘅遮罩 + 由底升起嘅表，
+ * 高度固定 --list-sheet-height（清單短都唔會變矮），入面清單自己捲。
+ * 樣式同全集表（ArcSheet.module.css）一致：圓頂角、grab bar、表頭 + ✕
+ */
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--arc-sheet-z);
+}
+
+.backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--arc-sheet-scrim);
+    transition: opacity var(--arc-sheet-slide-ms) ease-out;
+}
+
+.sheet {
+    position: absolute;
+    inset: auto 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    height: var(--list-sheet-height);
+    padding-top: var(--space-2);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-floating);
+    outline: none;
+    /* 清單以外（grab bar / 表頭 / 四周空位）都係拉表嘅把手：單指手勢交畀 useSheetDrag */
+    touch-action: none;
+    /* 向下拉閂：放手後滑走 / 彈返（useSheetDrag 改 transform） */
+    transition: transform var(--arc-sheet-slide-ms) ease-out;
+}
+
+/* 拉緊：表同遮罩直接跟手指，唔做 transition */
+.sheet[data-dragging='true'],
+.backdrop[data-dragging='true'] {
+    transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sheet,
+    .backdrop {
+        transition: none;
+    }
+}
+
+/* 拉走緊：唔收 tap */
+.sheet[data-closing='true'],
+.backdrop[data-closing='true'] {
+    pointer-events: none;
+}
+
+.grab {
+    flex-shrink: 0;
+    align-self: center;
+    width: var(--arc-sheet-grab-width);
+    height: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--color-track);
+}
+
+/* 左右同清單（EpisodeList .section padding --space-4）對齊；✕ 嘅 icon 對返清單右邊 */
+.header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-2) 0 var(--space-4);
+}
+
+.title {
+    color: var(--color-title);
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+}
+
+.summary {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+}
+
+.close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    margin-left: auto;
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text);
+}
+
+/*
+ * 清單填滿剩低高度：EpisodeList（flex 1、min-height 0）自己個 ul 捲；
+ * 冇自己捲嘅清單就由呢層捲
+ */
+.list {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+}

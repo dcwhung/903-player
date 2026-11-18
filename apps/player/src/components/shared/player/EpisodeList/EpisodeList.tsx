@@ -28,15 +28,27 @@ interface EpisodeListProps {
     focusKey?: string;
     /** 擺喺邊（預設 page）；主頁播放卡傳 card */
     variant?: EpisodeListVariant;
+    /**
+     * 「集數 / 共 N 集」標題列（預設有）；HomeView 清單 sheet（ListSheet）傳 false：
+     * 表頭已經有同一句（episodeCountText），唔重複
+     */
+    heading?: boolean;
 }
 
 /** 一行代表幾多集：摺埋嘅未上架批次係成批（短篇劇「共 30 集」照寫），其他一行一集 */
 const episodesIn = (item: EpisodeItem): number => item.episodeCount ?? 1;
 
+const unavailableCount = (items: EpisodeItem[]): number =>
+    items.filter((item) => item.status.kind === 'unavailable').length;
+
+/** 播得到幾多集（短篇劇未上架批次照計）：「共 N 集」同 HomeView 清單掣 badge 用 */
+export const episodeCount = (items: EpisodeItem[]): number =>
+    items.reduce((sum, item) => sum + episodesIn(item), 0) - unavailableCount(items);
+
 /** 標題右邊：「共 N 集」只計播得到嘅（短篇劇未上架批次照計）；有試過但未上架嘅就加埋幾多集 */
-const countText = (items: EpisodeItem[]): string => {
-    const unavailable = items.filter((item) => item.status.kind === 'unavailable').length;
-    const count = items.reduce((sum, item) => sum + episodesIn(item), 0) - unavailable;
+export const episodeCountText = (items: EpisodeItem[]): string => {
+    const unavailable = unavailableCount(items);
+    const count = episodeCount(items);
     return unavailable > 0
         ? t('episodes.countWithUnavailable', { count, unavailable })
         : t('episodes.count', { count });
@@ -53,6 +65,7 @@ export const EpisodeList = ({
     scrollAlign = 'nearest',
     focusKey,
     variant = 'page',
+    heading = true,
 }: EpisodeListProps) => {
     const headingId = useId();
     const listRef = useRef<HTMLUListElement>(null);
@@ -62,17 +75,20 @@ export const EpisodeList = ({
     return (
         <section
             className={styles.section}
-            aria-labelledby={headingId}
+            aria-labelledby={heading ? headingId : undefined}
             data-labels={labels}
             data-variant={variant}
         >
-            <div className={styles.header}>
-                <h2 id={headingId} className={styles.heading}>
-                    {t('episodes.title')}
-                </h2>
-                <span>{countText(items)}</span>
-            </div>
-            <ul ref={listRef} className={styles.list}>
+            {heading && (
+                <div className={styles.header}>
+                    <h2 id={headingId} className={styles.heading}>
+                        {t('episodes.title')}
+                    </h2>
+                    <span>{episodeCountText(items)}</span>
+                </div>
+            )}
+            {/* data-sheet-scroll：喺 ListSheet 入面，表要知邊個係捲動 panel（捲到頂先向下拉閂） */}
+            <ul ref={listRef} className={styles.list} data-sheet-scroll="">
                 {items.map((item) => (
                     <li key={item.key} className={styles.item} data-episode-key={item.key}>
                         <EpisodeRow item={item} onSelect={onSelect} />

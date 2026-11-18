@@ -1,0 +1,43 @@
+/*
+ * HomeView 頁頭清單掣（_mockups_/home-view .hd.v4 i）：44px 圓掣，icon 用主題強調色；
+ * 開緊清單（aria-expanded）變實色 = 強調色底 + 深色 icon。右上角 badge 顯示數量
+ */
+.button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-accent-text);
+}
+
+.button[aria-expanded='true'] {
+    background: var(--color-accent-fill);
+    color: var(--color-on-accent);
+}
+
+.badge {
+    position: absolute;
+    top: var(--list-badge-inset-top);
+    right: var(--list-badge-inset-end);
+    min-width: var(--list-badge-size);
+    height: var(--list-badge-size);
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--color-accent-fill);
+    color: var(--color-on-accent);
+    font-size: var(--list-badge-font);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    line-height: var(--list-badge-size);
+    text-align: center;
+}
+
+/* 開緊：掣本身已經係強調色底，badge 轉淺色先分得開 */
+.button[aria-expanded='true'] .badge {
+    background: var(--color-title);
+}
