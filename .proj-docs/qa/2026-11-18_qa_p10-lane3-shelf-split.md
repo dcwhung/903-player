@@ -50,3 +50,13 @@ none — 版面 / 過場已有 unit + e2e 雙層，no edge case gap
 - `plans/home.md` 加 AC-10 + scope / commands；`plans/card-zoom.md` 加 AC-7 + `e2e/cardZoom.mjs`；其餘 plan 冇改
 - freeze 12 條鏈 S1（成條 chain + stage 檔案清單 + 新檔），前後比對 chain + stage + path 冇少行（S1 少 0 行、加 24 行：home 23、card-zoom 1；其他 stage 行冇郁）
 - Freeze 後 `impact` 淨返 home / ui-foundation REVERIFY，全部係 S3 行（plan 檔、lane 1 檔），留 v2.0.0 S3 處理；S1 全 FROZEN
+
+## Update — 579ebb1（W-791 分類掣過場名）— S1 ✅ pass
+
+- 改動：`HomePage.module.css` 兩條位置過場名 rule 收窄到 `[data-layout='split']`；`HomeWide.tsx` / `DramaShelf.module.css` 淨改註解；新 `shelfSplitTabs.node.test.ts`（→ home）；`e2e/shelfSplit.mjs` 驗 computed `view-transition-name`
+- Ledger（`impact --since 4b67b76`）：REVERIFY 7（bookmark、coming-soon、drama、home、mini-player、pwa-shell、show-today-page；6 條只因 `HomeWide.tsx` / `DramaShelf.module.css` 註解 STALE）/ UNCOVERED 1 / 其餘 SKIP
+- L1 AC-10（`plans/home.md` 加「有卡 / 冇卡分類掣先係 `home-tabs` 過場名（W-791）」+ scope / command 加新 test）；L2 `e2e-lane3c.log` 814 / 817 / 824 / 827 PASS，冇 CSS 改動時紅（developer 證據）
+- Runs：QA 跑 `npm test -- apps/player/src/pages/home/shelfSplitTabs` 2/2；引用 579ebb1 lint clean、`npm test` 4992 passed、`npm run e2e` 989 PASS / 0 FAIL（`e2e-lane3c.log`）、`npm run e2e:visual` vs origin/main 180/180 全部一樣（`visual-lane3c.log`）
+- CI PR #271 run 44289027305 @579ebb1：changes ✅、Lint, unit & build ✅、E2E 撰寫時 in_progress（main agent push docs 前要等佢完）
+- Findings：none；建議補測：none
+- Freeze 7 條鏈 S1（成條 chain + stage 清單，home 加新 test），前後比對 chain + stage + path：少 0 行、加 1 行（home S1 新 test），非 S1 行冇郁；S1 全 FROZEN，`impact` 淨返 home / ui-foundation S3 行
