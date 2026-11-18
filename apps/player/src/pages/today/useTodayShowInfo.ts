@@ -6,7 +6,8 @@ import { showInfoBanner, showInfoSections } from '../../selectors/itemInfo';
 
 /**
  * HomeView 今日節目頁頁頭 ⓘ（P10 lane 7a）：而家播緊 / 睇緊嗰個節目嘅資料 sheet（同節目頁一樣），
- * 轉節目就跟住換。唔自動彈（今日節目表本身已經有資料展開，唔係第一次入某個節目頁）
+ * 轉節目就跟住換。唔自動彈：頁頭 ⓘ 常駐可見；第一次入自動開嘅係全部今日節目資料
+ * （節目表 sheet 展開，TodaySquare useTodayListSheet），唔係而家呢一個（S-1145）
  */
 export const useTodayShowInfo = (showId: string | undefined) => {
     const show = showId === undefined ? undefined : findShow(showId);

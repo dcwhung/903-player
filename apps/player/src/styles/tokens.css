@@ -184,6 +184,8 @@
     --show-selector-gap: 6px;
     --show-selector-visible: 4;
     --show-selector-frame: 1.5px;
+    /* 捲動提示淡出闊度（同 Duo 直排日子底部淡出一樣 --space-6） */
+    --show-selector-fade: var(--space-6);
     /*
      * 節目 / 劇集資料（P9.5 #12，_mockups_/catalog-item-info）：資料 sheet 標題、chip 行高、正文行高；
      * 今日節目表展開時「播緊」線（OnAirLamp）上下留位（行高約 80%）

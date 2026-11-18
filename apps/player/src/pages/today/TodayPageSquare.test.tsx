@@ -2,7 +2,13 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ShowConfig } from '@903-player/catalog';
 import { stubViewport } from '../../../tests/landscape';
-import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
+import { openWhileOtherLoaded } from '../../../tests/otherPlayback';
+import {
+    recording,
+    renderWithProviders,
+    unavailableEpisode,
+} from '../../../tests/renderWithProviders';
+import { TODAY_INFO_SEEN_STORAGE_KEY } from '../../config/constants';
 import { TodayPage } from './TodayPage';
 
 /** 示範資料：晴朗同 Bad Girl 有簡介（有 ⓘ），轉節目時 ⓘ 跟住換 */
@@ -38,6 +44,8 @@ describe('TodayPage HomeView（P10 lane 7a）', () => {
         vi.setSystemTime(new Date('2026-10-19T08:00:00Z'));
         HTMLElement.prototype.scrollTo = vi.fn();
         Element.prototype.scrollIntoView = vi.fn();
+        // 第一次入會自動開今日節目資料（下面另外驗）；其他 test 當已經睇過
+        localStorage.setItem(TODAY_INFO_SEEN_STORAGE_KEY, '1');
     });
     afterEach(() => {
         vi.useRealTimers();
@@ -155,5 +163,114 @@ describe('TodayPage HomeView（P10 lane 7a）', () => {
         expect(screen.getByRole('region', { name: '節目表' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: LIST_BUTTON })).not.toBeInTheDocument();
         expect(screen.queryByRole('list', { name: '揀今日節目' })).not.toBeInTheDocument();
+    });
+    it('should show the empty player when nothing today is up yet', async () => {
+        vi.setSystemTime(new Date('2026-10-20T08:00:00Z'));
+        stubViewport(SQUARE);
+        renderWithProviders(<TodayPage />, {
+            ...ROUTE,
+            recordings: [...TODAY, recording('gongzi', '2026-10-17')],
+            unavailable: [
+                unavailableEpisode('wanni', '2026-10-20', '0708'),
+                unavailableEpisode('badgirl', '2026-10-20', '1009'),
+            ],
+        });
+
+        expect(await screen.findByText('今日節目未上架')).toBeInTheDocument();
+        expect(screen.queryByRole('slider', { name: '播放進度' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '節目表，共 5 個節目' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: '節目資料' })).not.toBeInTheDocument();
+    });
+
+    it('should only browse on a selector tap while something else plays (standby)', async () => {
+        stubViewport(SQUARE);
+        const other = recording('gongzi', '2026-10-17');
+        const { audio } = await openWhileOtherLoaded(<TodayPage />, other, {
+            ...ROUTE,
+            recordings: [...TODAY, other],
+        });
+        await screen.findByRole('list', { name: '揀今日節目' });
+        expect(audio.src).toBe(other.url);
+
+        await userEvent.click(within(selector()).getByRole('button', { name: 'Bad Girl大過佬' }));
+
+        expect(within(selector()).getByRole('button', { name: 'Bad Girl大過佬' })).toHaveAttribute(
+            'aria-current',
+            'true',
+        );
+        expect(audio.src).toBe(other.url);
+    });
+
+    describe('first visit: all of today’s info（用戶 2026-11-18）', () => {
+        const ALL_INFO = '節目表';
+        const expandedRows = (sheet: HTMLElement) =>
+            sheet.querySelectorAll('li[data-today-row][data-expanded="true"]').length;
+
+        beforeEach(() => localStorage.removeItem(TODAY_INFO_SEEN_STORAGE_KEY));
+
+        it('should auto-open today’s schedule with every show’s info and remember it', async () => {
+            stubViewport(SQUARE);
+            renderWithProviders(<TodayPage />, ROUTE);
+
+            const sheet = await screen.findByRole('dialog', { name: ALL_INFO });
+            // 晴朗、Bad Girl 有資料（mock），兩行都展開
+            expect(expandedRows(sheet)).toBe(2);
+            expect(within(sheet).getByText('晴朗示範簡介')).toBeInTheDocument();
+            expect(within(sheet).getByText('Bad Girl 示範簡介')).toBeInTheDocument();
+            expect(localStorage.getItem(TODAY_INFO_SEEN_STORAGE_KEY)).not.toBeNull();
+            // 頁頭 ⓘ 唔係呢張：佢照舊係而家個節目嘅資料，冇自動彈
+            expect(screen.queryByRole('dialog', { name: '節目資料' })).not.toBeInTheDocument();
+        });
+
+        it('should not auto-open again once seen', async () => {
+            stubViewport(SQUARE);
+            const first = renderWithProviders(<TodayPage />, ROUTE);
+            await screen.findByRole('dialog', { name: ALL_INFO });
+            first.unmount();
+
+            renderWithProviders(<TodayPage />, ROUTE);
+
+            await screen.findByRole('list', { name: '揀今日節目' });
+            expect(screen.queryByRole('dialog', { name: ALL_INFO })).not.toBeInTheDocument();
+        });
+
+        it('should return focus to the list button when closed with Escape', async () => {
+            stubViewport(SQUARE);
+            renderWithProviders(<TodayPage />, ROUTE);
+            await screen.findByRole('dialog', { name: ALL_INFO });
+
+            await userEvent.keyboard('{Escape}');
+
+            await waitFor(() =>
+                expect(screen.queryByRole('dialog', { name: ALL_INFO })).not.toBeInTheDocument(),
+            );
+            expect(screen.getByRole('button', { name: LIST_BUTTON })).toHaveFocus();
+        });
+
+        it('should not move focus to the list button when closed by pointer', async () => {
+            stubViewport(SQUARE);
+            renderWithProviders(<TodayPage />, ROUTE);
+            await screen.findByRole('dialog', { name: ALL_INFO });
+
+            await userEvent.click(screen.getByTestId('list-sheet-backdrop'));
+
+            await waitFor(() =>
+                expect(screen.queryByRole('dialog', { name: ALL_INFO })).not.toBeInTheDocument(),
+            );
+            expect(screen.getByRole('button', { name: LIST_BUTTON })).not.toHaveFocus();
+        });
+
+        it('should keep ⓘ as the current show’s info after the auto-open sheet is closed', async () => {
+            stubViewport(SQUARE);
+            renderWithProviders(<TodayPage />, ROUTE);
+            await screen.findByRole('dialog', { name: ALL_INFO });
+            await userEvent.keyboard('{Escape}');
+
+            await userEvent.click(screen.getByRole('button', { name: '節目資料' }));
+
+            const info = screen.getByRole('dialog', { name: '節目資料' });
+            expect(within(info).getByText('晴朗示範簡介')).toBeInTheDocument();
+            expect(within(info).queryByText('Bad Girl 示範簡介')).not.toBeInTheDocument();
+        });
     });
 });

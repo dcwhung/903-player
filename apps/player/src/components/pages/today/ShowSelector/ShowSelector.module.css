@@ -1,7 +1,10 @@
 /*
  * HomeView 今日節目頁節目 selector（P10 lane 7a，_mockups_/home-view .sel）：一行格，
  * 闊度跟格數（最多一次見到 --show-selector-visible 格）、置中；多過就左右捲（唔出 scrollbar，
- * 揀中嗰格自動捲入畫面）。只有 SQUARE_QUERY 先 render，其他裝置冇呢個組件
+ * 揀中嗰格自動捲入畫面）。只有 SQUARE_QUERY 先 render，其他裝置冇呢個組件。
+ * 捲動提示（用戶 2026-11-18）：仲有格嗰邊淡出（data-fade-start / -end，JS 跟捲動 / 大細更新），
+ * 同 Duo 直排日子（DateColumn）一樣用 mask；兩邊留淡出咁闊嘅 padding，捲到盡或者放得晒嘅格
+ * （連揀中外框 / focus 環）唔會停喺淡出位入面
  */
 .selector {
     position: relative;
@@ -13,15 +16,35 @@
         100%,
         calc(
             var(--show-selector-visible) * var(--show-selector-cell-width) +
-                (var(--show-selector-visible) - 1) * var(--show-selector-gap)
+                (var(--show-selector-visible) - 1) * var(--show-selector-gap) + 2 *
+                var(--show-selector-fade)
         )
     );
     margin: 0 auto;
-    padding: 0;
+    padding: 0 var(--show-selector-fade);
     overflow-x: auto;
     overscroll-behavior-x: contain;
     list-style: none;
     scrollbar-width: none;
+}
+
+/* mask 只睇 alpha（black = 全顯示）：唔使知道背景色 */
+.selector[data-fade-start='true'] {
+    mask-image: linear-gradient(90deg, transparent, black var(--show-selector-fade));
+}
+
+.selector[data-fade-end='true'] {
+    mask-image: linear-gradient(90deg, black calc(100% - var(--show-selector-fade)), transparent);
+}
+
+.selector[data-fade-start='true'][data-fade-end='true'] {
+    mask-image: linear-gradient(
+        90deg,
+        transparent,
+        black var(--show-selector-fade),
+        black calc(100% - var(--show-selector-fade)),
+        transparent
+    );
 }
 
 .selector::-webkit-scrollbar {

@@ -2,7 +2,8 @@
 // 播放器為主（唱片 256px 置中、頁頭下面 16px、日子條貼近底邊），集數清單收入頁頭清單掣（badge = 集數）
 // 開嘅 sheet：由底升起、icon 變實色；再撳掣、✕、Escape、向下拉都閂到，閂咗焦點返清單掣；減少動態即刻切換。
 // 今日節目頁（P10 lane 7a，S6）：同一個普通播放器（冇卡疊 / 指示點），「現正播放」下面節目 selector
-// （揀中有外框、未上架灰色停用、多過 4 個左右捲），頁頭清單掣 badge = 今日節目數、ⓘ 跟住而家個節目。
+// （揀中有外框、未上架灰色停用、多過 4 個左右捲，仲有格嗰邊淡出），頁頭清單掣 badge = 今日節目數、ⓘ 跟住而家個節目；
+// 第一次入（未睇過今日節目資料）自動開節目表 sheet、每行展開資料，之後唔再開（用戶 2026-11-18）。
 // 現有裝置唔受影響由 `npm run e2e:visual` 驗；呢度只留一個現有手機做對照。每個情境用獨立 context
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
 import { ROW_OPEN, openSavedTab, seedBookmark } from './bookmark.mjs';
@@ -386,6 +387,11 @@ const lookToday = (p) =>
             disc: box(gauge?.querySelector('[class*="large"]')),
             selector: box(selector),
             selectorScroll: selector ? selector.scrollWidth - selector.clientWidth : 0,
+            // 兩邊淡出位（padding-inline）入面唔算見到嘅格
+            selectorInner: selector
+                ? selector.clientWidth -
+                  2 * Number.parseFloat(getComputedStyle(selector).paddingLeft)
+                : 0,
             cellWidth: cells[0]?.getBoundingClientRect().width ?? 0,
             cells: cells.length,
             disabled: cells.filter((b) => b.disabled).length,
@@ -442,6 +448,8 @@ const selectorCell = (p, name) =>
     p.getByRole('list', { name: '揀今日節目' }).getByRole('button', { name, exact: true });
 
 const sheetToday = (p) => p.getByRole('dialog', { name: '節目表' });
+/** 「today info seen」記錄（src TODAY_INFO_SEEN_STORAGE_KEY；刻意寫死做獨立對照） */
+const TODAY_INFO_SEEN_KEY = '903player:today-info-seen:v1';
 
 /** 鎖屏資料嘅標題（播緊邊個節目） */
 const sessionTitle = (p) => p.evaluate(() => navigator.mediaSession.metadata?.title ?? '');
@@ -492,7 +500,7 @@ const checkSelector = async (env) => {
             !firstTitle.includes('Bad Girl'),
         `HomeView 今日節目 selector：撳 Bad Girl 轉節目（${firstTitle} → ${secondTitle}），外框搬去第二格（${after.frame}）`,
     );
-    const visible = Math.round((before.selector?.w ?? 0) / before.cellWidth);
+    const visible = Math.round(before.selectorInner / before.cellWidth);
     env.log(
         before.cells > SELECTOR_VISIBLE &&
             visible === SELECTOR_VISIBLE &&
@@ -579,6 +587,8 @@ const checkTodayInfo = async (env) => {
         catalogBody: catalogWithSummaries(env.base, summaries),
         contextOptions: { viewport: SQUARE },
     });
+    // 已經睇過今日節目資料（第一次入自動開節目表另外驗，checkTodayFirstVisit）
+    await ctx.addInitScript((key) => localStorage.setItem(key, '1'), TODAY_INFO_SEEN_KEY);
     await p.goto(`${env.base}${TODAY_ROUTE}`);
     await ensurePlaying(p);
     const infoSheet = p.getByRole('dialog', { name: '節目資料' });
@@ -610,6 +620,145 @@ const checkTodayInfo = async (env) => {
     await ctx.close();
 };
 
+/** selector 兩邊淡出狀態、mask、第一 / 最尾完全見到嗰格同淡出位嘅距離 */
+const fadeState = (p) =>
+    p.locator(SELECTOR).evaluate((el) => {
+        const inset = Number.parseFloat(getComputedStyle(el).paddingLeft);
+        const box = el.getBoundingClientRect();
+        const cells = [...el.querySelectorAll('button')].map((b) => b.getBoundingClientRect());
+        // 完全喺 selector 入面嘅格（唔計淡出位）都唔可以壓住淡出位
+        const shown = cells.filter((c) => c.left >= box.left - 0.5 && c.right <= box.right + 0.5);
+        return {
+            start: el.dataset.fadeStart,
+            end: el.dataset.fadeEnd,
+            mask: getComputedStyle(el).maskImage,
+            inset,
+            clearStart: shown.every((c) => c.left >= box.left + inset - 0.5),
+            clearEnd: shown.every((c) => c.right <= box.right - inset + 0.5),
+            shown: shown.length,
+        };
+    });
+
+const scrollSelector = (p, where) =>
+    p.locator(SELECTOR).evaluate((el, to) => {
+        const left = { start: 0, middle: (el.scrollWidth - el.clientWidth) / 2 }[to];
+        el.scrollTo({ left: left ?? el.scrollWidth, behavior: 'instant' });
+    }, where);
+
+/** 等 scroll 事件更新咗 data-fade-* */
+const waitFade = (p, start, end) =>
+    succeeds(
+        p.waitForFunction(
+            ([q, s, e]) => {
+                const el = document.querySelector(q);
+                return el?.dataset.fadeStart === s && el?.dataset.fadeEnd === e;
+            },
+            [SELECTOR, start, end],
+            { timeout: SHEET_WAIT_MS },
+        ),
+    );
+
+/**
+ * 捲動提示（用戶 2026-11-18）：喺頭淨係尾淡出、中間兩邊、去到尾淨係頭；
+ * 完全見到嘅格（連揀中外框 / focus 環）唔會壓住淡出位
+ */
+const checkSelectorFade = async (env) => {
+    const { ctx, p } = await openToday(env);
+    const atStart = await fadeState(p);
+    env.log(
+        atStart.start === 'false' &&
+            atStart.end === 'true' &&
+            atStart.mask !== 'none' &&
+            atStart.inset > 0 &&
+            atStart.clearStart &&
+            atStart.clearEnd &&
+            atStart.shown === SELECTOR_VISIBLE,
+        `HomeView 今日節目 selector 喺頭：淨係尾淡出、${atStart.shown} 格完全見到唔壓淡出位（${JSON.stringify(atStart)}）`,
+    );
+    await scrollSelector(p, 'middle');
+    const middleOk = await waitFade(p, 'true', 'true');
+    env.log(middleOk, `HomeView 今日節目 selector 捲到中間：兩邊淡出（${middleOk}）`);
+    await scrollSelector(p, 'end');
+    const endOk = await waitFade(p, 'true', 'false');
+    const atEnd = await fadeState(p);
+    env.log(
+        endOk && atEnd.clearStart && atEnd.clearEnd && atEnd.mask !== 'none',
+        `HomeView 今日節目 selector 捲到尾：淨係頭淡出、格唔壓淡出位（${JSON.stringify(atEnd)}）`,
+    );
+    await scrollSelector(p, 'start');
+    const backOk = await waitFade(p, 'false', 'true');
+    env.log(backOk, `HomeView 今日節目 selector 捲返頭：頭冇淡出（${backOk}）`);
+    await ctx.close();
+};
+
+/** 今日節目有資料（晴朗 + Bad Girl 簡介）嘅 catalog，未睇過今日節目資料 */
+const FIRST_VISIT_SUMMARIES = { sunnyday: '晴朗示範簡介', badgirl: 'BadGirl示範簡介' };
+
+const openFirstVisit = async (env, contextOptions = {}) => {
+    const { ctx, p } = await openWithCatalog(env, {
+        catalogBody: catalogWithSummaries(env.base, FIRST_VISIT_SUMMARIES),
+        contextOptions: { viewport: SQUARE, ...contextOptions },
+    });
+    await p.goto(`${env.base}${TODAY_ROUTE}`);
+    return { ctx, p };
+};
+
+/** 自動開嘅節目表：展開咗資料嘅行數、有冇兩個簡介 */
+const firstVisitSheet = (p) =>
+    sheetToday(p).evaluate((dialog, summaries) => {
+        const text = dialog.textContent ?? '';
+        return {
+            expanded: dialog.querySelectorAll('li[data-today-row][data-expanded="true"]').length,
+            summaries: summaries.every((s) => text.includes(s)),
+        };
+    }, Object.values(FIRST_VISIT_SUMMARIES));
+
+/**
+ * 第一次入：自動開節目表 sheet、每行展開全部今日節目資料、記低睇過；Escape 閂焦點返清單掣；
+ * 再入（reload）唔再自動開
+ */
+const checkTodayFirstVisit = async (env) => {
+    const { ctx, p } = await openFirstVisit(env, { reducedMotion: 'reduce' });
+    const popped = await isShown(sheetToday(p), { timeout: SHEET_WAIT_MS });
+    const content = popped ? await firstVisitSheet(p) : { expanded: 0, summaries: false };
+    const ownInfo = await p.getByRole('dialog', { name: '節目資料' }).count();
+    const seen = await p.evaluate((key) => localStorage.getItem(key), TODAY_INFO_SEEN_KEY);
+    env.log(
+        popped && content.expanded === 2 && content.summaries && ownInfo === 0 && seen !== null,
+        `HomeView 今日節目第一次入：自動開節目表、${content.expanded} 行展開資料（簡介 ${content.summaries}）、冇開而家個節目嘅 ⓘ（${ownInfo}）、記低睇過（${seen}）`,
+    );
+    await p.keyboard.press('Escape');
+    const gone = await isShown(sheetToday(p), { state: 'detached', timeout: SHEET_WAIT_MS });
+    const focused = await focusedName(p);
+    env.log(
+        gone && focused?.startsWith('BUTTON 節目表，共') === true,
+        `HomeView 今日節目第一次入自動開嘅節目表 Escape 閂：焦點返清單掣（${focused}）`,
+    );
+    await p.reload();
+    await ensurePlaying(p);
+    const again = await isShown(sheetToday(p), { timeout: 1000 });
+    env.log(!again, `HomeView 今日節目再入：唔再自動開節目表（${again}）`);
+    await ctx.close();
+};
+
+/** C-025：第一次入自動開嘅節目表用滑鼠撳遮罩閂，清單掣冇 focus 環 */
+const checkTodayFirstVisitPointerClose = async (env) => {
+    const { ctx, p } = await openFirstVisit(env);
+    const opened = await isShown(sheetToday(p), { timeout: SHEET_WAIT_MS });
+    const point = opened
+        ? await scrimPoint(p, p.getByTestId('list-sheet-backdrop'), sheetToday(p))
+        : { onScrim: false };
+    if (point.onScrim) await p.mouse.click(point.x, point.y);
+    const closed = await isShown(sheetToday(p), { state: 'detached', timeout: SHEET_WAIT_MS });
+    env.log(
+        opened && point.onScrim && closed,
+        `HomeView 今日節目第一次入自動開節目表滑鼠撳遮罩閂咗（自動開 ${opened}、撳中遮罩 ${point.onScrim}、閂咗 ${closed}）`,
+    );
+    const button = p.getByRole('button', { name: /^節目表，共/ });
+    await checkNoPointerRing(button, env.log, 'HomeView 今日節目第一次入自動開節目表滑鼠撳遮罩');
+    await ctx.close();
+};
+
 /** 對照：現有手機今日節目頁照舊（卡疊、節目表喺頁面、冇清單掣 / selector） */
 const checkPhoneTodayUnchanged = async (env) => {
     const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: PHONE });
@@ -636,7 +785,10 @@ const SCENARIOS = [
     ['HomeView 今日節目版面', checkTodayLayout],
     ['HomeView 今日節目 selector', checkSelector],
     ['HomeView 今日節目表 sheet', checkTodaySheet],
+    ['HomeView 今日節目 selector 淡出', checkSelectorFade],
     ['HomeView 今日節目 ⓘ', checkTodayInfo],
+    ['HomeView 今日節目第一次入', checkTodayFirstVisit],
+    ['HomeView 今日節目第一次入滑鼠閂', checkTodayFirstVisitPointerClose],
     ['HomeView 現有手機今日節目對照', checkPhoneTodayUnchanged],
 ];
 

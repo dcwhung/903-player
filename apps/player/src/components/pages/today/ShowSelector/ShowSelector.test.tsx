@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ShowSelector, type ShowSelectorItem } from './ShowSelector';
 
@@ -87,5 +87,57 @@ describe('ShowSelector', () => {
 
         expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ left: 46 }));
         vi.restoreAllMocks();
+    });
+    describe('edge fade（用戶 2026-11-18：邊一邊仲有格就嗰邊淡出）', () => {
+        // jsdom 冇 layout：用 getter mock 捲動闊度 / 可見闊度 / 捲咗幾多
+        const layout = { scrollWidth: 500, clientWidth: 450, scrollLeft: 0 };
+        beforeEach(() => {
+            layout.scrollWidth = 500;
+            layout.clientWidth = 450;
+            layout.scrollLeft = 0;
+            for (const key of ['scrollWidth', 'clientWidth', 'scrollLeft'] as const) {
+                vi.spyOn(HTMLElement.prototype, key, 'get').mockImplementation(() => layout[key]);
+            }
+        });
+        afterEach(() => vi.restoreAllMocks());
+
+        const fade = () => ({
+            start: group().getAttribute('data-fade-start'),
+            end: group().getAttribute('data-fade-end'),
+        });
+
+        it('should fade only the end when more cells are after the visible ones', () => {
+            render(<ShowSelector items={ITEMS} selectedKey="a" onSelect={vi.fn()} />);
+
+            expect(fade()).toEqual({ start: 'false', end: 'true' });
+        });
+
+        it('should fade both sides in the middle and only the start at the end', () => {
+            render(<ShowSelector items={ITEMS} selectedKey="a" onSelect={vi.fn()} />);
+
+            layout.scrollLeft = 20;
+            fireEvent.scroll(group());
+            expect(fade()).toEqual({ start: 'true', end: 'true' });
+
+            layout.scrollLeft = 50;
+            fireEvent.scroll(group());
+            expect(fade()).toEqual({ start: 'true', end: 'false' });
+        });
+
+        it('should not fade when every cell fits', () => {
+            layout.scrollWidth = 450;
+            render(<ShowSelector items={ITEMS} selectedKey="a" onSelect={vi.fn()} />);
+
+            expect(fade()).toEqual({ start: 'false', end: 'false' });
+        });
+
+        it('should update the fade when the window is resized', () => {
+            render(<ShowSelector items={ITEMS} selectedKey="a" onSelect={vi.fn()} />);
+
+            layout.clientWidth = 500;
+            fireEvent(window, new Event('resize'));
+
+            expect(fade()).toEqual({ start: 'false', end: 'false' });
+        });
     });
 });

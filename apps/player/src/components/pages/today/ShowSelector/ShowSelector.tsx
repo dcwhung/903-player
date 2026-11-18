@@ -3,6 +3,7 @@ import { t } from '../../../../i18n/t';
 import { scrollBehavior } from '../../../../utils/motion';
 import { Disc } from '../../../shared/common/Disc/Disc';
 import styles from './ShowSelector.module.css';
+import { useEdgeFade } from './useEdgeFade';
 
 export interface ShowSelectorItem {
     key: string;
@@ -21,13 +22,18 @@ interface ShowSelectorProps {
     onSelect: (key: string) => void;
 }
 
+/** 兩邊淡出位（CSS padding-inline = --show-selector-fade）：捲入畫面要連埋呢段，格唔會停喺淡出位入面 */
+const fadeInset = (list: HTMLElement): number =>
+    Number.parseFloat(getComputedStyle(list).paddingLeft) || 0;
+
 /**
- * 揀中嗰格捲入可見範圍（左右邊都唔切走）；已經睇到就唔郁。
+ * 揀中嗰格捲入可見範圍（左右邊都唔切走、唔停喺淡出位）；已經睇到就唔郁。
  * 用 scrollTo 而唔係 scrollIntoView：唔會帶動外面嘅固定版面
  */
 const revealCell = (list: HTMLElement, cell: HTMLElement, behavior: ScrollBehavior) => {
-    const start = cell.offsetLeft;
-    const end = start + cell.offsetWidth;
+    const inset = fadeInset(list);
+    const start = cell.offsetLeft - inset;
+    const end = cell.offsetLeft + cell.offsetWidth + inset;
     const { scrollLeft, clientWidth } = list;
     if (start < scrollLeft) {
         list.scrollTo({ left: start, behavior });
@@ -85,17 +91,20 @@ const Cell = ({
 /**
  * HomeView 今日節目頁「現正播放」下面嘅節目 selector（P10 lane 7a，_mockups_/home-view .sel）：
  * 每格碟面 + 節目名，撳就轉去嗰個節目；揀中嗰格有外框（aria-current），未上架嘅灰色停用；
- * 一次見到 4 格，多過 4 個就左右捲，揀中嗰格自動捲入畫面
+ * 一次見到 4 格，多過 4 個就左右捲，揀中嗰格自動捲入畫面；仲有格嗰邊淡出（useEdgeFade）
  */
 export const ShowSelector = ({ items, selectedKey, onSelect }: ShowSelectorProps) => {
     const selectedIndex = items.findIndex((item) => item.key === selectedKey);
     const listRef = useRevealSelected(selectedIndex);
+    const fade = useEdgeFade(listRef, items.length);
     return (
         <ul
             ref={listRef}
             className={styles.selector}
             aria-label={t('today.selectorLabel')}
             data-show-selector=""
+            data-fade-start={fade.start}
+            data-fade-end={fade.end}
         >
             {items.map((item, index) => (
                 <li key={item.key} className={styles.item} data-index={index}>
