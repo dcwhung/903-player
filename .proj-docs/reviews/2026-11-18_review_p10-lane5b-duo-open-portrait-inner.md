@@ -99,3 +99,49 @@ next_agent: developer
 branch: "feature/layout/iphone-duo"
 context: "P10 lane 5b @e8db0d0: show / series drama / today OK at 612x876, visual 180/180. Fix W-792 (DateColumn focus lost to body + no live announcement), W-793 (DailyDramaPage strip 456-500 below fold 438; or user rules daily out of scope), W-794 (arc / info sheet still 480 wide centred, mockup edge-to-edge); S-1135-S-1137 cleared in this PR per parallel-lane rule; re-review only those diffs; merge target release/v2.0.0; report committed locally, not pushed"
 ```
+
+## Re-review — 2026-11-18 — commit `8770311`
+
+- 範圍：上一輪 W-792 – W-794、S-1135 – S-1137 嘅修正（13 檔 +236 / −41）。冇新 C / W / S ID
+- Hard Gates：all pass。引用 developer 喺 `8770311` 嘅結果：lint、`npm test` 5013、`npm run e2e` 1001 / 0（新增「Duo 打開・直每日劇集頁」「全集表貼兩邊畫面邊」）、`npm run e2e:visual` 180 / 180（現有裝置零改變）
+- 自己跑（Playwright，`apps/player/dist` + e2e harness，612×876）：見下表 L2
+- **結果：✅ pass（100 / 100）**
+
+| ID     | 處理                                                                                                                                                                                                                                                                                                                                                   | 結果 |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- |
+| W-792  | 每格都係 `<button>`；現正播放 `aria-current="date"` + `aria-disabled`，撳無效（`markStep(false)` 清通知、唔 `onPick`）；`ul aria-labelledby` 標籤；`useStepAnnouncement` polite live region。L2：`#/show/badgirl` focus「轉去 26/11 星期四」+ Enter → 焦點留喺同一粒掣（已變 `aria-current`），`status` 讀「已轉到 26/11 星期四」；list 名「現正播放」 | ✅   |
+| W-793  | `DailyPlayer` 傳 `stripSide={useMediaQuery(DUO_OPEN_PORTRAIT_QUERY)}`；e2e `checkOpenPortraitDaily`（runtime catalog 開 `c18`）斷言日子欄喺右半、摺位以上                                                                                                                                                                                              | ✅   |
+| W-794  | `ArcSheet` / `ItemInfoSheet` 各加 Duo 打開・直 `.sheet { max-width: none }`，query 同 `DUO_OPEN_PORTRAIT_QUERY` 一致；dist CSS 兩條規則都有；L2：`#/drama/chisee` 全集表 `x 0、width 612`（之前 66 / 480）；e2e 斷言貼兩邊                                                                                                                             | ✅   |
+| S-1135 | 新 unit：DateColumn 焦點 / 通知 / 撳現正播放唔播、PlayerPanel `stripSide`（list 代替 slider）、ArcPicker vertical `scrollIntoView({block:'nearest'})`、SideRow 有冇 side                                                                                                                                                                               | ✅   |
+| S-1136 | `pickerSide = query && view.upNext !== undefined`；冇碟時 `SeriesListColumn` 照舊 render 短篇選擇（`!pickerSide`）                                                                                                                                                                                                                                     | ✅   |
+| S-1137 | `.list` / `.chips[data-vertical]` 加 `mask-image` 底部 24px 淡出 + `padding-bottom: var(--space-6)`                                                                                                                                                                                                                                                    | ✅   |
+
+### 指定核對
+
+- **淡出唔遮最尾一格**（L2，`--space-6` = 24px，淡出區 = 盒底 24px）：
+    - 日子欄 21 格（scrollHeight 856 / clientHeight 308）：捲到底，最尾一格底同欄底距離 **24px**（剛好喺淡出區之上）；入頁時中段格淡出 = 提示下面仲有
+    - 放得晒（DOM 淨留 3 格）：最尾一格底距欄底 196px，冇被淡出
+    - 短篇欄 12 粒（640 / 264）：捲到底距離 **24px**；flex column 嘅 `padding-bottom` 有計入捲動範圍
+- **`aria-disabled` 現正播放對讀屏**：仍係 `BUTTON`、`tabIndex 0`，Tab / 讀屏照行到；讀「轉去 30/11 星期一，目前日期，變暗，按鈕」，表達到「呢日播緊、撳冇用」；撳落焦點唔郁、唔重播、通知清空。同 repo 現有 `aria-disabled`（GaugeActions、BookmarkButton、UpcomingArcRow「Tab / 讀屏照行到」）同一做法 ✅
+
+### Observation（唔扣分、唔入 backlog）
+
+- 現正播放嗰格 aria-label 仍係「轉去 …」，加上「目前日期・變暗」意思清楚，但字面略重複；日子條（DayCell）現正播放用 `<span>` 冇 label，兩邊讀法唔完全一樣。屬措辭偏好，冇 L1
+- S-1136 fallback 冇 unit test（淨靠 code path），暫時冇集數嘅劇去唔到
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/layout/iphone-duo"
+context: "Re-review P10 lane 5b @8770311: W-792..W-794, S-1135..S-1137 all resolved. L2 at 612x876: DateColumn focus stays on tapped day + polite '已轉到…'; current day is a focusable aria-disabled button (reachable, not replayed); arc sheet x0 w612; fade leaves last item 24px clear when scrolled to end (dates 21, chips 12) and 196px when list fits. e2e 1001/0, visual 180/180, unit 5013 cited. No backlog. Merge target release/v2.0.0 (no develop); report committed locally, not pushed"
+```
