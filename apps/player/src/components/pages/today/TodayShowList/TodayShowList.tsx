@@ -32,6 +32,8 @@ interface TodayShowListProps {
     infoExpanded?: boolean;
     /** 撳箭咀；冇傳就唔出箭咀 */
     onToggleInfo?: (() => void) | undefined;
+    /** false：唔出標題列（HomeView 清單 sheet 表頭已經寫「節目表 · N 個未上架」，P10 lane 7a） */
+    heading?: boolean;
 }
 
 export const TodayShowList = ({
@@ -39,32 +41,36 @@ export const TodayShowList = ({
     onSelect,
     infoExpanded = false,
     onToggleInfo,
+    heading = true,
 }: TodayShowListProps) => {
     const headingId = useId();
     const unavailable = items.filter((item) => item.status === 'unavailable').length;
     // 冇任何節目有資料就唔出箭咀（P9.5 #12）
     const canToggle = onToggleInfo !== undefined && items.some((item) => item.info);
     return (
-        <section className={styles.section} aria-labelledby={headingId}>
-            <div className={styles.header}>
-                <span className={styles.headingGroup}>
-                    <h2 id={headingId} className={styles.heading}>
-                        {t('today.listTitle')}
-                    </h2>
-                    {canToggle && (
-                        <InfoToggle
-                            expanded={infoExpanded}
-                            label={t('info.showInfo')}
-                            onToggle={onToggleInfo}
-                            className={styles.toggle}
-                        />
+        <section className={styles.section} aria-labelledby={heading ? headingId : undefined}>
+            {heading && (
+                <div className={styles.header}>
+                    <span className={styles.headingGroup}>
+                        <h2 id={headingId} className={styles.heading}>
+                            {t('today.listTitle')}
+                        </h2>
+                        {canToggle && (
+                            <InfoToggle
+                                expanded={infoExpanded}
+                                label={t('info.showInfo')}
+                                onToggle={onToggleInfo}
+                                className={styles.toggle}
+                            />
+                        )}
+                    </span>
+                    {unavailable > 0 && (
+                        <span>{t('today.unavailableCount', { count: unavailable })}</span>
                     )}
-                </span>
-                {unavailable > 0 && (
-                    <span>{t('today.unavailableCount', { count: unavailable })}</span>
-                )}
-            </div>
-            <ul className={styles.list} data-role="today-list">
+                </div>
+            )}
+            {/* data-sheet-scroll：喺 ListSheet 入面，表要知邊個係捲動 panel（捲到頂先向下拉閂） */}
+            <ul className={styles.list} data-role="today-list" data-sheet-scroll="">
                 {items.map((item) => (
                     <TodayRow
                         key={item.key}

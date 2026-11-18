@@ -178,6 +178,9 @@ export const zhHK = {
         // 今日有節目播但一個都未上架：卡疊嘅位改為呢個空狀態
         emptyTitle: '今日節目未上架',
         emptyHint: '上架之後會自動顯示',
+        // HomeView（P10 lane 7a）：「現正播放」下面嘅節目 selector；未上架嗰格讀埋狀態
+        selectorLabel: '揀今日節目',
+        selectorUnavailable: '{name}，{status}',
     },
     drama: {
         notFound: '找不到此廣播劇',
@@ -242,6 +245,7 @@ export const zhHK = {
     // HomeView（P10 lane 6）：頁頭清單掣（讀屏名包埋數量，badge 數字唔另外讀）同清單 sheet
     listSheet: {
         showEpisodes: '集數清單，共 {count} 集',
+        todayShows: '節目表，共 {count} 個節目',
         close: '關閉清單',
     },
     // 節目 / 劇集資料（P9.5 #12）：資料 sheet 小標題、chip 組標籤、ⓘ / 箭咀讀屏名
