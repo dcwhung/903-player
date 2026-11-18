@@ -92,3 +92,90 @@ next_agent: quality-assurance
 branch: "feature/layout/iphone-duo"
 context: "P10 lane 1 pass 90; merge target release/v2.0.0 (no develop); fix in this PR + re-review before merge: W-782 (today row play icon squashed to 7.6px at 612x426/612x438), W-783 (edge handle 8px off right edge at 876x612), S-1115, S-1117..S-1120; S-1116 (mini player bottom 16px vs mockup text 24px) and S-1121 (range may match 7-8in Android tablets) need user decision; e2e/visual cited from developer run on 1423a08, not re-run; QA S1 chain ui-foundation; report committed locally, NOT pushed (code CI running)"
 ```
+
+---
+
+## Re-review — 2026-11-18 — `f01f02e`
+
+- 範圍：只驗上一輪 W-782、W-783、S-1115 – S-1120 嘅修正，同用戶決定（plan `a11f905`：S-1116 揀 B、S-1117 貼邊、S-1121 接受）；`git show f01f02e`（15 檔，+235 / −58）
+- Hard gates：all pass（引用 developer 喺 `f01f02e` 嘅結果，冇重跑）：lint、tsc、`npm test` 4955 passed、`npm run e2e` 952 PASS / 0 FAIL、`npm run e2e:visual` 對 origin/main 180 / 180 一樣；新 Duo 斷言冇修正時係紅
+- 自己做過：用現有 `apps/player/dist` 起 `vite preview`（port 4391）量 Duo 姿勢（腳本同截圖喺 scratchpad `rr/`），冇 build、冇改 code
+- 結果：**⚠️ warn（85 / 100）**。上一輪全部處理咗，但修正本身帶出 3 條三層收斂 🟡（W-784 – W-786）；正確性 25 → 10，其他維度不變
+
+### 逐條
+
+| ID     | 結果              | 證據                                                                                                                                                                                                                                                                                                                                                             |
+| ------ | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-782  | ✅                | `TodayShowList` 只喺 `DUO_COVER_LANDSCAPE_QUERY` 加 `flex-shrink: 0`；e2e 闔上・橫 / Seated 每行 icon 22px（冇修正時紅）                                                                                                                                                                                                                                         |
+| W-783  | ⚠️ 主頁啱、內頁壞 | 主頁把手離邊 0（e2e）；同一條規則令內頁把手出咗畫面 8px → W-785                                                                                                                                                                                                                                                                                                  |
+| S-1115 | ✅                | 比埋內容；新 unit test 鎖住「後面緊接人手 Duo 區塊照複製」。`dist` CSS：14 個原本區塊，13 個緊跟一模一樣嘅複製品，1 個（`Page.module.css` 手機打橫）嘅複製品俾 minifier 同人手 46% 區塊合併（54% 喺前、46% 喺後，效果啱）；冇重複複製                                                                                                                            |
+| S-1116 | ✅（揀 B）        | mini player 左右底 24px（e2e 四種有 mini player 嘅姿勢）、短提示跟 token；但 token 改動有副作用 → W-786                                                                                                                                                                                                                                                          |
+| S-1117 | ⚠️ 部分           | 全集表左 / 底 0（e2e 兩個打橫姿勢）；資料表淨係補咗底，闔上・橫右邊仲離畫面 8px → W-784                                                                                                                                                                                                                                                                          |
+| S-1118 | ✅                | e2e 加咗 mini player 底、今日節目 icon、主頁把手、全集表；冇驗嘅位（內頁把手、資料表、主頁底）就係 W-784 – W-786 漏網嘅地方                                                                                                                                                                                                                                      |
+| S-1119 | ✅                | `testMediaQuery.node.test.ts` 鎖住邊界、正方形、逗號 / and、唔識寫法 throw；減少動態改為兩句完整字串比對，`no-preference` 同 `reduce` 相反，其他寫法交 `matchesQuery` throw（`motion.ts` 只用 `(prefers-reduced-motion: reduce)`）。冇加 Chromium `matchMedia` 對照，但 Duo e2e 喺真 viewport 見到版面變、`e2e:visual` 180 張證明現有裝置唔中，可以接受          |
+| S-1120 | ✅                | `stubLandscape` = 844×390。被測 component 讀嘅 query：`LANDSCAPE_LAYOUT_QUERY`（新舊都 true）、`WIDE_BANNER_QUERY`（新舊都 false），淨係 `TodayPage` 嘅 `SHORT_LANDSCAPE_LAYOUT_QUERY` 由 false 變 true（指示點搬上頁頭），嗰個 test 冇斷言指示點位置，名講嘅「頁頭喺節目表上面、日子同位置喺卡下面」照樣成立。10 個 test 依然驗緊佢哋講嘅嘢，而且而家係真實狀態 |
+| S-1121 | ✅                | plan「已知風險」已記錄用戶接受                                                                                                                                                                                                                                                                                                                                   |
+
+### `.locked { overflow: visible }`（Duo 打橫）有冇其他嘢溢出
+
+- 主頁、今日節目、節目頁、三個劇集頁 × 612×426 / 612×438 / 876×612：沿四邊邊框（離邊 3px）每 12px `elementFromPoint`，屬於 `main` 嘅只有全集表 overlay（本來就要貼邊），其他全部係 `.scope` 底色
+- 打開資料表之後 `scrollingElement`、`#root`、`main` 嘅 `scrollTop` 都係 0；表本身 `.docked { overflow: clip }` 照舊，唔會撐大捲動範圍
+- 剩低：卡疊 swipe、頁面過場呢類動態期間會多見 8px（之後俾 `#root` 剪），我冇逐格驗，唔列做問題
+
+### 🟡 W-784 Duo 闔上・橫：資料表右邊離畫面 8px，同手機打橫唔一致
+
+- 位置：`ItemInfoSheet.module.css:177-183`（Duo 區塊淨係改 `bottom`）
+- **L1**：plan `:15` 用戶決定「打橫嘅全集表 / 資料表：伸出邊框貼畫面邊」
+- **L2**：`#/show/gongzi` 自動彈資料表：612×426 `dialog` 右 8 / 底 0；844×390 右 0 / 底 0（截圖 `rr/info-cover.png` 對 `rr/info-phone.png`，見到右邊一條底色）
+- **L3**：闔上・橫行手機打橫版面，右欄右邊就係 `main` 右邊（冇把手預留位），所以要補右邊；打開・橫右欄有把手預留位（右 38 = 30 + 8），同現有闊橫版一樣唔貼邊，唔使改
+- 方案 A（推薦）：另加 `DUO_COVER_LANDSCAPE_QUERY` 區塊 `.docked { right: calc(-1 * var(--duo-edge-inset)); }`，`duo.mjs` 加資料表右 / 底 0 斷言。Trade-off：多一個區塊，但同手機打橫完全一致
+- 方案 B：問用戶右邊留 8px 得唔得。Trade-off：唔使改 code，但同決定字面唔一致
+
+### 🟡 W-785 Duo 打開・橫：內頁把手出咗畫面 8px，「播放中」字俾剪走
+
+- 位置：`PlayerHandle.module.css:91-99`（`.handleScope { right: -8px }` 對所有把手生效）
+- **L1**：`PlayerHandle.module.css:1-4`「右邊緣把手」貼住畫面邊；呢段修正自己嘅註解「把手要貼返畫面右邊」
+- **L2**：876×612 播公子會之後去 `#/show/sunnyday`、`#/drama/lancy`、`#/today`：`[data-page-handle]` 右邊 = **−8**（26px 闊得 18px 喺畫面入面），截圖 `rr/handle-showsunnyday.png` 見到「播放中」直字俾切；1180×820 係 0
+- **L3**：內頁 `main` 係 `position: static`，`.handleScope` 嘅 containing block 係 `.scope`（`position: relative`），絕對定位對住佢嘅 padding box，`right: 0` 本身已經貼畫面邊；主頁 `main.wide` 係 `position: relative`，先會差 8px。上一輪 W-783 L3 話「內頁同一個原因」係我估錯，冇量
+- 方案 A（推薦）：Duo 規則只套主頁把手（`PlayerHandle` 按 `variant` 加 class，或者 `.handleScope:has(> [data-home-handle])`），`duo.mjs` 加內頁把手右 0 斷言。Trade-off：改動細，兩種把手都貼邊
+- 方案 B：Duo 打開・橫 `main.wide` 改 `position: static`，令兩種把手同一個 containing block。Trade-off：要再核對主頁其他絕對定位嘅嘢（播放卡過場），範圍大
+
+### 🟡 W-786 Duo：主頁內容底多咗 8px，打開・橫播放卡底 32px（頂 / 右 24px）
+
+- 位置：`tokens.css:747-749`（`--mini-player-offset-bottom` 改咗）；用家 `HomePage.module.css:19`（`main.home`）、`:51`（`main.wide`）
+- **L1**：`_mockups_/iphone-duo/index.html:468-469`「Duo 四邊統一 24px…播放卡底同 mini player 底補返一樣闊」
+- **L2**：876×612 主頁：播放卡頂 24、右 24、底 **32**；喺同一頁將 token 改返 `1423a08` 嘅寫法即刻變返 24。冇 mini player 時嘅主頁格底都係 32（24 + `.scope` 8）
+- **L3**：token 原本係「離畫面底」嘅數，mini player / 短提示（`position: fixed`）用啱；但 `main` 已經俾 `.scope` 推入 8px，再用同一個 token 做 padding 就重複計。有 mini player 時格同 mini player 嘅距離冇變（兩邊一齊加 8）
+- 方案 A（推薦）：Duo 區塊入面 `main.home`（冇 mini player）同 `main.wide` 嘅 `padding-bottom` 扣返 `--duo-edge-inset`（或者加一個「main 入面用」嘅 token），`duo.mjs` 加播放卡底 24 斷言。Trade-off：多一個 Duo 區塊，mini player 位置唔郁
+- 方案 B：token 改返原本，mini player / 短提示喺自己嘅 Duo 區塊加 8px。Trade-off：要同時改有 mini player 時嘅主頁留位，改動面大啲
+
+### 評分（re-review）
+
+| 維度     | 得分   | 滿分    | 備注                |
+| -------- | ------ | ------- | ------------------- |
+| 正確性   | 10     | 25      | W-784、W-785、W-786 |
+| 安全性   | 20     | 20      |                     |
+| 可維護性 | 20     | 20      |                     |
+| 測試覆蓋 | 15     | 15      |                     |
+| 性能     | 10     | 10      |                     |
+| 代碼風格 | 10     | 10      |                     |
+| **總分** | **85** | **100** |                     |
+
+**結果：⚠️ warn**：三條都係 Duo 範圍、現有裝置唔受影響（`e2e:visual` 180 / 180），喺呢個 PR 修完再 re-review（只驗 W-784 – W-786）
+
+```handoff-receipt
+protocol: 1
+status: warn
+score: 85/100
+stage: T3
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: invoke_developer
+next_agent: frontend-developer
+branch: "feature/layout/iphone-duo"
+context: "P10 lane 1 re-review of f01f02e: W-782, S-1115, S-1116, S-1118..S-1121 resolved; W-783 home handle fixed but rule also moves inner-page handle 8px off-screen (W-785, 876x612 show/drama/today right=-8); S-1117 info sheet still 8px off right at 612x426 (W-784); --mini-player-offset-bottom change double-counts .scope inset in main.home/main.wide padding, open-landscape card bottom 32 vs 24 (W-786). Fix in this PR + re-review W-784..W-786 only; gates cited from developer run on f01f02e; report committed locally, NOT pushed (code CI running)"
+```
