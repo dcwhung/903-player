@@ -61,3 +61,26 @@ next_agent: quality-assurance
 branch: "feature/layout/iphone-duo"
 context: "P10 lane 4 @b1ba0e7: Duo open-landscape show/today/drama divider at x=438 (e2e 3/3, visual 180/180); only S-1127 (subtract env(safe-area-inset-left) from column 1) and S-1128 (stable list-column e2e locator) to clear in-session in this PR; merge target is release/v2.0.0 (no develop); report committed locally, not pushed"
 ```
+
+## Re-review（`e1d7fd3`）
+
+- **S-1127 ✅ resolved**：Duo 打開・橫 `.fixed` 第一欄改做 `calc(50vw - var(--duo-edge-inset) - env(safe-area-inset-left))`，同 `.fixed` / `.page` 喺同一個 `main` 上嘅 `padding-left: env(safe-area-inset-left)` 對消（一份，冇重複扣）；env = 0 時同之前一樣 438。`duoHinge.node.test.ts` lock 同步改，自己跑 1 / 1
+- **S-1128 ✅ resolved**：`checkOpenLandscapeHinge` 直接等 / 量 `main [class*="_listColumn_"]`（build 出嚟係 `_listColumn_6qg3h_79`）；`listColumn` 淨係 `Page.module.css` 有定義，冇其他 class 撞子字串；搵唔到 → `null` → FAIL，唔會假 PASS
+- Gates 引用 developer 喺 `e1d7fd3` 嘅結果：lint pass、`npm test` 4993、`npm run e2e` 992 / 0（三頁摺位 438，log 768–770）、`npm run e2e:visual` 180 / 180；冇新 finding
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: n/a
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/layout/iphone-duo"
+context: "Re-review P10 lane 4 @e1d7fd3: S-1127 and S-1128 resolved, no new findings, backlog empty; merge target is release/v2.0.0 (no develop); report committed locally, not pushed"
+```
