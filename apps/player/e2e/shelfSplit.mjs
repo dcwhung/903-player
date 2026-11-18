@@ -46,7 +46,16 @@ const look = (p) =>
                 el.getBoundingClientRect(),
             );
             const card = box(document.querySelector('section[data-home-card]'));
+            // 分類掣（左欄嘅直屬子元素）同左欄其他子元素嘅過場名（W-791）
+            const column = document.querySelector('[data-tab-id]')?.closest('main > div');
+            const names = [...(column?.children ?? [])].map((el) => ({
+                tabs: el.contains(document.querySelector('[data-tab-id]')),
+                name: getComputedStyle(el).viewTransitionName,
+            }));
             return {
+                tabsNamed:
+                    names.filter((n) => n.name === 'home-tabs').length === 1 &&
+                    names.find((n) => n.tabs)?.name === 'home-tabs',
                 vw: window.innerWidth,
                 vh: window.innerHeight,
                 banner,
@@ -83,6 +92,7 @@ const checkSplit = async (env, { label, viewport, edge }) => {
             near(l.shelf.bottom, l.card.bottom),
         `${label} 主頁：一欄疊卡用盡左欄高度，底同播放卡對齊（書架底 ${l.shelf?.bottom}、播放卡底 ${l.card?.bottom}）`,
     );
+    env.log(l.tabsNamed, `${label} 主頁有播放卡：分類掣先係 home-tabs 過場名（W-791）`);
     env.log(
         l.card !== null && l.card.left >= l.vw / 2 && l.card.left - l.vw / 2 < edge,
         `${label} 主頁：播放卡喺右半（左邊 ${l.card?.left}，正中 ${l.vw / 2}）`,
@@ -109,6 +119,7 @@ const checkFill = async (env, { label, viewport }) => {
         l.card === null && fill.layout === 'fill' && fill.bannerInGrid && !fill.scrolls,
         `${label} 主頁冇播放卡：原本填滿格，橫額喺格入面、唔捲（${JSON.stringify(fill)}）`,
     );
+    env.log(l.tabsNamed, `${label} 主頁冇播放卡：分類掣先係 home-tabs 過場名（W-791）`);
     env.log(
         l.stacked === false && a && b && near(a.top, b.top) && b.left > a.left,
         `${label} 主頁冇播放卡：格仔並排、唔疊（頭兩格頂 ${a?.top} / ${b?.top}）`,

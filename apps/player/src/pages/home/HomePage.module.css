@@ -83,8 +83,9 @@ main.wide[data-layout='fillWithHandle'] {
 
 /*
  * 新主頁（P10 lane 3，HomeWide data-shelf：Duo 打開・橫、HomeView）：左右各佔一半
- * （Duo 打開・橫對齊摺位；_mockups_/iphone-duo、_mockups_/home-view），左欄頂多咗闊版橫額，
- * 分類掣先係第二格：tab 嘅過場名跟返分類掣
+ * （Duo 打開・橫對齊摺位；_mockups_/iphone-duo、_mockups_/home-view）。
+ * 有播放卡（split）先有左欄頂嘅闊版橫額，分類掣先係第二格：tab 嘅過場名跟返分類掣；
+ * 冇卡用返原本填滿格，分類掣照舊係第一格（W-791）
  */
 main.wide[data-shelf] {
     /* HomeView 唔係橫向：直版嘅 --page-max-width（Page.module.css .page）唔適用，用晒成個闊度 */
@@ -95,11 +96,11 @@ main.wide[data-shelf] .cardColumn {
     flex-basis: 50%;
 }
 
-main.wide[data-shelf] .gridColumn > :first-child {
+main.wide[data-shelf][data-layout='split'] .gridColumn > :first-child {
     view-transition-name: none;
 }
 
-main.wide[data-shelf] .gridColumn > :nth-child(2) {
+main.wide[data-shelf][data-layout='split'] .gridColumn > :nth-child(2) {
     view-transition-name: home-tabs;
 }
 

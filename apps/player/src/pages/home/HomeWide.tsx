@@ -22,7 +22,7 @@ interface HomeWideProps extends WideGridProps {
      * 過場影舊畫面期間照舊
      */
     shelf: boolean;
-    /** 新主頁「節目」tab 嘅疊卡（useShowShelfItems） */
+    /** 新主頁「節目」tab 嘅疊卡（showShelfItems） */
     showItems: readonly DramaShelfItem[];
     onTab: (tab: HomeTab) => void;
     miniPlayer: MiniPlayerProps | null;

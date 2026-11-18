@@ -70,7 +70,7 @@
 }
 
 /*
- * 圖上面嘅字（新主頁「今日節目」卡，useShowShelfItems）：同節目格（ShowTile .todayLabel）一樣，
+ * 圖上面嘅字（新主頁「今日節目」卡，showShelfItems）：同節目格（ShowTile .todayLabel）一樣，
  * 放喺插畫中間嗰條米色帶（約圖高 59%、闊 52%）
  */
 .caption {
