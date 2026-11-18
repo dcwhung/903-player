@@ -41,8 +41,8 @@ const columnsStyle = (columns: number, spanLast: number): CSSProperties =>
 const flag = (on: boolean): '' | undefined => (on ? '' : undefined);
 
 /**
- * 按格數同畫面計分頁：直版按格數揀欄數（portraitColumns：≤ 2 格一欄，否則兩欄），
- * 單數格最尾一格（今日節目）喺佢嗰頁橫跨成行；橫版（LANDSCAPE_QUERY）唔分頁、唔加直版欄數 / 橫跨。
+ * 按格數同畫面計分頁：直版按格數揀欄數（portraitColumns：≤ 2 格一欄，否則兩欄；Duo 打開・直最多 3 欄），
+ * 尾行唔滿嘅話最尾一格（今日節目）橫跨（兩欄成行；3 欄填返剩低嘅欄，spanLastColumns）；橫版（LANDSCAPE_QUERY）唔分頁、唔加直版欄數 / 橫跨。
  * gridProps(i)：第 i 頁 grid 嘅 data attribute 同 inline style
  */
 const useShowGridPages = (tiles: ReactNode[]) => {

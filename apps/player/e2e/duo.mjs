@@ -472,7 +472,10 @@ const checkOpenPortraitHome = async (env) => {
         const today = tiles.find(({ label }) => label === '今日節目');
         const before = tiles.at(-2);
         const tabs = document.querySelector('[data-tab-id]')?.parentElement.getBoundingClientRect();
+        // 今日節目填滿尾行：右邊同最右嗰格對齊（S-1131）
+        const rightmost = Math.max(...tiles.map(({ r }) => r.right));
         return {
+            todayFillsRow: today ? Math.abs(today.r.right - rightmost) <= 1 : false,
             firstRow,
             todaySharesRow:
                 today && before ? Math.round(today.r.top) === Math.round(before.r.top) : false,
@@ -480,14 +483,40 @@ const checkOpenPortraitHome = async (env) => {
         };
     });
     env.log(
-        look.firstRow === 3 && look.todaySharesRow && near(look.tabsRight, DUO_EDGE_PX),
-        `Duo 打開・直主頁：3 欄、今日節目同最後一個節目同一行、分類掣用盡闊度（${JSON.stringify(look)}）`,
+        look.firstRow === 3 &&
+            look.todaySharesRow &&
+            look.todayFillsRow &&
+            near(look.tabsRight, DUO_EDGE_PX),
+        `Duo 打開・直主頁：3 欄、今日節目同最後一個節目同一行並填滿尾行、分類掣用盡闊度（${JSON.stringify(look)}）`,
+    );
+    await ctx.close();
+};
+
+/** 打開・直廣播劇分頁（lane 5a，用戶 2026-11-18）：唔疊，兩欄並排 */
+const checkOpenPortraitDramas = async (env) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: OPEN_PORTRAIT });
+    await openHome(p, env.base);
+    await p.getByRole('button', { name: '廣播劇', exact: true }).first().click();
+    const shelf = p.getByRole('navigation', { name: '廣播劇' });
+    await shelf.waitFor({ timeout: WAIT_MS });
+    const look = await shelf.evaluate((nav) => {
+        const [a, b] = [...nav.children].map((el) => el.getBoundingClientRect());
+        return {
+            stacked: nav.hasAttribute('data-stacked'),
+            sideBySide: a && b ? Math.abs(a.top - b.top) <= 1 && b.left > a.right : false,
+            overlap: a && b ? a.bottom > b.top && Math.abs(a.top - b.top) > 1 : false,
+        };
+    });
+    env.log(
+        !look.stacked && look.sideBySide && !look.overlap,
+        `Duo 打開・直廣播劇：兩欄 grid、唔疊（${JSON.stringify(look)}）`,
     );
     await ctx.close();
 };
 
 const SCENARIOS = [
     ['Duo 打開・直主頁', checkOpenPortraitHome],
+    ['Duo 打開・直廣播劇', checkOpenPortraitDramas],
     ...INNER_ROUTES.map(([label, route]) => [
         `Duo 打開・橫${label}摺位`,
         (env) => checkOpenLandscapeHinge(env, label, route),
