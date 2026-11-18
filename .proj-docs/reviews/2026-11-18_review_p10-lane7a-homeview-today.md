@@ -73,3 +73,53 @@ next_agent: null
 branch: "feature/layout/home-view-square"
 context: "P10 lane 7a @070f7ad (PR #277 -> release/v2.0.0): no C/W; S-1145 (useTodayShowInfo comment) + S-1146 (square TodayEmpty + standby-select tests) are lane backlog to clear this session. Deviations 1-3, 5 accepted; 4 (edge fade) awaits user, not blocking. TodayStandard verbatim move, today visual 0 diff. Report committed locally, not pushed"
 ```
+
+---
+
+# Re-review — 2026-11-18 — `4a2e84f`（`git diff 0918861..4a2e84f`）
+
+- 審閱者：Code Reviewer（獨立）
+- 範圍：用戶 2026-11-18 三個決定（selector edge fade、第一次入自動開全部今日節目資料、頁頭 ⓘ = 而家個節目）+ S-1145 / S-1146；只驗今輪 diff
+- Hard Gates：all pass — lint 0（`lint-lane7a2.log`）、type check（`tsc --noEmit -p apps/player` exit 0）、unit 5090/5090（`unit-lane7a2.log`；reviewer 另跑 diff 相關 3 檔 51/51）、e2e 1075 PASS / 0 FAIL（`e2e-lane7a2.log`）、visual 18/180 全部係已接受嘅 drama-series 外框（0 個元素位置唔同），today 0 diff（`visual-lane7a2.log`）。Log 喺 session scratchpad `*-lane7a2.log`，截圖 `l7a2/`
+- 評分：100/100（各維度滿分，冇 🔴 / 🟡）
+- **結果：✅ pass**
+
+## 指定檢查項
+
+- **手機 seen 記錄行為不變**：`TodayPage.tsx`（`TodayStandard`）同 `useTodayInfo.ts` 唔喺 diff；手機照舊 `useTodayInfoExpanded` 一個 instance。HomeView 只喺 `TodaySquare` 用同一個 hook（square / 標準二揀一 render，唔會兩個 instance 同時讀寫）；`TODAY_INFO_SEEN_STORAGE_KEY` 共用係用戶決定（2）要求。e2e「現有手機今日節目頁照舊」PASS、`TodayPage.test` 一齊跑綠。
+- **自動開邏輯**：`useListSheet(hasInfo && info.expanded ? 'today-info' : undefined)` — 錄音 / 資料未載完 `hasInfo=false` 唔開亦唔寫 seen，資料到先開一次；閂咗 focusKey 唔變 → 唔會再彈；reload 讀到 seen → 唔開（unit + e2e 都驗）。預設 e2e catalog 冇簡介，所以其他 square 情境唔受自動開干擾；`checkTodayInfo` 明確 seed seen。
+- **ⓘ = 而家個節目**：`useTodayShowInfo` 冇改行為，只改註解（S-1145 已清）；unit 驗閂咗自動 sheet 之後 ⓘ 淨係晴朗資料。
+- **焦點返清單掣（判斷）**：同意 developer。自動開嘅係「節目表」sheet，佢自己嘅入口就係清單掣（`returnFocusTo={buttonRef}`，同 W-795 由收藏入嚟自動開一致）；ⓘ 開嘅係另一張 sheet（單一節目資料），焦點去 ⓘ 會令鍵盤用戶以為兩張表同源。滑鼠 / 觸控閂唔搬焦點、冇 focus ring（C-025 e2e PASS）。
+- **ResizeObserver cleanup**：effect cleanup 移除 `scroll`、`resize` listener 同 `observer.disconnect()`；deps `[listRef, count]`，格數變會拆舊裝新；`ResizeObserver` 唔存在（jsdom）有 guard；`setFade` 值冇變就回傳 prev，捲動唔會連續 re-render。
+- **淡出唔遮全格**：`padding-inline = --show-selector-fade`，闊度 calc 加返 `2 × fade`，≤ 4 格照放得晒、冇淡出；`revealCell` 把 inset 計入，揀中格（連外框 / focus 環）唔會停喺淡出位。e2e `fadeState` 喺頭 / 中 / 尾驗「完全見到嘅 4 格冇壓住淡出位」（inset 24px）；截圖 `fade-start.png` 第 5 格只露邊、淡出。淡出只喺仲有格嗰邊出（`data-fade-*`），捲到盡冇。
+- **Motion**：淡出冇動畫；`mask-image` 冇 `-webkit-` 前綴，同現有 `DateColumn` / `DateStrip` / `ArcPicker` 做法一致。
+- **S-1146**：已加全部未上架 → `TodayEmpty`（清單掣照出、冇 ⓘ）同 standby 撳格淨係換睇（`audio.src` 唔變）兩個 test — 已清。
+
+## 🟢 / Observation
+
+- Observation：同一次入頁內，閂咗自動 sheet 再撳清單掣，各行仍然展開（`choice` 冇改）；同手機「今次入頁展開、下次收合」語意一致，唔使改。
+- Observation：`window` `resize` listener 喺有 `ResizeObserver` 時重複，但無害（setState 去重），亦令 jsdom test 可驗；唔開 ID。
+
+## ✅ 做得好嘅地方
+
+- 自動開完全重用 `useListSheet(focusKey)` + `useTodayInfoExpanded`，冇新 storage key、冇複製 seen 邏輯。
+- e2e 覆蓋淡出三個位置 + 第一次入 / 再入 / Escape / 滑鼠閂四條路，仲留手機對照。
+
+## Handoff receipt（re-review）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: null
+branch: "feature/layout/home-view-square"
+context: "Re-review P10 lane 7a @4a2e84f (PR #277): user decisions 2026-11-18 (edge fade, first-visit all-info sheet gated by 903player:today-info-seen:v1, header i = current show) correct; phone today path untouched; ResizeObserver/listeners cleaned up; fade padding keeps full cells clear (e2e). Focus-return to list button accepted. S-1145, S-1146 cleared; no new C/W/S. Evidence: lint 0, unit 5090, e2e 1075, visual 18/180 only accepted drama-series ring, today 0 diff. Report committed locally, not pushed"
+```
