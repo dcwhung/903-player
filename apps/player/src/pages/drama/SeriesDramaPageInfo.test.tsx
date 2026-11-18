@@ -213,6 +213,45 @@ describe('SeriesDramaPage arc info sheet focus return (S-1142)', () => {
     });
 });
 
+/*
+ * 用戶 2026-11-18 決定：第一次入自動開嘅全集表（打開前冇焦點），閂咗焦點返「全集」掣（全集表入口），
+ * 唔好跌去 <body>；鍵盤閂會見到「全集」嘅 focus ring（撳 / 拉閂就冇，:focus-visible）
+ */
+describe('SeriesDramaPage auto-opened 全集 sheet focus return', () => {
+    beforeEach(() => {
+        Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
+        info.dramaSummary = '劇集示範簡介';
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    const escapeAutoOpened = async () => {
+        openChisee();
+        await arcSheet();
+        await userEvent.keyboard('{Escape}');
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog', { name: '全集' })).not.toBeInTheDocument(),
+        );
+        return screen.getByRole('button', { name: /^全集/ });
+    };
+
+    it('should return focus to the 全集 chip when the auto-opened sheet closes', async () => {
+        expect(await escapeAutoOpened()).toHaveFocus();
+    });
+
+    it('should return focus to the 全集 chip in landscape (docked sheet)', async () => {
+        stubLandscape();
+        expect(await escapeAutoOpened()).toHaveFocus();
+    });
+
+    it('should return focus to the side picker 全集 chip on Duo open portrait', async () => {
+        stubViewport(DUO_OPEN_PORTRAIT);
+        const all = await escapeAutoOpened();
+        expect(all.closest('[data-vertical]')).not.toBeNull();
+        expect(all).toHaveFocus();
+    });
+});
+
 describe('SeriesDramaPage without item info', () => {
     beforeEach(() => {
         info.dramaSummary = undefined;

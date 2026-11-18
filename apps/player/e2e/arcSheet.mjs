@@ -1,7 +1,7 @@
 // 全集表（ArcSheet）向下拉閂 e2e：手機尺寸（390×844），觸控同滑鼠各做一次。
 // useSheetDrag 有兩條路：清單以外（grab bar / header）用 pointer（滑鼠、手指都係），
 // 清單入面用 touch（捲到頂再向下拉先由表接手）。觸控 context 兩條路都測，滑鼠 context 測 header pointer。
-import { checkTabWrap } from './focusTrap.mjs';
+import { checkTabWrap, focusedName } from './focusTrap.mjs';
 import { PHONE, isShown, newE2EPage, succeeds } from './harness.mjs';
 
 const SIZE = `${PHONE.width}×${PHONE.height}`;
@@ -373,6 +373,25 @@ const checkTabTrap = async (env, label) => {
     await env.p.keyboard.press('Escape');
 };
 
+/**
+ * 第一次入自動開嘅全集表（冇撳過掣）Escape 閂咗，焦點返「全集」掣，唔好跌去 <body>
+ *（用戶 2026-11-18 決定）。要喺 context 第一樣做（之後撳過「全集」就有 opener）
+ */
+const checkAutoOpenFocusReturn = async (env, label) => {
+    const { p, log } = env;
+    const shown = await isShown(sheetOf(p), { timeout: SHEET_OPEN_TIMEOUT_MS });
+    if (shown) {
+        await settleOpening(p);
+        await p.keyboard.press('Escape');
+        await sheetOf(p).waitFor({ state: 'detached', timeout: SETTLE_TIMEOUT_MS });
+    }
+    const focused = await focusedName(p);
+    log(
+        shown && focused.startsWith('BUTTON 全集'),
+        `${label}：自動開嘅全集表 Escape 閂咗，焦點返「全集」掣（自動開 ${shown}、${focused}）`,
+    );
+};
+
 /** 開一個劇集頁；劇集音檔 404 由 newE2EContext 處理（唔出外網） */
 const openDramaPage = async (browser, errors, base, options) => {
     const { ctx, p } = await newE2EPage(browser, errors, options);
@@ -406,6 +425,7 @@ export const runArcSheetChecks = async ({ browser, base, errors, log }) => {
     const mouse = await openDramaPage(browser, errors, base, { deviceScaleFactor: 2 });
     const mouseEnv = { p: mouse.p, log, tap: false, input: mouseInput(mouse.p), missedTaps };
     const label = `${SIZE} 滑鼠全集表（表頭）`;
+    await checkAutoOpenFocusReturn(mouseEnv, `${SIZE} 鍵盤全集表`);
     await checkSnapBack(mouseEnv, 'header', label);
     await checkDismiss(mouseEnv, 'header', label);
     await checkFling(mouseEnv, 'header', label);

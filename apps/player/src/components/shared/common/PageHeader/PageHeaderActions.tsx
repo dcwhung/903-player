@@ -1,12 +1,24 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { InfoButton } from '../../player/PlayerPanel/GaugeInfoRow';
 import styles from './PageHeader.module.css';
+
+/** ⓘ（同 PlayerPanel gaugeInfo 一樣嘅 props）；infoRef：自動彈嘅資料表閂咗焦點返呢粒 */
+interface HeaderInfo {
+    onInfo: () => void;
+    infoLabel: string;
+    infoRef?: Ref<HTMLButtonElement> | undefined;
+}
+
+/** props 拆開傳（唔喺 render 讀 info.infoRef，react-hooks/refs） */
+const HeaderInfoButton = ({ onInfo, infoLabel, infoRef }: HeaderInfo) => (
+    <InfoButton onInfo={onInfo} label={infoLabel} className={styles.info} ref={infoRef} />
+);
 
 interface PageHeaderActionsProps {
     /** 清單掣（ListButton）等，喺 ⓘ 左邊 */
     children: ReactNode;
-    /** 有資料先傳：ⓘ 擺最右（同 PlayerPanel gaugeInfo 一樣嘅 props） */
-    info?: { onInfo: () => void; infoLabel: string } | undefined;
+    /** 有資料先傳：ⓘ 擺最右 */
+    info?: HeaderInfo | undefined;
 }
 
 /**
@@ -16,6 +28,6 @@ interface PageHeaderActionsProps {
 export const PageHeaderActions = ({ children, info }: PageHeaderActionsProps) => (
     <div className={styles.actions} data-header-actions="">
         {children}
-        {info && <InfoButton onInfo={info.onInfo} label={info.infoLabel} className={styles.info} />}
+        {info && <HeaderInfoButton {...info} />}
     </div>
 );

@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Drama } from '@903-player/catalog';
 import { renderWithProviders } from '../../../tests/renderWithProviders';
@@ -31,6 +31,17 @@ describe('DailyDramaPage item info（P9.5 #12）', () => {
         openC18();
         const sheet = await screen.findByRole('dialog', { name: '劇集資料' });
         expect(within(sheet).getByText('每日劇示範簡介')).toBeInTheDocument();
+    });
+
+    it('should return focus to ⓘ when the auto-opened sheet closes (no opener)', async () => {
+        // 用戶 2026-11-18 決定：自動彈冇撳過掣，閂咗焦點返 ⓘ，唔好跌去 <body>
+        openC18();
+        await screen.findByRole('dialog', { name: '劇集資料' });
+        await userEvent.keyboard('{Escape}');
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog', { name: '劇集資料' })).not.toBeInTheDocument(),
+        );
+        expect(screen.getByRole('button', { name: '劇集資料' })).toHaveFocus();
     });
 
     it('should not pop it when entered from 我的收藏 (focusId)', async () => {

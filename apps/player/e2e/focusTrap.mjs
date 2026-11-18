@@ -1,29 +1,51 @@
 // aria-modal bottom sheet 嘅 Tab 循環（P10 lane 6c，src/components/shared/common/Sheet/sheetFocusTrap.ts）：
 // 由表本身一路撳 Tab 行勻一圈都唔會出表外（<body> / 背後嘅掣）；最尾 Tab → 最頭、最頭 Shift+Tab → 最尾；
-// 焦點跌咗去 <body> 再撳 Tab 會返入表。ArcSheet（arcSheet.mjs）同 ListSheet（square.mjs）共用
+// 焦點跌咗去 <body> 再撳 Tab 會返入表。ArcSheet（arcSheet.mjs）、ListSheet（square.mjs）、
+// ItemInfoSheet（itemInfo.mjs，表入面只得 ✕ 一粒）共用
 
 // 同 src sheetFocusTrap 嘅 TABBABLE_SELECTOR 一樣意思（e2e 係純 node，import 唔到 TS）；
 // 呢度只係揀「最頭 / 最尾」，判斷有冇行出表外唔靠佢
 const TABBABLE =
     'a[href], button:not(:disabled), input:not(:disabled), select, textarea, [tabindex]';
 
-/** 數表入面見到、Tab 會停嘅元素，最頭 / 最尾加 data-e2e-tab 標記方便之後認 */
+/**
+ * 數表入面見到、Tab 會停嘅元素，最頭 / 最尾各自加標記（data-e2e-tab-first / -last）方便之後認。
+ * 分開兩個 attribute：表入面只得 1 粒（例如資料表淨係 ✕）時佢同時係最頭同最尾，唔會互相覆蓋
+ */
 const markEnds = (dialog) =>
     dialog.evaluate((el, selector) => {
         const list = [...el.querySelectorAll(selector)].filter(
             (n) => n.tabIndex >= 0 && n.checkVisibility(),
         );
-        list.at(0)?.setAttribute('data-e2e-tab', 'first');
-        list.at(-1)?.setAttribute('data-e2e-tab', 'last');
+        list.at(0)?.setAttribute('data-e2e-tab-first', '');
+        list.at(-1)?.setAttribute('data-e2e-tab-last', '');
         return list.length;
     }, TABBABLE);
 
-/** 焦點而家喺邊：表入面嘅 first / last / 其他（in），定係表外（out：連 <body>） */
+/**
+ * 焦點而家喺邊：表入面嘅 first / last（只得 1 粒就 first+last）/ 其他（in），
+ * 定係表外（out：連 <body>）
+ */
 const where = (dialog) =>
     dialog.evaluate((el) => {
         const active = document.activeElement;
         if (!active || !el.contains(active)) return `out:${active?.tagName ?? '-'}`;
-        return active.getAttribute('data-e2e-tab') ?? 'in';
+        const ends = ['first', 'last'].filter((end) => active.hasAttribute(`data-e2e-tab-${end}`));
+        return ends.join('+') || 'in';
+    });
+
+/** where() 嘅結果係咪最頭 / 最尾（只得 1 粒時兩樣都係） */
+const isEnd = (position, end) => position.split('+').includes(end);
+
+/**
+ * 焦點而家喺邊（讀屏名，冇就字）：<body> / 冇就 'body'。
+ * 自動開嘅表（冇撳過掣）閂咗要返入口掣，唔好跌去 <body>（用戶 2026-11-18 決定）
+ */
+export const focusedName = (p) =>
+    p.evaluate(() => {
+        const el = document.activeElement;
+        if (el === null || el === document.body) return 'body';
+        return `${el.tagName} ${el.getAttribute('aria-label') ?? el.textContent?.trim() ?? ''}`;
     });
 
 /**
@@ -39,7 +61,7 @@ export const checkTabWrap = async (p, dialog, log, label) => {
         steps.push(await where(dialog));
     }
     const escaped = steps.filter((s) => s.startsWith('out'));
-    await dialog.locator('[data-e2e-tab="last"]').focus();
+    await dialog.locator('[data-e2e-tab-last]').focus();
     await p.keyboard.press('Tab');
     const afterLast = await where(dialog);
     await p.keyboard.press('Shift+Tab');
@@ -50,9 +72,9 @@ export const checkTabWrap = async (p, dialog, log, label) => {
     log(
         count > 0 &&
             escaped.length === 0 &&
-            afterLast === 'first' &&
-            afterFirst === 'last' &&
-            fromBody === 'first',
+            isEnd(afterLast, 'first') &&
+            isEnd(afterFirst, 'last') &&
+            isEnd(fromBody, 'first'),
         `${label}：Tab 困喺表入面（${count} 粒、撳 ${steps.length} 下 Tab 出咗表 ${escaped.length} 次 ${escaped.join(' ')}；` +
             `最尾 Tab → ${afterLast}、最頭 Shift+Tab → ${afterFirst}、<body> Tab → ${fromBody}）`,
     );

@@ -4,7 +4,7 @@
 // 現有裝置唔受影響由 `npm run e2e:visual` 驗；呢度只留一個現有手機做對照。每個情境用獨立 context
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
 import { ROW_OPEN, openSavedTab, seedBookmark } from './bookmark.mjs';
-import { checkTabWrap } from './focusTrap.mjs';
+import { checkTabWrap, focusedName } from './focusTrap.mjs';
 import { PHONE, ensurePlaying, isShown, newE2EPage, runSection } from './harness.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
@@ -261,8 +261,15 @@ const checkInfoInHeader = async (env) => {
     await p.goto(`${env.base}${SHOW_ROUTE}`);
     // 第一次入有資料會自動彈資料 sheet：閂咗先睇頁頭
     const auto = p.getByRole('dialog', { name: '節目資料' });
-    if (await isShown(auto, { timeout: SHEET_WAIT_MS })) await p.keyboard.press('Escape');
+    const popped = await isShown(auto, { timeout: SHEET_WAIT_MS });
+    if (popped) await p.keyboard.press('Escape');
     await isShown(auto, { state: 'detached', timeout: SHEET_WAIT_MS });
+    // 自動彈冇撳過掣：閂咗焦點返頁頭 ⓘ，唔好跌去 <body>（用戶 2026-11-18 決定）
+    const focused = await focusedName(p);
+    env.log(
+        popped && focused === 'BUTTON 節目資料',
+        `HomeView 節目頁：自動彈嘅節目資料 Escape 閂咗，焦點返頁頭 ⓘ（自動彈 ${popped}、${focused}）`,
+    );
     const order = await p.evaluate(() =>
         [...document.querySelectorAll('main header button')].map((b) => ({
             label: b.getAttribute('aria-label'),

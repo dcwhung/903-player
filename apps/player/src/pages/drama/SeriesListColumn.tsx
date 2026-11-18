@@ -39,6 +39,8 @@ export const SeriesArcSheet = ({ sheet, current, docked }: SeriesArcSheetProps) 
             onPick={sheet.pick}
             onPlay={sheet.play}
             onClose={sheet.close}
+            // 第一次入自動開（冇撳過掣）：閂咗返「全集」掣，唔好跌去 <body>
+            returnFocusTo={sheet.allRef}
             coverOf={arcCover}
         />
     );

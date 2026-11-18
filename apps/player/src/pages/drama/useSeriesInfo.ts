@@ -133,8 +133,8 @@ export const useSeriesInfo = (drama: DramaConfig, options: SeriesInfoOptions) =>
     const summaries = useMemo(() => groups.flatMap((g) => g.items), [groups]);
     const { hasInfo, sheetInfo, openAll } = useSheetInfo(drama, summaries, sheet);
     const arcSheet = useArcInfoSheet(drama, summaries, options.pickArc);
-    // S-1142（同 W-795 同類）：喺全集表揀未聽短篇 → 全集表收埋、短篇資料表彈出；打開佢嗰粒短篇行
-    // 隨全集表消失，閂咗資料表就返「全集」掣（全集表入口；直版 / 橫版 / Duo 直排同一時間只有一粒）
+    // S-1142：全集表揀未聽短篇彈嘅資料表（打開佢嗰粒短篇行已 unmount）、第一次入自動開嘅全集表（冇撳過掣，
+    // 用戶 2026-11-18 決定）閂咗都返「全集」掣（全集表入口；直版 / 橫版 / Duo 直排同一時間只有一粒）
     const allRef = useRef<HTMLButtonElement>(null);
     const pickedArc = upNext?.arc;
     const canOpen = empty
@@ -151,7 +151,7 @@ export const useSeriesInfo = (drama: DramaConfig, options: SeriesInfoOptions) =>
         sheetBanner,
         gaugeInfo: canOpen ? { onInfo, infoLabel: t('info.dramaInfo') } : undefined,
         infoSheet: { ...arcSheet.infoSheet, returnFocusTo: allRef },
-        /** 「全集」掣（ArcPicker）：資料表 returnFocusTo */
+        /** 「全集」掣（ArcPicker）：資料表 / 自動開嘅全集表 returnFocusTo */
         allRef,
         /** 由「全集」掣開：資料預設收合 */
         openSheet: () => openAll(false),

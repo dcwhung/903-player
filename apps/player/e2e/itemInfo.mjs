@@ -4,6 +4,7 @@
 // 檢查：節目頁第一次入自動彈 sheet、ⓘ 位置、橫版右欄；全集 sheet 箭咀展開 / 收合（減少動態直接切換）、
 // 揀未聽短篇彈短篇 sheet；今日節目表箭咀、第一次展開之後收合、橫版標題列
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
+import { checkTabWrap, focusedName } from './focusTrap.mjs';
 import { isShown, runSection, succeeds } from './harness.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 
@@ -12,6 +13,8 @@ const ABSENT_WAIT_MS = 1500;
 const LANDSCAPE = { viewport: { width: 1280, height: 800 } };
 /** 窄橫版：唱片按欄闊計（T7b：ⓘ 喺進度圈外面都要放得落欄入面） */
 const NARROW_LANDSCAPE = { viewport: { width: 1024, height: 768 } };
+/** Duo 打開・直（_mockups_/iphone-duo）：日子直排喺唱片右邊，ⓘ 照喺唱片圈 */
+const DUO_OPEN_PORTRAIT = { viewport: { width: 612, height: 876 } };
 /** 手機打橫（iPhone 14 類）：撳 ⓘ 成頁彈上彈落嘅實機尺寸 */
 const PHONE_LANDSCAPE = { viewport: { width: 844, height: 390 } };
 /** 彈出動畫（--view-transition-fade）期間 + 之後都要量：開表之後量幾耐 */
@@ -192,6 +195,29 @@ const checkInfoOutsideRing = async (env, p, label) => {
 };
 
 /** 節目頁橫版：sheet 喺右欄（唱片嗰欄），唔蓋左欄清單、冇遮罩 */
+/**
+ * 第一次入自動彈嘅「節目資料」（冇撳過掣）Escape 閂咗，焦點返 ⓘ，唔好跌去 <body>
+ *（用戶 2026-11-18 決定，QA Observation 1）。modal（直版 / Duo）先測 Tab 困喺表入面：
+ * 表入面只得 ✕ 一粒，順便驗 focusTrap.mjs 1 粒時最頭 = 最尾
+ */
+const checkShowAutoOpenFocus = async (env, json, contextOptions, label) => {
+    const { p } = await open(env, json, contextOptions);
+    await p.goto(`${env.base}#/show/gongzi`);
+    const sheet = infoSheet(p, '節目資料');
+    await sheet.waitFor({ timeout: WAIT_MS });
+    await settleAnimations(sheet);
+    if ((await sheet.getAttribute('aria-modal')) === 'true') {
+        await checkTabWrap(p, sheet, env.log, `${label}「節目資料」`);
+    }
+    await p.keyboard.press('Escape');
+    await sheet.waitFor({ state: 'detached', timeout: WAIT_MS });
+    const focused = await focusedName(p);
+    env.log(
+        focused === 'BUTTON 節目資料',
+        `${label}：自動彈嘅「節目資料」Escape 閂咗，焦點返 ⓘ（${focused}）`,
+    );
+};
+
 const checkShowLandscape = async (env, json) => {
     const { p } = await open(env, json, LANDSCAPE);
     await p.goto(`${env.base}#/show/gongzi`);
@@ -466,6 +492,12 @@ const checkArcOpenNoPageScroll = async (env, json) => {
     await arcSheet(p).waitFor({ timeout: WAIT_MS });
     await p.keyboard.press('Escape');
     await arcSheet(p).waitFor({ state: 'detached', timeout: WAIT_MS });
+    // 自動開嘅全集表（冇撳過掣）閂咗返「全集」掣（用戶 2026-11-18 決定）
+    const focused = await focusedName(p);
+    env.log(
+        focused.startsWith('BUTTON 全集'),
+        `劇集資料手機橫版：自動開嘅全集表 Escape 閂咗，焦點返「全集」掣（${focused}）`,
+    );
     const button = p.getByRole('button', { name: '全集', exact: true });
     await watchPageScroll(p, button);
     await button.click();
@@ -514,6 +546,11 @@ export const runItemInfoChecks = async (env) => {
     await section('節目資料：節目頁直版', () => checkShowPortrait(env, json));
     await section('節目資料：節目頁橫版', () => checkShowLandscape(env, json));
     await section('節目資料：節目頁窄橫版', () => checkShowNarrowLandscape(env, json));
+    await section('節目資料：自動彈 Escape 焦點返 ⓘ', async () => {
+        await checkShowAutoOpenFocus(env, json, {}, '節目資料直版');
+        await checkShowAutoOpenFocus(env, json, LANDSCAPE, '節目資料橫版');
+        await checkShowAutoOpenFocus(env, json, DUO_OPEN_PORTRAIT, '節目資料 Duo 打開・直');
+    });
     await section('節目資料：手機橫版撳 ⓘ 成頁唔捲', () =>
         checkInfoOpenNoPageScroll(env, json, PHONE_LANDSCAPE, '節目資料手機橫版：撳 ⓘ'),
     );
