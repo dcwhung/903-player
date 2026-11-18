@@ -121,4 +121,34 @@ describe('ListSheet', () => {
 
         expect(screen.getByRole('button', { name: '關閉今日節目表' })).toBeInTheDocument();
     });
+
+    it('should top the sheet with a banner carrying the ✕ and put the action in the header', async () => {
+        const onAction = vi.fn();
+        render(
+            <ListSheet
+                open
+                onClose={vi.fn()}
+                title="集數"
+                summary="共 2 集"
+                banner={{ kind: 'arc', art: '/banner.webp', title: '三十六計', subtitle: '劇名' }}
+                action={
+                    <button type="button" onClick={onAction}>
+                        全集
+                    </button>
+                }
+            >
+                <p>內容</p>
+            </ListSheet>,
+        );
+
+        const sheet = screen.getByRole('dialog', { name: '集數' });
+        const banner = within(sheet).getByTestId('info-banner');
+        expect(within(banner).getByRole('heading')).toHaveTextContent('三十六計');
+        expect(within(sheet).getByRole('button', { name: '關閉清單' })).toHaveAttribute(
+            'data-on-banner',
+        );
+        expect(sheet).toHaveAttribute('data-banner', 'true');
+        await userEvent.click(within(sheet).getByRole('button', { name: '全集' }));
+        expect(onAction).toHaveBeenCalledOnce();
+    });
 });

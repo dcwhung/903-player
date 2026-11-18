@@ -1,0 +1,26 @@
+/*
+ * 短篇表右上「全集」掣（_mockups_/home-view .allbtn）：深色膠囊（32px 高、13px 字、16px icon），
+ * 撳得到範圍照 --touch-target
+ */
+.all {
+    display: flex;
+    align-items: center;
+    height: var(--touch-target);
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    height: var(--arc-sheet-all-height);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--color-title);
+    color: var(--color-bg);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}

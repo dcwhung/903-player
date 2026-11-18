@@ -1,13 +1,11 @@
 import { useCallback, useId, type ReactNode, type RefObject } from 'react';
-import { t } from '../../../../i18n/t';
-import { CloseIcon } from '../icons/icons';
+import type { InfoBanner as InfoBannerData } from '../../../../selectors/itemInfo';
 import { SheetOverlay } from '../Sheet/SheetOverlay';
 import motion from '../Sheet/SheetMotion.module.css';
 import { useSheetBehaviour } from '../Sheet/useSheetBehaviour';
 import { useSheetPresence } from '../Sheet/useSheetPresence';
+import { ListSheetHeader } from './ListSheetHeader';
 import styles from './ListSheet.module.css';
-
-const CLOSE_ICON_SIZE = 20;
 
 /** 清單入面真正捲動嘅 panel（例如 EpisodeList 嘅 ul）；冇就係包住清單嗰層自己捲 */
 const SCROLL_PANEL = '[data-sheet-scroll]';
@@ -15,41 +13,6 @@ const SCROLL_PANEL = '[data-sheet-scroll]';
 /** 向下拉閂要睇捲動 panel 捲咗未（捲到頂先由表接手）：搵入面標咗 data-sheet-scroll 嘅 */
 const scrollPanelOf = (wrapper: HTMLElement | null): HTMLElement | null =>
     wrapper?.querySelector<HTMLElement>(SCROLL_PANEL) ?? wrapper;
-
-interface ListSheetHeaderProps {
-    titleId: string;
-    title: string;
-    summary: string | undefined;
-    closeLabel: string | undefined;
-    onClose: () => void;
-}
-
-/** 表頂：grab bar + 表頭（標題 + 細字 + ✕） */
-const ListSheetHeader = ({
-    titleId,
-    title,
-    summary,
-    closeLabel,
-    onClose,
-}: ListSheetHeaderProps) => (
-    <>
-        <span className={styles.grab} aria-hidden="true" />
-        <header className={styles.header}>
-            <h2 id={titleId} className={styles.title}>
-                {title}
-            </h2>
-            {summary && <span className={styles.summary}>{summary}</span>}
-            <button
-                type="button"
-                className={styles.close}
-                aria-label={closeLabel ?? t('listSheet.close')}
-                onClick={onClose}
-            >
-                <CloseIcon size={CLOSE_ICON_SIZE} />
-            </button>
-        </header>
-    </>
-);
 
 interface ListSheetProps {
     open: boolean;
@@ -64,6 +27,10 @@ interface ListSheetProps {
     children: ReactNode;
     /** 自動開（冇撳過掣，例如由「我的收藏」入頁）閂咗焦點返去邊（通常係頁頭清單掣） */
     returnFocusTo?: RefObject<HTMLElement | null> | undefined;
+    /** 表頂 banner（例如 HomeView 短篇表：劇集橫額 + 短篇名）：✕ 疊喺圖上 */
+    banner?: InfoBannerData | undefined;
+    /** 表頭右邊嘅掣（例如短篇表「全集」） */
+    action?: ReactNode;
 }
 
 /**
@@ -80,6 +47,8 @@ export const ListSheet = ({
     closeLabel,
     children,
     returnFocusTo,
+    banner,
+    action,
 }: ListSheetProps) => {
     const titleId = useId();
     const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(
@@ -106,10 +75,13 @@ export const ListSheet = ({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby={titleId}
+                data-banner={banner !== undefined}
                 tabIndex={-1}
                 {...handlers}
             >
-                <ListSheetHeader {...{ titleId, title, summary, closeLabel, onClose }} />
+                <ListSheetHeader
+                    {...{ titleId, title, summary, closeLabel, onClose, banner, action }}
+                />
                 <div ref={bindList} className={styles.list} data-role="sheet-list">
                     {children}
                 </div>

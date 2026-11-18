@@ -385,4 +385,60 @@
         flex-direction: column;
         width: 100%;
     }
+
+    /*
+     * HomeView 廣播劇頁（P10 lane 7b，_mockups_/home-view 廣播劇頁）：唱片下面貼底係「現正播放」+ 短篇名
+     * （22px 粗體）+ 集名；未揀短篇係「全集」+「揀一個短篇開始收聽」。一組高度固定（唱片照 256px），字貼底
+     */
+    .fixed[data-square-player][data-square-series] {
+        --square-player-footer: calc(
+            var(--now-playing-line) + var(--square-series-title-line) +
+                var(--now-playing-detail-line)
+        );
+    }
+
+    .seriesFooter {
+        justify-content: flex-end;
+        height: var(--square-player-footer);
+        padding: 0 var(--space-4);
+        text-align: center;
+    }
+
+    .seriesFooter > p {
+        margin: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .seriesStatus,
+    .seriesHint {
+        color: var(--color-accent-text);
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+        line-height: var(--now-playing-line);
+    }
+
+    .seriesTitle {
+        color: var(--color-title);
+        font-size: var(--square-series-title-size);
+        font-weight: 700;
+        line-height: var(--square-series-title-line);
+    }
+
+    .seriesDetail {
+        color: var(--color-text-muted);
+        font-size: var(--font-size-xs);
+        line-height: var(--now-playing-detail-line);
+    }
+
+    /* 成套劇快將下架：琥珀色 + ⏳（同 NowPlaying .notice） */
+    .seriesFooter > .seriesNotice {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--notice-icon-gap);
+        color: var(--leave-ink);
+        font-weight: 700;
+    }
 }

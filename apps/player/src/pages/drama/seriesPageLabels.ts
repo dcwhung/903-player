@@ -1,4 +1,5 @@
 import { arcLabelOf, type SeriesEpisode } from '@903-player/catalog';
+import type { SpokenNotice } from '../../components/shared/common/SpokenText/SpokenText';
 import { t } from '../../i18n/t';
 import { PLAYBACK_LINE_KEY, type PlaybackLineState } from '../../utils/playbackState';
 
@@ -34,3 +35,16 @@ export const seriesNowPlaying = (current: SeriesEpisode, arcPosition: number, ar
         detail: current.title,
     };
 };
+
+/**
+ * 橫版「現正播放」有冇第二行（集名，或者聽緊時嘅成套劇下架字）：有就預留兩行高，唔係第二行會俾版面裁走
+ */
+export const hasSecondLine = ({
+    upNext,
+    notice,
+    status,
+}: {
+    upNext: SeriesEpisode | undefined;
+    notice: SpokenNotice | undefined;
+    status: PlaybackLineState;
+}): boolean => Boolean(upNext?.title) || (notice !== undefined && status !== 'unloaded');
