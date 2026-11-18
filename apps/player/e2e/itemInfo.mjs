@@ -4,7 +4,7 @@
 // 檢查：節目頁第一次入自動彈 sheet、ⓘ 位置、橫版右欄；全集 sheet 箭咀展開 / 收合（減少動態直接切換）、
 // 揀未聽短篇彈短篇 sheet；今日節目表箭咀、第一次展開之後收合、橫版標題列
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
-import { checkTabWrap, focusedName } from './focusTrap.mjs';
+import { checkNoPointerRing, checkTabWrap, focusedName, scrimPoint } from './focusTrap.mjs';
 import { isShown, runSection, succeeds } from './harness.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 
@@ -194,7 +194,6 @@ const checkInfoOutsideRing = async (env, p, label) => {
     );
 };
 
-/** 節目頁橫版：sheet 喺右欄（唱片嗰欄），唔蓋左欄清單、冇遮罩 */
 /**
  * 第一次入自動彈嘅「節目資料」（冇撳過掣）Escape 閂咗，焦點返 ⓘ，唔好跌去 <body>
  *（用戶 2026-11-18 決定，QA Observation 1）。modal（直版 / Duo）先測 Tab 困喺表入面：
@@ -218,6 +217,28 @@ const checkShowAutoOpenFocus = async (env, json, contextOptions, label) => {
     );
 };
 
+/**
+ * C-025：第一次入自動彈嘅「節目資料」（直版，有遮罩）用滑鼠撳遮罩閂，
+ * ⓘ 唔可以被搬焦點、唔可以出 focus ring（用戶只接受鍵盤閂見到 ring）
+ */
+const checkShowAutoOpenPointerClose = async (env, json) => {
+    const { p } = await open(env, json, {});
+    await p.goto(`${env.base}#/show/gongzi`);
+    const sheet = infoSheet(p, '節目資料');
+    await sheet.waitFor({ timeout: WAIT_MS });
+    await settleAnimations(sheet);
+    const point = await scrimPoint(p, p.getByTestId('info-sheet-backdrop'), sheet);
+    if (point.onScrim) await p.mouse.click(point.x, point.y);
+    const closed = await succeeds(sheet.waitFor({ state: 'detached', timeout: WAIT_MS }));
+    env.log(
+        point.onScrim && closed,
+        `節目資料直版：自動彈嘅「節目資料」滑鼠撳遮罩閂咗（撳中遮罩 ${point.onScrim}、閂咗 ${closed}）`,
+    );
+    const info = p.getByRole('button', { name: '節目資料', exact: true });
+    await checkNoPointerRing(info, env.log, '節目資料直版滑鼠撳遮罩（自動彈）');
+};
+
+/** 節目頁橫版：sheet 喺右欄（唱片嗰欄），唔蓋左欄清單、冇遮罩 */
 const checkShowLandscape = async (env, json) => {
     const { p } = await open(env, json, LANDSCAPE);
     await p.goto(`${env.base}#/show/gongzi`);
@@ -551,6 +572,9 @@ export const runItemInfoChecks = async (env) => {
         await checkShowAutoOpenFocus(env, json, LANDSCAPE, '節目資料橫版');
         await checkShowAutoOpenFocus(env, json, DUO_OPEN_PORTRAIT, '節目資料 Duo 打開・直');
     });
+    await section('節目資料：自動彈滑鼠撳遮罩冇 focus ring', () =>
+        checkShowAutoOpenPointerClose(env, json),
+    );
     await section('節目資料：手機橫版撳 ⓘ 成頁唔捲', () =>
         checkInfoOpenNoPageScroll(env, json, PHONE_LANDSCAPE, '節目資料手機橫版：撳 ⓘ'),
     );

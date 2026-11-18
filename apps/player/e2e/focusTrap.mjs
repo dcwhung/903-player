@@ -79,3 +79,48 @@ export const checkTabWrap = async (p, dialog, log, label) => {
             `最尾 Tab → ${afterLast}、最頭 Shift+Tab → ${afterFirst}、<body> Tab → ${fromBody}）`,
     );
 };
+
+// 等遮罩真係喺嗰點最頂（表升起 / 遮罩淡入、overlay inert 期間未必）最多咁耐
+const SCRIM_READY_MS = 3000;
+
+/**
+ * 遮罩上面、表以外嘅一點（撳 / tap 閂表用）：遮罩頂同表頂中間。
+ * 等到嗰點最頂嘅元素係遮罩先返（onScrim）；等唔到 onScrim false，log 講明撳錯嘢
+ */
+export const scrimPoint = async (p, backdrop, dialog) => {
+    const scrim = await backdrop.elementHandle();
+    const sheet = await dialog.elementHandle();
+    const handle = await p
+        .waitForFunction(
+            ([b, s]) => {
+                const scrimBox = b.getBoundingClientRect();
+                const point = {
+                    x: scrimBox.x + scrimBox.width / 2,
+                    y: (scrimBox.y + s.getBoundingClientRect().y) / 2,
+                };
+                return document.elementFromPoint(point.x, point.y) === b && point;
+            },
+            [scrim, sheet],
+            { timeout: SCRIM_READY_MS },
+        )
+        .catch(() => null);
+    const point = handle ? await handle.jsonValue() : { x: 0, y: 0 };
+    await Promise.all([scrim.dispose(), sheet.dispose(), handle?.dispose()]);
+    return { ...point, onScrim: handle !== null };
+};
+
+/**
+ * C-025（Code Review 2026-11-18 p10-lane6c）：用戶只接受鍵盤閂見到入口掣嘅 focus ring。
+ * 自動開嘅表用滑鼠 / 觸控閂（撳遮罩、向下拉）：入口掣唔可以被搬焦點、唔可以 :focus-visible；
+ * 之後再用滑鼠 / 觸控開閂（有 opener，焦點返入口掣）都唔可以黐住 ring
+ */
+export const checkNoPointerRing = async (entry, log, label, { focusAllowed = false } = {}) => {
+    const { focused, ring } = await entry.evaluate((el) => ({
+        focused: document.activeElement === el,
+        ring: el.matches(':focus-visible'),
+    }));
+    log(
+        (focusAllowed || !focused) && !ring,
+        `${label}：入口掣${focusAllowed ? '' : '冇被搬焦點、'}冇 focus ring（焦點 ${focused}、:focus-visible ${ring}）`,
+    );
+};

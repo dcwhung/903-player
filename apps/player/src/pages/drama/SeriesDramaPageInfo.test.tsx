@@ -215,7 +215,9 @@ describe('SeriesDramaPage arc info sheet focus return (S-1142)', () => {
 
 /*
  * 用戶 2026-11-18 決定：第一次入自動開嘅全集表（打開前冇焦點），閂咗焦點返「全集」掣（全集表入口），
- * 唔好跌去 <body>；鍵盤閂會見到「全集」嘅 focus ring（撳 / 拉閂就冇，:focus-visible）
+ * 唔好跌去 <body>；鍵盤閂會見到「全集」嘅 focus ring。
+ * C-025：只限鍵盤閂；撳遮罩 / 向下拉（滑鼠 / 觸控）唔搬焦點，否則 Chromium 沿用自動開時
+ * script focus 嘅 :focus-visible，「全集」都出框（e2e arcSheet.mjs 用真 :focus-visible 鎖住）
  */
 describe('SeriesDramaPage auto-opened 全集 sheet focus return', () => {
     beforeEach(() => {
@@ -242,6 +244,16 @@ describe('SeriesDramaPage auto-opened 全集 sheet focus return', () => {
     it('should return focus to the 全集 chip in landscape (docked sheet)', async () => {
         stubLandscape();
         expect(await escapeAutoOpened()).toHaveFocus();
+    });
+
+    it('should leave focus off the 全集 chip when the scrim closes it', async () => {
+        openChisee();
+        await arcSheet();
+        await userEvent.click(screen.getByTestId('arc-sheet-backdrop'));
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog', { name: '全集' })).not.toBeInTheDocument(),
+        );
+        expect(screen.getByRole('button', { name: /^全集/ })).not.toHaveFocus();
     });
 
     it('should return focus to the side picker 全集 chip on Duo open portrait', async () => {

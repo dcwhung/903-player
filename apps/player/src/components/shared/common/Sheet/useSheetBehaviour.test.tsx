@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import { useRef } from 'react';
 import { useSheetBehaviour } from './useSheetBehaviour';
 
 const Sheet = ({ open }: { open: boolean }) => {
@@ -174,5 +175,88 @@ describe('useSheetBehaviour focus trap', () => {
         last.focus();
         expect(tab(last)).toBe(true);
         expect(last).toHaveFocus();
+    });
+});
+
+const AutoHost = ({ open }: { open: boolean }) => {
+    const entryRef = useRef<HTMLButtonElement>(null);
+    const { setSheet } = useSheetBehaviour(open, vi.fn(), entryRef);
+    return (
+        <>
+            <button ref={entryRef} type="button">
+                全集
+            </button>
+            {open && <section ref={setSheet} role="dialog" tabIndex={-1} />}
+        </>
+    );
+};
+
+/** 自動開（打開前焦點喺 <body>）：開住時嘅輸入，閂嗰刻先決定焦點去唔去 returnFocusTo */
+const closeAutoOpenedAfter = (input: (dialog: HTMLElement) => void) => {
+    const { rerender } = render(<AutoHost open />);
+    input(screen.getByRole('dialog'));
+    rerender(<AutoHost open={false} />);
+    return screen.getByRole('button', { name: '全集' });
+};
+
+const press = (el: HTMLElement) => fireEvent.keyDown(el, { key: 'Escape' });
+const tap = (el: HTMLElement) => fireEvent.pointerDown(el);
+
+/*
+ * C-025（Code Review 2026-11-18 p10-lane6c）：用戶只接受鍵盤閂見到入口掣嘅 focus ring。
+ * 冇有效 opener 時，最後輸入係鍵盤先返 returnFocusTo；滑鼠 / 觸控（撳遮罩、向下拉）唔搬焦點，
+ * 否則 Chromium 沿用自動開時 script focus 嘅 :focus-visible，喺入口掣出框
+ */
+describe('useSheetBehaviour returnFocusTo by input modality', () => {
+    it('should return focus to returnFocusTo when the last input was the keyboard', () => {
+        expect(closeAutoOpenedAfter(press)).toHaveFocus();
+    });
+
+    it('should not move focus to returnFocusTo when the last input was a pointer', () => {
+        expect(closeAutoOpenedAfter(tap)).not.toHaveFocus();
+    });
+
+    it('should not move focus to returnFocusTo when nothing was pressed', () => {
+        expect(closeAutoOpenedAfter(() => undefined)).not.toHaveFocus();
+    });
+
+    it('should follow the latest input when keyboard and pointer mix', () => {
+        expect(
+            closeAutoOpenedAfter((dialog) => {
+                tap(dialog);
+                press(dialog);
+            }),
+        ).toHaveFocus();
+    });
+
+    it('should drop to pointer when a pointer follows the keyboard', () => {
+        expect(
+            closeAutoOpenedAfter((dialog) => {
+                press(dialog);
+                tap(dialog);
+            }),
+        ).not.toHaveFocus();
+    });
+
+    it('should forget the modality of an earlier open', () => {
+        const { rerender } = render(<AutoHost open />);
+        press(screen.getByRole('dialog'));
+        rerender(<AutoHost open={false} />);
+        const entry = screen.getByRole('button', { name: '全集' });
+        entry.blur();
+        rerender(<AutoHost open />);
+        tap(screen.getByRole('dialog'));
+        rerender(<AutoHost open={false} />);
+        expect(entry).not.toHaveFocus();
+    });
+
+    it('should keep returning to a usable opener after a pointer close', () => {
+        const { rerender, getByRole } = render(<Host open={false} />);
+        const opener = getByRole('button');
+        opener.focus();
+        rerender(<Host open />);
+        tap(screen.getByRole('dialog'));
+        rerender(<Host open={false} />);
+        expect(opener).toHaveFocus();
     });
 });

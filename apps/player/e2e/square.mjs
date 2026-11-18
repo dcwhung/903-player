@@ -4,7 +4,7 @@
 // 現有裝置唔受影響由 `npm run e2e:visual` 驗；呢度只留一個現有手機做對照。每個情境用獨立 context
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
 import { ROW_OPEN, openSavedTab, seedBookmark } from './bookmark.mjs';
-import { checkTabWrap, focusedName } from './focusTrap.mjs';
+import { checkNoPointerRing, checkTabWrap, focusedName, scrimPoint } from './focusTrap.mjs';
 import { PHONE, ensurePlaying, isShown, newE2EPage, runSection } from './harness.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
@@ -214,6 +214,29 @@ const checkAutoOpenedFocus = async (env) => {
     await ctx.close();
 };
 
+/**
+ * C-025：由「我的收藏」入頁自動開嘅清單 sheet 用滑鼠撳遮罩閂，清單掣唔可以被搬焦點、
+ * 唔可以出 focus ring（用戶只接受鍵盤閂見到 ring；有 opener 嘅開閂見 checkSheet）
+ */
+const checkAutoOpenedPointerClose = async (env) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: SQUARE });
+    await seedBookmark(ctx);
+    await openSavedTab(p, env.base);
+    await p.getByRole('button', { name: ROW_OPEN }).click();
+    const opened = await isShown(sheet(p), { timeout: SHEET_WAIT_MS });
+    const point = opened
+        ? await scrimPoint(p, p.getByTestId('list-sheet-backdrop'), sheet(p))
+        : { onScrim: false };
+    if (point.onScrim) await p.mouse.click(point.x, point.y);
+    const closed = await isShown(sheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
+    env.log(
+        opened && point.onScrim && closed,
+        `HomeView 收藏自動開清單 sheet 滑鼠撳遮罩閂咗（自動開 ${opened}、撳中遮罩 ${point.onScrim}、閂咗 ${closed}）`,
+    );
+    await checkNoPointerRing(listButton(p), env.log, 'HomeView 收藏自動開清單 sheet 滑鼠撳遮罩');
+    await ctx.close();
+};
+
 /** P10 lane 6c：鍵盤 Tab 喺清單 sheet（aria-modal）入面循環，唔會行去背後嘅頁頭 / 播放器掣 */
 const checkTabTrap = async (env) => {
     const { ctx, p } = await openShow(env, { reducedMotion: 'reduce' });
@@ -312,6 +335,7 @@ const SCENARIOS = [
     ['HomeView 節目頁版面', checkLayout],
     ['HomeView 清單 sheet 開閂', checkSheet],
     ['HomeView 清單 sheet 收藏自動開', checkAutoOpenedFocus],
+    ['HomeView 清單 sheet 收藏自動開滑鼠閂', checkAutoOpenedPointerClose],
     ['HomeView 清單 sheet Tab 循環', checkTabTrap],
     ['HomeView 清單 sheet 減少動態', checkReducedMotion],
     ['HomeView 頁頭 ⓘ', checkInfoInHeader],

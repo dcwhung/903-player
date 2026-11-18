@@ -1,7 +1,7 @@
 // 全集表（ArcSheet）向下拉閂 e2e：手機尺寸（390×844），觸控同滑鼠各做一次。
 // useSheetDrag 有兩條路：清單以外（grab bar / header）用 pointer（滑鼠、手指都係），
 // 清單入面用 touch（捲到頂再向下拉先由表接手）。觸控 context 兩條路都測，滑鼠 context 測 header pointer。
-import { checkTabWrap, focusedName } from './focusTrap.mjs';
+import { checkNoPointerRing, checkTabWrap, focusedName, scrimPoint } from './focusTrap.mjs';
 import { PHONE, isShown, newE2EPage, succeeds } from './harness.mjs';
 
 const SIZE = `${PHONE.width}×${PHONE.height}`;
@@ -392,6 +392,75 @@ const checkAutoOpenFocusReturn = async (env, label) => {
     );
 };
 
+const TOUCH_DEVICE = { hasTouch: true, isMobile: true, deviceScaleFactor: 3 };
+const MOUSE_DEVICE = { deviceScaleFactor: 2 };
+const allButton = (p) => p.getByRole('button', { name: '全集', exact: true });
+
+/** 撳 / tap 遮罩（表以外）閂；返回撳中嘅係咪遮罩 */
+const closeByScrim = async ({ p, tap }) => {
+    const point = await scrimPoint(p, p.getByTestId('arc-sheet-backdrop'), sheetOf(p));
+    if (!point.onScrim) return false;
+    await (tap ? p.touchscreen.tap(point.x, point.y) : p.mouse.click(point.x, point.y));
+    return true;
+};
+
+/** 表頭向下拉過門檻放手閂 */
+const closeByDrag = async ({ p, input }) => {
+    const height = (await sheetOf(p).boundingBox()).height;
+    const dy = Math.round(height * SHEET_DISMISS_RATIO) + DISMISS_MARGIN_PX;
+    await dragDown(p, input, await GRIPS.header(p), dy);
+    return true;
+};
+
+/** C-025：滑鼠 / 觸控閂法 [講法, 觸控?, 閂] */
+const POINTER_CLOSES = [
+    ['滑鼠撳遮罩', false, closeByScrim],
+    ['觸控 tap 遮罩', true, closeByScrim],
+    ['觸控向下拉閂', true, closeByDrag],
+];
+
+/** 閂表兼等佢由 DOM 走；返回 [撳中, 閂咗] */
+const closeWith = async (env, close) => {
+    const hit = await close(env);
+    const closed = await succeeds(
+        sheetOf(env.p).waitFor({ state: 'detached', timeout: SETTLE_TIMEOUT_MS }),
+    );
+    return [hit, closed];
+};
+
+/**
+ * C-025：第一次入自動開嘅全集表用滑鼠 / 觸控閂，「全集」掣唔可以被搬焦點、唔可以出 focus ring
+ *（用戶只接受鍵盤閂見到 ring）；再用同一種輸入撳「全集」開、同樣閂，ring 都唔可以黐住。
+ * 每種閂法一個新 context（第一次入先自動開）
+ */
+const checkAutoOpenPointerClose = async ({ browser, base, errors, log }, missedTaps, closer) => {
+    const [how, touch, close] = closer;
+    const { ctx, p } = await openDramaPage(
+        browser,
+        errors,
+        base,
+        touch ? TOUCH_DEVICE : MOUSE_DEVICE,
+    );
+    const input = touch ? touchInput(await ctx.newCDPSession(p)) : mouseInput(p);
+    const env = { p, log, tap: touch, input, missedTaps };
+    const label = `${SIZE} ${how}`;
+    const shown = await isShown(sheetOf(p), { timeout: SHEET_OPEN_TIMEOUT_MS });
+    if (shown) await settleOpening(p);
+    const [hit, closed] = shown ? await closeWith(env, close) : [false, false];
+    log(
+        shown && hit && closed,
+        `${label}：自動開嘅全集表閂咗（自動開 ${shown}、撳中遮罩 / 表頭 ${hit}、閂咗 ${closed}）`,
+    );
+    await checkNoPointerRing(allButton(p), log, `${label}（自動開）`);
+    if (await openSheet(env, label)) {
+        await closeWith(env, close);
+        await checkNoPointerRing(allButton(p), log, `${label}（再撳「全集」開）`, {
+            focusAllowed: true,
+        });
+    }
+    await ctx.close();
+};
+
 /** 開一個劇集頁；劇集音檔 404 由 newE2EContext 處理（唔出外網） */
 const openDramaPage = async (browser, errors, base, options) => {
     const { ctx, p } = await newE2EPage(browser, errors, options);
@@ -401,16 +470,13 @@ const openDramaPage = async (browser, errors, base, options) => {
 
 /**
  * 全集表拉閂：觸控（header pointer + 清單 touch）同滑鼠（header pointer），各測彈返、閂同甩；
- * 觸控再測清單未捲到頂向下拉係捲清單；滑鼠 context 最後測鍵盤 Tab 困喺表入面
+ * 觸控再測清單未捲到頂向下拉係捲清單；滑鼠 context 最後測鍵盤 Tab 困喺表入面；
+ * 之後每種滑鼠 / 觸控閂法各開新 context 測自動開閂咗冇 focus ring（C-025）
  */
 /** 返回第一下撳「全集」被食咗幾多次（CUI-0010） */
 export const runArcSheetChecks = async ({ browser, base, errors, log }) => {
     const missedTaps = { count: 0 };
-    const touch = await openDramaPage(browser, errors, base, {
-        hasTouch: true,
-        isMobile: true,
-        deviceScaleFactor: 3,
-    });
+    const touch = await openDramaPage(browser, errors, base, TOUCH_DEVICE);
     const cdp = await touch.ctx.newCDPSession(touch.p);
     const touchEnv = { p: touch.p, log, tap: true, input: touchInput(cdp), missedTaps };
     for (const grip of ['header', 'list']) {
@@ -422,7 +488,7 @@ export const runArcSheetChecks = async ({ browser, base, errors, log }) => {
     await checkListScrollsFirst(touchEnv, `${SIZE} 觸控全集表（清單未到頂）`);
     await touch.ctx.close();
 
-    const mouse = await openDramaPage(browser, errors, base, { deviceScaleFactor: 2 });
+    const mouse = await openDramaPage(browser, errors, base, MOUSE_DEVICE);
     const mouseEnv = { p: mouse.p, log, tap: false, input: mouseInput(mouse.p), missedTaps };
     const label = `${SIZE} 滑鼠全集表（表頭）`;
     await checkAutoOpenFocusReturn(mouseEnv, `${SIZE} 鍵盤全集表`);
@@ -431,5 +497,9 @@ export const runArcSheetChecks = async ({ browser, base, errors, log }) => {
     await checkFling(mouseEnv, 'header', label);
     await checkTabTrap(mouseEnv, `${SIZE} 鍵盤全集表`);
     await mouse.ctx.close();
+
+    for (const closer of POINTER_CLOSES) {
+        await checkAutoOpenPointerClose({ browser, base, errors, log }, missedTaps, closer);
+    }
     return missedTaps.count;
 };
