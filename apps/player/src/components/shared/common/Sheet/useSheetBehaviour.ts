@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
+import { trapTab } from './sheetFocusTrap';
 import { useSheetDrag } from './useSheetDrag';
 
 /** 打開前嘅焦點靠唔住（冇 / <body> / 已經唔喺 DOM）：自動開（例如由「我的收藏」入頁）冇撳過掣 */
@@ -14,8 +15,17 @@ const restoreFocus = (
     target?.focus?.({ preventScroll: true });
 };
 
+/** 開住先掛（閂咗、包括滑走緊都唔困 Tab）：Escape 收埋；Tab 困喺表入面 */
+const sheetKeyHandler =
+    (sheetRef: RefObject<HTMLElement | null>, onCloseRef: RefObject<() => void>) =>
+    (event: KeyboardEvent) => {
+        if (event.key === 'Escape') onCloseRef.current();
+        trapTab(event, sheetRef.current);
+    };
+
 /**
- * 打開時焦點入表；Escape 收埋；收埋之後焦點返去打開前嗰粒掣。
+ * 打開時焦點入表；Tab 困喺表入面（aria-modal 先困，見 sheetFocusTrap）；Escape 收埋；
+ * 收埋之後焦點返去打開前嗰粒掣。
  * W-795：打開前冇焦點（自動開）就返 returnFocusTo（例如頁頭清單掣），唔好跌去 <body>
  */
 const useSheetFocus = (
@@ -36,9 +46,7 @@ const useSheetFocus = (
         // 表由畫面底下面滑上嚟（SheetMotion sheet-in）：focus 嗰刻仲喺畫面外，預設會捲祖先
         // （連 overflow: hidden 嘅 main）去露出佢，手機打橫成頁彈上再彈落；開 / 閂都唔准捲
         sheetRef.current?.focus({ preventScroll: true });
-        const onKey = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') onCloseRef.current();
-        };
+        const onKey = sheetKeyHandler(sheetRef, onCloseRef);
         document.addEventListener('keydown', onKey);
         return () => {
             document.removeEventListener('keydown', onKey);

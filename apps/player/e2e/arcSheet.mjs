@@ -1,6 +1,7 @@
 // 全集表（ArcSheet）向下拉閂 e2e：手機尺寸（390×844），觸控同滑鼠各做一次。
 // useSheetDrag 有兩條路：清單以外（grab bar / header）用 pointer（滑鼠、手指都係），
 // 清單入面用 touch（捲到頂再向下拉先由表接手）。觸控 context 兩條路都測，滑鼠 context 測 header pointer。
+import { checkTabWrap } from './focusTrap.mjs';
 import { PHONE, isShown, newE2EPage, succeeds } from './harness.mjs';
 
 const SIZE = `${PHONE.width}×${PHONE.height}`;
@@ -365,6 +366,13 @@ const checkListScrollsFirst = async (env, label) => {
     log(settled === 'open', `${label}：清單未到頂拉完放手，全集表仍然開住（${settled}）`);
 };
 
+/** P10 lane 6c：鍵盤 Tab 唔會由全集表（aria-modal）行去背後嘅掣 */
+const checkTabTrap = async (env, label) => {
+    if (!(await openSheet(env, label))) return;
+    await checkTabWrap(env.p, sheetOf(env.p), env.log, label);
+    await env.p.keyboard.press('Escape');
+};
+
 /** 開一個劇集頁；劇集音檔 404 由 newE2EContext 處理（唔出外網） */
 const openDramaPage = async (browser, errors, base, options) => {
     const { ctx, p } = await newE2EPage(browser, errors, options);
@@ -374,7 +382,7 @@ const openDramaPage = async (browser, errors, base, options) => {
 
 /**
  * 全集表拉閂：觸控（header pointer + 清單 touch）同滑鼠（header pointer），各測彈返、閂同甩；
- * 觸控再測清單未捲到頂向下拉係捲清單
+ * 觸控再測清單未捲到頂向下拉係捲清單；滑鼠 context 最後測鍵盤 Tab 困喺表入面
  */
 /** 返回第一下撳「全集」被食咗幾多次（CUI-0010） */
 export const runArcSheetChecks = async ({ browser, base, errors, log }) => {
@@ -401,6 +409,7 @@ export const runArcSheetChecks = async ({ browser, base, errors, log }) => {
     await checkSnapBack(mouseEnv, 'header', label);
     await checkDismiss(mouseEnv, 'header', label);
     await checkFling(mouseEnv, 'header', label);
+    await checkTabTrap(mouseEnv, `${SIZE} 鍵盤全集表`);
     await mouse.ctx.close();
     return missedTaps.count;
 };

@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { useSheetBehaviour } from './useSheetBehaviour';
 
 const Sheet = ({ open }: { open: boolean }) => {
@@ -40,5 +40,113 @@ describe('useSheetBehaviour focus', () => {
         expect(opener).toHaveFocus();
         expect(focus.mock.instances).toContain(opener);
         expect(focus.mock.calls.every(([options]) => options?.preventScroll === true)).toBe(true);
+    });
+});
+
+const TrapSheet = ({
+    open,
+    modal = true,
+    rows = 2,
+}: {
+    open: boolean;
+    modal?: boolean;
+    rows?: number;
+}) => {
+    const { setSheet } = useSheetBehaviour(open, vi.fn());
+    return (
+        <>
+            <button type="button">behind</button>
+            {open && (
+                <section ref={setSheet} role="dialog" aria-modal={modal} tabIndex={-1}>
+                    <button type="button">close</button>
+                    {Array.from({ length: rows }, (_, i) => (
+                        <button key={i} type="button">{`row ${i}`}</button>
+                    ))}
+                    <button type="button" disabled>
+                        disabled
+                    </button>
+                    <button type="button" tabIndex={-1}>
+                        skipped
+                    </button>
+                </section>
+            )}
+        </>
+    );
+};
+
+/** 由 target 撳 Tab（jsdom 唔會自己郁焦點）；返 true = 冇 preventDefault，交返瀏覽器行 */
+const tab = (target: Element, shiftKey = false) =>
+    fireEvent.keyDown(target, { key: 'Tab', shiftKey });
+
+/*
+ * aria-modal 嘅表：Tab / Shift+Tab 唔可以行出表外（Code Review 2026-11-18 p10-lane6）。
+ * 最尾 ↔ 最頭循環；焦點走咗出去就拉返入嚟；可聚焦元素喺撳鍵嗰刻先計（清單 lazy render）
+ */
+describe('useSheetBehaviour focus trap', () => {
+    it('should wrap Tab from the last focusable to the first', () => {
+        render(<TrapSheet open />);
+        const last = screen.getByRole('button', { name: 'row 1' });
+        last.focus();
+        expect(tab(last)).toBe(false);
+        expect(screen.getByRole('button', { name: 'close' })).toHaveFocus();
+    });
+
+    it('should wrap Shift+Tab from the first focusable to the last', () => {
+        render(<TrapSheet open />);
+        const first = screen.getByRole('button', { name: 'close' });
+        first.focus();
+        expect(tab(first, true)).toBe(false);
+        expect(screen.getByRole('button', { name: 'row 1' })).toHaveFocus();
+    });
+
+    it('should send Shift+Tab from the sheet itself to the last focusable', () => {
+        render(<TrapSheet open />);
+        expect(screen.getByRole('dialog')).toHaveFocus();
+        expect(tab(screen.getByRole('dialog'), true)).toBe(false);
+        expect(screen.getByRole('button', { name: 'row 1' })).toHaveFocus();
+    });
+
+    it('should leave Tab between inner focusables to the browser', () => {
+        render(<TrapSheet open />);
+        const middle = screen.getByRole('button', { name: 'row 0' });
+        middle.focus();
+        expect(tab(middle)).toBe(true);
+        expect(tab(middle, true)).toBe(true);
+    });
+
+    it('should bring focus back into the sheet when it escaped', () => {
+        render(<TrapSheet open />);
+        const behind = screen.getByRole('button', { name: 'behind' });
+        behind.focus();
+        expect(tab(behind)).toBe(false);
+        expect(screen.getByRole('button', { name: 'close' })).toHaveFocus();
+        behind.focus();
+        expect(tab(behind, true)).toBe(false);
+        expect(screen.getByRole('button', { name: 'row 1' })).toHaveFocus();
+    });
+
+    it('should count focusables rendered after opening', () => {
+        const { rerender } = render(<TrapSheet open rows={1} />);
+        rerender(<TrapSheet open rows={3} />);
+        const last = screen.getByRole('button', { name: 'row 2' });
+        last.focus();
+        expect(tab(last)).toBe(false);
+        expect(screen.getByRole('button', { name: 'close' })).toHaveFocus();
+    });
+
+    it('should not trap Tab when the sheet is closed', () => {
+        render(<TrapSheet open={false} />);
+        const behind = screen.getByRole('button', { name: 'behind' });
+        behind.focus();
+        expect(tab(behind)).toBe(true);
+        expect(behind).toHaveFocus();
+    });
+
+    it('should not trap Tab when the sheet is docked (not aria-modal)', () => {
+        render(<TrapSheet open modal={false} />);
+        const last = screen.getByRole('button', { name: 'row 1' });
+        last.focus();
+        expect(tab(last)).toBe(true);
+        expect(last).toHaveFocus();
     });
 });
