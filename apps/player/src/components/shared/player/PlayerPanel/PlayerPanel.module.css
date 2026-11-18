@@ -176,3 +176,19 @@
         right: max(0px, calc(50% - var(--player-disc-size) / 2 - var(--gauge-info-room)));
     }
 }
+
+/*
+ * 日子直排喺唱片右邊（stripSide，只係 Duo 打開・直由節目頁開，P10 lane 5b，_mockups_/iphone-duo 方案 B）：
+ * 唱片喺左邊剩低嘅闊度入面置中，右邊一欄直排日子，高度同唱片格一樣、放唔晒自己捲
+ */
+.panel[data-strip-side] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+    justify-items: center;
+    column-gap: var(--space-4);
+}
+
+.panel[data-strip-side] > :last-child {
+    max-height: calc(var(--player-disc-size) * var(--player-gauge-h) / var(--player-gauge-w));
+}

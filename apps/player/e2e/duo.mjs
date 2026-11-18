@@ -3,7 +3,7 @@
 // 現有裝置唔受影響由 `npm run e2e:visual` 驗；呢度只留一個現有手機做對照。
 // 每個情境用獨立 context
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
-import { BANNER_ALT, PHONE, ensurePlaying, newE2EPage, runSection } from './harness.mjs';
+import { BANNER_ALT, PHONE, ensurePlaying, isShown, newE2EPage, runSection } from './harness.mjs';
 import { BOOKMARK_STORAGE_KEY, BOOKMARK_STORE_VERSION } from './bookmark.mjs';
 import { PROGRESS_STORAGE_KEY } from './hiddenPlayback.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
@@ -514,8 +514,84 @@ const checkOpenPortraitDramas = async (env) => {
     await ctx.close();
 };
 
+// 打開・直摺位（畫面正中）：播放器同日子 / 短篇選擇喺上半，清單同全集表喺下半（lane 5b）
+const FOLD_Y = OPEN_PORTRAIT.height / 2;
+
+/** 打開・直內頁：播放掣喺摺位以上；有右欄（日子 / 短篇）就喺唱片右邊；清單由摺位附近開始 */
+const openPortraitPage = async (env, route) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: OPEN_PORTRAIT });
+    await p.goto(`${env.base}${route}`);
+    const sheet = p.getByRole('dialog', { name: '全集' });
+    const sheetTop = (await isShown(sheet, { timeout: 2000 }))
+        ? (await sheet.boundingBox())?.y
+        : null;
+    if (sheetTop !== null) {
+        await p.keyboard.press('Escape');
+        await sheet.waitFor({ state: 'detached', timeout: WAIT_MS });
+    }
+    await p.locator('main [class*="_listColumn_"], main ul').first().waitFor({ timeout: WAIT_MS });
+    const look = await p.evaluate(() => {
+        const box = (el) => el?.getBoundingClientRect() ?? null;
+        const play = [...document.querySelectorAll('button')].find((el) =>
+            ['播放', '暫停'].includes(el.getAttribute('aria-label')),
+        );
+        const side =
+            document.querySelector('[data-vertical]') ??
+            document.querySelector('[aria-current="date"]')?.closest('div');
+        return {
+            playBottom: box(play)?.bottom ?? null,
+            playRight: box(play)?.right ?? null,
+            sideLeft: box(side)?.left ?? null,
+        };
+    });
+    return { ctx, p, look, sheetTop };
+};
+
+const checkOpenPortraitShow = async (env) => {
+    const { ctx, look } = await openPortraitPage(env, '#/show/badgirl');
+    env.log(
+        look.playBottom < FOLD_Y && look.sideLeft > look.playRight,
+        `Duo 打開・直節目頁：播放器喺上半、日子直排喺右邊（播放掣底 ${look.playBottom}、右 ${look.playRight}，日子欄左 ${look.sideLeft}）`,
+    );
+    await ctx.close();
+};
+
+const checkOpenPortraitDrama = async (env) => {
+    const { ctx, look, sheetTop } = await openPortraitPage(env, '#/drama/chisee');
+    env.log(
+        look.playBottom < FOLD_Y && look.sideLeft > look.playRight,
+        `Duo 打開・直廣播劇頁：播放器喺上半、短篇選擇直排喺右邊（播放掣底 ${look.playBottom}，短篇欄左 ${look.sideLeft}）`,
+    );
+    env.log(
+        sheetTop !== null && sheetTop >= FOLD_Y - EDGE_TOLERANCE_PX,
+        `Duo 打開・直廣播劇頁：全集表最高到摺位（表頂 ${sheetTop}）`,
+    );
+    await ctx.close();
+};
+
+const checkOpenPortraitToday = async (env) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: OPEN_PORTRAIT });
+    await p.goto(`${env.base}${TODAY_ROUTE}`);
+    await ensurePlaying(p);
+    const dots = await p.evaluate(() => {
+        // 指示點：卡疊下面嗰組小點掣（PageDots data-page-dot）
+        const buttons = [...document.querySelectorAll('[data-page-dot]')];
+        return buttons.length
+            ? Math.max(...buttons.map((b) => b.getBoundingClientRect().bottom))
+            : null;
+    });
+    env.log(
+        dots !== null && dots < FOLD_Y,
+        `Duo 打開・直今日節目：卡同指示點喺摺位以上（指示點底 ${dots}）`,
+    );
+    await ctx.close();
+};
+
 const SCENARIOS = [
     ['Duo 打開・直主頁', checkOpenPortraitHome],
+    ['Duo 打開・直節目頁', checkOpenPortraitShow],
+    ['Duo 打開・直廣播劇頁', checkOpenPortraitDrama],
+    ['Duo 打開・直今日節目', checkOpenPortraitToday],
     ['Duo 打開・直廣播劇', checkOpenPortraitDramas],
     ...INNER_ROUTES.map(([label, route]) => [
         `Duo 打開・橫${label}摺位`,

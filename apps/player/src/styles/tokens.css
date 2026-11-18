@@ -113,6 +113,12 @@
      * 塞入觸控高度；兩邊淡出闊度、正中 highlight box 離條邊幾遠、兩行嘅 line-height、冇節目日子嘅透明度
      */
     --date-strip-height: var(--touch-target);
+    /* Duo 打開・直今日節目卡入面嘅唱片：細啲，卡同指示點先放得落摺位以上（P10 lane 5b） */
+    --duo-today-disc-size: calc(200px * var(--ui-scale));
+    /* 直排短篇選擇（ArcPicker vertical，Duo 打開・直）嘅欄闊 */
+    --duo-arc-column-width: calc(160px * var(--ui-scale));
+    /* 直排日子（DateColumn，Duo 打開・直）嘅欄闊 */
+    --date-column-width: calc(104px * var(--ui-scale));
     /*
      * 日子條上面「現正播放」標籤一行嘅高度（line-height）：標籤 + 日子條 = 60px，
      * 啱啱等於播放器高度計法唱片下面嗰行嘅下限，矮螢幕斷點（561px）唔使改
@@ -748,5 +754,15 @@
         --mini-player-offset-bottom: calc(
             var(--safe-area-bottom-visible) + var(--home-gutter) + var(--duo-edge-inset)
         );
+    }
+}
+
+/*
+ * iPhone Duo 打開・直（DUO_OPEN_PORTRAIT_QUERY，P10 lane 5b）：全集表 / 資料表最高只到摺位（下半），
+ * 唔遮住上半嘅播放器同日子 / 短篇選擇（用戶 2026-11-17）
+ */
+@media (orientation: portrait) and (min-width: 600px) and (max-width: 640px) and (min-height: 860px) and (max-height: 900px) {
+    :root {
+        --arc-sheet-max-height: 50%;
     }
 }

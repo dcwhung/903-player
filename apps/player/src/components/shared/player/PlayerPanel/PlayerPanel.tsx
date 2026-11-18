@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ComponentProps } from 'react';
 import { usePlayer } from '../../../../player/usePlayer';
 import type { Track } from '../../../../types/track';
 import { hasKnownDuration } from '../../../../utils/time';
+import { DateColumn } from '../DateColumn/DateColumn';
 import { DateStrip } from '../DateStrip/DateStrip';
 import type { StripDay } from '../DateStrip/dateStrip';
 import { PlayerGauge } from './PlayerGauge';
@@ -26,7 +27,24 @@ interface PlayerPanelProps {
     /** 有資料先傳：唱片圈右上角 ⓘ（見 PlayerGauge） */
     onInfo?: (() => void) | undefined;
     infoLabel?: string | undefined;
+    /** 日子直排喺唱片右邊（DateColumn，Duo 打開・直，P10 lane 5b）；冇就照舊喺下面嘅日子條 */
+    stripSide?: boolean;
 }
+
+type PanelStripProps = ComponentProps<typeof DateStrip> & { side: boolean };
+
+/** 日子：直排喺右邊（DateColumn，Duo 打開・直）或者照舊喺唱片下面嘅日子條 */
+const PanelStrip = ({ side, ...strip }: PanelStripProps) =>
+    side ? (
+        <DateColumn
+            days={strip.days}
+            current={strip.current}
+            onPick={strip.onPick}
+            connecting={strip.connecting ?? false}
+        />
+    ) : (
+        <DateStrip {...strip} />
+    );
 
 /** 節目頁播放器：唱片 + 弧形進度 + 播放掣 + 日子條 */
 export const PlayerPanel = ({
@@ -40,6 +58,7 @@ export const PlayerPanel = ({
     bookmark,
     onInfo,
     infoLabel,
+    stripSide = false,
 }: PlayerPanelProps) => {
     // 日子條拖動時跟住轉嘅節目圖
     const artRef = useRef<HTMLImageElement>(null);
@@ -47,7 +66,7 @@ export const PlayerPanel = ({
     const [held, setHeld] = useState(false);
     const { duration } = usePlayer();
     return (
-        <div className={styles.panel}>
+        <div className={styles.panel} data-strip-side={stripSide ? '' : undefined}>
             <PlayerGauge
                 art={art}
                 artRef={artRef}
@@ -57,9 +76,10 @@ export const PlayerPanel = ({
                 onInfo={onInfo}
                 infoLabel={infoLabel}
             />
-            <DateStrip
+            <PanelStrip
+                side={stripSide}
                 title={title}
-                // 未開始（onStart）時 duration 係其他嘢嘅，唔講「連線中…」
+                // 未開始（onStart）時 duration 係其他嘅，唔講「連線中…」
                 connecting={!onStart && !hasKnownDuration(duration)}
                 dateLabel={dateLabel}
                 days={days}

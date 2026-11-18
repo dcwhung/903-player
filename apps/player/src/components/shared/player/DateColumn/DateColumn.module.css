@@ -1,0 +1,42 @@
+/*
+ * 直排日子（P10 lane 5b，Duo 打開・直）：喺唱片右邊，標籤喺頂，下面一格一集，放唔晒自己捲。
+ * 每格沿用日子條（DateStrip.module.css .cell）嘅兩行字；現正播放加框（同 mockup new-opr-show）
+ */
+.column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: var(--date-column-width);
+    min-height: 0;
+}
+
+.list {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    list-style: none;
+    scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+    display: none;
+}
+
+/* 蓋過日子條一格佔七份一闊：直排每格成欄咁闊 */
+.cell {
+    width: 100%;
+    min-height: var(--touch-target-min);
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text);
+}
+
+.current {
+    border: 1px solid var(--color-accent-text);
+}

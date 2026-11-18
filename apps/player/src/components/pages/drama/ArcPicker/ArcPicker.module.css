@@ -181,3 +181,48 @@
         display: none;
     }
 }
+
+/*
+ * 直排（data-vertical，只係 Duo 打開・直由廣播劇頁開，P10 lane 5b，_mockups_/iphone-duo 方案 B）：
+ * 喺唱片右邊一欄，標籤喺頂，「全集」+ 短篇由上至下，放唔晒自己上下捲；高度同唱片格一樣（SeriesDramaPage）
+ */
+.group[data-vertical] {
+    width: var(--duo-arc-column-width);
+    height: 100%;
+    min-height: 0;
+}
+
+.group[data-vertical] .label {
+    padding: 0;
+    white-space: normal;
+}
+
+.group[data-vertical] .row {
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    height: auto;
+    min-height: 0;
+    padding: 0;
+}
+
+.group[data-vertical] .chips {
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: stretch;
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* 橫排時掣跟成行高（height: 100%）；直排每粒用返一行嘅高度，唔好食晒成欄 */
+.group[data-vertical] .chip {
+    flex-shrink: 0;
+    justify-content: center;
+    width: 100%;
+    height: var(--date-strip-height);
+}
