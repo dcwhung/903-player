@@ -145,3 +145,42 @@ next_agent: quality-assurance
 branch: "feature/layout/iphone-duo"
 context: "Re-review P10 lane 5b @8770311: W-792..W-794, S-1135..S-1137 all resolved. L2 at 612x876: DateColumn focus stays on tapped day + polite '已轉到…'; current day is a focusable aria-disabled button (reachable, not replayed); arc sheet x0 w612; fade leaves last item 24px clear when scrolled to end (dates 21, chips 12) and 196px when list fits. e2e 1001/0, visual 180/180, unit 5013 cited. No backlog. Merge target release/v2.0.0 (no develop); report committed locally, not pushed"
 ```
+
+## Re-review 2 — 7e11982（CUI-0026 + S-QA-2）
+
+- 日期：2026-11-18｜審閱者：Code Reviewer｜目標：`git show 7e11982`（PR #274 → `release/v2.0.0`）｜Tier：T2
+- Hard gates：all pass（引用 7e11982 嘅 log：lint 0 + prettier 全過；unit 481 files / 5014 passed；e2e `All E2E checks passed`；visual 比對 180 張全部一樣）
+- **結果：✅ pass（100 / 100）**
+
+| ID       | 處理                                                                                                                                                                                                                                                                                        | 結果 |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| CUI-0026 | 框 class 改名 `.currentDay`（同 DateStrip `.current` 分開，non-scoped unit 分得出），selector `.cell.currentDay`（0,2,0）蓋過 DateStrip `.cell { border: none }`（0,1,0），唔靠 bundle 次序；淨係 `isCurrent` 先加。Unit「should frame the playing day only」；e2e 節目頁 `border 1px` PASS | ✅   |
+| S-QA-2   | `.panel[data-strip-side]`（PlayerPanel）同 `.sideRow`（Page，喺 base `.sideRow` 之前但 base 冇 `padding`，冇被蓋）各加 `padding-inline: var(--space-4)`；e2e 節目頁日子欄 / 廣播劇頁短篇欄右邊 **588 ≤ 588** PASS                                                                           | ✅   |
+
+### 指定核對
+
+- **Query 一字不差**：新 block 同 `config/layout.ts` `DUO_OPEN_PORTRAIT_QUERY` 字串完全一樣；`deviceQueries.node.test.ts` 掃晒 `src` 所有 CSS `@media` 要喺允許清單（「同 layout.ts 嘅常數一字不差」），喺 5014 passed 之內 ✅
+- **現有裝置零改變**：兩個 block 都喺 Duo 打開・直 query 入面；lock test 斷言 `VISUAL_VIEWPORTS` 一句都唔 match；`e2e:visual` 180 / 180 一樣 ✅
+- **唱片置中**：padding 左右對稱，`.sideRow` 唱片格 `minmax(0, 1fr)` + `justify-items: center`，置中點只隨欄闊收窄、喺自己格中間；截圖 `probe/__show_badgirl.png`、`probe/__drama_chisee.png` 唱片仍喺左格中間 ✅
+- Version 冇 bump：修同 session 上一個 commit（8770311）嘅 bug，commit message 有寫，符合例外 ✅
+
+### Observation（唔扣分、唔入 backlog）
+
+- e2e `sideAlignedWithList` 淨驗上限（≤ 588 + 1），唔驗下限；若將來 padding 加多咗唔會 fail，但 visual / mockup 會睇到，冇 L1
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/layout/iphone-duo"
+context: "Re-review 2 P10 lane 5b @7e11982: CUI-0026 (.cell.currentDay beats strip .cell border:none; unit + e2e border 1px) and S-QA-2 (padding-inline --space-4 on .panel[data-strip-side] and .sideRow inside DUO_OPEN_PORTRAIT block; e2e side right 588) resolved. Query string identical to DUO_OPEN_PORTRAIT_QUERY (deviceQueries lock test in unit 5014 passed); visual 180/180; disc centred (symmetric padding). No new findings, no backlog. Merge target release/v2.0.0 (no develop); report committed locally, not pushed"
+```
