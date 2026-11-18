@@ -58,3 +58,50 @@ next_agent: frontend-developer
 branch: "feature/layout/iphone-duo"
 context: "S1 @ f01f02e: 1 Major CUI-0025 (Duo landscape docked ItemInfoSheet right edge 8px off screen; fix right: -duo-edge-inset in ItemInfoSheet.module.css + duo.mjs assertion). ui-foundation + 9 other chains refrozen; drama & show-today-page NOT frozen until fix re-verified. e2e 952/0, visual 180/180 cited; CI 44257975863 E2E in_progress at report time. QA commit local only, not pushed"
 ```
+
+---
+
+## Update 1 — 2026-11-18 08:20 — S1 re-verify（`ffccc59` `19da287` `d796cf3`）
+
+- Tier: T2 | Commit: d796cf3（ledger 記 b3baba8 = reviewer 淨 docs）| Verdict: ✅ pass
+- Ledger（`impact --since e3d6952`，freeze 前 vs 5de5659）：REVERIFY 4（drama、show-today-page、home、ui-foundation S1）/ SKIP 10 / UNCOVERED 15（`_mockups_/home-view/`，同上）。mini-player 冇 STALE（新 commit 冇掂佢嘅檔），唔使 re-freeze
+- Plans 不變（全部係 `npm test` / `npm run e2e` 子集，下面全套證據覆蓋）
+
+| Command                                                                   | Result                                                                                                                     |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `npm test` + `npm run lint`（引用 developer，d796cf3）                    | 4956 passed；clean                                                                                                         |
+| `npm run e2e`（引用，scratchpad `e2e-lane1c.log`，19da287）               | 966 PASS / 0 FAIL；Duo 40 行，包括資料表右 0 / 底 0（闔上・橫、Seated）、右 30 底 0（打開・橫）、內頁把手離邊 0、短提示 24 |
+| `npm run e2e:visual` 對 origin/main（引用，`visual-lane1c.log`，19da287） | 180 張全部一樣                                                                                                             |
+| `scratchpad/qa/duoInfo2.mjs`（QA，現有 dist，CSS 核實含三個 fix）         | 612×426 / 612×438 右 0 底 0；876×612 右 30 底 0；對照 844×390 右 0、1000×562 右 30；mini / toast 24；0 JS error（20s）     |
+| CI 44263374327 @ d796cf3（PR #269）                                       | Detect ✅ / Lint, unit & build ✅ / E2E (Playwright) 報告時 in_progress（19da287 run 44262501599 俾 d796cf3 cancel）       |
+
+- d796cf3 淨改 `homeBottomSpace.node.test.ts`（node test，`npm test` 覆蓋），所以 19da287 嘅 e2e / visual 證據適用
+- Hard Gates：all pass（Coverage：三個改動係 CSS，由 e2e 斷言 + lock test 覆蓋；PWA / Security / Performance n/a）
+
+### Findings
+
+- CUI-0025 ✅ 已修 → ticket 移去 `.tickets/completed/0001-0200/CUI-0025.md`（W-784 同一問題，reviewer re-review 2 亦 resolved）
+- 冇新 finding；上次 Observation「短提示 24px 冇直接斷言」已由 `duo.mjs` 補（4 個姿勢「短提示離底 24px」）
+
+### Scope / freeze
+
+- Re-freeze S1（全條 chain + stage 檔案清單由 ledger 攞 + plan）：drama 212、show-today-page 174、home 151、ui-foundation 130
+- Freeze 前後 chain + stage + path 逐行比對：2593 行一樣，冇少行；S1 STALE 0（ui-foundation 仍顯示 REVERIFY 係 S3 舊 path，屬 release）
+- 建議補測：none
+
+```handoff-receipt
+protocol: 2
+status: pass
+score: n/a
+stage: S1
+ledger: "SKIP 10 / REVERIFY 4 / UNCOVERED 15"
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+next_action: proceed
+next_agent: main
+branch: "feature/layout/iphone-duo"
+context: "S1 re-verify @ d796cf3: CUI-0025 fixed (ffccc59) and closed; drama, show-today-page, home, ui-foundation S1 frozen @ b3baba8 (full chain lists, 2593 rows unchanged). e2e 966/0 + visual 180/180 on 19da287, unit 4956 + lint on d796cf3 cited; targeted Duo info-sheet measure pass. CI 44263374327 E2E in_progress at report time: must be green before push/merge. QA commit local only, not pushed"
+```
