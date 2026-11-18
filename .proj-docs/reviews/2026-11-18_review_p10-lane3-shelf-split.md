@@ -131,3 +131,38 @@ next_agent: frontend-developer
 branch: "feature/layout/iphone-duo"
 context: "P10 lane 3 re-review @35fa781: W-787, W-788, W-789, W-790, S-1124, S-1125 resolved; S-1126 accepted as is (user design). New W-791 from this commit: with data-shelf but no card (fill / fillWithHandle), HomePage.module.css main.wide[data-shelf] .gridColumn > :first-child / :nth-child(2) put view-transition-name home-tabs on the fill-grid nav and none on the tabs (banner only renders in split now); scope the two rules to data-layout='split' (or name tabs explicitly), fix stale useShowShelfItems comments, add a unit. QA S1 to capture computed view-transition-name at 876x612 / 544x544 without a card (browser probe blocked for reviewer). Report committed locally, not pushed"
 ```
+
+## Re-review 2 — 2026-11-18 @ `579ebb1`
+
+- 範圍：只驗 W-791 嘅修正同 `579ebb1` 本身嘅 diff（5 檔 +45 / −6）；唔搵新 🟢
+- Hard Gates：all pass（引用 main agent 喺 `579ebb1` 跑嘅結果：lint、`npm test` 4992 passed、`npm run e2e` 989 PASS / 0 FAIL、`npm run e2e:visual` 對 `origin/main` 180 / 180 一致）；reviewer 只補跑新 lock test `shelfSplitTabs.node.test.ts`（2 passed）
+- 評分：**100 / 100**
+- 結果：**✅ pass**
+
+| ID    | 狀態        | 驗證                                                                                                                                                                                                                                                                                                      |
+| ----- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-791 | ✅ resolved | 方案 A：兩條位置 selector 收窄到 `main.wide[data-shelf][data-layout='split']`；`data-layout={mode}` 同 `HomeWideLeft` 嘅 `shelfColumn = shelf && mode === 'split'` 用同一個 `useCardMotion` 凍結 mode，橫額有冇同 selector 一定同步；fill / fillWithHandle 跌返通用 `.gridColumn > :first-child` = 分類掣 |
+
+- 鎖：`shelfSplitTabs.node.test.ts` 斷言 split 兩條規則存在、冇 split 嘅舊 selector 冇宣告；`e2e/shelfSplit.mjs` 有卡（`checkSplit`）同冇卡（`checkFill`）兩部機都用 computed style 驗左欄得一個 `home-tabs` 而且係分類掣（developer 確認拎走 CSS 修正會紅）
+- 過時註解：`HomeWide.tsx`、`DramaShelf.module.css` 改返 `showShelfItems`；`HomePage.module.css` 註解寫明只有 split 先有橫額
+- DUO_QUERY media block 冇重複位置 selector，唔使同步改
+- 冇新 finding
+
+### Handoff receipt（re-review 2）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: pass
+next_action: proceed_to_qa
+next_agent: quality-assurance
+branch: "feature/layout/iphone-duo"
+context: "P10 lane 3 re-review 2 @579ebb1: W-791 resolved (positional view-transition-name rules scoped to main.wide[data-shelf][data-layout='split'], same frozen mode as HomeWideLeft banner; node lock test + e2e computed-style checks with and without card at 876x612 / 544x544). Stale comments fixed. No new findings; all lane-3 review items cleared. Gates cited from main agent run on 579ebb1. Report committed locally, not pushed"
+```
