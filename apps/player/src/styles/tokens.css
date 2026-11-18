@@ -175,6 +175,16 @@
     --square-player-disc: 256px;
     --disc-large-share: 0.72;
     /*
+     * HomeView 今日節目頁（P10 lane 7a，_mockups_/home-view .sel）：「現正播放」下面嘅節目 selector，
+     * 每格 96 × 76（碟面 36px + 節目名），格之間 6px；一次見到 4 格，多過 4 個就左右捲
+     */
+    --show-selector-cell-width: 96px;
+    --show-selector-cell-height: 76px;
+    --show-selector-disc: 36px;
+    --show-selector-gap: 6px;
+    --show-selector-visible: 4;
+    --show-selector-frame: 1.5px;
+    /*
      * 節目 / 劇集資料（P9.5 #12，_mockups_/catalog-item-info）：資料 sheet 標題、chip 行高、正文行高；
      * 今日節目表展開時「播緊」線（OnAirLamp）上下留位（行高約 80%）
      */
