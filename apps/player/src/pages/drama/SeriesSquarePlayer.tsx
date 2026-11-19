@@ -30,9 +30,18 @@ const episodeLine = (episode: SeriesEpisode, sep: string) =>
         ? t('drama.nowPlayingShort', { no: episode.no, title: episode.title, sep })
         : t('drama.episodeNo', { no: episode.no });
 
-/** 成套劇快將下架（琥珀色 ⏳）：未揀短篇取代「揀一個短篇開始收聽」，播緊短篇取代狀態字 */
-const NoticeLine = ({ notice }: { notice: NonNullable<SeriesDramaView['notice']> }) => (
-    <p className={`${page.seriesStatus} ${page.seriesNotice}`}>
+/**
+ * 成套劇快將下架（琥珀色 ⏳）：未揀短篇取代「揀一個短篇開始收聽」；未聽（unloaded）取代狀態字；
+ * 聽緊同 NowPlaying 一樣保留狀態字（現正播放 / 已暫停 / 連線中…），取代集名嗰行（S-1147）
+ */
+const NoticeLine = ({
+    notice,
+    className,
+}: {
+    notice: NonNullable<SeriesDramaView['notice']>;
+    className: string | undefined;
+}) => (
+    <p className={`${className} ${page.seriesNotice}`}>
         <HourglassIcon size={NOTICE_ICON_SIZE} />
         <SpokenText {...notice} />
     </p>
@@ -43,14 +52,24 @@ const AllTitle = ({ notice }: Pick<TitleView, 'notice'>) => (
     <>
         <p className={page.seriesTitle}>{t('drama.allArcs')}</p>
         {notice ? (
-            <NoticeLine notice={notice} />
+            <NoticeLine className={page.seriesStatus} notice={notice} />
         ) : (
             <p className={page.seriesHint}>{t('drama.pickArcToStart')}</p>
         )}
     </>
 );
 
-/** 播緊短篇：狀態字 + 短篇名 + 第 N 集 · 集名（「播緊短篇」） */
+/** 第 N 集 · 集名 */
+const EpisodeDetail = ({ episode }: { episode: SeriesEpisode }) => (
+    <p className={page.seriesDetail}>
+        <SpokenText
+            text={episodeLine(episode, t('common.separator'))}
+            label={episodeLine(episode, t('common.spokenSeparator'))}
+        />
+    </p>
+);
+
+/** 播緊短篇：狀態字 + 短篇名 + 第 N 集 · 集名（「播緊短篇」）；下架字位置見 NoticeLine */
 const ArcTitle = ({
     view,
     episode,
@@ -59,24 +78,27 @@ const ArcTitle = ({
     view: TitleView;
     episode: SeriesEpisode;
     connecting: boolean;
-}) => (
-    <>
-        {view.notice ? (
-            <NoticeLine notice={view.notice} />
-        ) : (
-            <p className={page.seriesStatus}>
-                {connecting ? t('episodes.connecting') : t(STATUS_KEY[view.status])}
-            </p>
-        )}
-        <p className={page.seriesTitle}>{arcLabelOf(episode)}</p>
-        <p className={page.seriesDetail}>
-            <SpokenText
-                text={episodeLine(episode, t('common.separator'))}
-                label={episodeLine(episode, t('common.spokenSeparator'))}
-            />
-        </p>
-    </>
-);
+}) => {
+    const { notice } = view;
+    const replacesStatus = notice !== undefined && view.status === 'unloaded';
+    return (
+        <>
+            {replacesStatus ? (
+                <NoticeLine className={page.seriesStatus} notice={notice} />
+            ) : (
+                <p className={page.seriesStatus}>
+                    {connecting ? t('episodes.connecting') : t(STATUS_KEY[view.status])}
+                </p>
+            )}
+            <p className={page.seriesTitle}>{arcLabelOf(episode)}</p>
+            {notice && !replacesStatus ? (
+                <NoticeLine className={page.seriesDetail} notice={notice} />
+            ) : (
+                <EpisodeDetail episode={episode} />
+            )}
+        </>
+    );
+};
 
 interface SeriesSquarePlayerProps {
     view: Pick<

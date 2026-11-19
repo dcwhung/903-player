@@ -19,6 +19,8 @@ export const useListSheet = (focusKey: string | undefined) => {
         open,
         buttonRef,
         toggle: () => setOpen((wasOpen) => !wasOpen),
+        /** 由頁面動作開（例如 HomeView 揀短篇後開嗰個短篇嘅短篇表，W-796） */
+        show: () => setOpen(true),
         close: () => setOpen(false),
     };
 };

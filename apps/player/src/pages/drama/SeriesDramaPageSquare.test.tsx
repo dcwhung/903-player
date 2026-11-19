@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { arcLabelOf } from '@903-player/catalog';
 import { stubViewport } from '../../../tests/landscape';
@@ -18,6 +18,11 @@ const ARC_COUNT = new Set(CHISEE.map((e) => e.arc)).size;
 const ARC_EPISODES = FIRST ? episodesInArc(CHISEE, FIRST.arc).length : 0;
 const ALL_BUTTON = `全集，共 ${ARC_COUNT} 個短篇`;
 const ARC_BUTTON = `${ARC}集數清單，共 ${ARC_EPISODES} 集`;
+// W-796：第二個短篇（播緊 A 時喺全集表揀 B）
+const OTHER = CHISEE.find((e) => e.arc !== FIRST?.arc);
+const OTHER_ARC = OTHER ? arcLabelOf(OTHER) : '';
+const OTHER_EPISODES = OTHER ? episodesInArc(CHISEE, OTHER.arc).length : 0;
+const OTHER_BUTTON = `${OTHER_ARC}集數清單，共 ${OTHER_EPISODES} 集`;
 
 const openChisee = () => renderWithProviders(<DramaPage />, { route: '/drama/chisee', path: PATH });
 const allSheet = () => screen.findByRole('dialog', { name: '全集' });
@@ -26,9 +31,31 @@ const headerOf = (el: HTMLElement) => el.closest('header') as HTMLElement;
 const titleBlock = () => document.querySelector('[data-series-title]') as HTMLElement;
 
 /** 第一次入自動開嘅全集表：撳第一個短篇嗰行（揀短篇，唔播） */
-const pickFirstArc = async () => {
+const pickArcRow = async (arc: string) => {
     const sheet = await allSheet();
-    await userEvent.click(within(sheet).getByRole('button', { name: new RegExp(`^${ARC}，`) }));
+    await userEvent.click(within(sheet).getByRole('button', { name: new RegExp(`^${arc}，`) }));
+};
+const pickFirstArc = () => pickArcRow(ARC);
+const arcSheet = () => screen.getByRole('dialog', { name: '集數' });
+const bannerTitle = () =>
+    within(within(arcSheet()).getByTestId('info-banner')).getByRole('heading');
+
+/** 揀第一個短篇（開咗佢嘅短篇表）→ 閂表 → 撳播放，播緊 A */
+const playFirstArc = async () => {
+    const rendered = openChisee();
+    await pickFirstArc();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: '播放' }));
+    act(() => rendered.audio.emitPlaying());
+    act(() => rendered.audio.emitMetadata(1200));
+    return rendered;
+};
+
+/** 播緊 A：清單掣（短篇表）→「全集」→ 全集表撳 B 行 */
+const pickOtherArcWhilePlaying = async () => {
+    await userEvent.click(screen.getByRole('button', { name: ARC_BUTTON }));
+    await userEvent.click(within(arcSheet()).getByRole('button', { name: '全集' }));
+    await pickArcRow(OTHER_ARC);
 };
 
 describe('SeriesDramaPage HomeView（P10 lane 7b）', () => {
@@ -99,6 +126,7 @@ describe('SeriesDramaPage HomeView（P10 lane 7b）', () => {
         stubViewport(SQUARE);
         openChisee();
         await pickFirstArc();
+        await userEvent.keyboard('{Escape}');
 
         await userEvent.click(await screen.findByRole('button', { name: ARC_BUTTON }));
 
@@ -114,7 +142,6 @@ describe('SeriesDramaPage HomeView（P10 lane 7b）', () => {
         stubViewport(SQUARE);
         openChisee();
         await pickFirstArc();
-        await userEvent.click(await screen.findByRole('button', { name: ARC_BUTTON }));
 
         const sheet = screen.getByRole('dialog', { name: '集數' });
         await userEvent.click(within(sheet).getByRole('button', { name: '全集' }));
@@ -125,6 +152,78 @@ describe('SeriesDramaPage HomeView（P10 lane 7b）', () => {
             'aria-expanded',
             'true',
         );
+    });
+
+    it('should open the picked arc’s sheet with focus inside when an arc is picked before anything plays', async () => {
+        stubViewport(SQUARE);
+        openChisee();
+
+        await pickFirstArc();
+
+        expect(screen.queryByRole('dialog', { name: '全集' })).not.toBeInTheDocument();
+        expect(bannerTitle()).toHaveTextContent(ARC);
+        expect(arcSheet()).toContainElement(document.activeElement as HTMLElement);
+        expect(screen.getByRole('button', { name: ARC_BUTTON })).toHaveAttribute(
+            'aria-expanded',
+            'true',
+        );
+    });
+
+    it('should switch to the picked arc’s sheet when another arc is picked while one plays', async () => {
+        stubViewport(SQUARE);
+        const { audio } = await playFirstArc();
+
+        await pickOtherArcWhilePlaying();
+
+        expect(screen.queryByRole('dialog', { name: '全集' })).not.toBeInTheDocument();
+        expect(bannerTitle()).toHaveTextContent(OTHER_ARC);
+        expect(arcSheet().querySelectorAll('li[data-episode-key]')).toHaveLength(OTHER_EPISODES);
+        expect(arcSheet()).toContainElement(document.activeElement as HTMLElement);
+        expect(screen.getByRole('button', { name: OTHER_BUTTON })).toBeInTheDocument();
+        expect(audio.src).toBe(FIRST?.url);
+    });
+
+    it('should revert the list button and arc sheet to the playing arc when the picked arc’s sheet closes without playing', async () => {
+        stubViewport(SQUARE);
+        const { audio } = await playFirstArc();
+        await pickOtherArcWhilePlaying();
+
+        await userEvent.keyboard('{Escape}');
+
+        const button = screen.getByRole('button', { name: ARC_BUTTON });
+        expect(button).toHaveFocus();
+        expect(within(headerOf(button)).getByText(String(ARC_EPISODES))).toBeInTheDocument();
+        expect(within(titleBlock()).getByText(ARC)).toBeInTheDocument();
+        expect(audio.src).toBe(FIRST?.url);
+        await userEvent.click(button);
+        expect(bannerTitle()).toHaveTextContent(ARC);
+    });
+
+    it('should revert to the playing arc when the 全集 sheet reached from the picked arc’s sheet closes', async () => {
+        stubViewport(SQUARE);
+        await playFirstArc();
+        await pickOtherArcWhilePlaying();
+
+        await userEvent.click(within(arcSheet()).getByRole('button', { name: '全集' }));
+        await userEvent.keyboard('{Escape}');
+
+        expect(screen.queryByRole('dialog', { name: '全集' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: ARC_BUTTON })).toHaveFocus();
+    });
+
+    it('should show the picked arc on the page once one of its episodes plays from its sheet', async () => {
+        stubViewport(SQUARE);
+        const { audio } = await playFirstArc();
+        await pickOtherArcWhilePlaying();
+
+        const row = arcSheet().querySelector('li[data-episode-key] button') as HTMLElement;
+        await userEvent.click(row);
+        await waitFor(() => expect(audio.src).toBe(OTHER?.url));
+        act(() => audio.emitPlaying());
+        await userEvent.keyboard('{Escape}');
+
+        expect(screen.getByRole('button', { name: OTHER_BUTTON })).toBeInTheDocument();
+        expect(within(titleBlock()).getByText(OTHER_ARC)).toBeInTheDocument();
     });
 
     it('should open the arc sheet instead of the 全集 sheet when entered from 我的收藏', async () => {

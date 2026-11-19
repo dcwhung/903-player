@@ -7,7 +7,6 @@ import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope
 import { episodeCount } from '../../components/shared/player/EpisodeList/EpisodeList';
 import { InnerPageHandle } from '../../components/shared/player/InnerPageHandle/InnerPageHandle';
 import { arcLabelFor } from '../../catalog/dramas';
-import { useListSheet } from '../../hooks/useListSheet';
 import { t } from '../../i18n/t';
 import type { InfoBanner } from '../../selectors/itemInfo';
 import page from '../shared/Page.module.css';
@@ -15,30 +14,7 @@ import { DramaHeader } from './DramaHeader';
 import { SeriesArcSheet } from './SeriesListColumn';
 import { SeriesSquarePlayer } from './SeriesSquarePlayer';
 import type { SeriesDramaView } from './useDramaPage';
-
-/**
- * 跟住用戶喺邊一層（_mockups_/home-view 廣播劇頁、S8）：未揀短篇 = 全集（清單掣開全集表）；
- * 揀咗 / 播緊短篇 = 嗰個短篇（清單掣開短篇表，表頭「全集」掣換返全集表）。
- * 全集表開閂沿用頁面原本嘅（第一次入自動開）；短篇表由「我的收藏」入嚟（focusKey）自動開
- */
-const useSquareSheets = (view: SeriesDramaView) => {
-    const arcList = useListSheet(view.focusKey);
-    const all = view.sheet;
-    const layer = view.empty || view.arc === undefined ? 'all' : 'arc';
-    const arcOpen = layer === 'arc' && arcList.open;
-    const toggle = () => {
-        if (all.open || arcOpen) {
-            all.close();
-            arcList.close();
-        } else if (layer === 'all') all.openSheet();
-        else arcList.toggle();
-    };
-    const showAll = () => {
-        arcList.close();
-        all.openSheet();
-    };
-    return { layer, arcOpen, open: all.open || arcOpen, toggle, closeArc: arcList.close, showAll };
-};
+import { useSquareSheets } from './useSquareSheets';
 
 type SquareSheets = ReturnType<typeof useSquareSheets>;
 
@@ -119,10 +95,14 @@ export const SeriesSquare = ({ drama, view, connecting }: SeriesSquareProps) => 
                     }
                 />
                 <SeriesSquarePlayer view={view} connecting={connecting} />
-                <SeriesArcSheet sheet={view.sheet} current={view.current} docked={false} />
+                <SeriesArcSheet
+                    sheet={{ ...view.sheet, pick: sheets.pickArc, close: sheets.closeAll }}
+                    current={view.current}
+                    docked={false}
+                />
                 <ArcEpisodesSheet
                     open={sheets.arcOpen}
-                    onClose={sheets.closeArc}
+                    onClose={sheets.closeAll}
                     banner={arcBanner(drama, view)}
                     items={view.items}
                     onSelect={view.pressEpisode}

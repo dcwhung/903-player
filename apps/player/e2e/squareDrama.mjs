@@ -25,6 +25,10 @@ const ARC = '三十六計';
 const ARC_EPISODES = 36;
 const ARC_BUTTON = `${ARC}集數清單，共 ${ARC_EPISODES} 集`;
 const ALL_BUTTON = /^全集，共 \d+ 個短篇$/;
+// W-796：播緊 ARC 時喺全集表揀嘅第二個短篇（同一份 drama.json）
+const OTHER_ARC = '你生日所以我生日';
+const OTHER_EPISODES = 3;
+const OTHER_BUTTON = `${OTHER_ARC}集數清單，共 ${OTHER_EPISODES} 集`;
 const DAILY_BUTTON = /^集數清單，共 \d+ 集$/;
 // mockup：唱片 256px、頁頭下面 16px；sheet 由畫面 38% 開始
 const DISC_PX = 256;
@@ -202,17 +206,48 @@ const lookArcSheet = (p) =>
         };
     });
 
+/** 全集表撳某個短篇嗰行（揀短篇，唔播） */
+const pickArcRow = (p, arc) =>
+    allSheet(p)
+        .getByRole('button', { name: new RegExp(`^${arc}，`) })
+        .click();
+
+/** 焦點喺唔喺張短篇表入面 */
+const focusInArcSheet = (p) => arcSheet(p).evaluate((el) => el.contains(document.activeElement));
+
 /**
- * 揀短篇 + 播：頁面「現正播放」+ 短篇名 + 集名，badge = 嗰個短篇集數；清單掣開短篇表；
- * 「全集」掣換返全集表（短篇表冇咗、清單掣仍然開住），再 Escape 閂焦點返清單掣
+ * W-796：全集表撳行揀短篇 → 即刻換去嗰個短篇嘅短篇表（banner、集數、38% 起點），焦點入表；
+ * Escape 閂焦點返清單掣。撳播放：頁面「現正播放」+ 短篇名 + 集名，badge = 嗰個短篇集數；
+ * 清單掣開短篇表；「全集」掣換返全集表（短篇表冇咗、清單掣仍然開住），再 Escape 閂焦點返清單掣
  */
 const checkSeriesArc = async (env) => {
     const { ctx, p } = await openSeries(env, { reducedMotion: 'reduce' });
     await isShown(allSheet(p), { timeout: SHEET_WAIT_MS });
-    await allSheet(p)
-        .getByRole('button', { name: new RegExp(`^${ARC}，`) })
-        .click();
-    await isShown(allSheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
+    await pickArcRow(p, ARC);
+    const allGone = await isShown(allSheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
+    const picked = await isShown(arcSheet(p), { timeout: SHEET_WAIT_MS });
+    await settle(p);
+    const s = await lookArcSheet(p);
+    const inside = await focusInArcSheet(p);
+    env.log(
+        allGone &&
+            picked &&
+            inside &&
+            s.bannerTitle === ARC &&
+            near(s.bannerH, BANNER_PX, BANNER_TOLERANCE_PX) &&
+            s.rows === ARC_EPISODES &&
+            s.all &&
+            near(s.top, SQUARE.height * SHEET_TOP_SHARE, SHEET_TOLERANCE_PX) &&
+            near(s.bottom, SQUARE.height, SHEET_TOLERANCE_PX),
+        `HomeView 全集表揀短篇即刻換去短篇表：焦點入表 ${inside}、banner「${s.bannerTitle}」${s.bannerH}px、${s.rows} 集、有全集掣、由 38% 開始（${JSON.stringify(s)}）`,
+    );
+    await p.keyboard.press('Escape');
+    await isShown(arcSheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
+    const back = await focusedName(p);
+    env.log(
+        back === `BUTTON ${ARC_BUTTON}`,
+        `HomeView 揀短篇開嘅短篇表 Escape 閂：焦點返清單掣（${back}）`,
+    );
     await p.getByRole('button', { name: '播放', exact: true }).click();
     await waitForPlaybackState(p, 'playing');
     const l = await look(p);
@@ -227,17 +262,6 @@ const checkSeriesArc = async (env) => {
     logPlayerLayout(env, l, 'HomeView 廣播劇頁播緊短篇');
     await arcButton(p).click();
     await isShown(arcSheet(p), { timeout: SHEET_WAIT_MS });
-    await settle(p);
-    const s = await lookArcSheet(p);
-    env.log(
-        s.bannerTitle === ARC &&
-            near(s.bannerH, BANNER_PX, BANNER_TOLERANCE_PX) &&
-            s.rows === ARC_EPISODES &&
-            s.all &&
-            near(s.top, SQUARE.height * SHEET_TOP_SHARE, SHEET_TOLERANCE_PX) &&
-            near(s.bottom, SQUARE.height, SHEET_TOLERANCE_PX),
-        `HomeView 短篇表：banner「${s.bannerTitle}」${s.bannerH}px、${s.rows} 集、有全集掣、由 38% 開始（${JSON.stringify(s)}）`,
-    );
     await arcSheet(p).getByRole('button', { name: '全集', exact: true }).click();
     const switched = await isShown(allSheet(p), { timeout: SHEET_WAIT_MS });
     const arcGone = await isShown(arcSheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
@@ -257,6 +281,77 @@ const checkSeriesArc = async (env) => {
     env.log(
         focused === `BUTTON ${ARC_BUTTON}`,
         `HomeView 由短篇表轉去嘅全集表 Escape 閂：焦點返清單掣（${focused}）`,
+    );
+    await ctx.close();
+};
+
+/** 播緊 ARC：清單掣（短篇表）→「全集」→ 全集表撳 OTHER_ARC 行 */
+const pickOtherWhilePlaying = async (p) => {
+    await arcButton(p).click();
+    await isShown(arcSheet(p), { timeout: SHEET_WAIT_MS });
+    await arcSheet(p).getByRole('button', { name: '全集', exact: true }).click();
+    await isShown(allSheet(p), { timeout: SHEET_WAIT_MS });
+    await pickArcRow(p, OTHER_ARC);
+    await isShown(allSheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
+    return isShown(arcSheet(p), { timeout: SHEET_WAIT_MS });
+};
+
+/**
+ * W-796（用戶 2026-11-18 方案 A）：播緊 A 喺全集表揀 B → 即刻開 B 嘅短篇表（焦點入表、清單掣講 B）；
+ * 冇播 B 就閂 → 清單掣 / badge / 頁面跟返播緊嗰個 A；再揀 B 撳一集播 → 頁面 / badge 變 B
+ */
+const checkSeriesSwitchArc = async (env) => {
+    const { ctx, p } = await openSeries(env, { reducedMotion: 'reduce' });
+    await isShown(allSheet(p), { timeout: SHEET_WAIT_MS });
+    await pickArcRow(p, ARC);
+    await isShown(arcSheet(p), { timeout: SHEET_WAIT_MS });
+    await p.keyboard.press('Escape');
+    await isShown(arcSheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
+    await p.getByRole('button', { name: '播放', exact: true }).click();
+    await waitForPlaybackState(p, 'playing');
+
+    const opened = await pickOtherWhilePlaying(p);
+    await settle(p);
+    const s = await lookArcSheet(p);
+    const inside = await focusInArcSheet(p);
+    const otherButton = await p.getByRole('button', { name: OTHER_BUTTON }).count();
+    const playingTitle = (await look(p)).title ?? '';
+    env.log(
+        opened &&
+            inside &&
+            s.bannerTitle === OTHER_ARC &&
+            s.rows === OTHER_EPISODES &&
+            otherButton === 1 &&
+            playingTitle.includes(ARC),
+        `HomeView 播緊「${ARC}」揀「${OTHER_ARC}」：即刻開佢嘅短篇表（banner「${s.bannerTitle}」、${s.rows} 集、焦點入表 ${inside}、清單掣 ${otherButton}），頁面仍然「${playingTitle}」`,
+    );
+
+    await p.keyboard.press('Escape');
+    await isShown(arcSheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
+    const focused = await focusedName(p);
+    const reverted = await look(p);
+    env.log(
+        focused === `BUTTON ${ARC_BUTTON}` &&
+            reverted.badge === String(ARC_EPISODES) &&
+            reverted.title?.includes(ARC) === true,
+        `HomeView 冇播「${OTHER_ARC}」閂短篇表：清單掣 / badge 跟返播緊嘅「${ARC}」（${focused}、badge ${reverted.badge}、頁面「${reverted.title}」）`,
+    );
+
+    await pickOtherWhilePlaying(p);
+    await arcSheet(p).locator('li[data-episode-key] button').first().click();
+    await p.waitForFunction(
+        (arc) => document.querySelector('[data-series-title]')?.textContent?.includes(arc),
+        OTHER_ARC,
+        { timeout: SHEET_WAIT_MS },
+    );
+    await p.keyboard.press('Escape');
+    await isShown(arcSheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
+    const played = await look(p);
+    env.log(
+        played.badge === String(OTHER_EPISODES) &&
+            played.title?.includes(OTHER_ARC) === true &&
+            (await p.getByRole('button', { name: OTHER_BUTTON }).count()) === 1,
+        `HomeView 喺「${OTHER_ARC}」短篇表撳一集播：頁面 / badge 變「${OTHER_ARC}」（badge ${played.badge}、頁面「${played.title}」）`,
     );
     await ctx.close();
 };
@@ -332,6 +427,7 @@ export const SQUARE_DRAMA_SCENARIOS = [
     ['HomeView 廣播劇頁未揀短篇', checkSeriesNoArc],
     ['HomeView 廣播劇頁第一次入滑鼠閂', checkSeriesFirstVisitPointerClose],
     ['HomeView 廣播劇頁播緊短篇', checkSeriesArc],
+    ['HomeView 廣播劇頁播緊 A 揀 B', checkSeriesSwitchArc],
     ['HomeView 每日劇集頁', checkDaily],
     ['HomeView 現有手機廣播劇頁對照', checkPhoneSeriesUnchanged],
 ];

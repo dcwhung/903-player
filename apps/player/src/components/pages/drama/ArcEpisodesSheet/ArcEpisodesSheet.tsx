@@ -8,6 +8,7 @@ import {
     episodeCountText,
     type EpisodeItem,
 } from '../../../shared/player/EpisodeList/EpisodeList';
+import { SERIES_EPISODE_LIST } from '../seriesEpisodeList';
 import styles from './ArcEpisodesSheet.module.css';
 
 const ALL_ICON_SIZE = 16;
@@ -27,9 +28,6 @@ interface ArcEpisodesSheetProps {
     /** 自動開（冇撳過掣）閂咗焦點返頁頭清單掣（鍵盤閂先搬，useSheetBehaviour） */
     returnFocusTo: RefObject<HTMLElement | null>;
 }
-
-/** 短篇劇集嘅集數清單：行名用集名，入頁捲到播緊嗰集（同直版清單一樣，SeriesListColumn SERIES_LIST） */
-const SERIES_LIST = { labels: 'title', scrollAlign: 'top' } as const;
 
 /**
  * 短篇表（HomeView 廣播劇頁播緊短篇，P10 lane 7b，_mockups_/home-view 廣播劇頁「播緊短篇」/ S8）：
@@ -67,7 +65,7 @@ export const ArcEpisodesSheet = ({
             onSelect={onSelect}
             focusKey={focusKey}
             heading={false}
-            {...SERIES_LIST}
+            {...SERIES_EPISODE_LIST}
         />
     </ListSheet>
 );
