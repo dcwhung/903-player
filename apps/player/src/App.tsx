@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toast } from './components/shared/common/Toast/Toast';
+import { useSleepTimerAutoToast } from './components/shared/player/SleepTimer/useSleepTimerAutoToast';
 import { RecordingsProvider } from './data/RecordingsProvider';
 import { useReopenHomePlayerCardOnPlay } from './hooks/homePlayerCardClosed';
 import { useRestoreMiniPlayerOnPlay } from './hooks/miniPlayerDismissed';
@@ -20,6 +21,8 @@ const PlaybackObservers = () => {
     useRestoreMiniPlayerOnPlay();
     // 闊橫版主頁播放卡收埋咗：一樣喺任何一頁開始播就再出返
     useReopenHomePlayerCardOnPlay();
+    // 睡眠 timer 每晚自動生效：「休眠 30 分鐘後啟動」
+    useSleepTimerAutoToast();
     return null;
 };
 

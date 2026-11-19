@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 import { silenceWav } from './silenceWav.mjs';
+import { VISUAL_TIMEZONE } from './visualModel.mjs';
 
 /**
  * 瀏覽器入面嘅「而家」：固定喺 2026-11-30（一）22:30 香港時間。
@@ -15,6 +16,8 @@ import { silenceWav } from './silenceWav.mjs';
  * 揀 30/11 唔揀 16/11：窄屏 mini player 副題（「30/11（一） · 0:01 / 10:00」）要同以前「19/10」一樣闊、放唔落先跑馬燈
  */
 export const E2E_NOW = '2026-11-30T22:30:00+08:00';
+/** e2e 瀏覽器嘅時區：同 E2E_NOW 嘅 +08:00 一致，截圖比對（visualModel.mjs）用同一個 */
+export const E2E_TIMEZONE = VISUAL_TIMEZONE;
 
 /** 同 src/config/constants.ts ALLOWED_AUDIO_ORIGIN 一樣（src/e2eSrcConstants.test.ts 鎖住） */
 export const AUDIO_HOST = 'https://audio.hkfm903.live';
@@ -197,7 +200,9 @@ const seedProbeStore = ({ key, found }) => {
  * 開一個 e2e context：時鐘由 E2E_NOW 開始照常行（clock.install 唔會暫停，
  * setTimeout / setInterval / Date.now 跟真實時間前進，播放進度、定時存進度、更新檢查照行），
  * audio host 用上面嘅似真版本，劇集音檔（R2）一律 404。extraAudioUrls：額外當係存在嘅檔（例如測 probe 搵到新一集）。
- * now：時鐘起點（預設 E2E_NOW），例如測冇節目嘅星期日
+ * now：時鐘起點（預設 E2E_NOW），例如測冇節目嘅星期日。
+ * 時區預設香港（S-1149）：app 有跟裝置本地時間嘅 UI（睡眠 timer 月亮掣 21:00–05:00），唔固定就跟跑嘅機
+ *（CI 係 UTC，E2E_NOW 22:30 會變 14:30）；options.timezoneId 可以蓋過
  */
 /** 啟動畫面最少顯示 2 秒，期間會蓋住成頁：用坐標嘅手勢會撳中佢，所以要等佢移走 */
 const SPLASH_GONE_TIMEOUT_MS = 10_000;
@@ -222,7 +227,7 @@ export const newE2EContext = async (
     options = {},
     { extraAudioUrls = [], now = E2E_NOW } = {},
 ) => {
-    const ctx = await browser.newContext(options);
+    const ctx = await browser.newContext({ timezoneId: E2E_TIMEZONE, ...options });
     ctx.on('request', recordExternal);
     // 最先註冊 = 最低優先（Playwright 後註冊嘅 route 先試）：下面 mock 咗嘅 host 唔會跌落嚟
     await ctx.route(

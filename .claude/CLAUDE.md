@@ -63,3 +63,8 @@
 - 同用戶嘅所有回覆一律用繁體中文（廣東話書面語）；code、指令、技術名詞先用英文
 - 收到英文嘅 subagent 報告、GitHub 通知、CI log 之後都照用中文回覆，唔好跟住轉英文
 - PR description、commit message 照舊用英文；repo 入面其他文件跟現有慣例
+
+## Tab 掣款式（用戶 2026-11-19 決定）
+
+- 任何 tab / 分段掣（例如睡眠 timer 選單「剩餘 23:14｜關閉」）一律用主頁「節目｜廣播劇」款（`apps/player/src/components/pages/home/HomeTabs/HomeTabs.module.css`）：膠囊軌道（`--home-tab-track` 底、`--home-tab-inset` 內距、`--radius-full`），揀中嗰格由強調色膠囊墊底（`--color-accent`，字 `--color-on-accent` 700），其他格透明底（字 `--color-text` 500）
+- ❌ 唔好另起框線 / 分隔線 / 半邊實色嘅款；新 mockup 同 code 都要跟

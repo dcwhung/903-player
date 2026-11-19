@@ -1,4 +1,5 @@
-const SECONDS_PER_MINUTE = 60;
+import { SECONDS_PER_MINUTE } from '../config/constants';
+
 const SECONDS_PER_HOUR = 3600;
 
 const pad = (value: number): string => String(value).padStart(2, '0');

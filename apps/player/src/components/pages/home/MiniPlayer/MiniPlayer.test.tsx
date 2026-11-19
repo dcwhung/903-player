@@ -25,6 +25,16 @@ const props = (overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps => ({
     ...overrides,
 });
 
+/** 外圈畫咗幾多（0–1）：stroke-dasharray「畫 圓周」 */
+const ringShare = (bar: HTMLElement): number => {
+    const [dash = NaN, gap = NaN] = (
+        bar.querySelector('.ringFill')?.getAttribute('stroke-dasharray') ?? ''
+    )
+        .split(' ')
+        .map(Number);
+    return dash / gap;
+};
+
 describe('MiniPlayer', () => {
     it('should keep the dots and their touch area above the row when there are several audios', () => {
         render(<MiniPlayer {...props()} />);
@@ -115,6 +125,36 @@ describe('MiniPlayer', () => {
         expect(screen.getByRole('progressbar', { name: '播放進度' })).not.toHaveAttribute(
             'aria-valuetext',
         );
+    });
+
+    // 9d M7：進度由卡底細條改做播放掣外圈（12 點起順時針）
+    it('should draw the progress as a ring around the play / pause button', () => {
+        render(<MiniPlayer {...props()} />);
+
+        const bar = screen.getByRole('progressbar', { name: '播放進度' });
+        const region = screen.getByRole('region', { name: '正在播放（今日節目）' });
+        expect(bar.closest('.toggleRing')).toContainElement(
+            screen.getByRole('button', { name: '暫停' }),
+        );
+        expect(ringShare(bar)).toBeCloseTo(0.11, 3);
+        expect(bar.querySelector('.ringTrack')).not.toBeNull();
+        expect(region.querySelector('.progress, .fill')).toBeNull();
+    });
+
+    it('should keep the button outside the progressbar so it stays a real button for screen readers', () => {
+        render(<MiniPlayer {...props()} />);
+
+        const bar = screen.getByRole('progressbar', { name: '播放進度' });
+        expect(bar).not.toContainElement(screen.getByRole('button', { name: '暫停' }));
+        expect(bar.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('should leave the ring empty at the start', () => {
+        render(<MiniPlayer {...props({ progress: 0 })} />);
+
+        const bar = screen.getByRole('progressbar', { name: '播放進度' });
+        expect(bar).toHaveAttribute('aria-valuenow', '0');
+        expect(ringShare(bar)).toBe(0);
     });
 
     it('opens the show page and toggles playback', async () => {

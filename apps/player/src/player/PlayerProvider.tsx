@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AudioController, createAudioElement } from './AudioController';
 import { PlayerContext, type PlayerActions } from './playerContext';
+import { SleepTimerController } from './SleepTimerController';
+import { SleepTimerScheduler } from './SleepTimerScheduler';
+import { SleepTimerContext, SleepTimerScheduleContext } from './sleepTimerContext';
 import type { Track } from '../types/track';
 import { useMediaSession } from './useMediaSession';
 
@@ -23,6 +26,18 @@ type PlayerProviderProps = PlayerSource & {
     nextTrack?: (track: Track) => Track | undefined;
 };
 
+/**
+ * 睡眠 timer（9d）跟住同一個 controller：時間到暫停、「播完呢集」擋自動接下一集；
+ * 每晚自動：到排程時間 / 時段內開始播就開 timer（用戶 2026-11-19）
+ */
+const useSleepTimers = (controller: AudioController) => {
+    const [sleepTimer] = useState(() => new SleepTimerController(controller));
+    const [schedule] = useState(() => new SleepTimerScheduler(sleepTimer, controller));
+    useEffect(() => sleepTimer.attach(), [sleepTimer]);
+    useEffect(() => schedule.attach(), [schedule]);
+    return { sleepTimer, schedule };
+};
+
 /** 全 app 共用一個 audio element，令 iOS 喺用戶 click 時就可以開始播放 */
 export const PlayerProvider = ({
     children,
@@ -34,6 +49,7 @@ export const PlayerProvider = ({
         () => shared ?? new AudioController(audio ?? createAudioElement()),
     );
     useEffect(() => controller.attach(), [controller]);
+    const { sleepTimer, schedule } = useSleepTimers(controller);
     useEffect(() => controller.setNextTrack(nextTrack), [controller, nextTrack]);
     const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
 
@@ -59,5 +75,13 @@ export const PlayerProvider = ({
     useMediaSession(actions, state, remote);
     const value = useMemo(() => ({ ...state, ...actions }), [state, actions]);
 
-    return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
+    return (
+        <PlayerContext.Provider value={value}>
+            <SleepTimerContext.Provider value={sleepTimer}>
+                <SleepTimerScheduleContext.Provider value={schedule}>
+                    {children}
+                </SleepTimerScheduleContext.Provider>
+            </SleepTimerContext.Provider>
+        </PlayerContext.Provider>
+    );
 };

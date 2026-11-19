@@ -13,6 +13,7 @@ import {
 import { PROGRESS_STORAGE_KEY } from './hiddenPlayback.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, catalogRoute } from './remoteCatalog.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
+import { VISUAL_DAY_NOW, dayScenes } from './visualModel.mjs';
 
 // 星期日：假錄音（sampleData.mjs）冇節目，主頁冇 mini player（同 homeWide.mjs 一樣）
 const E2E_SUNDAY = '2026-11-29T22:30:00+08:00';
@@ -138,7 +139,7 @@ const openSeries = async (p, base) => {
  * 情境清單。seed(ctx, base)：開頁前嘅準備（localStorage、init script）；now：時鐘起點（預設 harness E2E_NOW）；
  * run(p, base)：去到要影嘅畫面
  */
-export const VISUAL_SCENES = [
+const NIGHT_SCENES = [
     { id: 'home-shows', run: openHome },
     { id: 'home-idle', now: E2E_SUNDAY, run: openHome },
     { id: 'home-dramas', run: (p, base) => openTab(p, base, '廣播劇') },
@@ -174,4 +175,15 @@ export const VISUAL_SCENES = [
                 .waitFor({ timeout: UI_WAIT_MS });
         },
     },
+];
+
+/**
+ * 日間版（14:00，同一日）：睡眠 timer 月亮掣淨係喺裝置本地 21:00–05:00 出（9d），
+ * 呢幾個有播放器嘅畫面喺日間要同改之前一模一樣
+ */
+const DAY_SCENE_IDS = ['home-paused', 'show', 'today'];
+
+export const VISUAL_SCENES = [
+    ...NIGHT_SCENES,
+    ...dayScenes(NIGHT_SCENES, DAY_SCENE_IDS, VISUAL_DAY_NOW),
 ];
