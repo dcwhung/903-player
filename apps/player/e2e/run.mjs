@@ -16,6 +16,7 @@ import { runPwaUpdateChecks } from './pwaUpdate.mjs';
 import { runRemoteCatalogChecks } from './remoteCatalog.mjs';
 import { runShelfSplitChecks } from './shelfSplit.mjs';
 import { runShowGridCountChecks } from './showGridCounts.mjs';
+import { runSleepTimerChecks } from './sleepTimer.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
 import { runDuoChecks } from './duo.mjs';
 import { runSquareChecks } from './square.mjs';
@@ -1664,6 +1665,9 @@ try {
     await section('即將上架 / 快將下架', () =>
         runComingSoonChecks({ browser, base: BASE, errors, log }),
     );
+
+    // 睡眠 timer（9d）：夜間月亮掣、開 / 改 / 關、時間到暫停、播完呢集、mini player / 闊版主頁入口
+    await runSleepTimerChecks({ browser, base: BASE, errors, log }, section);
 
     // PWA 換版：有新版自己 reload 一次、播緊唔打斷、兩個 tab 都換（CUI-0017）
     await runPwaUpdateChecks({ browser, errors, log }, section);
