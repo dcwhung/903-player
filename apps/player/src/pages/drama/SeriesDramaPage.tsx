@@ -6,24 +6,19 @@ import { PlayerGauge } from '../../components/shared/player/PlayerPanel/PlayerGa
 import { ItemInfoSheet } from '../../components/shared/common/ItemInfo/ItemInfoSheet';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import { DUO_OPEN_PORTRAIT_QUERY, LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
+import { DUO_OPEN_PORTRAIT_QUERY, LANDSCAPE_LAYOUT_QUERY, SQUARE_QUERY } from '../../config/layout';
 import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePlayer } from '../../player/usePlayer';
 import { t } from '../../i18n/t';
 import { hasKnownDuration } from '../../utils/time';
 import { DramaHeader } from './DramaHeader';
-import { arcPickerLabel, seriesNowPlaying } from './seriesPageLabels';
+import { arcPickerLabel, hasSecondLine, seriesNowPlaying } from './seriesPageLabels';
 import page from '../shared/Page.module.css';
 import { SideRow } from '../shared/SideRow';
 import { SeriesArcPicker, SeriesArcSheet, SeriesListColumn } from './SeriesListColumn';
+import { SeriesSquare } from './SeriesSquare';
 import { useSeriesDramaPage, type SeriesDramaView } from './useDramaPage';
-
-/**
- * 橫版「現正播放」有冇第二行（集名，或者聽緊時嘅成套劇下架字）：有就預留兩行高，唔係第二行會俾版面裁走
- */
-const hasSecondLine = ({ upNext, notice, status }: SeriesPlayerColumnProps['view']): boolean =>
-    Boolean(upNext?.title) || (notice !== undefined && status !== 'unloaded');
 
 interface SeriesPlayerColumnProps {
     view: Pick<
@@ -116,6 +111,9 @@ export const SeriesDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const pickerSide = useMediaQuery(DUO_OPEN_PORTRAIT_QUERY) && view.upNext !== undefined;
     // 「連線中…」只講呢套劇嘅一集載緊 / 緩衝緊；未載入呢套劇（start 有值）唔講，亦冇 chip 係「播緊」
     const connecting = !view.start && !hasKnownDuration(duration);
+    // HomeView（P10 lane 7b）：播放器為主，全集表 / 短篇表由頁頭清單掣開
+    if (useMediaQuery(SQUARE_QUERY))
+        return <SeriesSquare drama={drama} view={view} connecting={connecting} />;
     const arcSheet = (
         <SeriesArcSheet sheet={view.sheet} current={view.current} docked={landscape} />
     );

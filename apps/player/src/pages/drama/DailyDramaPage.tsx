@@ -6,13 +6,14 @@ import { PlayerPanel } from '../../components/shared/player/PlayerPanel/PlayerPa
 import { ItemInfoSheet } from '../../components/shared/common/ItemInfo/ItemInfoSheet';
 import { StatusMessage } from '../../components/shared/common/StatusMessage/StatusMessage';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import { DUO_OPEN_PORTRAIT_QUERY, LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
+import { DUO_OPEN_PORTRAIT_QUERY, LANDSCAPE_LAYOUT_QUERY, SQUARE_QUERY } from '../../config/layout';
 import { useEpisodeFocus } from '../../hooks/useEpisodeFocus';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePlayer } from '../../player/usePlayer';
 import { t } from '../../i18n/t';
 import { formatDateLabel, formatSpokenDate } from '../../utils/date';
 import { hasKnownDuration } from '../../utils/time';
+import { DailySquare } from './DailySquare';
 import { DramaHeader } from './DramaHeader';
 import page from '../shared/Page.module.css';
 import { useDailyDramaPage } from './useDramaPage';
@@ -69,6 +70,8 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
     const view = useDailyDramaPage(drama, focusId);
     const { current } = view;
     const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
+    // HomeView（P10 lane 7b）：同節目頁一樣播放器為主，集數清單收入頁頭清單掣開嘅 sheet
+    if (useMediaQuery(SQUARE_QUERY)) return <DailySquare drama={drama} view={view} />;
     // 橫版頁頭喺左欄清單上面（清單成日都有）
     return (
         <ThemeScope theme={view.theme}>

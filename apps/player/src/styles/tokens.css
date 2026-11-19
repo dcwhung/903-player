@@ -175,6 +175,15 @@
     --square-player-disc: 256px;
     --disc-large-share: 0.72;
     /*
+     * HomeView 廣播劇頁（P10 lane 7b，_mockups_/home-view 廣播劇頁）：唱片下面「現正播放」+ 短篇名（22px 粗體）
+     * + 集名；全集表 / 短篇表頂 banner 同 mockup 一樣約 110px 高（544 闊）
+     */
+    --square-series-title-size: 22px;
+    --square-series-title-line: 24px;
+    --square-sheet-banner-ratio: 544 / 110;
+    /* 短篇表右上「全集」膠囊掣嘅高（mockup .allbtn 32px） */
+    --arc-sheet-all-height: 32px;
+    /*
      * HomeView 今日節目頁（P10 lane 7a，_mockups_/home-view .sel）：「現正播放」下面嘅節目 selector，
      * 每格 96 × 76（碟面 36px + 節目名），格之間 6px；一次見到 4 格，多過 4 個就左右捲
      */

@@ -14,7 +14,7 @@
 | 6    | ✅ merge 入 `release/v2.0.0`（PR #275）：HomeView 節目頁（頁頭清單掣 + badge、清單 sheet）；W-795 已修；日子條用現有 7 日置中（用戶 2026-11-18）                         |
 | 6c   | ✅ merge 入 `release/v2.0.0`（PR #276）：底部 sheet focus trap；自動開嘅表用鍵盤閂先返入口掣（用戶接受鍵盤 focus ring，visual `drama-series` 18 張）；S-1142、C-025 已修 |
 | 7a   | ✅ merge 入 `release/v2.0.0`（PR #277）：HomeView 今日節目（普通播放器 + 節目 selector、淡出提示、第一次入自動開全部資料、ⓘ = 播緊節目；用戶 2026-11-18）                |
-| 7b   | 未開始：HomeView 廣播劇頁（未揀短篇 → 全集表；播緊短篇 → 短篇表連橫額同「全集」掣）                                                                                      |
+| 7b   | ✅ merge 入 `release/v2.0.0`（PR #278）：HomeView 廣播劇頁（全集層 / 短篇層、短篇表 banner +「全集」掣、揀 B 即開 B 短篇表；每日劇跟節目頁）；W-796 跟用戶方案 A         |
 
 用戶決定（2026-11-18，lane 1 review）：
 

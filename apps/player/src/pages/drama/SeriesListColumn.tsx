@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ArcPicker } from '../../components/pages/drama/ArcPicker/ArcPicker';
 import { ArcSheet } from '../../components/pages/drama/ArcSheet/ArcSheet';
+import { SERIES_EPISODE_LIST } from '../../components/pages/drama/seriesEpisodeList';
 import { EpisodeList } from '../../components/shared/player/EpisodeList/EpisodeList';
 import { dramaArtFor } from '../../catalog/dramas';
 import { usePlayer } from '../../player/usePlayer';
@@ -45,9 +46,6 @@ export const SeriesArcSheet = ({ sheet, current, docked }: SeriesArcSheetProps) 
         />
     );
 };
-
-/** 短篇劇集嘅集數清單：行名用集名，照集數次序，入頁捲到播緊嗰集（頂、露半行上一集） */
-const SERIES_LIST = { labels: 'title', scrollAlign: 'top' } as const;
 
 type SeriesListView = Pick<
     SeriesDramaView,
@@ -134,7 +132,7 @@ export const SeriesListColumn = ({
                     items={view.items}
                     onSelect={view.pressEpisode}
                     focusKey={focusKey}
-                    {...SERIES_LIST}
+                    {...SERIES_EPISODE_LIST}
                 />
             </div>
             {dockedSheet}

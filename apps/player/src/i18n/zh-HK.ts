@@ -241,11 +241,18 @@ export const zhHK = {
         nowPlayingArcShort: '{arc}{sep}{episode}',
         // 橫版唱片下面「現正播放：好朋友手牽手 · 第 2 / 4 集」（下一行集名）
         nowPlayingArc: '{arc}{sep}第 {no} / {total} 集',
+        // HomeView 廣播劇頁唱片下面短篇名上面嗰行（載入咗未開始；播緊 / 暫停 / 續聽用返現有字）
+        upNext: '下一集',
     },
     // HomeView（P10 lane 6）：頁頭清單掣（讀屏名包埋數量，badge 數字唔另外讀）同清單 sheet
     listSheet: {
         showEpisodes: '集數清單，共 {count} 集',
         todayShows: '節目表，共 {count} 個節目',
+        // 廣播劇頁（P10 lane 7b）：未揀短篇 badge = 短篇數，開全集表；播緊短篇 badge = 嗰個短篇嘅集數，開短篇表
+        allArcs: '全集，共 {count} 個短篇',
+        arcEpisodes: '{arc}集數清單，共 {count} 集',
+        // 短篇表 banner 細字：劇名 · 聽緊第 N 集（唱片嗰集喺呢個短篇先出）
+        arcListening: '{drama}{sep}聽緊第 {no} 集',
         close: '關閉清單',
     },
     // 節目 / 劇集資料（P9.5 #12）：資料 sheet 小標題、chip 組標籤、ⓘ / 箭咀讀屏名

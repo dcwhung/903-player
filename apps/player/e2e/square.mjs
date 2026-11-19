@@ -4,6 +4,7 @@
 // 今日節目頁（P10 lane 7a，S6）：同一個普通播放器（冇卡疊 / 指示點），「現正播放」下面節目 selector
 // （揀中有外框、未上架灰色停用、多過 4 個左右捲，仲有格嗰邊淡出），頁頭清單掣 badge = 今日節目數、ⓘ 跟住而家個節目；
 // 第一次入（未睇過今日節目資料）自動開節目表 sheet、每行展開資料，之後唔再開（用戶 2026-11-18）。
+// 廣播劇頁（P10 lane 7b）見 squareDrama.mjs。
 // 現有裝置唔受影響由 `npm run e2e:visual` 驗；呢度只留一個現有手機做對照。每個情境用獨立 context
 import { buildCatalogDocument } from '../scripts/buildCatalogJson.mjs';
 import { ROW_OPEN, openSavedTab, seedBookmark } from './bookmark.mjs';
@@ -11,6 +12,7 @@ import { checkNoPointerRing, checkTabWrap, focusedName, scrimPoint } from './foc
 import { PHONE, ensurePlaying, isShown, newE2EPage, runSection, succeeds } from './harness.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
+import { SQUARE_DRAMA_SCENARIOS } from './squareDrama.mjs';
 
 /** HomeView 假設尺寸；刻意寫死做獨立對照，唔 import src 常數 */
 const SQUARE = { width: 544, height: 544 };
@@ -790,6 +792,8 @@ const SCENARIOS = [
     ['HomeView 今日節目第一次入', checkTodayFirstVisit],
     ['HomeView 今日節目第一次入滑鼠閂', checkTodayFirstVisitPointerClose],
     ['HomeView 現有手機今日節目對照', checkPhoneTodayUnchanged],
+    // 廣播劇頁（P10 lane 7b）
+    ...SQUARE_DRAMA_SCENARIOS,
 ];
 
 export const runSquareChecks = async (env) => {
