@@ -178,6 +178,8 @@
     --sleep-timer-bar-height: calc(3px * var(--ui-scale));
     --sleep-timer-sheet-max-width: calc(480px * var(--ui-scale));
     --sleep-timer-option-height: calc(76px * var(--ui-scale));
+    /* 開緊時頁頭右格要幾闊：44px 掣嘅左右 padding + 月亮 + 「1:58:30」（--font-size-lg 粗體等闊數字） */
+    --sleep-timer-header-room: calc(104px * var(--ui-scale));
     /* HomeView 節目頁唱片直徑（mockup 256px；唱片 = 播放器格闊 × --disc-large-share，Disc.module.css .large 同用） */
     --square-player-disc: 256px;
     --disc-large-share: 0.72;
