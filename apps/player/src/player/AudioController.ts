@@ -102,12 +102,23 @@ export class AudioController {
 
     /** 播完一集之後接住播邊集；冇設定或者返回 undefined 就停 */
     private nextTrack: ((track: Track) => Track | undefined) | undefined;
+    /** 睡眠 timer「播完呢集」（9d）：有設定就唔自動接下一集，播完停低再通知 */
+    private stopAfterCurrent: (() => void) | undefined;
 
     constructor(private readonly audio: HTMLAudioElement) {}
 
     /** 設定播完自動接住播邊集（PlayerProvider 傳入） */
     setNextTrack = (resolver: ((track: Track) => Track | undefined) | undefined): void => {
         this.nextTrack = resolver;
+    };
+
+    /**
+     * 睡眠 timer「播完呢集」：設定 callback = 呢集播完就停（early / ended 都唔接下一集），
+     * 停低（isPlaying 已經 false）之後叫 callback；undefined = 恢復自動接下一集。
+     * 用戶自己揀另一集（load）唔受影響，由 SleepTimerController 跟住清走
+     */
+    setStopAfterCurrent = (onStopped: (() => void) | undefined): void => {
+        this.stopAfterCurrent = onStopped;
     };
 
     subscribe = (listener: () => void): (() => void) => {
@@ -565,17 +576,23 @@ export class AudioController {
 
     /** 播完：有下一集就接住播（通常 advance 已經喺 timeupdate 換咗，呢度係後備）；冇就停 */
     private onEnded = (): void => {
-        if (!this.advance('ended')) {
-            this.onStopped();
+        if (this.advance('ended')) {
+            return;
         }
+        this.onStopped();
+        // 睡眠 timer 喺 player 狀態已經停低之後先清 timer（9d）
+        this.stopAfterCurrent?.();
     };
 
     /**
      * 存低進度（會變聽過）再即刻換下一集播，唔等 React render。喺 timeupdate 仲播緊時換，
      * iOS 唔會收起 audio session，鎖屏 / 背景都接得住；換集期間維持「播緊」。
-     * 冇下一集就返回 false
+     * 冇下一集，或者睡眠 timer 要播完呢集就停（9d），返回 false
      */
     private advance(reason: 'early' | 'ended'): boolean {
+        if (this.stopAfterCurrent) {
+            return false;
+        }
         const { recording } = this.state;
         const next = recording ? this.nextTrack?.(recording) : undefined;
         if (!next) {

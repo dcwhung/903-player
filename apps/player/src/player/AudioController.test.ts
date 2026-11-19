@@ -600,6 +600,100 @@ describe('AudioController early auto-advance', () => {
     });
 });
 
+/** 睡眠 timer「播完呢集」（9d）：early 同 ended 都唔接下一集，播完就停 */
+describe('AudioController stopAfterCurrent', () => {
+    const NEXT: Recording = {
+        ...RECORDING,
+        date: '2026-10-24',
+        id: 'id:https://audio.hkfm903.live/next.aac',
+        url: 'https://audio.hkfm903.live/next.aac',
+    };
+    const DURATION = 1200;
+
+    const playWithNext = async () => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        controller.setNextTrack(() => NEXT);
+        attachController(controller);
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        await Promise.resolve();
+        audio.play.mockClear();
+        return { audio, controller };
+    };
+
+    it('should not switch early to the next track', async () => {
+        const { audio, controller } = await playWithNext();
+        controller.setStopAfterCurrent(() => undefined);
+
+        audio.emitTime(DURATION - EARLY_ADVANCE_SECONDS / 2);
+
+        expect(audio.src).toBe(RECORDING.url);
+        expect(controller.getSnapshot().recording).toBe(RECORDING);
+    });
+
+    it('should stop at the end instead of playing the next track', async () => {
+        const { audio, controller } = await playWithNext();
+        const onStop = vi.fn();
+        controller.setStopAfterCurrent(onStop);
+
+        audio.end();
+
+        expect(audio.src).toBe(RECORDING.url);
+        expect(audio.play).not.toHaveBeenCalled();
+        expect(controller.getSnapshot().isPlaying).toBe(false);
+        expect(onStop).toHaveBeenCalledTimes(1);
+        expect(JSON.parse(localStorage.getItem('903player:progress:v2') ?? '{}')).toMatchObject({
+            [RECORDING.id]: { watched: true },
+        });
+    });
+
+    it('should report the stop after the player state shows stopped', async () => {
+        const { audio, controller } = await playWithNext();
+        const seen: boolean[] = [];
+        controller.setStopAfterCurrent(() => seen.push(controller.getSnapshot().isPlaying));
+
+        audio.end();
+
+        expect(seen).toEqual([false]);
+    });
+
+    it('should not call the callback when the track ends without the flag', async () => {
+        const audio = new FakeAudio();
+        const controller = new AudioController(audio.asAudio());
+        attachController(controller);
+        await controller.load(RECORDING, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        const onStop = vi.fn();
+        controller.setStopAfterCurrent(onStop);
+        controller.setStopAfterCurrent(undefined);
+
+        audio.end();
+
+        expect(onStop).not.toHaveBeenCalled();
+        expect(controller.getSnapshot().isPlaying).toBe(false);
+    });
+
+    it('should auto-advance again once the flag is cleared', async () => {
+        const { audio, controller } = await playWithNext();
+        controller.setStopAfterCurrent(() => undefined);
+        controller.setStopAfterCurrent(undefined);
+
+        audio.emitTime(DURATION - EARLY_ADVANCE_SECONDS / 2);
+
+        expect(audio.src).toBe(NEXT.url);
+    });
+
+    it('should still let the user pick another track', async () => {
+        const { audio, controller } = await playWithNext();
+        controller.setStopAfterCurrent(() => undefined);
+
+        await controller.load(NEXT, { autoplay: true });
+
+        expect(audio.src).toBe(NEXT.url);
+    });
+});
+
 /** iPhone Safari 拒絕 R2 嘅 CORS fetch（v1.15.9 實機 log：Load failed | no-cors ok），預載只會同播放器爭網絡 */
 describe('AudioController next track loading', () => {
     const NEXT: Recording = {
