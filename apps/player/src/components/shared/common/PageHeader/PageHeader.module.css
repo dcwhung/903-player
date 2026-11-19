@@ -4,6 +4,8 @@
     /* 右邊格最少同返回掣一樣闊（標題置中）；有 trailing（例如指示點）就跟佢闊度 */
     grid-template-columns: var(--touch-target) minmax(0, 1fr) minmax(var(--touch-target), auto);
     align-items: center;
+    /* 睡眠 timer 月亮掣（SleepTimer.module.css）絕對定位喺右格：grid 要做佢嘅 containing block */
+    position: relative;
     width: 100%;
 }
 

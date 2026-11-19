@@ -171,6 +171,13 @@
     --list-badge-inset-top: 3px;
     --list-badge-inset-end: 1px;
     --list-sheet-height: 62%;
+    /*
+     * 睡眠 timer（9d，_mockups_/sleep-timer）：頁頂 / mini player 卡頂進度條高度；底部選單最闊幾多
+     *（手機打橫 / 平板置中，唔拉到成個畫面咁闊）、2×2 大掣高度、月亮 icon 大細
+     */
+    --sleep-timer-bar-height: calc(3px * var(--ui-scale));
+    --sleep-timer-sheet-max-width: calc(480px * var(--ui-scale));
+    --sleep-timer-option-height: calc(76px * var(--ui-scale));
     /* HomeView 節目頁唱片直徑（mockup 256px；唱片 = 播放器格闊 × --disc-large-share，Disc.module.css .large 同用） */
     --square-player-disc: 256px;
     --disc-large-share: 0.72;

@@ -4,6 +4,7 @@ import type { MiniPlayerTag } from '../../../../selectors/miniPlayer';
 import { Disc } from '../../../shared/common/Disc/Disc';
 import { PauseIcon, PlayIcon } from '../../../shared/common/icons/icons';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';
+import { SleepTimerEntry } from '../../../shared/player/SleepTimer/SleepTimerEntry';
 import styles from './MiniPlayer.module.css';
 import { MiniPlayerProgress } from './MiniPlayerProgress';
 
@@ -45,7 +46,10 @@ const MiniPlayerName = ({ name, tag }: { name: string; tag?: MiniPlayerTag }) =>
     </span>
 );
 
-/** 節目碟 + 名 + 副題（撳入節目頁 / 廣播劇頁；放唔落就跑馬燈），右邊係播放 / 暫停（外圈 = 播放進度） */
+/**
+ * 節目碟 + 名 + 副題（撳入節目頁 / 廣播劇頁；放唔落就跑馬燈），右邊係（睡眠 timer 月亮 +）播放 / 暫停
+ *（外圈 = 播放進度）
+ */
 export const MiniPlayerRow = (props: MiniPlayerRowProps) => (
     <div className={styles.row}>
         <button
@@ -66,6 +70,8 @@ export const MiniPlayerRow = (props: MiniPlayerRowProps) => (
                 <Marquee className={styles.subtitle} text={props.hint ?? props.subtitle} />
             </span>
         </button>
+        {/* 睡眠 timer（9d）：夜間 / 開緊先出，播放掣左邊；名同副題縮窄讓位（跑馬燈） */}
+        <SleepTimerEntry placement="mini" />
         <MiniPlayerProgress progress={props.progress} timeText={props.timeText}>
             <button
                 type="button"

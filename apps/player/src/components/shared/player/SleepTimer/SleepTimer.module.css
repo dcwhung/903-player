@@ -1,0 +1,83 @@
+/*
+ * 睡眠 timer 月亮掣（9d，_mockups_/sleep-timer）：冇底色，當頁主題強調色（細 icon / 字用 --color-accent-text，
+ * 淺色主題先夠對比）。未開 = 44px 圓掣淨係線條月亮；開咗 = 實色月亮 + 剩餘分秒，向左伸
+ */
+.button {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-width: var(--touch-target);
+    height: var(--touch-target);
+    /* 未開：(44 - 20) / 2 = 12px，icon 喺 44px 圓掣正中 */
+    padding: 0 var(--space-3);
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-accent-text);
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* 分秒每秒變：數字等闊，掣唔會每秒左右跳 */
+.time {
+    font-variant-numeric: tabular-nums;
+}
+
+/*
+ * 頁頭（PageHeader，grid 三格）：唔佔格、唔撐闊右格（現有頁頭位置零改變），絕對定位喺右格入面。
+ * header = 右格本來係空位：貼右邊（未開 44px 剛好填滿空位）；beside = 右格有嘢（清單掣 / 指示點）：擺佢左邊
+ */
+.button[data-placement='header'],
+.button[data-placement='beside'] {
+    position: absolute;
+    top: 50%;
+    grid-area: 1 / 3;
+    translate: 0 -50%;
+}
+
+.button[data-placement='header'] {
+    right: 0;
+}
+
+.button[data-placement='beside'] {
+    right: 100%;
+}
+
+/* 闊版主頁播放卡：指示點嗰行右邊（行本身置中指示點，月亮唔推郁佢哋） */
+.button[data-placement='card'] {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    translate: 0 -50%;
+}
+
+/*
+ * timer 進度細條：頁頂全闊（頂部安全區下面）。疊喺頁面上面、底部選單遮罩下面；唔收 tap。
+ * 長度 = 剩餘比例（scaleX，由左邊起），每秒跳一格唔做過場（減少動態都一樣）
+ */
+.bar {
+    position: fixed;
+    top: env(safe-area-inset-top);
+    right: 0;
+    left: 0;
+    z-index: calc(var(--arc-sheet-z) - 1);
+    height: var(--sleep-timer-bar-height);
+    overflow: hidden;
+    background: var(--color-track);
+    pointer-events: none;
+}
+
+/* mini player：卡頂邊全闊，卡（.player overflow: hidden + 圓角）裁走兩端 */
+.bar[data-sleep-timer-bar='card'] {
+    position: absolute;
+    top: 0;
+}
+
+.barFill {
+    height: 100%;
+    background: var(--color-accent);
+    transform-origin: left center;
+}

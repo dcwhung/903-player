@@ -1,0 +1,190 @@
+/* portal 外層：只係截事件（SleepTimerSheet STOP_BUBBLING），唔參與版面 */
+.portal {
+    display: contents;
+}
+
+/*
+ * 睡眠 timer 底部選單（9d，_mockups_/sleep-timer）：遮罩 + 由底升起嘅表，高度跟內容（唔係清單）。
+ * 圓頂角、grab bar 同全集表 / 清單 sheet 一樣；手機打橫 / 平板置中，最闊 --sleep-timer-sheet-max-width
+ */
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--arc-sheet-z);
+}
+
+/* 闊版主頁播放卡（平板橫）：表蓋喺卡嗰欄（ThemeScope .scope position: relative），遮罩照蓋成頁 */
+.overlay[data-side='true'] {
+    position: absolute;
+}
+
+/* HomeView（SQUARE_QUERY）播放卡得半個畫面闊：表照用成個畫面底 */
+@media (min-width: 520px) and (max-width: 568px) and (min-height: 520px) and (max-height: 568px) {
+    .overlay[data-side='true'] {
+        position: fixed;
+    }
+}
+
+.backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--arc-sheet-scrim);
+    transition: opacity var(--arc-sheet-slide-ms) ease-out;
+}
+
+.sheet {
+    position: absolute;
+    inset: auto 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--sleep-timer-sheet-max-width);
+    margin: 0 auto;
+    padding: var(--space-2) var(--space-5) calc(env(safe-area-inset-bottom) + var(--space-5));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-floating);
+    color: var(--color-text);
+    outline: none;
+    /* 成張表都係拉表嘅把手（冇捲動清單）：單指手勢交畀 useSheetDrag */
+    touch-action: none;
+    /* 向下拉閂：放手後滑走 / 彈返（useSheetDrag 改 transform） */
+    transition: transform var(--arc-sheet-slide-ms) ease-out;
+}
+
+/* 平板橫播放卡：表同卡一樣闊，唔使再收窄 */
+.overlay[data-side='true'] .sheet {
+    max-width: none;
+}
+
+.sheet[data-dragging='true'],
+.backdrop[data-dragging='true'] {
+    transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sheet,
+    .backdrop {
+        transition: none;
+    }
+}
+
+.sheet[data-closing='true'],
+.backdrop[data-closing='true'] {
+    pointer-events: none;
+}
+
+.grab {
+    flex-shrink: 0;
+    align-self: center;
+    width: var(--arc-sheet-grab-width);
+    height: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--color-track);
+}
+
+/* 表頭：月亮 + 「睡眠 timer」，開緊時 tab 掣推去最右 */
+.header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: var(--touch-target);
+}
+
+.titleIcon {
+    display: flex;
+    color: var(--color-accent-text);
+}
+
+.title {
+    margin: 0;
+    color: var(--color-title);
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+}
+
+/*
+ * 「剩餘 23:14｜關閉」：主頁「節目｜廣播劇」款（HomeTabs.module.css，.claude/CLAUDE.md Tab 掣款式）——
+ * 膠囊軌道（--home-tab-track 底、--home-tab-inset 內距），揀中格強調色膠囊墊底，其他格透明底
+ */
+.tabs {
+    display: flex;
+    gap: var(--home-tab-inset);
+    margin-left: auto;
+    padding: var(--home-tab-inset);
+    border-radius: var(--radius-full);
+    background: var(--home-tab-track);
+}
+
+.tab {
+    min-height: var(--touch-target);
+    padding: 0 var(--space-4);
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.tab[aria-pressed='true'] {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-weight: 700;
+}
+
+/* 2×2 大掣 */
+.options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+}
+
+.option {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-half);
+    align-items: center;
+    justify-content: center;
+    min-height: var(--sleep-timer-option-height);
+    padding: var(--space-2);
+    /* 透明框線先預留位：上次揀嗰粒加色唔會郁 */
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--color-track);
+    color: var(--color-text);
+}
+
+.optionLabel {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+}
+
+.optionDetail {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
+}
+
+/* 未開：上次揀嗰粒強調色框線，撳一下即開始 */
+.option[data-last='true'] {
+    border-color: var(--color-accent);
+}
+
+/* 開緊嗰粒：實色 */
+.option[aria-pressed='true'] {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+}
+
+.option[aria-pressed='true'] .optionDetail {
+    color: inherit;
+}
+
+/* 直播 / 未載到：「播完呢集」變灰，撳唔到 */
+.option[aria-disabled='true'] {
+    opacity: var(--unavailable-opacity);
+    cursor: not-allowed;
+}

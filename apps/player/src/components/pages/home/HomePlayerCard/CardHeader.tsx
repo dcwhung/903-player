@@ -6,6 +6,7 @@ import { ExpandIcon } from '../../../shared/common/icons/icons';
 import type { MiniPlayerProps } from '../MiniPlayer/MiniPlayer';
 import { dotVariant } from '../MiniPlayer/MiniPlayerDots';
 import { PageDots } from '../../../shared/common/PageDots/PageDots';
+import { SleepTimerEntry } from '../../../shared/player/SleepTimer/SleepTimerEntry';
 import styles from './HomePlayerCard.module.css';
 
 const EXPAND_ICON_SIZE = 18;
@@ -58,9 +59,13 @@ export type CardSwitchProps = Pick<
     'keys' | 'labels' | 'index' | 'tags' | 'positionLabel' | 'onChange'
 >;
 
-/** 今日多個節目：頁頭列下面嘅指示點（同 mini player 一樣顏色），撳 = 轉去嗰個節目 */
+/**
+ * 今日多個節目：頁頭列下面嘅指示點（同 mini player 一樣顏色），撳 = 轉去嗰個節目。
+ * 睡眠 timer 月亮掣（9d）喺呢行右邊（絕對定位，指示點照置中）
+ */
 export const CardDots = ({ tags = [], onChange, ...dots }: CardSwitchProps) => (
     <div className={styles.dots}>
         <PageDots {...dots} onSelect={onChange} variants={tags.map(dotVariant)} />
+        <SleepTimerEntry placement="card" />
     </div>
 );

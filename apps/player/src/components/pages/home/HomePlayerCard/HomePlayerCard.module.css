@@ -80,6 +80,13 @@
     display: flex;
     flex-shrink: 0;
     justify-content: center;
+    /* 睡眠 timer 月亮掣（9d）絕對定位喺呢行右邊，唔推郁指示點 */
+    position: relative;
+}
+
+/* 得一段錄音冇指示點（行高 0）：有月亮掣先撐返一粒掣嘅高度，唔好疊住頁頭列 / 唱片格 */
+.dots:has(> [data-placement='card']):not(:has([data-page-dot])) {
+    min-height: var(--touch-target);
 }
 
 .expand {
