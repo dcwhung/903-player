@@ -32,6 +32,10 @@ const SHOW_SUMMARY = '（e2e 示範簡介）公子會節目簡介';
 const TODAY_SUMMARY = '（e2e 示範簡介）在晴朗的一天出發節目簡介';
 const DRAMA_SUMMARY = '（e2e 示範簡介）蘭茜夫人劇場劇集簡介';
 const ARC_WITH_INFO = '戀愛二分一';
+// 每日劇集（library 得 18 樓 C 座，enabled: false）：示範 catalog 開返佢，驗清單頂 banner
+const DAILY_ID = 'c18';
+const DAILY_NAME = '18 樓 C 座';
+const DAILY_SUMMARY = '（e2e 示範簡介）18 樓 C 座劇集簡介';
 const ARC_SUMMARY = '（e2e 示範簡介）戀愛二分一短篇簡介';
 /** 多啲名：直版全集 sheet 行、橫版今日節目行嘅 chip 一定要換行（V2 / V3） */
 const MANY_HOSTS = ['主持丙', '主持丁', '主持戊', '主持己', '主持庚', '主持辛'];
@@ -69,16 +73,18 @@ const infoDocument = (base) => {
         SHOW_EXTRA[s.id] ? { ...s, definition: { ...s.definition, ...SHOW_EXTRA[s.id] } } : s,
     );
     const dramas = doc.dramas.map((d) =>
-        d.id === 'lancy'
-            ? {
-                  ...d,
-                  definition: {
-                      ...d.definition,
-                      summary: DRAMA_SUMMARY,
-                      arcs: d.definition.arcs.map(withArcInfo),
-                  },
-              }
-            : d,
+        d.id === DAILY_ID
+            ? { ...d, definition: { ...d.definition, enabled: true, summary: DAILY_SUMMARY } }
+            : d.id === 'lancy'
+              ? {
+                    ...d,
+                    definition: {
+                        ...d.definition,
+                        summary: DRAMA_SUMMARY,
+                        arcs: d.definition.arcs.map(withArcInfo),
+                    },
+                }
+              : d,
     );
     return JSON.stringify({ ...doc, shows, dramas });
 };
@@ -561,6 +567,104 @@ const checkToday = async (env, json, contextOptions, label) => {
     log(again === 'false', `${label}：再入節目表預設收合（${again}）`);
 };
 
+/*
+ * v2.0.1 用戶反饋（2026-11-19）：節目頁 / 每日劇集數清單頂有資料 sheet 嘅 banner（同比例、同樣式），
+ * 喺「集數 / 共 N 集」上面、同清單行對齊；冇箭咀，主持 / 簡介唔喺清單出。HomeView 嘅集數 sheet 見 square*.mjs
+ */
+const LIST_BANNER_VIEWPORTS = [
+    ['手機直', 390, 844],
+    ['手機打橫', 844, 390],
+    ['平板', 820, 1180],
+    ['桌面', 1280, 800],
+    ['Duo 闔上・直', 426, 612],
+    ['Duo 打開・直', 612, 876],
+    ['Duo 闔上・橫', 612, 426],
+    ['Duo 打開・橫', 876, 612],
+];
+const LIST_BANNER_PAGES = [
+    {
+        route: '#/show/gongzi',
+        name: '公子會',
+        subtitle: SHOW_AIR_TIME,
+        hidden: ['主持甲', SHOW_SUMMARY],
+        info: '節目資料',
+    },
+    {
+        route: `#/drama/${DAILY_ID}`,
+        name: DAILY_NAME,
+        subtitle: null,
+        hidden: [DAILY_SUMMARY],
+        info: '劇集資料',
+    },
+];
+
+/** 清單頂 banner 嘅位置：banner、「集數」標題、第一行、捲動 panel */
+const listBannerLook = (region) =>
+    region.evaluate((el) => {
+        const box = (node) => {
+            const r = node?.getBoundingClientRect();
+            return r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null;
+        };
+        const banner = el.querySelector('[data-testid="info-banner"]');
+        const heading = [...el.querySelectorAll('h2')].find((h) => h.textContent === '集數');
+        const panel = el.querySelector('[data-sheet-scroll]');
+        return {
+            placement: banner?.dataset.placement ?? null,
+            banner: box(banner),
+            heading: box(heading),
+            row: box(el.querySelector('li[data-episode-key]')),
+            text: el.innerText,
+            arrows: el.querySelectorAll('[aria-expanded]').length,
+            panelHasBanner: panel?.contains(banner) ?? false,
+        };
+    });
+
+const checkListBanner = async (env, json, page, [device, width, height]) => {
+    const label = `${device} ${width}×${height} ${page.name}清單`;
+    const { ctx, p } = await open(env, json, { viewport: { width, height } });
+    await p.goto(`${env.base}${page.route}`);
+    const region = p.getByRole('region', { name: '集數' });
+    await region.waitFor({ timeout: WAIT_MS });
+    // 第一次入自動彈資料 sheet：閂咗先量（佢自己都有 banner）
+    if (await isShown(infoSheet(p, page.info), { timeout: ABSENT_WAIT_MS })) {
+        await p.keyboard.press('Escape');
+        await infoSheet(p, page.info).waitFor({ state: 'detached', timeout: WAIT_MS });
+    }
+    const s = await listBannerLook(region);
+    const b = s.banner;
+    const ratio = b ? b.width / b.height : 0;
+    const aligned =
+        b !== null &&
+        s.row !== null &&
+        Math.abs(b.x - s.row.x) <= GAP_TOLERANCE_PX &&
+        Math.abs(b.width - s.row.width) <= GAP_TOLERANCE_PX;
+    env.log(
+        s.placement === 'list' &&
+            s.panelHasBanner &&
+            s.heading !== null &&
+            b.y + b.height <= s.heading.y &&
+            aligned &&
+            Math.abs(ratio - BANNER_RATIO) < BANNER_RATIO_TOLERANCE,
+        `${label}：banner 喺「集數」上面、同清單行對齊、64:27（${ratio.toFixed(2)}，${JSON.stringify({ banner: b, heading: s.heading, row: s.row })}）`,
+    );
+    const named =
+        s.text.includes(page.name) && (page.subtitle === null || s.text.includes(page.subtitle));
+    const hidden = page.hidden.filter((text) => s.text.includes(text));
+    env.log(
+        named && hidden.length === 0 && s.arrows === 0,
+        `${label}：banner 有名${page.subtitle ? ' + 播放時間' : ''}；冇箭咀（${s.arrows}）、冇主持 / 簡介（${hidden.join('、') || '冇'}）`,
+    );
+    await ctx.close();
+};
+
+const checkListBanners = async (env, json) => {
+    for (const page of LIST_BANNER_PAGES) {
+        for (const viewport of LIST_BANNER_VIEWPORTS) {
+            await checkListBanner(env, json, page, viewport);
+        }
+    }
+};
+
 export const runItemInfoChecks = async (env) => {
     const json = infoDocument(env.base);
     const section = (label, run) => runSection(env.log, label, run, env.browser);
@@ -585,6 +689,7 @@ export const runItemInfoChecks = async (env) => {
     await section('節目資料：全集 sheet', () => checkArcPick(env, json));
     await section('節目資料：全集 sheet 減少動態', () => checkArcSheet(env, json, true));
     await section('節目資料：全集 sheet 橫版', () => checkArcSheetLandscape(env, json));
+    await section('節目資料：節目頁 / 每日劇清單頂 banner', () => checkListBanners(env, json));
     await section('節目資料：今日節目直版', () => checkToday(env, json, {}, '今日節目資料'));
     await section('節目資料：今日節目橫版', () =>
         checkToday(env, json, LANDSCAPE, '今日節目資料橫版'),

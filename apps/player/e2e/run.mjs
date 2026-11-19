@@ -212,6 +212,8 @@ const HOME_TILES = [
 ];
 // 節目頁矮螢幕最少見到三集（tokens.css --player-reserved-height 預留三行）
 const MIN_VISIBLE_ROWS = 3;
+// 集數清單嘅捲動 panel：節目頁 / 每日劇清單頂有 banner 時係外面嗰層，否則係 ul（EpisodeList data-sheet-scroll）
+const EPISODE_SCROLL_PANEL = '[data-sheet-scroll]';
 /** 唱片底嘅由頭播放掣（播放 / 暫停掣喺佢隔籬） */
 const RESTART = '由頭播放';
 /** 唱片底嘅播放 / 暫停掣（錨定成個名，唔會撞到集數行嘅「播放 30/11…」） */
@@ -361,7 +363,8 @@ const checkLandscapeHome = async (p, label) => {
 
 /** 節目頁固定：捲集數 panel 時 window 唔郁、控制掣仍然喺畫面，panel 自己嘅 scrollTop 有變 */
 const checkFixedShowPage = async (p, label, shot) => {
-    const panel = p.getByRole('region', { name: '集數' }).getByRole('list');
+    // v2.0.1：清單頂有 banner，捲動 panel 係包住 banner + 標題列 + 清單嗰層（EpisodeList top）
+    const panel = p.getByRole('region', { name: '集數' }).locator(EPISODE_SCROLL_PANEL);
     const before = await panel.evaluate((el) => el.scrollTop);
     const box = await panel.boundingBox();
     await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -417,12 +420,19 @@ const recordMetrics = async (p, label, rows, share) => {
     metrics.push({ label, share: `${(share * 100).toFixed(1)}%`, disc: disc.toFixed(0), rows });
 };
 
-/** 清單 panel 見到幾多行：扣走底部 padding（安全區），用第一行嘅真實高度計 */
+/**
+ * 清單 panel 見到幾多行：扣走底部 padding（安全區），用第一行嘅真實高度計。
+ * 節目頁清單頂有 banner（v2.0.1）時 panel 係包住 banner + 標題列 + ul 嗰層：banner 會捲走唔扣，
+ * 扣走「集數 / 共 N 集」標題列，等同以前 ul 自己捲嗰陣嘅高
+ */
 const visibleRows = (panel) =>
     panel.evaluate((el) => {
-        const padding = parseFloat(getComputedStyle(el).paddingBottom);
+        const list = el.tagName === 'UL' ? el : (el.querySelector('ul') ?? el);
+        const padding = parseFloat(getComputedStyle(list).paddingBottom);
+        const heading =
+            list === el ? 0 : (list.previousElementSibling?.getBoundingClientRect().height ?? 0);
         const row = el.querySelector('li')?.getBoundingClientRect().height ?? 1;
-        return (el.clientHeight - padding) / row;
+        return (el.clientHeight - padding - heading) / row;
     });
 
 /** 唱片闊度（同列表行數一齊印出嚟，方便對照）；好矮嘅畫面下限細啲 */
@@ -834,7 +844,13 @@ const SHELL_MISMATCH_CASES = [
     { width: 375, height: 667, shrink: 80 },
 ];
 const SHELL_PAGES = [
-    { route: '#/show/badgirl', region: '集數', minRows: MIN_VISIBLE_ROWS, name: '節目頁' },
+    {
+        route: '#/show/badgirl',
+        region: '集數',
+        list: EPISODE_SCROLL_PANEL,
+        minRows: MIN_VISIBLE_ROWS,
+        name: '節目頁',
+    },
     {
         route: '#/today',
         region: '節目表',

@@ -509,3 +509,52 @@ describe('EpisodeList', () => {
         expect(container.querySelector('section')).toHaveAttribute('data-variant', 'card');
     });
 });
+
+// v2.0.1 用戶反饋（2026-11-19）：節目頁 / 每日劇清單頂有資料 sheet 嘅 banner，喺「集數 / 共 N 集」上面，
+// 同清單一齊捲（唔食清單預留行數）
+describe('EpisodeList with something on top', () => {
+    beforeEach(() => {
+        HTMLElement.prototype.scrollTo = vi.fn();
+    });
+
+    it('should put it above the heading, inside the one scroll panel', () => {
+        render(<EpisodeList items={ITEMS} onSelect={() => {}} top={<p>頂部 banner</p>} />);
+
+        const region = screen.getByRole('region', { name: '集數' });
+        const panel = region.querySelector('[data-sheet-scroll]');
+        const top = screen.getByText('頂部 banner');
+        const heading = screen.getByRole('heading', { name: '集數' });
+        expect(panel).toContainElement(top);
+        expect(panel).toContainElement(heading);
+        expect(panel).toContainElement(screen.getByRole('list'));
+        expect(
+            top.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(region.querySelectorAll('[data-sheet-scroll]')).toHaveLength(1);
+    });
+
+    it('should scroll that panel (not the list) to the current episode', () => {
+        const scrollTo = vi.fn();
+        HTMLElement.prototype.scrollTo = scrollTo;
+        render(
+            <EpisodeList
+                items={ITEMS}
+                onSelect={() => {}}
+                scrollAlign="top"
+                top={<p>頂部 banner</p>}
+            />,
+        );
+
+        const panel = screen
+            .getByRole('region', { name: '集數' })
+            .querySelector('[data-sheet-scroll]');
+        expect(panel?.tagName).toBe('DIV');
+        expect(scrollTo.mock.contexts).toContain(panel);
+    });
+
+    it('should keep the list itself as the scroll panel without it', () => {
+        render(<EpisodeList items={ITEMS} onSelect={() => {}} />);
+
+        expect(screen.getByRole('list')).toHaveAttribute('data-sheet-scroll');
+    });
+});

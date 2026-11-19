@@ -12,7 +12,7 @@ import { checkNoPointerRing, checkTabWrap, focusedName, scrimPoint } from './foc
 import { PHONE, ensurePlaying, isShown, newE2EPage, runSection, succeeds } from './harness.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
-import { SQUARE_DRAMA_SCENARIOS, squareSheetSized } from './squareDrama.mjs';
+import { SQUARE_DRAMA_SCENARIOS, infoBannerSized, squareSheetSized } from './squareDrama.mjs';
 
 /** HomeView 假設尺寸；刻意寫死做獨立對照，唔 import src 常數 */
 const SQUARE = { width: 544, height: 544 };
@@ -138,7 +138,11 @@ const checkOpened = async (env, p, how) => {
         const dialog = document.querySelector('[role="dialog"]');
         const r = dialog?.getBoundingClientRect();
         const banner = dialog?.querySelector('[data-testid="info-banner"] h2');
+        const art = dialog?.querySelector('[data-testid="info-banner"]')?.getBoundingClientRect();
         return {
+            bannerRatio: art ? art.width / art.height : null,
+            arrows: dialog?.querySelectorAll('[aria-expanded]').length ?? 0,
+            closeOnBanner: dialog?.querySelector('button[data-on-banner]') !== null,
             top: r?.top ?? null,
             bottom: r?.bottom ?? null,
             left: r?.left ?? null,
@@ -161,8 +165,11 @@ const checkOpened = async (env, p, how) => {
             state.filled !== 'rgba(0, 0, 0, 0)' &&
             squareSheetSized(state) &&
             state.banner !== null &&
-            state.banner === state.pageTitle,
-        `HomeView 清單 sheet（${how}）：升起、icon 實色、焦點入表、${state.rows} 行、頂有節目 banner、最高 75%、480px 置中（${JSON.stringify(state)}）`,
+            state.banner === state.pageTitle &&
+            infoBannerSized(state) &&
+            state.arrows === 0 &&
+            state.closeOnBanner,
+        `HomeView 清單 sheet（${how}）：升起、icon 實色、焦點入表、${state.rows} 行、頂有節目 banner（同資料 sheet 64:27、✕ 喺圖上、冇箭咀）、最高 75%、480px 置中（${JSON.stringify(state)}）`,
     );
 };
 

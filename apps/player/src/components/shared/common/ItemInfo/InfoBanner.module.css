@@ -11,6 +11,12 @@
     aspect-ratio: var(--info-banner-ratio);
 }
 
+/* 清單頂（EpisodeList top）：唔使貼邊，同清單行左右對齊、四角圓角 */
+.banner[data-placement='list'] {
+    margin: 0;
+    border-radius: var(--radius-lg);
+}
+
 .art {
     display: block;
     width: 100%;

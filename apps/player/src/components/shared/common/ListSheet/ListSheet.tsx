@@ -1,10 +1,5 @@
-import { useCallback, useId, useState, type ReactNode, type RefObject } from 'react';
-import {
-    hasInlineInfo,
-    type InfoBanner as InfoBannerData,
-    type InlineInfo,
-} from '../../../../selectors/itemInfo';
-import { InlineItemInfo } from '../ItemInfo/InlineItemInfo';
+import { useCallback, useId, type ReactNode, type RefObject } from 'react';
+import type { InfoBanner as InfoBannerData } from '../../../../selectors/itemInfo';
 import { SheetOverlay } from '../Sheet/SheetOverlay';
 import motion from '../Sheet/SheetMotion.module.css';
 import { useSheetBehaviour } from '../Sheet/useSheetBehaviour';
@@ -34,16 +29,14 @@ interface ListSheetProps {
     returnFocusTo?: RefObject<HTMLElement | null> | undefined;
     /** 表頂 banner（例如 HomeView 短篇表：劇集橫額 + 短篇名）：✕ 疊喺圖上 */
     banner?: InfoBannerData | undefined;
+    /**
+     * banner 比例：square（預設）= HomeView 全集表 / 短篇表嗰種矮 banner（--square-sheet-banner-ratio）；
+     * info = 同資料 sheet 一樣（節目頁 / 每日劇集數表，v2.0.1 用戶反饋 2026-11-19）
+     */
+    bannerSize?: 'square' | 'info';
     /** 表頭右邊嘅掣（例如短篇表「全集」） */
     action?: ReactNode;
-    /**
-     * banner 嗰段嘅其他資料（主持 / 簡介，bannerDetails）：有就標題旁邊出箭咀（label = 讀屏名），
-     * 預設收埋，展開喺清單上面（同全集表劇集資料一樣）。HomeView 節目頁 / 每日劇集數表用
-     */
-    details?: { info: InlineInfo; label: string } | undefined;
 }
-
-type Details = NonNullable<ListSheetProps['details']>;
 
 /** 撳遮罩閂 */
 const backdropOf = (onClose: () => void) => ({
@@ -51,25 +44,6 @@ const backdropOf = (onClose: () => void) => ({
     testId: 'list-sheet-backdrop',
     onClick: onClose,
 });
-
-/** 表頭資料箭咀：有資料先出，預設收埋 */
-const useDetailsToggle = (details: ListSheetProps['details']) => {
-    const [expanded, setExpanded] = useState(false);
-    const shown = details && hasInlineInfo(details.info) ? details : undefined;
-    const toggle = shown && {
-        expanded,
-        label: shown.label,
-        onToggle: () => setExpanded((was) => !was),
-    };
-    return { shown, expanded, toggle };
-};
-
-/** 表頭箭咀展開嘅資料（清單上面，唔跟清單捲） */
-const SheetDetails = ({ details, expanded }: { details: Details; expanded: boolean }) => (
-    <div className={styles.details}>
-        <InlineItemInfo info={details.info} expanded={expanded} />
-    </div>
-);
 
 /**
  * 清單 sheet（HomeView，P10 lane 6，_mockups_/home-view 節目頁）：由畫面底升起，蓋住播放器下半；
@@ -86,11 +60,10 @@ export const ListSheet = ({
     children,
     returnFocusTo,
     banner,
+    bannerSize = 'square',
     action,
-    details,
 }: ListSheetProps) => {
     const titleId = useId();
-    const { shown, expanded, toggle } = useDetailsToggle(details);
     const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(
         open,
         onClose,
@@ -112,14 +85,14 @@ export const ListSheet = ({
                 aria-modal="true"
                 aria-labelledby={titleId}
                 data-banner={banner !== undefined}
+                data-banner-size={banner ? bannerSize : undefined}
                 tabIndex={-1}
                 {...handlers}
             >
                 <ListSheetHeader
-                    {...{ titleId, title, summary, closeLabel, onClose, banner, action, toggle }}
+                    {...{ titleId, title, summary, closeLabel, onClose, banner, action }}
                 />
                 <div ref={bindList} className={styles.list} data-role="sheet-list">
-                    {shown && <SheetDetails details={shown} expanded={expanded} />}
                     {children}
                 </div>
             </section>

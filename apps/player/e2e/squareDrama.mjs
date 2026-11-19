@@ -52,6 +52,14 @@ const arcSheet = (p) => p.getByRole('dialog', { name: '集數' });
 const allButton = (p) => p.getByRole('button', { name: ALL_BUTTON });
 const arcButton = (p) => p.getByRole('button', { name: ARC_BUTTON });
 
+// 節目頁 / 每日劇集數表嘅 banner 同資料 sheet 一樣比例（tokens.css --info-banner-ratio，v2.0.1 用戶反饋 2026-11-19）
+const INFO_BANNER_RATIO = 64 / 27;
+const BANNER_RATIO_TOLERANCE = 0.03;
+
+/** 集數表 banner 比例同資料 sheet 一樣（square.mjs 都用） */
+export const infoBannerSized = ({ bannerRatio }) =>
+    bannerRatio !== null && Math.abs(bannerRatio - INFO_BANNER_RATIO) < BANNER_RATIO_TOLERANCE;
+
 /** HomeView 集數 / 短篇 / 全集表（square.mjs 都用）：貼底、頂唔高過畫面 25%、同資料 sheet 一樣 480px 闊置中 */
 export const squareSheetSized = ({ top, bottom, left, width }) =>
     top !== null &&
@@ -413,6 +421,11 @@ const checkDaily = async (env) => {
         return {
             rows: el.querySelectorAll('li[data-episode-key]').length,
             banner: el.querySelector('[data-testid="info-banner"] h2')?.textContent ?? null,
+            bannerRatio: (() => {
+                const b = el.querySelector('[data-testid="info-banner"]')?.getBoundingClientRect();
+                return b ? b.width / b.height : null;
+            })(),
+            arrows: el.querySelectorAll('[aria-expanded]').length,
             top: r.top,
             bottom: r.bottom,
             left: r.left,
@@ -420,8 +433,13 @@ const checkDaily = async (env) => {
         };
     });
     env.log(
-        opened && s.rows >= Number(count) && s.banner !== null && squareSheetSized(s),
-        `HomeView 每日劇集頁：清單掣開集數 sheet（${s.rows} 行，badge ${count}）、頂有劇集 banner、最高 75%、480px 置中（${JSON.stringify(s)}）`,
+        opened &&
+            s.rows >= Number(count) &&
+            s.banner !== null &&
+            infoBannerSized(s) &&
+            s.arrows === 0 &&
+            squareSheetSized(s),
+        `HomeView 每日劇集頁：清單掣開集數 sheet（${s.rows} 行，badge ${count}）、頂有劇集 banner（同資料 sheet 64:27、冇箭咀）、最高 75%、480px 置中（${JSON.stringify(s)}）`,
     );
     await ctx.close();
 };

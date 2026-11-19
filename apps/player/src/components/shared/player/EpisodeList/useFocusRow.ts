@@ -22,7 +22,7 @@ const jumpTo = (list: HTMLElement, row: HTMLElement, align: EpisodeScrollAlign) 
  * 短暫 highlight；每個 focusKey 只做一次。喺 useScrollToCurrent 之後行，蓋過捲去揀中集
  */
 export const useFocusRow = (
-    listRef: RefObject<HTMLUListElement | null>,
+    listRef: RefObject<HTMLElement | null>,
     items: readonly EpisodeItem[],
     focusKey: string | undefined,
     align: EpisodeScrollAlign,

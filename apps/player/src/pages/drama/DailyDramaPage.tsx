@@ -13,6 +13,7 @@ import { usePlayer } from '../../player/usePlayer';
 import { t } from '../../i18n/t';
 import { formatDateLabel, formatSpokenDate } from '../../utils/date';
 import { hasKnownDuration } from '../../utils/time';
+import { listTop } from '../show/ShowEpisodes';
 import { DailySquare } from './DailySquare';
 import { DramaHeader } from './DramaHeader';
 import page from '../shared/Page.module.css';
@@ -91,6 +92,7 @@ export const DailyDramaPage = ({ drama }: { drama: DramaConfig }) => {
                         onSelect={view.pressEpisode}
                         labels="taggedDate"
                         focusKey={view.focusKey}
+                        top={listTop(view.info.sheet)}
                     />
                 </div>
                 <InnerPageHandle page={{ kind: 'drama', dramaId: drama.id }} />

@@ -144,24 +144,6 @@ export interface InfoBanner {
     subtitle?: string;
 }
 
-/**
- * banner 代替咗嗰段（同資料 sheet InfoSection underBanner 一樣）淨低嘅欄位：主持 / 聲演 / 簡介，
- * 節目段唔要播放時間（banner 細字已經寫）。HomeView 清單 sheet 表頭箭咀展開用（P10 v2.0.1）
- */
-export const bannerDetails = (
-    sections: readonly ItemInfoSection[],
-    banner: InfoBanner | undefined,
-): InlineInfo => {
-    const section = banner && sections.find((s) => s.kind === banner.kind);
-    if (!section) return {};
-    return {
-        ...field('airTime', section.kind === 'show' ? undefined : section.airTime),
-        ...field('hosts', section.hosts),
-        ...field('cast', section.cast),
-        ...field('summary', section.summary),
-    };
-};
-
 /** 冇圖（理論上必有）就冇 banner，sheet 用返原本標題 */
 const bannerOf = (
     kind: ItemInfoSectionKind,

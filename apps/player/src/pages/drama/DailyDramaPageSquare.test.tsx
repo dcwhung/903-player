@@ -70,8 +70,8 @@ describe('DailyDramaPage HomeView（P10 lane 7b）', () => {
         );
     });
 
-    it('should top the episode sheet with the drama banner and fold-out summary', async () => {
-        // P10 v2.0.1：跟節目頁清單 sheet 一樣（同資料 sheet 嘅 banner + 箭咀展開簡介）
+    it('should top the episode sheet with the drama banner and no fold-out summary', async () => {
+        // v2.0.1 用戶反饋（2026-11-19）：跟節目頁清單 sheet 一樣，同資料 sheet 同一個 banner，冇箭咀、唔出簡介
         stubViewport(SQUARE);
         withProgress();
         openC18();
@@ -80,8 +80,9 @@ describe('DailyDramaPage HomeView（P10 lane 7b）', () => {
 
         const sheet = screen.getByRole('dialog', { name: '集數' });
         expect(within(sheet).getByTestId('info-banner')).toBeInTheDocument();
-        await userEvent.click(within(sheet).getByRole('button', { name: '劇集資料' }));
-        expect(within(sheet).getByText('每日劇示範簡介')).toBeVisible();
+        expect(sheet).toHaveAttribute('data-banner-size', 'info');
+        expect(within(sheet).queryByRole('button', { name: '劇集資料' })).not.toBeInTheDocument();
+        expect(within(sheet).queryByText('每日劇示範簡介')).not.toBeInTheDocument();
     });
 
     it('should auto-open the episode sheet when entered from 我的收藏 and return focus after Escape', async () => {

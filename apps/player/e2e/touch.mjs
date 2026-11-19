@@ -440,7 +440,8 @@ const checkShow = async (env, label) => {
         p,
         log,
         label,
-        p.getByRole('region', { name: '集數' }).getByRole('list'),
+        // v2.0.1：清單頂有 banner，捲動 panel 係包住 banner + 標題列 + 清單嗰層（EpisodeList top）
+        p.getByRole('region', { name: '集數' }).locator('[data-sheet-scroll]'),
     );
     await checkStripSwipe(cdp, p, log, label);
     await checkRingGapIgnored(cdp, p, log, label);
