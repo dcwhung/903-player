@@ -30,3 +30,16 @@
     height: env(safe-area-inset-top);
     pointer-events: none;
 }
+
+/*
+ * iPhone Duo（DUO_QUERY，四種姿勢）：成頁四邊多留 --duo-edge-inset（tokens.css），
+ * 主頁格邊嘅底色邊框就係 --home-gutter + 呢個 = 24px，四邊一樣闊。底色照舊鋪滿成個畫面（padding 喺 .scope 入面）
+ */
+@media (orientation: portrait) and (min-width: 420px) and (max-width: 470px) and (min-height: 590px) and (max-height: 690px),
+    (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px),
+    (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px),
+    (orientation: portrait) and (min-width: 600px) and (max-width: 640px) and (min-height: 860px) and (max-height: 900px) {
+    .scope {
+        padding: var(--duo-edge-inset);
+    }
+}

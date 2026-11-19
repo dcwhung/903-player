@@ -26,7 +26,9 @@ const TileCorners = ({ item }: { item: DramaShelfItem }) => {
         fitsWithoutOverflow,
         sharesRow ? TOP_BAR_STEPS : META_STEPS,
     );
-    const meta = (
+    // 冇角落字（新主頁「今日節目」卡）就唔出個空白 pill（W-789）
+    const hasMeta = item.meta !== '' || item.release !== undefined;
+    const meta = hasMeta && (
         <span
             ref={metaRef}
             className={`${styles.meta} ${item.resume ? styles.metaTop : ''}`}
@@ -61,7 +63,7 @@ const OpenTile = ({ item, focus }: DramaTileProps) => (
     <div
         className={styles.tile}
         data-focused={focus?.focused ? '' : undefined}
-        data-zoom-key={zoomKey.drama(item.id)}
+        data-zoom-key={item.zoomKey ?? zoomKey.drama(item.id)}
     >
         <button
             type="button"
@@ -78,6 +80,11 @@ const OpenTile = ({ item, focus }: DramaTileProps) => (
                 draggable={false}
                 crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}
             />
+            {item.caption && (
+                <span className={styles.caption} aria-hidden="true">
+                    {item.caption}
+                </span>
+            )}
             <TileCorners item={item} />
         </button>
         {item.resume && (

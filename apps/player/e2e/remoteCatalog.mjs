@@ -104,8 +104,8 @@ const serveImage = (route, allowOrigin) => {
     }
 };
 
-/** catalogBody：catalog.json 答乜（string）；delayMs：遲幾耐先答；allowOrigin：page 嘅 origin */
-const catalogRoute =
+/** catalogBody：catalog.json 答乜（string）；delayMs：遲幾耐先答；allowOrigin：page 嘅 origin（visualScenes.mjs 都用） */
+export const catalogRoute =
     ({ catalogBody, delayMs = 0, allowOrigin }) =>
     async (route) => {
         if (!route.request().url().includes('catalog.json')) return serveImage(route, allowOrigin);

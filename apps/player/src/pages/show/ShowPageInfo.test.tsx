@@ -1,7 +1,7 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ShowConfig } from '@903-player/catalog';
-import { stubLandscape } from '../../../tests/landscape';
+import { stubLandscape, stubViewport } from '../../../tests/landscape';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
 import { saveProgress } from '../../services/progressStore';
 import { ShowPage } from './ShowPage';
@@ -85,5 +85,58 @@ describe('ShowPage item info（P9.5 #12）', () => {
         await act(async () => {});
         expect(screen.queryByRole('button', { name: '節目資料' })).not.toBeInTheDocument();
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+});
+
+/** Duo 打開・直（_mockups_/iphone-duo）；HomeView 方形螢幕（SQUARE_QUERY，ⓘ 喺頁頭） */
+const DUO_OPEN_PORTRAIT = { width: 612, height: 876 };
+const SQUARE = { width: 544, height: 544 };
+
+/*
+ * 用戶 2026-11-18 決定（QA Observation 1）：第一次入自動彈嘅「節目資料」（打開前冇焦點），
+ * 閂咗焦點返 ⓘ（直版 / 橫版 / Duo 喺唱片圈，HomeView 喺頁頭），唔好跌去 <body>
+ */
+describe('ShowPage auto-opened info sheet focus return', () => {
+    beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-19T08:00:00Z'));
+        Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
+        info.enabled = true;
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+    });
+
+    const escapeAutoOpened = async () => {
+        renderWithProviders(<ShowPage />, ROUTE);
+        await infoSheet();
+        await userEvent.keyboard('{Escape}');
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog', { name: '節目資料' })).not.toBeInTheDocument(),
+        );
+        return screen.getByRole('button', { name: '節目資料' });
+    };
+
+    it('should return focus to ⓘ on the disc in portrait', async () => {
+        expect(await escapeAutoOpened()).toHaveFocus();
+    });
+
+    it('should return focus to ⓘ in landscape (docked sheet)', async () => {
+        stubLandscape();
+        expect(await escapeAutoOpened()).toHaveFocus();
+    });
+
+    it('should return focus to ⓘ on Duo open portrait', async () => {
+        stubViewport(DUO_OPEN_PORTRAIT);
+        expect(await escapeAutoOpened()).toHaveFocus();
+    });
+
+    it('should return focus to the header ⓘ on HomeView', async () => {
+        stubViewport(SQUARE);
+        const button = await escapeAutoOpened();
+        expect(button.closest('header')).not.toBeNull();
+        expect(button).toHaveFocus();
     });
 });

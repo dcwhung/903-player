@@ -167,11 +167,18 @@ const useFirstVisitOnEntry = (drama: DramaConfig, focused: boolean): boolean => 
 
 /**
  * 揀咗睇邊個短篇；未揀（或者揀返播緊嗰個）就跟播緊嗰集嘅短篇。
- * 由「我的收藏」撳行入嚟：一開始睇嗰集嘅短篇（initialArc）
+ * 由「我的收藏」撳行入嚟：一開始睇嗰集嘅短篇（initialArc）。
+ * followPlaying：放棄揀選、跟返播緊嗰集（HomeView 短篇表閂咗冇播揀咗嗰個短篇，W-796）；
+ * 唔經 useArcPick，所以唔會重新載入
  */
 const useViewedArc = (playingArc: string | undefined, initialArc: string | undefined) => {
     const [picked, setPicked] = useState<string | null>(initialArc ?? null);
-    return { arc: picked ?? playingArc, pickArc: setPicked, arcPicked: picked !== null };
+    return {
+        arc: picked ?? playingArc,
+        pickArc: setPicked,
+        arcPicked: picked !== null,
+        followPlaying: () => setPicked(null),
+    };
 };
 
 /**
@@ -332,7 +339,8 @@ const useSeriesArcs = (
     { focused, drama }: { focused?: SeriesEpisode | undefined; drama: DramaConfig },
 ) => {
     const availability = useSeriesAvailability(drama, episodes);
-    const { arc, pickArc: setArc, arcPicked } = useViewedArc(current?.arc, focused?.arc);
+    const viewed = useViewedArc(current?.arc, focused?.arc);
+    const { arc, pickArc: setArc } = viewed;
     const { groups, chips } = useArcOrder(episodes, progressMap, loaded?.arc, availability);
     const pickArc = useArcPick(groups, setArc);
     // 照集數次序（聽完嘅留喺原位）；入頁 / 轉集由 EpisodeList 捲到播緊嗰集
@@ -342,7 +350,8 @@ const useSeriesArcs = (
         pickedArcResume(groups, arc, current) ?? (arc === focused?.arc ? focused : undefined);
     // 唱片區顯示嘅集：載入咗就係嗰集；未載入就係撳播放會播嗰集（揀咗短篇就係嗰個短篇嘅續聽集）
     const upNext = loaded ?? pickedResume ?? current;
-    return { arc, pickArc, groups, chips, shown, pickedResume, upNext, availability, arcPicked };
+    // viewed 嘅 pickArc（淨係記低）由 useArcPick 嗰個（冇播放順便載入）蓋過
+    return { ...viewed, pickArc, groups, chips, shown, pickedResume, upNext, availability };
 };
 
 /** 成套劇下架句：畫面字（page）+ 讀屏字（label，讀屏版日子，W-537） */
@@ -394,6 +403,7 @@ const useSeriesSheetView = (
             ...sheetAvailability(arcs.availability),
             ...sheetActions,
             openSheet: info.openSheet,
+            allRef: info.allRef,
             info: info.sheetInfo,
             banner: info.sheetBanner,
         },
@@ -429,6 +439,7 @@ export const useSeriesDramaPage = (drama: DramaConfig, focusId?: string) => {
         arcs: arcs.chips,
         ...pageAvailability(availability),
         arc: arcs.arc,
+        followPlayingArc: arcs.followPlaying,
         items: availability.listItems(arcs.arc, toSeriesItems(arcs.shown, rows.ctx), arcs.shown),
         ...listActions(rows, focusKeyOf(episodes, focusId)),
         ...useSeriesSheetView(drama, loaded, arcs, { sheet, empty: standby.empty }),

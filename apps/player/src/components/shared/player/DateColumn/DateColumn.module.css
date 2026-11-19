@@ -1,0 +1,47 @@
+/*
+ * 直排日子（P10 lane 5b，Duo 打開・直）：喺唱片右邊，標籤喺頂，下面一格一集，放唔晒自己捲。
+ * 每格沿用日子條（DateStrip.module.css .cell）嘅兩行字；現正播放加框（同 mockup new-opr-show）
+ */
+.column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: var(--date-column-width);
+    min-height: 0;
+}
+
+.list {
+    /* 放唔晒時底部淡出，提示下面仲有（S-1137） */
+    mask-image: linear-gradient(to bottom, #000 calc(100% - var(--space-6)), transparent);
+    /* 最尾一格唔會停喺淡出位入面（放得晒或者捲到底都睇得清） */
+    padding-bottom: var(--space-6);
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-height: 0;
+    margin: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    list-style: none;
+    scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+    display: none;
+}
+
+/* 蓋過日子條一格佔七份一闊：直排每格成欄咁闊 */
+.cell {
+    width: 100%;
+    min-height: var(--touch-target-min);
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text);
+}
+
+/* 現正播放嗰格加框（CUI-0026）：同日子條 .current 分開名；.cell.currentDay 蓋過 strip .cell 嘅 border: none，唔靠 bundle 次序 */
+.cell.currentDay {
+    border: 1px solid var(--color-accent-text);
+    cursor: default;
+}

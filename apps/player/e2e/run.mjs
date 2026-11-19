@@ -1,9 +1,7 @@
 // 端對端測試：真 Chromium + vite preview + 假錄音列表 + 模擬 audio server（支援 Range）
 // 固定時鐘同 audio host 見 harness.mjs
 // 用法：npm run e2e（截圖輸出去 e2e/screenshots/）
-import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
-import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import { chromiumExecutablePath } from '../scripts/chromiumLaunch.mjs';
 import { runArcSheetChecks } from './arcSheet.mjs';
@@ -13,10 +11,14 @@ import { runComingSoonChecks } from './comingSoon.mjs';
 import { runHiddenPlaybackChecks } from './hiddenPlayback.mjs';
 import { runHomeWideChecks } from './homeWide.mjs';
 import { runItemInfoChecks } from './itemInfo.mjs';
+import { parsePort, previewUrl, startPreview } from './previewServer.mjs';
 import { runPwaUpdateChecks } from './pwaUpdate.mjs';
 import { runRemoteCatalogChecks } from './remoteCatalog.mjs';
+import { runShelfSplitChecks } from './shelfSplit.mjs';
 import { runShowGridCountChecks } from './showGridCounts.mjs';
 import { runDramaPageChecks } from './dramaPages.mjs';
+import { runDuoChecks } from './duo.mjs';
+import { runSquareChecks } from './square.mjs';
 import {
     AUDIO_HOST,
     BANNER_ALT,
@@ -35,21 +37,19 @@ import { runStorageMigrationChecks } from './storageMigration.mjs';
 import { runTouchChecks } from './touch.mjs';
 
 const DEFAULT_PORT = 4173;
-const MAX_PORT = 65535;
 
 /** 多個 worktree 同時跑 e2e 時可以用 E2E_PORT 避開撞 port（strictPort 會令人誤測別人嘅 build） */
-const parsePort = (raw) => {
-    if (raw === undefined || raw === '') return DEFAULT_PORT;
-    const port = Number(raw);
-    if (!/^\d+$/.test(raw) || port < 1 || port > MAX_PORT) {
-        console.error(`E2E_PORT 要係 1–${MAX_PORT} 嘅整數，收到「${raw}」`);
-        process.exit(1);
+const portOrExit = () => {
+    try {
+        return parsePort(process.env.E2E_PORT, DEFAULT_PORT, 'E2E_PORT');
+    } catch (error) {
+        console.error(error.message);
+        return process.exit(1);
     }
-    return port;
 };
 
-const PORT = parsePort(process.env.E2E_PORT);
-const BASE = `http://localhost:${PORT}/903-player/`;
+const PORT = portOrExit();
+const BASE = previewUrl(PORT);
 const OUT = new URL('./screenshots', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
@@ -69,51 +69,12 @@ const log = (ok, msg) => {
     console.log(`${ok ? 'PASS' : 'FAIL'}  ${msg}`);
 };
 
-/** port 有冇人用緊：有就即刻停，唔好 poll 到第二個 worktree 嘅 preview，誤測人哋嘅 build（S-549） */
-const assertPortFree = () =>
-    new Promise((resolve) => {
-        const probe = createServer();
-        probe.once('error', () => {
-            console.error(
-                `port ${PORT} 有人用緊（可能係另一個 worktree 嘅 e2e），用 E2E_PORT 揀第二個`,
-            );
-            process.exit(1);
-        });
-        probe.listen(PORT, () => probe.close(resolve));
+/** port 有人用緊 / vite 起唔到：講原因就停，唔使成個 stack（S-549、S-850） */
+const startPreviewOrExit = () =>
+    startPreview({ port: PORT }).catch((error) => {
+        console.error(error.message);
+        process.exit(1);
     });
-
-const startPreview = async () => {
-    await assertPortFree();
-    // 直接用 node 行 vite（唔經 npx），kill 先會停到真正嘅 server
-    // npm workspaces 將 vite hoist 去 repo 根嘅 node_modules：由 vite/package.json 位置搵 bin
-    const viteBin = new URL('bin/vite.js', import.meta.resolve('vite/package.json')).pathname;
-    const server = spawn(
-        process.execPath,
-        // --mode e2e：同 build 一樣，vite.config.ts 先會對 e2e-catalog/ 答 404、唔做 SPA fallback（S-765）
-        [viteBin, 'preview', '--mode', 'e2e', '--port', String(PORT), '--strictPort'],
-        // stderr 照出：vite 起唔到（例如撞 port）時睇到原因（S-850）
-        { stdio: ['ignore', 'ignore', 'inherit'] },
-    );
-    // 俾 signal 殺咗時 exitCode 係 null、signalCode 先有值，兩樣都要睇（S-850）
-    const hasExited = () => server.exitCode !== null || server.signalCode !== null;
-    for (let i = 0; i < 30; i += 1) {
-        // vite 自己退出（例如 strictPort 撞 port）就唔使再等
-        if (hasExited()) break;
-        try {
-            if ((await fetch(BASE)).ok) return server;
-        } catch {
-            // server 未起好
-        }
-        await new Promise((r) => setTimeout(r, 500));
-    }
-    if (hasExited()) {
-        throw new Error(
-            `vite preview exited early (code ${server.exitCode}, signal ${server.signalCode}) on port ${PORT}`,
-        );
-    }
-    server.kill();
-    throw new Error('vite preview did not start');
-};
 
 /** index.html 嘅啟動畫面：顯示 package.json 版本，app render 完之後淡出再由 DOM 移走 */
 const checkSplashRemoved = async (p) => {
@@ -1293,7 +1254,7 @@ const checkProbeFindsNewEpisode = async (browser, errors) => {
     await ctx.close();
 };
 
-const server = await startPreview();
+const server = await startPreviewOrExit();
 let browser;
 /** 每個 section 完結都閂返佢開咗嘅 context（S-644） */
 const section = (label, run) => runSection(log, label, run, browser);
@@ -1673,6 +1634,10 @@ try {
 
     // 闊橫版主頁（iPad 打橫）：fill / split、卡闊 + 卡清單、✕ 閂卡 → 把手 → 開返（每個情境各自一個 section）
     await runHomeWideChecks({ browser, base: BASE, errors, log });
+    await runDuoChecks({ browser, base: BASE, errors, log });
+    await runShelfSplitChecks({ browser, base: BASE, errors, log });
+    // HomeView 節目頁（P10 lane 6）：播放器為主、頁頭清單掣 + badge、清單 sheet 開閂
+    await runSquareChecks({ browser, base: BASE, errors, log });
 
     // 主頁格仔 zoom 入內頁（P6 #2 Z3）：直版 zoom / 返回 unzoom、闊橫版都係 zoom（唔係 expand）
     await runCardZoomChecks({ browser, base: BASE, errors, log });

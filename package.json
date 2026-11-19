@@ -18,6 +18,7 @@
         "lint": "eslint . && prettier --check .",
         "format": "prettier --write .",
         "e2e": "npm run e2e -w apps/player --",
+        "e2e:visual": "npm run e2e:visual -w apps/player --",
         "e2e:admin": "npm run e2e -w apps/admin --"
     },
     "devDependencies": {

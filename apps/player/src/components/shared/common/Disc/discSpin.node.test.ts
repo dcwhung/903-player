@@ -29,4 +29,9 @@ describe('disc spin', () => {
         expect(cssDeclarations(disc, '.face', REDUCED_MOTION).animation).toBe('none');
         expect(cssDeclarations(disc, '.large .face', REDUCED_MOTION).animation).toBeUndefined();
     });
+
+    it('should size the large disc from --disc-large-share so HomeView keeps one source', () => {
+        // S-1139：Page.module.css 用同一個 token 由唱片直徑倒推播放器格闊
+        expect(cssDeclarations(disc, '.large').width).toBe('calc(var(--disc-large-share) * 100%)');
+    });
 });

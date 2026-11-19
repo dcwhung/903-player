@@ -18,7 +18,8 @@
 }
 
 .large {
-    width: 72%;
+    /* 同 HomeView 播放器格倒推唱片直徑共用（tokens.css --disc-large-share） */
+    width: calc(var(--disc-large-share) * 100%);
     aspect-ratio: 1;
     box-shadow:
         0 0 0 10px var(--color-disc-rim),

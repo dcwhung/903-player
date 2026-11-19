@@ -131,9 +131,16 @@ export const mediaQueries = (css: string): string[] => {
     return queries;
 };
 
+/**
+ * iPhone Duo / HomeView 嘅裝置範圍 query（P10，src/config/layout.ts）一定有闊度上限（max-width），
+ * 係「某部機」唔係「矮螢幕」：唔當高度斷點（寫法由 deviceQueries.node.test.ts 鎖住）
+ */
+const isDeviceRange = (query: string): boolean => query.includes('max-width');
+
 /** CSS 入面所有 @media 嘅 max-height 斷點（px）；excludeLandscape 就唔計橫版（orientation: landscape）嘅 */
 export const maxHeightBreakpoints = (css: string, { excludeLandscape = false } = {}): number[] =>
     mediaQueries(css)
+        .filter((query) => !isDeviceRange(query))
         .filter((query) => !(excludeLandscape && query.includes('orientation: landscape')))
         .flatMap((query) =>
             [...query.matchAll(/max-height:\s*(\d+)px/g)].map((match) => Number(match[1])),

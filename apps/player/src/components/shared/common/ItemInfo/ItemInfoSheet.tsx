@@ -1,4 +1,4 @@
-import type { Ref } from 'react';
+import type { Ref, RefObject } from 'react';
 import { t } from '../../../../i18n/t';
 import type { InfoBanner as InfoBannerData, ItemInfoSection } from '../../../../selectors/itemInfo';
 import { useHeldWhileClosing } from '../Sheet/useHeldWhileClosing';
@@ -23,6 +23,11 @@ interface ItemInfoSheetProps {
     /** dialog 讀屏名：「節目資料」/「劇集資料」 */
     label: string;
     onClose: () => void;
+    /**
+     * 閂咗焦點去邊（打開前嗰粒掣靠唔住先用）：例如由全集表揀短篇彈出，打開嗰粒短篇行
+     * 已經隨全集表 unmount（S-1142，見 useSheetBehaviour）。唔傳行為不變
+     */
+    returnFocusTo?: RefObject<HTMLElement | null> | undefined;
 }
 
 const CLOSE_ICON_SIZE = 20;
@@ -92,8 +97,13 @@ export const ItemInfoSheet = ({
     banner: openBanner,
     label,
     onClose,
+    returnFocusTo,
 }: ItemInfoSheetProps) => {
-    const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(open, onClose);
+    const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(
+        open,
+        onClose,
+        returnFocusTo,
+    );
     const bindSheet = useCloseOnOutsidePress(open && docked, onClose, setSheet);
     const { mounted, state, inert, overlayRef } = useSheetPresence(open);
     // 滑走緊照出閂之前嘅內容（短篇資料閂嗰下父層清走 sections / banner）

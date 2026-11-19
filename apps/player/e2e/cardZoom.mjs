@@ -26,7 +26,7 @@ const PANEL_NAME = 'player-panel';
  * 喺瀏覽器入面行（addInitScript）：記低每個 View Transition 嘅 kind、開始嗰陣有冇格仔標咗做來源，
  * 同佢有冇真係行到（ready）定係畀瀏覽器跳過（例如撞名，S-633）
  */
-const installZoomProbe = () => {
+export const installZoomProbe = () => {
     window.__e2eTransitions = [];
     const start = document.startViewTransition?.bind(document);
     if (!start) return;
@@ -130,7 +130,7 @@ const tileByName = (p, name) =>
     p.locator('nav').getByRole('button', { name, exact: typeof name === 'string' });
 
 /** 做 act（撳格 / 返回），等轉到 hash，回呢段新開嘅過場 */
-const transitionsAround = async (p, act, hash) => {
+export const transitionsAround = async (p, act, hash) => {
     const before = (await transitionsOf(p)).length;
     await act();
     const reached = await reachesHash(p, hash);
@@ -138,10 +138,10 @@ const transitionsAround = async (p, act, hash) => {
     return { reached, runs: (await transitionsOf(p)).slice(before), clean: await cleanedUp(p) };
 };
 
-const goBack = (p) => p.getByRole('button', { name: BACK_LABEL, exact: true }).click();
+export const goBack = (p) => p.getByRole('button', { name: BACK_LABEL, exact: true }).click();
 
 /** 得一個過場、係 kind、真係行到、完咗清走 */
-const single = ({ reached, runs, clean }, kind) =>
+export const single = ({ reached, runs, clean }, kind) =>
     reached && runs.length === 1 && runs[0].kind === kind && runs[0].ran && clean;
 
 const named = (names, attr) => names?.[attr] === PANEL_NAME;

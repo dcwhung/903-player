@@ -176,3 +176,42 @@
         right: max(0px, calc(50% - var(--player-disc-size) / 2 - var(--gauge-info-room)));
     }
 }
+
+/*
+ * 日子直排喺唱片右邊（stripSide，只係 Duo 打開・直由節目頁開，P10 lane 5b，_mockups_/iphone-duo 方案 B）：
+ * 唱片喺左邊剩低嘅闊度入面置中，右邊一欄直排日子，高度同唱片格一樣、放唔晒自己捲
+ */
+.panel[data-strip-side] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+    justify-items: center;
+    column-gap: var(--space-4);
+}
+
+.panel[data-strip-side] > :last-child {
+    max-height: calc(var(--player-disc-size) * var(--player-gauge-h) / var(--player-gauge-w));
+}
+
+/*
+ * Duo 打開・直（DUO_OPEN_PORTRAIT_QUERY）：唱片 + 直排日子左右同下面清單（EpisodeList .section padding
+ * --space-4）對齊，日子欄右邊 = 畫面闊 − --duo-edge-inset − --space-4 = 588（mockup new-opr-show，S-QA-2）；
+ * 兩邊一樣多，唱片置中位置唔變
+ */
+@media (orientation: portrait) and (min-width: 600px) and (max-width: 640px) and (min-height: 860px) and (max-height: 900px) {
+    .panel[data-strip-side] {
+        padding-inline: var(--space-4);
+    }
+}
+
+/*
+ * HomeView 節目頁（SQUARE_QUERY，P10 lane 6）：播放器食晒頁頭以下嘅高度，唱片格貼頂、
+ * 「現正播放」+ 日子條貼底（Page.module.css data-square-player 同一段）
+ */
+@media (min-width: 520px) and (max-width: 568px) and (min-height: 520px) and (max-height: 568px) {
+    [data-square-player] .panel {
+        flex: 1 1 auto;
+        justify-content: space-between;
+        min-height: 0;
+    }
+}

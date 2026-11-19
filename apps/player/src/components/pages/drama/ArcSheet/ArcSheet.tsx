@@ -1,4 +1,4 @@
-import { useId, type Ref } from 'react';
+import { useId, type Ref, type RefObject } from 'react';
 import { t } from '../../../../i18n/t';
 import type { ArcGroup, ArcSummary } from '../../../../selectors/arcProgress';
 import type { InfoBanner as InfoBannerData } from '../../../../selectors/itemInfo';
@@ -35,6 +35,8 @@ interface ArcSheetProps extends RowProps {
     /** 頂部劇集 banner（G1）：固定喺表頂（唔跟清單捲），表頭喺佢下面；冇圖就唔出 */
     banner?: InfoBannerData | undefined;
     onClose: () => void;
+    /** 打開前冇焦點（第一次入自動開）閂咗焦點去邊：「全集」掣（見 useSheetBehaviour）；唔傳行為不變 */
+    returnFocusTo?: RefObject<HTMLElement | null> | undefined;
 }
 
 /** 一組：細標題（播放中 / 新上架 / 未聽完 / 已收聽）+ 嗰組嘅短篇 */
@@ -101,10 +103,12 @@ export const ArcSheet = ({
     info,
     banner,
     onClose,
+    returnFocusTo,
     ...sheetRowProps
 }: ArcSheetProps) => {
     const titleId = useId();
-    const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(open, onClose);
+    const behaviour = useSheetBehaviour(open, onClose, returnFocusTo);
+    const { setSheet, backdropRef, listRef, handlers } = behaviour;
     const { mounted, state, inert, overlayRef } = useSheetPresence(open);
     if (!mounted) return null;
     const backdrop = { className: styles.backdrop, testId: 'arc-sheet-backdrop', onClick: onClose };

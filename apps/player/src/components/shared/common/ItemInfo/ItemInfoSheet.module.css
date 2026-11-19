@@ -173,3 +173,25 @@
 .sheet[data-banner='true'] .section:first-child {
     padding-top: var(--space-1);
 }
+
+/*
+ * iPhone Duo 打橫（DUO_LANDSCAPE_QUERY）：資料表伸出右邊同底邊嘅邊框，貼畫面邊（Page.module.css 同一段；CUI-0025）。
+ * 打開・橫係闊橫版，右邊仲有把手預留位，同現有闊橫版一樣
+ */
+@media (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px),
+    (orientation: landscape) and (min-width: 860px) and (max-width: 900px) and (min-height: 600px) and (max-height: 640px) {
+    .docked {
+        right: calc(-1 * var(--duo-edge-inset));
+        bottom: calc(-1 * var(--duo-edge-inset));
+    }
+}
+
+/*
+ * iPhone Duo 打開・直（DUO_OPEN_PORTRAIT_QUERY，P10 lane 5b）：表貼兩邊畫面邊（同其他頁用全闊、
+ * 用戶 2026-11-18「表貼畫面邊」一致，W-794）；高度上限喺 tokens.css（最高到摺位）
+ */
+@media (orientation: portrait) and (min-width: 600px) and (max-width: 640px) and (min-height: 860px) and (max-height: 900px) {
+    .sheet {
+        max-width: none;
+    }
+}

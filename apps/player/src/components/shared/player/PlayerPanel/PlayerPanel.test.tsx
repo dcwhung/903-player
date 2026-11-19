@@ -205,4 +205,23 @@ describe('PlayerPanel info button（P9.5 #12）', () => {
         await userEvent.click(screen.getByRole('button', { name: '節目資料' }));
         expect(onInfo).toHaveBeenCalledTimes(1);
     });
+
+    // Duo 打開・直（P10 lane 5b，S-1135）：日子直排喺唱片右邊，唔出橫向日子條
+    it('should list the dates beside the disc instead of the strip when stripSide', () => {
+        renderWithProviders(
+            <PlayerPanel
+                title="公子會"
+                dateLabel="17/10 星期六"
+                days={STRIP.days}
+                currentDay={STRIP.current}
+                onPick={() => undefined}
+                stripSide
+            />,
+        );
+
+        // 未載入、未有時長：標籤係「連線中…」（同日子條一樣）
+        expect(screen.getByRole('list', { name: '連線中…' })).toBeInTheDocument();
+        expect(screen.getAllByRole('listitem')).toHaveLength(2);
+        expect(screen.queryByRole('slider', { name: /日子/ })).toBeNull();
+    });
 });

@@ -1,6 +1,7 @@
 /* 短篇 chips 嘅即將上架 chip 同成套劇快將下架標籤（P8 #6，_mockups_/coming-soon ① ⑧） */
 import { arcLabelOf } from '@903-player/catalog';
-import { LANDSCAPE_QUERY } from '../../../../config/layout';
+import type { Ref } from 'react';
+import { LANDSCAPE_LAYOUT_QUERY } from '../../../../config/layout';
 import { useMediaQuery } from '../../../../hooks/useMediaQuery';
 import { t } from '../../../../i18n/t';
 import { ClockIcon, HourglassIcon, ListIcon } from '../../../shared/common/icons/icons';
@@ -39,15 +40,19 @@ export interface ArcPickerNotice {
 export const AllChip = ({
     notice,
     onOpenAll,
+    allRef,
 }: {
     notice: ArcPickerNotice | undefined;
     onOpenAll: () => void;
+    /** 畀頁面做 returnFocusTo（S-1142：由全集表揀短篇彈嘅資料表，閂咗焦點返呢粒） */
+    allRef?: Ref<HTMLButtonElement> | undefined;
 }) => {
-    const landscape = useMediaQuery(LANDSCAPE_QUERY);
+    const landscape = useMediaQuery(LANDSCAPE_LAYOUT_QUERY);
     const tagged = notice && !notice.replace && !landscape ? notice : undefined;
     const name = t('drama.allArcs');
     return (
         <button
+            ref={allRef}
             type="button"
             className={`${styles.chip} ${styles.all}`}
             aria-haspopup="dialog"

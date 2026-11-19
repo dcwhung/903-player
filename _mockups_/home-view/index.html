@@ -1,0 +1,2548 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>HomeView 方形版面</title>
+        <meta name="claude:viewport-fit-sides" content="cover" />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+        />
+        <style>
+            /* 版面：頂部姿勢導覽；每個姿勢一節，每頁一行「現狀｜建議」真 app 截圖，虛線 = 摺位 */
+            :root {
+                --bg: #eef1f5;
+                --surface: #ffffff;
+                --ink: #18202b;
+                --note: #5d6775;
+                --line: #d3d9e2;
+                --accent: #3b6fb6;
+                --on-accent: #ffffff;
+                --now: #7a8494;
+                --fold: #ff5a3c;
+                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+                --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #10151c;
+                    --surface: #1a212b;
+                    --ink: #e8edf3;
+                    --note: #9aa5b3;
+                    --line: #2e3845;
+                    --accent: #7fa8e6;
+                    --on-accent: #0d1420;
+                    --now: #8b96a6;
+                    --fold: #ff7a60;
+                    color-scheme: dark;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #10151c;
+                --surface: #1a212b;
+                --ink: #e8edf3;
+                --note: #9aa5b3;
+                --line: #2e3845;
+                --accent: #7fa8e6;
+                --on-accent: #0d1420;
+                --now: #8b96a6;
+                --fold: #ff7a60;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html {
+                scroll-behavior: smooth;
+                scroll-padding-top: 76px;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                html {
+                    scroll-behavior: auto;
+                }
+            }
+            body {
+                margin: 0;
+                padding-block: 20px 56px;
+                padding-left: max(16px, env(safe-area-inset-left, 0px));
+                padding-right: max(16px, env(safe-area-inset-right, 0px));
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font);
+                font-size: 15px;
+                line-height: 1.55;
+            }
+            main {
+                display: grid;
+                gap: 28px;
+                max-width: 1840px;
+                margin-inline: auto;
+            }
+            h1 {
+                margin: 0;
+                font-size: 26px;
+                line-height: 1.2;
+            }
+            .lede {
+                margin: 6px 0 0;
+                max-width: 68ch;
+                color: var(--note);
+            }
+            code {
+                font-family: var(--mono);
+                font-size: 0.9em;
+            }
+            nav {
+                position: sticky;
+                top: env(safe-area-inset-top, 0px);
+                z-index: 5;
+                display: flex;
+                gap: 8px;
+                padding-block: 8px;
+                overflow-x: auto;
+                background: var(--bg);
+            }
+            nav a {
+                display: grid;
+                flex: 0 0 auto;
+                padding: 6px 14px;
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                background: var(--surface);
+                color: var(--ink);
+                text-decoration: none;
+                line-height: 1.25;
+            }
+            nav a span {
+                color: var(--note);
+                font-family: var(--mono);
+                font-size: 12px;
+            }
+            nav a:hover,
+            nav a:focus-visible {
+                border-color: var(--accent);
+                outline: none;
+            }
+            section {
+                display: grid;
+                gap: 16px;
+                padding: 20px;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                background: var(--surface);
+            }
+            .sec {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                align-items: baseline;
+            }
+            h2 {
+                margin: 0;
+                font-size: 21px;
+            }
+            .size {
+                color: var(--note);
+                font-family: var(--mono);
+                font-size: 14px;
+            }
+            .notes {
+                display: grid;
+                gap: 4px;
+                margin: 0;
+                padding-left: 20px;
+                max-width: 76ch;
+            }
+            .row {
+                display: grid;
+                gap: 8px;
+                padding-top: 14px;
+                border-top: 1px solid var(--line);
+            }
+            h3 {
+                margin: 0;
+                font-size: 15px;
+            }
+            .pair {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 20px;
+                align-items: flex-start;
+            }
+            .shot {
+                display: grid;
+                gap: 6px;
+                flex: 0 1 auto;
+                min-width: 0;
+                max-width: 100%;
+                margin: 0;
+            }
+            figcaption {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                color: var(--note);
+                font-size: 13px;
+            }
+            .tag {
+                padding: 1px 8px;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            .tag.now {
+                border: 1px solid var(--now);
+                color: var(--now);
+            }
+            .tag.new {
+                background: var(--accent);
+                color: var(--on-accent);
+            }
+            .frame {
+                position: relative;
+                overflow: hidden;
+                border: 1px solid var(--line);
+                border-radius: 18px;
+            }
+            .frame img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+            .frame.fv::after,
+            .frame.fh::after {
+                content: '';
+                position: absolute;
+                pointer-events: none;
+            }
+            .frame.fv::after {
+                inset: 0 auto 0 50%;
+                border-left: 2px dashed var(--fold);
+            }
+            .frame.fh::after {
+                inset: 50% 0 auto 0;
+                border-top: 2px dashed var(--fold);
+            }
+
+            .tag.old {
+                border: 1px dashed var(--now);
+                color: var(--now);
+            }
+            /* 裝置外形（Progressier simulator）：圓角 68px、外屏摺位邊 4px；百分比 = px ÷ 螢幕闊 / 高 */
+            .frame.inl {
+                border-radius: 7.76% / 11.11%;
+            }
+            .frame.inp {
+                border-radius: 11.11% / 7.76%;
+            }
+            .frame.outp {
+                border-radius: 0.94% 15.96% 15.96% 0.94% / 0.65% 11.11% 11.11% 0.65%;
+            }
+            .frame.outl {
+                border-radius: 0.65% 0.65% 11.11% 11.11% / 0.94% 0.94% 15.96% 15.96%;
+            }
+            .frame.seat {
+                border-radius: 11.11% 11.11% 0 0 / 15.53% 15.53% 0 0;
+            }
+            .frame.outp::before,
+            .frame.outl::before {
+                content: '';
+                position: absolute;
+                z-index: 1;
+                aspect-ratio: 1;
+                border-radius: 50%;
+                background: #000;
+            }
+            .frame.outp::before {
+                top: 3.92%;
+                right: 6.57%;
+                width: 7.04%;
+            }
+            .frame.outl::before {
+                right: 3.92%;
+                bottom: 6.57%;
+                width: 4.9%;
+            }
+            .frame.inl::after,
+            .frame.inp::after {
+                content: '';
+                position: absolute;
+                pointer-events: none;
+            }
+            .frame.inl::after {
+                inset: 0 auto 0 50%;
+                border-left: 2px dashed var(--fold);
+            }
+            .frame.inp::after {
+                inset: 50% 0 auto 0;
+                border-top: 2px dashed var(--fold);
+            }
+            section > h3 {
+                margin-top: 8px;
+            }
+
+            /* 靜態畫面（544 × 544 設計稿）：.scr 入面所有尺寸 = px × --u，跟住舞台縮放；顏色係 app 畫面本身，唔跟頁面 theme */
+            .stage {
+                position: relative;
+                width: 100%;
+                aspect-ratio: 1;
+                container-type: inline-size;
+                overflow: hidden;
+            }
+            .scr {
+                --u: calc(100cqw / 544);
+                --gold: #d9b65c;
+                --cream: #f1e2b8;
+                --dim: #9a9488;
+                position: absolute;
+                inset: 0;
+                background: #111;
+                color: #fff;
+                font-family: 'Poppins', var(--font);
+                font-size: calc(var(--u) * 14);
+                line-height: 1.25;
+            }
+            .scr svg {
+                width: calc(var(--u) * 22);
+                height: calc(var(--u) * 22);
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 2;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+            .scr .abs {
+                position: absolute;
+            }
+            .hd {
+                position: absolute;
+                inset: calc(var(--u) * 16) calc(var(--u) * 16) auto;
+                display: grid;
+                grid-template-columns: calc(var(--u) * 44) 1fr calc(var(--u) * 44);
+                align-items: center;
+                height: calc(var(--u) * 44);
+                text-align: center;
+            }
+            .hd b {
+                color: var(--cream);
+                font-size: calc(var(--u) * 24);
+            }
+            .hd span {
+                display: grid;
+                place-items: center;
+            }
+            .disc {
+                position: absolute;
+                border-radius: 50%;
+                background:
+                    radial-gradient(circle, #111 0 7%, transparent 7.5%),
+                    url('disc-gongzi.webp') center / cover;
+                box-shadow:
+                    0 0 0 calc(var(--u) * 10) #1c1b19,
+                    0 0 0 calc(var(--u) * 16) #111,
+                    0 0 0 calc(var(--u) * 20) #2b2924;
+            }
+            .arc {
+                position: absolute;
+                border-radius: 50%;
+                background: conic-gradient(
+                    from 225deg,
+                    var(--gold) 0 78deg,
+                    #3a372f 78deg 270deg,
+                    transparent 270deg
+                );
+                -webkit-mask: radial-gradient(
+                    circle closest-side,
+                    transparent 0 90%,
+                    #000 90.5% 93%,
+                    transparent 93.5%
+                );
+                mask: radial-gradient(
+                    circle closest-side,
+                    transparent 0 90%,
+                    #000 90.5% 93%,
+                    transparent 93.5%
+                );
+            }
+            .play {
+                display: grid;
+                place-items: center;
+                border-radius: 50%;
+                background: var(--gold);
+                color: #111;
+                box-shadow: 0 calc(var(--u) * 4) calc(var(--u) * 12) rgb(0 0 0 / 50%);
+            }
+            .play svg {
+                fill: currentColor;
+                stroke: none;
+            }
+            .ctl {
+                position: absolute;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: calc(var(--u) * 14);
+                color: var(--gold);
+            }
+            .ctl i {
+                color: #fff;
+                font-style: normal;
+                font-size: calc(var(--u) * 13);
+                font-variant-numeric: tabular-nums;
+            }
+            .dates {
+                position: absolute;
+                display: flex;
+                gap: calc(var(--u) * 6);
+                justify-content: center;
+                text-align: center;
+                font-weight: 600;
+            }
+            .dates span {
+                display: grid;
+                place-content: center;
+                width: calc(var(--u) * 72);
+                height: calc(var(--u) * 44);
+                border-radius: calc(var(--u) * 12);
+            }
+            .dates small {
+                color: var(--dim);
+                font-size: calc(var(--u) * 10);
+                font-weight: 400;
+            }
+            .dates .on {
+                outline: calc(var(--u) * 1.5) solid var(--gold);
+                color: var(--cream);
+            }
+            .nowp {
+                position: absolute;
+                color: var(--gold);
+                font-size: calc(var(--u) * 12);
+                text-align: center;
+            }
+            .listbtn {
+                position: absolute;
+                display: flex;
+                gap: calc(var(--u) * 8);
+                align-items: center;
+                justify-content: center;
+                height: calc(var(--u) * 44);
+                border-radius: calc(var(--u) * 22);
+                background: #24221d;
+                color: var(--cream);
+                font-weight: 600;
+            }
+            .listbtn small {
+                color: var(--dim);
+                font-weight: 400;
+            }
+            .bar {
+                position: absolute;
+                height: calc(var(--u) * 4);
+                border-radius: calc(var(--u) * 2);
+                background: linear-gradient(90deg, var(--gold) 29%, #3a372f 29%);
+            }
+            .cover {
+                position: absolute;
+                inset: 0;
+                background:
+                    linear-gradient(
+                        180deg,
+                        rgb(0 0 0 / 35%) 0,
+                        transparent 22%,
+                        transparent 40%,
+                        #111 78%
+                    ),
+                    url('banner-gongzi.webp') center top / auto 62% no-repeat,
+                    #111;
+            }
+            .round {
+                display: grid;
+                place-items: center;
+                width: calc(var(--u) * 44);
+                height: calc(var(--u) * 44);
+                border-radius: 50%;
+                background: rgb(0 0 0 / 45%);
+            }
+            .scrim {
+                position: absolute;
+                inset: 0;
+                background: rgb(0 0 0 / 55%);
+            }
+            .sheet {
+                position: absolute;
+                inset: 38% 0 0;
+                padding: calc(var(--u) * 10) calc(var(--u) * 16) 0;
+                border-radius: calc(var(--u) * 20) calc(var(--u) * 20) 0 0;
+                background: #1b1a17;
+                box-shadow: 0 calc(var(--u) * -8) calc(var(--u) * 24) rgb(0 0 0 / 50%);
+            }
+            .sheet::before {
+                content: '';
+                display: block;
+                width: calc(var(--u) * 40);
+                height: calc(var(--u) * 4);
+                margin: 0 auto calc(var(--u) * 8);
+                border-radius: calc(var(--u) * 2);
+                background: #4a463c;
+            }
+            .sheet header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding-bottom: calc(var(--u) * 6);
+                color: var(--cream);
+                font-weight: 700;
+                font-size: calc(var(--u) * 16);
+            }
+            .sheet header small {
+                color: var(--dim);
+                font-weight: 400;
+                font-size: calc(var(--u) * 12);
+            }
+            .ep {
+                display: grid;
+                grid-template-columns: calc(var(--u) * 62) 1fr calc(var(--u) * 36) calc(
+                        var(--u) * 36
+                    );
+                align-items: center;
+                height: calc(var(--u) * 56);
+                border-top: 1px solid #2c2a25;
+                font-weight: 600;
+            }
+            .ep small {
+                display: block;
+                color: var(--dim);
+                font-weight: 400;
+                font-size: calc(var(--u) * 11);
+            }
+            .ep em {
+                color: var(--dim);
+                font-style: normal;
+                font-weight: 400;
+                font-size: calc(var(--u) * 12);
+            }
+            .ep.on {
+                background: #24221d;
+                box-shadow: inset calc(var(--u) * 3) 0 0 #c8102e;
+            }
+            .ep.on em {
+                color: var(--cream);
+            }
+            .ep > svg:first-of-type {
+                color: var(--gold);
+            }
+            .ep > :first-child {
+                padding-left: calc(var(--u) * 10);
+            }
+            /* 主頁 */
+            .home {
+                background: linear-gradient(180deg, #4e739b, #42658a);
+            }
+            .home .tabs {
+                position: absolute;
+                inset: calc(var(--u) * 16) auto auto calc(var(--u) * 16);
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                width: calc(var(--u) * 248);
+                height: calc(var(--u) * 44);
+                padding: calc(var(--u) * 3);
+                border-radius: calc(var(--u) * 22);
+                background: #3f5e7f;
+                font-size: calc(var(--u) * 12);
+                text-align: center;
+            }
+            .home .tabs span {
+                display: grid;
+                place-items: center;
+                border-radius: calc(var(--u) * 19);
+            }
+            .home .tabs .on {
+                background: #f5d294;
+                color: #2f4560;
+                font-weight: 600;
+            }
+            .shelf i {
+                position: absolute;
+                left: calc(var(--u) * 16);
+                width: calc(var(--u) * 248);
+                height: calc(var(--u) * 140);
+                border-radius: calc(var(--u) * 14);
+                background: center / cover;
+                box-shadow: 0 calc(var(--u) * 4) calc(var(--u) * 10) rgb(0 0 0 / 35%);
+            }
+            .shelf i.rest {
+                transform: scale(0.94);
+                filter: brightness(0.55);
+            }
+            .shelf b {
+                position: absolute;
+                padding: calc(var(--u) * 2) calc(var(--u) * 8);
+                border-radius: calc(var(--u) * 10);
+                font-size: calc(var(--u) * 11);
+            }
+            .shelf .new {
+                top: calc(var(--u) * 8);
+                left: calc(var(--u) * 8);
+                background: #c8102e;
+            }
+            .shelf .meta {
+                right: calc(var(--u) * 8);
+                bottom: calc(var(--u) * 8);
+                background: rgb(0 0 0 / 55%);
+                font-weight: 400;
+            }
+            .home img.card {
+                position: absolute;
+                inset: 0 0 0 50%;
+                width: 50%;
+                height: 100%;
+                max-width: none;
+            }
+            .tag {
+                flex: none;
+            }
+
+            /* 主頁靜態畫面：左欄橫額 + 分類掣 + 疊卡 scroller，右欄播放卡（真 app 截圖）。尺寸 = px × --u */
+            .hm {
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg, #4e739b, #42658a);
+                color: #fff;
+                font-family: 'Poppins', var(--font);
+                font-size: calc(var(--u) * 12);
+                line-height: 1.25;
+            }
+            .hm > * {
+                position: absolute;
+            }
+            .hm .bn {
+                border-radius: calc(var(--u) * 14);
+                background: url('banner-wide.webp') center / cover;
+                box-shadow: 0 calc(var(--u) * 4) calc(var(--u) * 10) rgb(0 0 0 / 30%);
+            }
+            .hm .bn b {
+                position: absolute;
+                right: calc(var(--u) * 6);
+                bottom: calc(var(--u) * 6);
+                padding: calc(var(--u) * 1) calc(var(--u) * 7);
+                border-radius: calc(var(--u) * 9);
+                background: rgb(20 40 60 / 70%);
+                font-size: calc(var(--u) * 10);
+                font-weight: 400;
+            }
+            .hm .tb {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                padding: calc(var(--u) * 3);
+                border-radius: calc(var(--u) * 22);
+                background: #3f5e7f;
+                text-align: center;
+            }
+            .hm .tb span {
+                display: grid;
+                place-items: center;
+                border-radius: calc(var(--u) * 19);
+            }
+            .hm .tb .on {
+                background: #f5d294;
+                color: #2f4560;
+                font-weight: 600;
+            }
+            .hm .cd {
+                border-radius: calc(var(--u) * 14);
+                background: center / cover;
+                box-shadow: 0 calc(var(--u) * 4) calc(var(--u) * 10) rgb(0 0 0 / 35%);
+            }
+            .hm .cd.rest {
+                transform: scale(0.94);
+                filter: brightness(0.55);
+            }
+            .hm .cd b {
+                position: absolute;
+                padding: calc(var(--u) * 2) calc(var(--u) * 8);
+                border-radius: calc(var(--u) * 10);
+                font-size: calc(var(--u) * 11);
+            }
+            .hm .cd .nw {
+                top: calc(var(--u) * 8);
+                left: calc(var(--u) * 8);
+                background: #c8102e;
+            }
+            .hm .cd .mt {
+                right: calc(var(--u) * 8);
+                bottom: calc(var(--u) * 8);
+                background: rgb(0 0 0 / 55%);
+                font-weight: 400;
+            }
+            .hm img.pc {
+                top: 0;
+                right: 0;
+                width: 50%;
+                height: 100%;
+                max-width: none;
+            }
+            .stage.w876 {
+                aspect-ratio: 876 / 612;
+            }
+            .stage.w876 .hm {
+                --u: calc(100cqw / 876);
+            }
+
+            /* 把手（跟 app 播放器把手：貼邊、內側圓角、落影） */
+            .grab {
+                position: absolute;
+                left: 50%;
+                bottom: 0;
+                display: grid;
+                justify-items: center;
+                gap: calc(var(--u) * 6);
+                width: calc(var(--u) * 220);
+                padding: calc(var(--u) * 8) 0 calc(var(--u) * 10);
+                transform: translateX(-50%);
+                border-radius: calc(var(--u) * 16) calc(var(--u) * 16) 0 0;
+                background: var(--sf, #24221d);
+                box-shadow: 0 calc(var(--u) * -4) calc(var(--u) * 14) rgb(0 0 0 / 45%);
+                color: var(--cream);
+                font-weight: 600;
+            }
+            .grab::before {
+                content: '';
+                width: calc(var(--u) * 40);
+                height: calc(var(--u) * 4);
+                border-radius: calc(var(--u) * 2);
+                background: var(--grip, #6b6557);
+            }
+            .grab small {
+                color: var(--dim);
+                font-weight: 400;
+            }
+            /* 今日節目（藍）同廣播劇（黃）主題：蓋過 .scr 預設嘅公子會金色 */
+            .scr.td {
+                --gold: #7cc4ea;
+                --cream: #eaf4fb;
+                --dim: #8fa6b8;
+                --sf: #17303f;
+                --grip: #4d6a7c;
+                background: #0f2231;
+            }
+            .scr.dr {
+                --gold: #f58a1f;
+                --cream: #7a3b10;
+                --dim: #9a7a3a;
+                --sf: #fff3b8;
+                --grip: #d9b65c;
+                background: #ffe680;
+                color: #3b2408;
+            }
+            .scr.td .listbtn,
+            .scr.dr .listbtn {
+                background: var(--sf);
+            }
+            .scr.td .sheet,
+            .scr.dr .sheet {
+                background: var(--sf);
+            }
+            .scr.td .ep,
+            .scr.dr .ep {
+                border-top-color: rgb(128 128 128 / 25%);
+            }
+            .scr.td .ep.on {
+                background: #1d3a4c;
+                box-shadow: inset calc(var(--u) * 3) 0 0 var(--gold);
+            }
+            .scr.td .play,
+            .scr.dr .play {
+                color: #0f2231;
+            }
+            .scr.dr .play {
+                color: #fff;
+            }
+            .scr.dr .ctl i {
+                color: #3b2408;
+            }
+            .scr.dr .hd {
+                border-bottom: calc(var(--u) * 3) dotted #d98a3a;
+                padding-bottom: calc(var(--u) * 6);
+                height: calc(var(--u) * 52);
+            }
+            .tcard {
+                position: absolute;
+                border: 1px solid #2a4658;
+                border-radius: calc(var(--u) * 24);
+                background: #122838;
+                box-shadow: 0 calc(var(--u) * 8) calc(var(--u) * 20) rgb(0 0 0 / 40%);
+            }
+            .tcard.back {
+                background: #101f2b;
+                border-color: #1d3342;
+            }
+            .dots {
+                position: absolute;
+                display: flex;
+                gap: calc(var(--u) * 10);
+                justify-content: center;
+                align-items: center;
+            }
+            .dots span {
+                width: calc(var(--u) * 6);
+                height: calc(var(--u) * 6);
+                border-radius: calc(var(--u) * 3);
+                background: #5d7a8c;
+            }
+            .dots .on {
+                width: calc(var(--u) * 18);
+                background: var(--gold);
+            }
+            .ep.pg {
+                grid-template-columns: calc(var(--u) * 52) 1fr calc(var(--u) * 36) calc(
+                        var(--u) * 36
+                    );
+            }
+            .ep.pg > :first-child {
+                width: calc(var(--u) * 36);
+                height: calc(var(--u) * 36);
+                margin-left: calc(var(--u) * 8);
+                padding: 0;
+                border-radius: 50%;
+                background: center / cover;
+            }
+            .ep.off {
+                opacity: 0.45;
+            }
+            .dsheet {
+                padding: 0;
+                overflow: hidden;
+            }
+            .dsheet::before {
+                position: absolute;
+                top: calc(var(--u) * 8);
+                left: 50%;
+                z-index: 1;
+                margin: 0 0 0 calc(var(--u) * -20);
+                background: rgb(255 255 255 / 80%);
+            }
+            .dsheet .cv {
+                height: calc(var(--u) * 110);
+                background:
+                    linear-gradient(180deg, transparent 40%, rgb(0 0 0 / 55%)),
+                    url('banner-chisee.webp') center / cover;
+                color: #fff;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+                padding: calc(var(--u) * 10) calc(var(--u) * 16);
+                font-weight: 700;
+                font-size: calc(var(--u) * 18);
+            }
+            .dsheet .cv small {
+                font-weight: 400;
+                font-size: calc(var(--u) * 12);
+            }
+            .dsheet .body {
+                padding: calc(var(--u) * 8) calc(var(--u) * 16) 0;
+            }
+            .arcrow {
+                display: grid;
+                grid-template-columns: calc(var(--u) * 48) 1fr calc(var(--u) * 40);
+                align-items: center;
+                gap: calc(var(--u) * 10);
+                height: calc(var(--u) * 56);
+                font-weight: 600;
+            }
+            .arcrow small {
+                display: block;
+                color: var(--dim);
+                font-weight: 400;
+                font-size: calc(var(--u) * 11);
+            }
+            .arcrow > :first-child {
+                width: calc(var(--u) * 44);
+                height: calc(var(--u) * 44);
+                border-radius: 50%;
+                border: calc(var(--u) * 3) solid #f3c84a;
+                background: url('disc-chisee.webp') center / cover;
+            }
+            .arcrow .play {
+                width: calc(var(--u) * 38);
+                height: calc(var(--u) * 38);
+            }
+            .arcrow .play svg {
+                width: calc(var(--u) * 18);
+                height: calc(var(--u) * 18);
+            }
+            .stage .hm {
+                --u: calc(100cqw / 544);
+            }
+            .scr.td .disc {
+                box-shadow:
+                    0 0 0 calc(var(--u) * 8) #1b3546,
+                    0 0 0 calc(var(--u) * 13) #122838,
+                    0 0 0 calc(var(--u) * 16) #2a4658;
+            }
+            /* 第 4 版：清單 icon 喺頁頭 ⓘ 隔離（右上 badge = 數量）；今日節目用節目 selector */
+            .hd.v4 {
+                grid-template-columns: calc(var(--u) * 88) 1fr calc(var(--u) * 88);
+            }
+            .hd.v4 > span:first-child {
+                justify-content: start;
+                padding-left: calc(var(--u) * 11);
+            }
+            .hd.v4 > span:last-child {
+                display: flex;
+                justify-content: flex-end;
+                color: var(--gold);
+            }
+            .hd.v4 i {
+                position: relative;
+                display: grid;
+                place-items: center;
+                width: calc(var(--u) * 44);
+                height: calc(var(--u) * 44);
+            }
+            .hd.v4 i.open {
+                border-radius: 50%;
+                background: var(--gold);
+                color: var(--onb, #111);
+            }
+            .hd.v4 em {
+                position: absolute;
+                top: calc(var(--u) * 3);
+                right: calc(var(--u) * 1);
+                min-width: calc(var(--u) * 16);
+                height: calc(var(--u) * 16);
+                padding: 0 calc(var(--u) * 4);
+                border-radius: calc(var(--u) * 8);
+                background: var(--gold);
+                color: var(--onb, #111);
+                font-size: calc(var(--u) * 10);
+                font-style: normal;
+                font-weight: 700;
+                line-height: calc(var(--u) * 16);
+                text-align: center;
+            }
+            .hd.v4 i.open em {
+                background: var(--cream);
+            }
+            .sel {
+                position: absolute;
+                display: flex;
+                gap: calc(var(--u) * 6);
+                justify-content: center;
+            }
+            .sel span {
+                display: grid;
+                justify-items: center;
+                align-content: center;
+                gap: calc(var(--u) * 4);
+                width: calc(var(--u) * 96);
+                height: calc(var(--u) * 76);
+                border-radius: calc(var(--u) * 14);
+                font-size: calc(var(--u) * 11);
+                font-weight: 600;
+            }
+            .sel span > i {
+                width: calc(var(--u) * 36);
+                height: calc(var(--u) * 36);
+                border-radius: 50%;
+                background: center / cover;
+                box-shadow: 0 0 0 calc(var(--u) * 2) #2a4658;
+            }
+            .sel span > b {
+                max-width: calc(var(--u) * 84);
+                overflow: hidden;
+                font-weight: inherit;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .sel .on {
+                outline: calc(var(--u) * 1.5) solid var(--gold);
+                color: var(--cream);
+            }
+            .sel .off {
+                opacity: 0.45;
+            }
+            .scr.td {
+                --onb: #0f2231;
+            }
+            .scr.dr {
+                --onb: #fff;
+            }
+            .scr.dr .hd.v4 {
+                height: calc(var(--u) * 52);
+            }
+            .dsheet .body header {
+                font-size: calc(var(--u) * 14);
+            }
+            .disc.blank {
+                background: radial-gradient(
+                    circle,
+                    #111 0 3%,
+                    #2a2a2a 3.5% 4%,
+                    #0a0a0a 4.5% 30%,
+                    #1c1c1c 30.5% 31%,
+                    #0a0a0a 31.5%
+                );
+            }
+            .arc.idle {
+                background: conic-gradient(from 225deg, #e9c94f 0 270deg, transparent 270deg);
+                opacity: 0.6;
+            }
+            .ctl.idle {
+                opacity: 0.45;
+            }
+            .allbtn {
+                display: inline-flex;
+                gap: calc(var(--u) * 4);
+                align-items: center;
+                height: calc(var(--u) * 32);
+                padding: 0 calc(var(--u) * 12);
+                border-radius: calc(var(--u) * 16);
+                background: #3b2408;
+                color: #ffe680;
+                font-size: calc(var(--u) * 13);
+            }
+            .allbtn svg {
+                width: calc(var(--u) * 16);
+                height: calc(var(--u) * 16);
+            }
+            .ep em b {
+                display: block;
+                color: #3b2408;
+                font-size: calc(var(--u) * 13);
+            }
+            .scr.dr .ep.on {
+                background: #ffe9a0;
+                box-shadow: inset calc(var(--u) * 3) 0 0 var(--gold);
+            }
+            .scr.dr .ep.on em {
+                color: var(--dim);
+            }
+            .legend {
+                display: inline-block;
+                width: 22px;
+                border-top: 2px dashed var(--fold);
+                vertical-align: middle;
+            }
+            .scroll {
+                overflow-x: auto;
+            }
+            table {
+                width: 100%;
+                min-width: 640px;
+                border-collapse: collapse;
+                font-size: 14px;
+            }
+            th,
+            td {
+                padding: 8px 10px;
+                border-bottom: 1px solid var(--line);
+                text-align: left;
+                vertical-align: top;
+            }
+            th {
+                color: var(--note);
+                font-weight: 600;
+            }
+            td:first-child {
+                font-family: var(--mono);
+                white-space: nowrap;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header>
+                <h1>HomeView 方形版面</h1>
+                <p class="lede">
+                    P10 #9a preview gate，第 8 版，544 × 544。「現狀」係真 app
+                    截圖；其餘係新版面，用靜態 HTML 砌，顏色、字體、唱片同封面跟 app。確認之後先寫
+                    code。
+                </p>
+            </header>
+            <nav aria-label="章節">
+                <a href="#home"><b>主頁</b><span>橫額 + card scroller</span></a
+                ><a href="#show"><b>節目頁</b><span>清單 icon</span></a
+                ><a href="#today"><b>今日節目</b><span>節目 selector</span></a
+                ><a href="#drama"><b>廣播劇頁</b><span>清單 icon</span></a
+                ><a href="#questions"><b>待確認</b><span>0 條</span></a>
+            </nav>
+            <section id="home">
+                <header class="sec">
+                    <h2>主頁</h2>
+                    <span class="size">左：橫額 + card scroller；右：播放卡</span>
+                </header>
+                <ul class="notes">
+                    <li>左欄最頂加返固定 app 橫額，用闊版圖（5:1），連版本號；唔跟住卡捲走。</li>
+                    <li>
+                        下面係分類掣同疊卡
+                        scroller：揀中嗰張原大，其餘縮細調暗疊喺下面，上下掃轉卡；疊卡用盡左欄剩低嘅高度，最尾一張貼近底邊。兩個分類都用呢款。
+                    </li>
+                    <li>
+                        右邊播放卡係真 app 截圖。iPhone Duo 打開・橫主頁用同一套版面（見 Duo
+                        preview）。
+                    </li>
+                </ul>
+                <div class="row">
+                    <h3>主頁</h3>
+                    <div class="pair">
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption>
+                                <span class="tag now">現狀</span>v1.37.3，每頁 2 格
+                            </figcaption>
+                            <div class="frame sq">
+                                <img
+                                    src="now-home.webp"
+                                    alt="現狀 v1.37.3，每頁 2 格"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </figure>
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption>
+                                <span class="tag new">建議</span>橫額 + card scroller + 播放卡
+                            </figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="hm">
+                                        <div
+                                            class="bn"
+                                            style="
+                                                left: calc(var(--u) * 16);
+                                                top: calc(var(--u) * 16);
+                                                width: calc(var(--u) * 248);
+                                                height: calc(var(--u) * 50);
+                                            "
+                                        >
+                                            <b>v1.37.3</b>
+                                        </div>
+                                        <div
+                                            class="tb"
+                                            style="
+                                                left: calc(var(--u) * 16);
+                                                top: calc(var(--u) * 78);
+                                                width: calc(var(--u) * 248);
+                                                height: calc(var(--u) * 44);
+                                            "
+                                        >
+                                            <span class="on">節目</span><span>廣播劇</span>
+                                        </div>
+                                        <div
+                                            class="cd rest"
+                                            style="
+                                                left: calc(var(--u) * 16);
+                                                top: calc(var(--u) * 402);
+                                                width: calc(var(--u) * 248);
+                                                height: calc(var(--u) * 126);
+                                                background-image: url('banner-chisee.webp');
+                                            "
+                                        ></div>
+                                        <div
+                                            class="cd rest"
+                                            style="
+                                                left: calc(var(--u) * 16);
+                                                top: calc(var(--u) * 335);
+                                                width: calc(var(--u) * 248);
+                                                height: calc(var(--u) * 126);
+                                                background-image: url('banner-lancy.webp');
+                                            "
+                                        ></div>
+                                        <div
+                                            class="cd rest"
+                                            style="
+                                                left: calc(var(--u) * 16);
+                                                top: calc(var(--u) * 268);
+                                                width: calc(var(--u) * 248);
+                                                height: calc(var(--u) * 126);
+                                                background-image: url('banner-wanni.webp');
+                                            "
+                                        ></div>
+                                        <div
+                                            class="cd rest"
+                                            style="
+                                                left: calc(var(--u) * 16);
+                                                top: calc(var(--u) * 201);
+                                                width: calc(var(--u) * 248);
+                                                height: calc(var(--u) * 126);
+                                                background-image: url('banner-gongzi.webp');
+                                            "
+                                        ></div>
+                                        <div
+                                            class="cd"
+                                            style="
+                                                left: calc(var(--u) * 16);
+                                                top: calc(var(--u) * 134);
+                                                width: calc(var(--u) * 248);
+                                                height: calc(var(--u) * 126);
+                                                background-image: url('banner-badgirl.webp');
+                                            "
+                                        >
+                                            <b class="nw">新</b><b class="mt">星期一至五</b>
+                                        </div>
+                                        <img class="pc" src="card.webp" alt="播放卡" />
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section id="show">
+                <header class="sec">
+                    <h2>節目頁</h2>
+                    <span class="size">清單 icon 喺 ⓘ 隔離</span>
+                </header>
+                <ul class="notes">
+                    <li>
+                        <b>新：</b>底部嘅掣／把手取消。清單 icon 放喺頁頭右上、ⓘ 左邊；icon 右上角
+                        badge 顯示集數。
+                    </li>
+                    <li>
+                        撳 icon：集數清單由下面升起，icon 變實色表示開緊；再撳、撳 ✕
+                        或者向下拖都閂到。
+                    </li>
+                    <li>內容用盡成個高度：唱片 256px，同頁頭留返 16px 間距，日子條貼近底邊。</li>
+                </ul>
+                <div class="row">
+                    <h3>節目頁</h3>
+                    <div class="pair">
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption><span class="tag new">建議</span>播放中</figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr">
+                                        <div class="hd v4">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>公子會</b
+                                            ><span
+                                                ><i class=""
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                        /></svg
+                                                    ><em>4</em></i
+                                                ><i
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <circle cx="12" cy="12" r="9" />
+                                                        <path d="M12 11v6M12 7.5v.5" /></svg></i
+                                            ></span>
+                                        </div>
+                                        <div
+                                            class="arc"
+                                            style="
+                                                left: calc(var(--u) * 92.8);
+                                                top: calc(var(--u) * 59.8);
+                                                width: calc(var(--u) * 358.4);
+                                                height: calc(var(--u) * 358.4);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="disc"
+                                            style="
+                                                left: calc(var(--u) * 144);
+                                                top: calc(var(--u) * 111);
+                                                width: calc(var(--u) * 256);
+                                                height: calc(var(--u) * 256);
+                                                background-image:
+                                                    radial-gradient(
+                                                        circle,
+                                                        var(--hole, #111) 0 7%,
+                                                        transparent 7.5%
+                                                    ),
+                                                    url('disc-gongzi.webp');
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 378);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">12:40</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">44:00</i>
+                                        </div>
+                                        <div
+                                            class="nowp"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 444);
+                                            "
+                                        >
+                                            現正播放
+                                        </div>
+                                        <div
+                                            class="dates"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 464);
+                                            "
+                                        >
+                                            <span class="on"><small>六</small>28/11</span
+                                            ><span><small>六</small>21/11</span
+                                            ><span><small>六</small>14/11</span
+                                            ><span><small>六</small>07/11</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption>
+                                <span class="tag new">建議</span>撳清單 icon：集數清單升起
+                            </figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr">
+                                        <div class="hd v4">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>公子會</b
+                                            ><span
+                                                ><i class="open"
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                        /></svg
+                                                    ><em>4</em></i
+                                                ><i
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <circle cx="12" cy="12" r="9" />
+                                                        <path d="M12 11v6M12 7.5v.5" /></svg></i
+                                            ></span>
+                                        </div>
+                                        <div
+                                            class="arc"
+                                            style="
+                                                left: calc(var(--u) * 92.8);
+                                                top: calc(var(--u) * 59.8);
+                                                width: calc(var(--u) * 358.4);
+                                                height: calc(var(--u) * 358.4);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="disc"
+                                            style="
+                                                left: calc(var(--u) * 144);
+                                                top: calc(var(--u) * 111);
+                                                width: calc(var(--u) * 256);
+                                                height: calc(var(--u) * 256);
+                                                background-image:
+                                                    radial-gradient(
+                                                        circle,
+                                                        var(--hole, #111) 0 7%,
+                                                        transparent 7.5%
+                                                    ),
+                                                    url('disc-gongzi.webp');
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 378);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">12:40</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">44:00</i>
+                                        </div>
+                                        <div
+                                            class="nowp"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 444);
+                                            "
+                                        >
+                                            現正播放
+                                        </div>
+                                        <div
+                                            class="dates"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 464);
+                                            "
+                                        >
+                                            <span class="on"><small>六</small>28/11</span
+                                            ><span><small>六</small>21/11</span
+                                            ><span><small>六</small>14/11</span
+                                            ><span><small>六</small>07/11</span>
+                                        </div>
+                                        <div class="scrim"></div>
+                                        <div class="sheet">
+                                            <header>
+                                                <span>集數 <small>共 4 集</small></span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M6 6l12 12M18 6L6 18" />
+                                                </svg>
+                                            </header>
+                                            <div class="ep on">
+                                                <span>28/11<small>星期六</small></span
+                                                ><em>播放中 · 12:40 / 44:00</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14M16 5v14" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>21/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>14/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep">
+                                                <span>07/11<small>星期六</small></span
+                                                ><em>未收聽</em
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section id="today">
+                <header class="sec">
+                    <h2>今日節目</h2>
+                    <span class="size">普通播放器 + 節目 selector</span>
+                </header>
+                <ul class="notes">
+                    <li><b>新：</b>用返同節目頁一樣嘅播放器，冇卡疊、冇左右掃、冇指示點。</li>
+                    <li>
+                        「現正播放」下面係節目 selector：每格係碟面 +
+                        節目名，撳就轉去嗰個節目；揀中嗰格有外框，未上架嘅灰色、撳唔到；多過 4
+                        個可以左右捲。
+                    </li>
+                    <li>
+                        頁頭右上有 ⓘ，撳開係而家播緊嗰個節目嘅資料（同節目頁一樣）；轉節目後跟住換。
+                    </li>
+                    <li>
+                        清單 icon 嘅 badge 係今日節目數；撳開係今日節目表（有播出時間同收聽狀態）。
+                    </li>
+                </ul>
+                <div class="row">
+                    <h3>今日節目</h3>
+                    <div class="pair">
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption><span class="tag new">建議</span>播放中</figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr td">
+                                        <div class="hd v4">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>今日節目</b
+                                            ><span
+                                                ><i class=""
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                        /></svg
+                                                    ><em>5</em></i
+                                                ><i
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <circle cx="12" cy="12" r="9" />
+                                                        <path d="M12 11v6M12 7.5v.5" /></svg></i
+                                            ></span>
+                                        </div>
+                                        <div style="--hole: #0f2231">
+                                            <div
+                                                class="arc"
+                                                style="
+                                                    left: calc(var(--u) * 106.8);
+                                                    top: calc(var(--u) * 60.8);
+                                                    width: calc(var(--u) * 330.4);
+                                                    height: calc(var(--u) * 330.4);
+                                                "
+                                            ></div>
+                                            <div
+                                                class="disc"
+                                                style="
+                                                    left: calc(var(--u) * 154);
+                                                    top: calc(var(--u) * 108);
+                                                    width: calc(var(--u) * 236);
+                                                    height: calc(var(--u) * 236);
+                                                    background-image:
+                                                        radial-gradient(
+                                                            circle,
+                                                            var(--hole, #111) 0 7%,
+                                                            transparent 7.5%
+                                                        ),
+                                                        url('disc-sunnyday.webp');
+                                                "
+                                            ></div>
+                                        </div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 354);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">3:10</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">10:00</i>
+                                        </div>
+                                        <div
+                                            class="nowp"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 420);
+                                            "
+                                        >
+                                            現正播放：30/11（一）
+                                        </div>
+                                        <div
+                                            class="sel"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 440);
+                                            "
+                                        >
+                                            <span class="on"
+                                                ><i
+                                                    style="
+                                                        background-image: url('disc-sunnyday.webp');
+                                                    "
+                                                ></i
+                                                ><b>在晴朗的一天出發</b></span
+                                            ><span class=""
+                                                ><i
+                                                    style="
+                                                        background-image: url('disc-badgirl.webp');
+                                                    "
+                                                ></i
+                                                ><b>Bad Girl大過佬</b></span
+                                            ><span class=""
+                                                ><i
+                                                    style="background-image: url('disc-wanni.webp')"
+                                                ></i
+                                                ><b>雲妮鍾情</b></span
+                                            ><span class="off"
+                                                ><i
+                                                    style="background-image: url('disc-waves.webp')"
+                                                ></i
+                                                ><b>口水多過浪花</b></span
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption>
+                                <span class="tag new">建議</span>撳清單 icon：節目表升起
+                            </figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr td">
+                                        <div class="hd v4">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>今日節目</b
+                                            ><span
+                                                ><i class="open"
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                        /></svg
+                                                    ><em>5</em></i
+                                                ><i
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <circle cx="12" cy="12" r="9" />
+                                                        <path d="M12 11v6M12 7.5v.5" /></svg></i
+                                            ></span>
+                                        </div>
+                                        <div style="--hole: #0f2231">
+                                            <div
+                                                class="arc"
+                                                style="
+                                                    left: calc(var(--u) * 106.8);
+                                                    top: calc(var(--u) * 60.8);
+                                                    width: calc(var(--u) * 330.4);
+                                                    height: calc(var(--u) * 330.4);
+                                                "
+                                            ></div>
+                                            <div
+                                                class="disc"
+                                                style="
+                                                    left: calc(var(--u) * 154);
+                                                    top: calc(var(--u) * 108);
+                                                    width: calc(var(--u) * 236);
+                                                    height: calc(var(--u) * 236);
+                                                    background-image:
+                                                        radial-gradient(
+                                                            circle,
+                                                            var(--hole, #111) 0 7%,
+                                                            transparent 7.5%
+                                                        ),
+                                                        url('disc-sunnyday.webp');
+                                                "
+                                            ></div>
+                                        </div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 354);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">3:10</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">10:00</i>
+                                        </div>
+                                        <div
+                                            class="nowp"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 420);
+                                            "
+                                        >
+                                            現正播放：30/11（一）
+                                        </div>
+                                        <div
+                                            class="sel"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 440);
+                                            "
+                                        >
+                                            <span class="on"
+                                                ><i
+                                                    style="
+                                                        background-image: url('disc-sunnyday.webp');
+                                                    "
+                                                ></i
+                                                ><b>在晴朗的一天出發</b></span
+                                            ><span class=""
+                                                ><i
+                                                    style="
+                                                        background-image: url('disc-badgirl.webp');
+                                                    "
+                                                ></i
+                                                ><b>Bad Girl大過佬</b></span
+                                            ><span class=""
+                                                ><i
+                                                    style="background-image: url('disc-wanni.webp')"
+                                                ></i
+                                                ><b>雲妮鍾情</b></span
+                                            ><span class="off"
+                                                ><i
+                                                    style="background-image: url('disc-waves.webp')"
+                                                ></i
+                                                ><b>口水多過浪花</b></span
+                                            >
+                                        </div>
+                                        <div class="scrim"></div>
+                                        <div class="sheet">
+                                            <header>
+                                                <span>節目表 <small>2 個未上架</small></span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M6 6l12 12M18 6L6 18" />
+                                                </svg>
+                                            </header>
+                                            <div class="ep pg on">
+                                                <span
+                                                    style="
+                                                        background-image: url('disc-sunnyday.webp');
+                                                    "
+                                                ></span
+                                                ><span
+                                                    >在晴朗的一天出發<small
+                                                        >06:00 · 播放中 · 3:10 / 10:00</small
+                                                    ></span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14M16 5v14" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep pg">
+                                                <span
+                                                    style="
+                                                        background-image: url('disc-badgirl.webp');
+                                                    "
+                                                ></span
+                                                ><span
+                                                    >Bad Girl大過佬<small
+                                                        >10:00 · 未收聽</small
+                                                    ></span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep pg">
+                                                <span
+                                                    style="background-image: url('disc-wanni.webp')"
+                                                ></span
+                                                ><span>雲妮鍾情<small>13:00 · 未收聽</small></span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="ep pg off">
+                                                <span
+                                                    style="background-image: url('disc-waves.webp')"
+                                                ></span
+                                                ><span
+                                                    >口水多過浪花<small>15:10 · 未上架</small></span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path
+                                                        d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                    /></svg
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M8 5v14l11-7z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section id="drama">
+                <header class="sec">
+                    <h2>廣播劇頁</h2>
+                    <span class="size">跟住你喺邊一層</span>
+                </header>
+                <ul class="notes">
+                    <li>
+                        <b>入咗劇、未揀短篇：</b>頁面顯示「全集」，唱片空白；badge 係短篇數；清單
+                        icon 撳開係<b>全集表</b>。
+                    </li>
+                    <li>
+                        <b>播緊某個短篇：</b>頁面顯示短篇名同集名；badge 係嗰個短篇嘅集數；清單 icon
+                        撳開係<b>短篇表</b>：上面同全集表一樣有橫額、短篇名同資料，下面係嗰個短篇嘅集數。
+                    </li>
+                    <li>短篇表右上有「全集」掣，撳就換返全集表，可以轉去第二個短篇。</li>
+                </ul>
+                <div class="row">
+                    <h3>未揀短篇</h3>
+                    <div class="pair">
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption><span class="tag new">建議</span>顯示全集</figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr dr">
+                                        <div class="hd v4">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>芝See菇Bi Family</b
+                                            ><span
+                                                ><i class=""
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                        /></svg
+                                                    ><em>12</em></i
+                                                ><i
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <circle cx="12" cy="12" r="9" />
+                                                        <path d="M12 11v6M12 7.5v.5" /></svg></i
+                                            ></span>
+                                        </div>
+                                        <div
+                                            class="arc idle"
+                                            style="
+                                                left: calc(var(--u) * 111);
+                                                top: calc(var(--u) * 70);
+                                                width: calc(var(--u) * 322);
+                                                height: calc(var(--u) * 322);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="disc blank"
+                                            style="
+                                                left: calc(var(--u) * 157);
+                                                top: calc(var(--u) * 116);
+                                                width: calc(var(--u) * 230);
+                                                height: calc(var(--u) * 230);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl idle"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 358);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">--:--</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">--:--</i>
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 438);
+                                                font-size: calc(var(--u) * 22);
+                                                text-align: center;
+                                                font-weight: 700;
+                                                color: var(--cream);
+                                            "
+                                        >
+                                            全集
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 470);
+                                                font-size: calc(var(--u) * 13);
+                                                text-align: center;
+                                                color: var(--gold);
+                                            "
+                                        >
+                                            揀一個短篇開始收聽
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption>
+                                <span class="tag new">建議</span>撳清單 icon：全集表
+                            </figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr dr">
+                                        <div class="hd v4">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>芝See菇Bi Family</b
+                                            ><span
+                                                ><i class="open"
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                        /></svg
+                                                    ><em>12</em></i
+                                                ><i
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <circle cx="12" cy="12" r="9" />
+                                                        <path d="M12 11v6M12 7.5v.5" /></svg></i
+                                            ></span>
+                                        </div>
+                                        <div
+                                            class="arc idle"
+                                            style="
+                                                left: calc(var(--u) * 111);
+                                                top: calc(var(--u) * 70);
+                                                width: calc(var(--u) * 322);
+                                                height: calc(var(--u) * 322);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="disc blank"
+                                            style="
+                                                left: calc(var(--u) * 157);
+                                                top: calc(var(--u) * 116);
+                                                width: calc(var(--u) * 230);
+                                                height: calc(var(--u) * 230);
+                                            "
+                                        ></div>
+                                        <div
+                                            class="ctl idle"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 358);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">--:--</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">--:--</i>
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 438);
+                                                font-size: calc(var(--u) * 22);
+                                                text-align: center;
+                                                font-weight: 700;
+                                                color: var(--cream);
+                                            "
+                                        >
+                                            全集
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 470);
+                                                font-size: calc(var(--u) * 13);
+                                                text-align: center;
+                                                color: var(--gold);
+                                            "
+                                        >
+                                            揀一個短篇開始收聽
+                                        </div>
+                                        <div class="scrim"></div>
+                                        <div class="sheet dsheet">
+                                            <div class="cv">
+                                                芝See菇Bi Family<small>最新上架：初戀嗱喳麵</small>
+                                            </div>
+                                            <div class="body">
+                                                <header>
+                                                    <span>全集</span><small>聽完 0 / 12 個</small>
+                                                </header>
+                                                <div class="arcrow">
+                                                    <span></span
+                                                    ><span
+                                                        >三十六計<small
+                                                            >聽緊 · 第 1 集 / 36 集</small
+                                                        ></span
+                                                    ><span
+                                                        class="play"
+                                                        style="
+                                                            width: calc(var(--u) * 38);
+                                                            height: calc(var(--u) * 38);
+                                                        "
+                                                        ><svg
+                                                            viewBox="0 0 24 24"
+                                                            aria-hidden="true"
+                                                            style="
+                                                                width: calc(var(--u) * 19);
+                                                                height: calc(var(--u) * 19);
+                                                            "
+                                                        >
+                                                            <path d="M8 5v14l11-7z" /></svg
+                                                    ></span>
+                                                </div>
+                                                <div class="arcrow">
+                                                    <span></span
+                                                    ><span
+                                                        >你生日所以我生日<small
+                                                            >未聽 · 3 集</small
+                                                        ></span
+                                                    ><span
+                                                        class="play"
+                                                        style="
+                                                            width: calc(var(--u) * 38);
+                                                            height: calc(var(--u) * 38);
+                                                        "
+                                                        ><svg
+                                                            viewBox="0 0 24 24"
+                                                            aria-hidden="true"
+                                                            style="
+                                                                width: calc(var(--u) * 19);
+                                                                height: calc(var(--u) * 19);
+                                                            "
+                                                        >
+                                                            <path d="M8 5v14l11-7z" /></svg
+                                                    ></span>
+                                                </div>
+                                                <div class="arcrow">
+                                                    <span></span
+                                                    ><span
+                                                        >初戀嗱喳麵<small>未聽 · 26 集</small></span
+                                                    ><span
+                                                        class="play"
+                                                        style="
+                                                            width: calc(var(--u) * 38);
+                                                            height: calc(var(--u) * 38);
+                                                        "
+                                                        ><svg
+                                                            viewBox="0 0 24 24"
+                                                            aria-hidden="true"
+                                                            style="
+                                                                width: calc(var(--u) * 19);
+                                                                height: calc(var(--u) * 19);
+                                                            "
+                                                        >
+                                                            <path d="M8 5v14l11-7z" /></svg
+                                                    ></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>播緊短篇</h3>
+                    <div class="pair">
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption><span class="tag new">建議</span>顯示短篇</figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr dr">
+                                        <div class="hd v4">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>芝See菇Bi Family</b
+                                            ><span
+                                                ><i class=""
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                        /></svg
+                                                    ><em>36</em></i
+                                                ><i
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <circle cx="12" cy="12" r="9" />
+                                                        <path d="M12 11v6M12 7.5v.5" /></svg></i
+                                            ></span>
+                                        </div>
+                                        <div style="--hole: #222">
+                                            <div
+                                                class="arc"
+                                                style="
+                                                    left: calc(var(--u) * 111);
+                                                    top: calc(var(--u) * 70);
+                                                    width: calc(var(--u) * 322);
+                                                    height: calc(var(--u) * 322);
+                                                "
+                                            ></div>
+                                            <div
+                                                class="disc"
+                                                style="
+                                                    left: calc(var(--u) * 157);
+                                                    top: calc(var(--u) * 116);
+                                                    width: calc(var(--u) * 230);
+                                                    height: calc(var(--u) * 230);
+                                                    background-image:
+                                                        radial-gradient(
+                                                            circle,
+                                                            var(--hole, #111) 0 7%,
+                                                            transparent 7.5%
+                                                        ),
+                                                        url('disc-chisee.webp');
+                                                "
+                                            ></div>
+                                        </div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 358);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">2:05</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">8:30</i>
+                                        </div>
+                                        <div
+                                            class="nowp"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 426);
+                                            "
+                                        >
+                                            現正播放
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 444);
+                                                font-size: calc(var(--u) * 22);
+                                                text-align: center;
+                                                font-weight: 700;
+                                                color: var(--cream);
+                                            "
+                                        >
+                                            三十六計
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 476);
+                                                font-size: calc(var(--u) * 13);
+                                                text-align: center;
+                                                color: var(--dim);
+                                            "
+                                        >
+                                            第 1 集 · 瞞天過海：隱形墨水筆
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                        <figure class="shot" style="flex: 1 1 300px; max-width: 544px">
+                            <figcaption>
+                                <span class="tag new">建議</span>撳清單 icon：短篇表
+                            </figcaption>
+                            <div class="frame sq">
+                                <div class="stage">
+                                    <div class="scr dr">
+                                        <div class="hd v4">
+                                            <span
+                                                ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M15 5l-7 7 7 7" /></svg></span
+                                            ><b>芝See菇Bi Family</b
+                                            ><span
+                                                ><i class="open"
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                        /></svg
+                                                    ><em>36</em></i
+                                                ><i
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <circle cx="12" cy="12" r="9" />
+                                                        <path d="M12 11v6M12 7.5v.5" /></svg></i
+                                            ></span>
+                                        </div>
+                                        <div style="--hole: #222">
+                                            <div
+                                                class="arc"
+                                                style="
+                                                    left: calc(var(--u) * 111);
+                                                    top: calc(var(--u) * 70);
+                                                    width: calc(var(--u) * 322);
+                                                    height: calc(var(--u) * 322);
+                                                "
+                                            ></div>
+                                            <div
+                                                class="disc"
+                                                style="
+                                                    left: calc(var(--u) * 157);
+                                                    top: calc(var(--u) * 116);
+                                                    width: calc(var(--u) * 230);
+                                                    height: calc(var(--u) * 230);
+                                                    background-image:
+                                                        radial-gradient(
+                                                            circle,
+                                                            var(--hole, #111) 0 7%,
+                                                            transparent 7.5%
+                                                        ),
+                                                        url('disc-chisee.webp');
+                                                "
+                                            ></div>
+                                        </div>
+                                        <div
+                                            class="ctl"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 358);
+                                            "
+                                        >
+                                            <i style="margin-right: calc(var(--u) * 24)">2:05</i
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4" /></svg
+                                            ><span
+                                                class="play"
+                                                style="
+                                                    width: calc(var(--u) * 56);
+                                                    height: calc(var(--u) * 56);
+                                                "
+                                                ><svg
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    style="
+                                                        width: calc(var(--u) * 28);
+                                                        height: calc(var(--u) * 28);
+                                                    "
+                                                >
+                                                    <path d="M8 5v14l11-7z" /></svg></span
+                                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                /></svg
+                                            ><i style="margin-left: calc(var(--u) * 24)">8:30</i>
+                                        </div>
+                                        <div
+                                            class="nowp"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 426);
+                                            "
+                                        >
+                                            現正播放
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 444);
+                                                font-size: calc(var(--u) * 22);
+                                                text-align: center;
+                                                font-weight: 700;
+                                                color: var(--cream);
+                                            "
+                                        >
+                                            三十六計
+                                        </div>
+                                        <div
+                                            class="abs"
+                                            style="
+                                                left: calc(var(--u) * 0);
+                                                right: calc(var(--u) * 0);
+                                                top: calc(var(--u) * 476);
+                                                font-size: calc(var(--u) * 13);
+                                                text-align: center;
+                                                color: var(--dim);
+                                            "
+                                        >
+                                            第 1 集 · 瞞天過海：隱形墨水筆
+                                        </div>
+                                        <div class="scrim"></div>
+                                        <div class="sheet dsheet">
+                                            <div class="cv">
+                                                三十六計<small
+                                                    >芝See菇Bi Family · 聽緊第 1 集</small
+                                                >
+                                            </div>
+                                            <div class="body">
+                                                <header>
+                                                    <span>集數 <small>共 36 集</small></span
+                                                    ><span class="allbtn"
+                                                        ><svg
+                                                            viewBox="0 0 24 24"
+                                                            aria-hidden="true"
+                                                        >
+                                                            <path
+                                                                d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+                                                            /></svg
+                                                        >全集</span
+                                                    >
+                                                </header>
+                                                <div class="ep on">
+                                                    <span>第 1 集</span
+                                                    ><em
+                                                        ><b>瞞天過海：隱形墨水筆</b>播放中 · 2:05 /
+                                                        8:30</em
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                        /></svg
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path d="M8 5v14M16 5v14" />
+                                                    </svg>
+                                                </div>
+                                                <div class="ep">
+                                                    <span>第 2 集</span
+                                                    ><em><b>無中生有：你騙我騙你</b>未收聽</em
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                        /></svg
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path d="M8 5v14l11-7z" />
+                                                    </svg>
+                                                </div>
+                                                <div class="ep">
+                                                    <span>第 3 集</span
+                                                    ><em><b>聲東擊西：突擊檢查大作戰</b>未收聽</em
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"
+                                                        /></svg
+                                                    ><svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path d="M8 5v14l11-7z" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+            </section>
+            <section id="questions">
+                <header class="sec"><h2>待確認</h2></header>
+                <div class="scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>問題</th>
+                                <th>我嘅建議</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>—</td>
+                                <td>冇未決定嘅項目。</td>
+                                <td>確認呢版之後，我出開發 plan 俾你批。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3>已定</h3>
+                <div class="scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>項目</th>
+                                <th>決定</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>S1</td>
+                                <td>Viewport</td>
+                                <td>544 × 544</td>
+                            </tr>
+                            <tr>
+                                <td>S2</td>
+                                <td>主頁</td>
+                                <td>左 card scroller、右播放卡</td>
+                            </tr>
+                            <tr>
+                                <td>S3</td>
+                                <td>內頁</td>
+                                <td>播放器為主，清單收入 sheet；用設計 1（唱片置中）</td>
+                            </tr>
+                            <tr>
+                                <td>S4</td>
+                                <td>字／掣放大</td>
+                                <td>唔需要</td>
+                            </tr>
+                            <tr>
+                                <td>S5</td>
+                                <td>清單入口</td>
+                                <td>頁頭清單 icon，喺 ⓘ 隔離，右上 badge 顯示數量</td>
+                            </tr>
+                            <tr>
+                                <td>S6</td>
+                                <td>今日節目</td>
+                                <td>普通播放器 + 節目 selector（碟面 + 節目名）</td>
+                            </tr>
+                            <tr>
+                                <td>S7</td>
+                                <td>主頁橫額</td>
+                                <td>左欄頂部固定闊版橫額</td>
+                            </tr>
+                            <tr>
+                                <td>S8</td>
+                                <td>廣播劇頁</td>
+                                <td>未揀短篇顯示全集、開全集表；播緊短篇顯示短篇、開短篇表</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <ul class="notes">
+                    <li>
+                        清單 sheet
+                        重用現有全集表嘅開閂動畫（由下面滑入、可以向下拖閂），減少動態時直接切換。
+                    </li>
+                    <li>
+                        所有改動只寫喺新增嘅方形 media query 入面，現有手機、平板、電腦版面唔變。
+                    </li>
+                </ul>
+            </section>
+        </main>
+    </body>
+</html>

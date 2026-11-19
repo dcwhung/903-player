@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ArcPicker } from '../../components/pages/drama/ArcPicker/ArcPicker';
 import { ArcSheet } from '../../components/pages/drama/ArcSheet/ArcSheet';
+import { SERIES_EPISODE_LIST } from '../../components/pages/drama/seriesEpisodeList';
 import { EpisodeList } from '../../components/shared/player/EpisodeList/EpisodeList';
 import { dramaArtFor } from '../../catalog/dramas';
 import { usePlayer } from '../../player/usePlayer';
@@ -39,13 +40,12 @@ export const SeriesArcSheet = ({ sheet, current, docked }: SeriesArcSheetProps) 
             onPick={sheet.pick}
             onPlay={sheet.play}
             onClose={sheet.close}
+            // 第一次入自動開（冇撳過掣）：閂咗返「全集」掣，唔好跌去 <body>
+            returnFocusTo={sheet.allRef}
             coverOf={arcCover}
         />
     );
 };
-
-/** 短篇劇集嘅集數清單：行名用集名，照集數次序，入頁捲到播緊嗰集（頂、露半行上一集） */
-const SERIES_LIST = { labels: 'title', scrollAlign: 'top' } as const;
 
 type SeriesListView = Pick<
     SeriesDramaView,
@@ -83,7 +83,31 @@ interface SeriesListColumnProps {
     dockedSheet: ReactNode;
     /** 由「我的收藏」撳入嚟嗰集（捲過去、highlight） */
     focusKey?: string | undefined;
+    /** 短篇選擇直排喺唱片右邊（Duo 打開・直）：呢欄唔再出 chips */
+    pickerSide?: boolean;
 }
+
+/** 短篇選擇（chips）：直版 / 橫版喺清單上面；Duo 打開・直直排喺唱片右邊（vertical） */
+export const SeriesArcPicker = ({
+    view,
+    label,
+    spokenLabel,
+    vertical = false,
+}: Pick<SeriesListColumnProps, 'view' | 'label' | 'spokenLabel'> & { vertical?: boolean }) => (
+    <ArcPicker
+        arcs={view.arcs}
+        upcoming={view.upcomingArcs}
+        notice={pickerNotice(view)}
+        selected={view.arc}
+        playing={view.start ? undefined : view.current?.arc}
+        label={label}
+        spokenLabel={spokenLabel}
+        onPick={view.pickArc}
+        onOpenAll={view.sheet.openSheet}
+        allRef={view.sheet.allRef}
+        vertical={vertical}
+    />
+);
 
 /** 橫版左欄 / 直版唱片下面：頁頭（橫版）+ 短篇 chips + 集數清單；橫版全集表只蓋呢欄 */
 export const SeriesListColumn = ({
@@ -94,28 +118,21 @@ export const SeriesListColumn = ({
     spokenLabel,
     dockedSheet,
     focusKey,
+    pickerSide = false,
 }: SeriesListColumnProps) => (
     <div className={page.listColumn}>
         {landscape && <DramaHeader title={title} />}
         <div className={page.listBody}>
             {/* 橫版全集表蓋住 chips + 清單：下面嗰啲 inert，Tab / 讀屏唔會入到睇唔見嘅嘢 */}
             <div className={page.listContent} inert={landscape && view.sheet.open}>
-                <ArcPicker
-                    arcs={view.arcs}
-                    upcoming={view.upcomingArcs}
-                    notice={pickerNotice(view)}
-                    selected={view.arc}
-                    playing={view.start ? undefined : view.current?.arc}
-                    label={label}
-                    spokenLabel={spokenLabel}
-                    onPick={view.pickArc}
-                    onOpenAll={view.sheet.openSheet}
-                />
+                {!pickerSide && (
+                    <SeriesArcPicker view={view} label={label} spokenLabel={spokenLabel} />
+                )}
                 <EpisodeList
                     items={view.items}
                     onSelect={view.pressEpisode}
                     focusKey={focusKey}
-                    {...SERIES_LIST}
+                    {...SERIES_EPISODE_LIST}
                 />
             </div>
             {dockedSheet}

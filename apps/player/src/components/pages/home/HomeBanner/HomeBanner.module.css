@@ -94,3 +94,23 @@
 .banner[data-fill] .corner {
     right: var(--space-2);
 }
+
+/*
+ * 新主頁左欄頂（P10，HomeWide shelf：Duo 打開・橫、HomeView）：闊版圖（5:1）跟欄闊、唔填高，
+ * 左右白邊同分類掣一樣；蓋過上面闊橫版「同節目格平分高度」嘅規則
+ */
+.banner[data-wide] {
+    flex: none;
+}
+
+.banner[data-wide] .heading,
+.banner[data-wide] .heading picture {
+    display: block;
+    height: auto;
+}
+
+.banner[data-wide] .image {
+    height: auto;
+    aspect-ratio: 5 / 1;
+    object-position: 50% 35%;
+}
