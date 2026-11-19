@@ -129,7 +129,7 @@
     <body>
         <main>
             <header>
-                <h1>9d 睡眠 timer preview（v6）</h1>
+                <h1>9d 睡眠 timer preview（v7）</h1>
                 <p>
                     真 app 截圖（v2.0.0）加上新掣。每行可以左右掃睇其他裝置。月亮掣只喺裝置本地時間
                     21:00–05:00 出現，timer 開緊時一直出。示範狀態：揀咗 30 分鐘，剩 23:14。
@@ -298,7 +298,9 @@
                 <h2>Mini player：播到 6:13 時（底部播放進度條有嘢）</h2>
                 <p>
                     同上面五個方案一樣，不過播放進度已經行到大約六成，睇吓 timer
-                    進度同底部播放進度條擺埋一齊嘅效果。
+                    進度同底部播放進度條擺埋一齊嘅效果。M6：timer 同播放掣整合，播放掣外圈 = timer
+                    剩餘（由 12 點順時針縮）；M6a 左邊照出月亮 + 分秒，M6b
+                    只喺播放掣右上角加月亮徽章、唔出數字（數字喺選單睇）。實作時播放掣會縮細少少，外圈唔會貼住卡邊。
                 </p>
                 <div class="row">
                     <figure>
@@ -356,6 +358,22 @@
                             loading="lazy"
                         />
                         <figcaption>M5・卡底色隨時間縮</figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            src="phone-mini-m6a-p.webp"
+                            alt="mini player：M6a・播放掣外圈 + 月亮時間"
+                            loading="lazy"
+                        />
+                        <figcaption>M6a・播放掣外圈 + 月亮時間</figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            src="phone-mini-m6b-p.webp"
+                            alt="mini player：M6b・播放掣外圈 + 月亮徽章（冇數字）"
+                            loading="lazy"
+                        />
+                        <figcaption>M6b・播放掣外圈 + 月亮徽章（冇數字）</figcaption>
                     </figure>
                 </div>
             </section>
