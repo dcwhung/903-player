@@ -129,15 +129,15 @@
     <body>
         <main>
             <header>
-                <h1>9d 睡眠 timer preview（v2：grill 之後）</h1>
+                <h1>9d 睡眠 timer preview（v3）</h1>
                 <p>
-                    真 app 截圖（v2.0.0）加上新掣。每行可以左右掃睇其他裝置。入口用方案
-                    B；月亮掣只喺裝置本地時間 21:00–05:00 出現，timer 開緊時一直出。
+                    真 app 截圖（v2.0.0）加上新掣。每行可以左右掃睇其他裝置。月亮掣只喺裝置本地時間
+                    21:00–05:00 出現，timer 開緊時一直出。示範狀態：揀咗 30 分鐘，剩 23:14。
                 </p>
             </header>
             <section>
                 <h2>日間（05:00–21:00）：零改變</h2>
-                <p>冇月亮掣，同而家 v2.0.0 一模一樣；e2e:visual 新加嘅 14:00 情境要 0 diff。</p>
+                <p>冇月亮掣，同 v2.0.0 一模一樣。</p>
                 <div class="row">
                     <figure>
                         <img src="phone-none.webp" alt="手機直：日間" loading="lazy" />
@@ -158,52 +158,54 @@
                 </div>
             </section>
             <section>
-                <h2>夜間 21:00–05:00：月亮掣（方案 B）</h2>
+                <h2>夜間：月亮掣</h2>
                 <p>
-                    內頁頁頭右上（HomeView 喺清單掣左邊）；闊版主頁播放卡喺卡頭下面嗰行左邊。未開 =
-                    細 icon；開咗 = 實色膠囊顯示剩餘分鐘（向上取整）。
+                    內頁頁頭右上（HomeView
+                    喺清單掣左邊）；闊版主頁播放卡喺卡頭下面嗰行（指示點同一行）右邊。未開 =
+                    線條月亮；開咗 = 實色月亮 + 剩餘分鐘（冇底色），頁頂全闊進度條隨時間扣減。
                 </p>
                 <div class="row">
                     <figure>
-                        <img src="phone-b-off.webp" alt="手機直：未開" loading="lazy" />
+                        <img src="phone-off.webp" alt="手機直：未開" loading="lazy" />
                         <figcaption>手機直・未開</figcaption>
                     </figure>
                     <figure>
-                        <img src="phone-b-on.webp" alt="手機直：開咗" loading="lazy" />
-                        <figcaption>手機直・開咗（剩 23 分）</figcaption>
+                        <img src="phone-on.webp" alt="手機直：開咗" loading="lazy" />
+                        <figcaption>手機直・開咗</figcaption>
                     </figure>
                     <figure>
-                        <img src="square-b-off.webp" alt="HomeView：未開" loading="lazy" />
+                        <img src="square-off.webp" alt="HomeView：未開" loading="lazy" />
                         <figcaption>HomeView・未開</figcaption>
                     </figure>
                     <figure>
-                        <img src="square-b-on.webp" alt="HomeView：開咗" loading="lazy" />
-                        <figcaption>HomeView・開咗（剩 23 分）</figcaption>
+                        <img src="square-on.webp" alt="HomeView：開咗" loading="lazy" />
+                        <figcaption>HomeView・開咗</figcaption>
                     </figure>
                     <figure>
-                        <img src="phoneL-b-off.webp" alt="手機橫：未開" loading="lazy" />
+                        <img src="phoneL-off.webp" alt="手機橫：未開" loading="lazy" />
                         <figcaption>手機橫・未開</figcaption>
                     </figure>
                     <figure>
-                        <img src="phoneL-b-on.webp" alt="手機橫：開咗" loading="lazy" />
-                        <figcaption>手機橫・開咗（剩 23 分）</figcaption>
+                        <img src="phoneL-on.webp" alt="手機橫：開咗" loading="lazy" />
+                        <figcaption>手機橫・開咗</figcaption>
                     </figure>
                     <figure>
-                        <img src="tabletL-b-off.webp" alt="平板橫主頁播放卡：未開" loading="lazy" />
+                        <img src="tabletL-off.webp" alt="平板橫主頁播放卡：未開" loading="lazy" />
                         <figcaption>平板橫主頁播放卡・未開</figcaption>
                     </figure>
                     <figure>
-                        <img src="tabletL-b-on.webp" alt="平板橫主頁播放卡：開咗" loading="lazy" />
-                        <figcaption>平板橫主頁播放卡・開咗（剩 23 分）</figcaption>
+                        <img src="tabletL-on.webp" alt="平板橫主頁播放卡：開咗" loading="lazy" />
+                        <figcaption>平板橫主頁播放卡・開咗</figcaption>
                     </figure>
                 </div>
             </section>
             <section>
                 <h2>底部選單</h2>
                 <p>
-                    未開：頂部「再開 30 分鐘」（上次揀嘅時長，localStorage 記住），下面 15 / 30 / 60
-                    分鐘、播完呢集（直播變灰）；一揀即計，暫停中都照計。開緊：顯示剩餘時間、剔住而家嗰項、「關閉
-                    timer」；揀另一項 = 由而家重新計。時間到直接暫停（唔淡出）。
+                    四粒大掣 2×2：15 / 30 / 60
+                    分鐘、播完呢集（顯示「剩餘時間：9:59」；直播變灰）。未開：上次揀嘅時長用框線
+                    highlight，撳一下即開始。開緊：嗰粒變實色；標題右邊「剩餘 23:14｜關閉」tab
+                    掣。平板橫：選單喺右邊播放卡位置。
                 </p>
                 <div class="row">
                     <figure>
@@ -249,14 +251,16 @@
                 </div>
             </section>
             <section>
-                <h2>Mini player</h2>
+                <h2>Mini player：timer 進度點顯示？（要你揀）</h2>
                 <p>
-                    日間零改變；21:00–05:00 播放掣左邊出細月亮（撳開同一個選單）；開緊變「🌙
-                    23」膠囊。實作時標題 / 日期會縮窄讓位（preview 係疊上去，未縮）。
+                    Mini player 底部已經係播放進度條，所以 timer
+                    進度要第二個位。M1：同內頁一樣用頁頂全闊條；M2：mini player
+                    頂邊一條細條；M3：月亮外圈圓環。實作時標題 / 日期會縮窄讓位（preview
+                    係疊上去）。
                 </p>
                 <div class="row">
                     <figure>
-                        <img src="phone-mini-off.webp" alt="mini player 日間" loading="lazy" />
+                        <img src="phone-mini-day.webp" alt="mini player 日間" loading="lazy" />
                         <figcaption>日間（唔變）</figcaption>
                     </figure>
                     <figure>
@@ -268,13 +272,21 @@
                         <figcaption>夜間・未開</figcaption>
                     </figure>
                     <figure>
-                        <img src="phone-mini-on.webp" alt="mini player timer 開緊" loading="lazy" />
-                        <figcaption>timer 開緊</figcaption>
+                        <img src="phone-mini-m1.webp" alt="M1 頁頂全闊條" loading="lazy" />
+                        <figcaption>M1・頁頂全闊條</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="phone-mini-m2.webp" alt="M2 mini player 頂邊條" loading="lazy" />
+                        <figcaption>M2・卡頂邊細條</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="phone-mini-m3.webp" alt="M3 月亮外圈" loading="lazy" />
+                        <figcaption>M3・月亮外圈</figcaption>
                     </figure>
                 </div>
             </section>
             <section>
-                <h2>已定決定（grill 結果）</h2>
+                <h2>已定決定</h2>
                 <table>
                     <thead>
                         <tr>
@@ -285,15 +297,21 @@
                     <tbody>
                         <tr>
                             <td>入口</td>
-                            <td>方案 B：頁頭右上 / HomeView 清單掣左邊 / 闊版播放卡卡頭下面左邊</td>
+                            <td>內頁頁頭右上 / HomeView 清單掣左邊 / 闊版播放卡指示點嗰行右邊</td>
                         </tr>
                         <tr>
                             <td>顯示時段</td>
                             <td>裝置本地時間 21:00–05:00（每分鐘檢查）；開緊 timer 一直出</td>
                         </tr>
                         <tr>
-                            <td>Mini player</td>
-                            <td>21:00–05:00 有月亮入口；開緊變膠囊</td>
+                            <td>開緊顯示</td>
+                            <td>實色月亮 + 剩餘分鐘；頁頂全闊進度條</td>
+                        </tr>
+                        <tr>
+                            <td>選單</td>
+                            <td>
+                                2×2 大掣；上次時長 highlight；開緊時標題右邊「剩餘｜關閉」；冇說明字
+                            </td>
                         </tr>
                         <tr>
                             <td>選項</td>
@@ -301,14 +319,11 @@
                         </tr>
                         <tr>
                             <td>播完呢集</td>
-                            <td>
-                                留喺同一集：播完（ended）先停；轉集 / 轉直播：用剩餘時間做
-                                background timer 繼續計
-                            </td>
+                            <td>留喺同一集：播完先停；轉集 / 轉直播：用剩餘時間繼續計</td>
                         </tr>
                         <tr>
                             <td>時間到</td>
-                            <td>直接暫停；記住上次時長，下次選單頂出「再開 N 分鐘」；唔自動重開</td>
+                            <td>直接暫停；記住上次時長；唔自動重開</td>
                         </tr>
                         <tr>
                             <td>暫停 / 轉節目</td>
@@ -316,16 +331,13 @@
                         </tr>
                         <tr>
                             <td>準確度</td>
-                            <td>
-                                絕對截止時間 + timeupdate
-                                檢查；sessionStorage，重新載入照計；過咗期就清走唔播
-                            </td>
+                            <td>絕對截止時間 + timeupdate 檢查；sessionStorage</td>
                         </tr>
                         <tr>
                             <td>e2e:visual</td>
                             <td>
-                                lane 0 先加 14:00 日間情境；日間 0 diff；22:30 只准月亮掣 pixel diff
-                                + mini player 標題 / 日期位置 diff
+                                lane 0 先加 14:00 日間情境；日間 0 diff；22:30 只准月亮掣 / 進度條
+                                pixel diff + mini player 標題 / 日期位置 diff
                             </td>
                         </tr>
                     </tbody>
