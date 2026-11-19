@@ -96,3 +96,18 @@ export const occurrenceAt = (minutes: number, now: number) => {
 ## Handoff receipt
 
 見 subagent 回報（`HANDOFF_RECEIPT`）。
+
+## Re-review（2026-11-19，`7c4a3228`）
+
+範圍：只驗 W-820、S-1200 至 S-1202 嘅修正（`e2b24a73..7c4a3228`）。Hard gates all pass（改動檔 eslint / prettier 0；`tsc -b --noEmit` 0；`vitest related` 143 files / 1938 tests 綠）。
+
+| ID     | 驗證                                                                                                                                                                                                                                                                   | 結果 |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| W-820  | 方案 A + B：`isNightSchedule`（21:00 ≤ t 或 t < 05:00）擋 `occurrenceAt` 同 `pick`。重做 L2 臨時 test（冇 commit）：04:58 揀 → 冇排程，翌朝 05:30 播冇自動開；05:32 日間揀唔會蓋走舊嘅 23:10 夜間排程，06:00 播冇自動開；`localStorage` 寫死 05:30 舊排程 → 永遠唔觸發 | ✅   |
+| S-1200 | `attach` 加 `storage` listener、cleanup 會移除；`key === null`（`clear()`）都重讀。臨時 test：另一分頁寫新排程 + `StorageEvent` → 即刻換成新值                                                                                                                         | ✅   |
+| S-1201 | `lastOption` / `loadLastOption` / `saveLastOption` / `SLEEP_TIMER_LAST_STORAGE_KEY` 全部刪走，grep `apps/player/src` 同 `e2e` 冇殘留；Lane 2 controller 其餘邏輯冇變                                                                                                   | ✅   |
+| S-1202 | 排程嗰粒 `aria-label`「30 分鐘，每晚 22:30」/「播完呢集，每晚 22:30」（`sleepTimer.scheduledOption`）；`SleepTimerEntry.test.tsx` 鎖住                                                                                                                                 | ✅   |
+
+Observation（唔扣分）：plan「每晚自動」表加咗 W-820 / S-1200 / S-1201 三行，內容係由原有 L1 條文（「05:00 之前」、日間零改變、第 3–5 輪「上次時長由排程取代」）推出嚟，冇新嘅產品決定，但係放咗喺標明「用戶決定」嘅表入面，main agent 可以順便同用戶講一聲。
+
+**Re-review 結果：✅ pass（100 / 100），backlog W-820、S-1200 至 S-1202 已清。**
