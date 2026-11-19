@@ -345,6 +345,42 @@ describe('SleepTimerController storage', () => {
         expect(timer.getSnapshot().timer).toBeNull();
     });
 
+    it('should keep waiting for the end of the same episode after a reload past the background deadline (S-1180)', async () => {
+        const first = await setup();
+        first.timer.start('episode');
+        first.player.pause();
+        cleanups.splice(0).forEach((cleanup) => cleanup());
+        vi.setSystemTime(START + 30 * MINUTE_MS);
+
+        const { timer, audio, pause } = await setup({ autoplay: false });
+
+        expect(timer.getSnapshot().timer?.kind).toBe('episode');
+        expect(pause).not.toHaveBeenCalled();
+        audio.end();
+        expect(audio.src).toBe(EPISODE.url);
+        expect(timer.getSnapshot().timer).toBeNull();
+    });
+
+    it('should just clear a reloaded "end of episode" timer past its deadline when that episode is not loaded', async () => {
+        const first = await setup();
+        first.timer.start('episode');
+        cleanups.splice(0).forEach((cleanup) => cleanup());
+        vi.setSystemTime(START + 30 * MINUTE_MS);
+
+        const audio = new FakeAudio();
+        const player = new AudioController(audio.asAudio());
+        cleanups.push(player.attach());
+        const pause = vi.spyOn(player, 'pause');
+        const timer = new SleepTimerController(player);
+        expect(timer.getSnapshot().timer?.kind).toBe('episode');
+        cleanups.push(timer.attach());
+
+        expect(timer.getSnapshot().timer).toBeNull();
+        expect(sessionStorage.getItem(SLEEP_TIMER_STORAGE_KEY)).toBeNull();
+        expect(pause).not.toHaveBeenCalled();
+        expect(audio.play).not.toHaveBeenCalled();
+    });
+
     it('should keep working when storage throws', async () => {
         vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
             throw new Error('SecurityError');

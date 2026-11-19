@@ -39,10 +39,22 @@ describe('sleep timer session storage', () => {
         expect(localStorage.getItem(SLEEP_TIMER_STORAGE_KEY)).toBeNull();
     });
 
-    it('should drop an expired timer on load', () => {
-        saveSleepTimer(TIMER);
-        expect(loadSleepTimer(TIMER.deadline)).toBeNull();
+    it('should drop an expired minutes timer on load', () => {
+        const minutes: SleepTimerState = {
+            kind: 'minutes',
+            option: 15,
+            startedAt: NOW,
+            deadline: NOW + 1,
+        };
+        saveSleepTimer(minutes);
+        expect(loadSleepTimer(minutes.deadline)).toBeNull();
         expect(sessionStorage.getItem(SLEEP_TIMER_STORAGE_KEY)).toBeNull();
+    });
+
+    it('should keep an "end of episode" timer past its deadline for the controller to decide (S-1180)', () => {
+        // 同一集暫停到過咗 background 截止時間：用戶決定 (1) 等播完先清，交畀 controller 睇載咗邊集
+        saveSleepTimer(TIMER);
+        expect(loadSleepTimer(TIMER.deadline + 60_000)).toEqual(TIMER);
     });
 
     it('should clear the stored timer when saving null', () => {

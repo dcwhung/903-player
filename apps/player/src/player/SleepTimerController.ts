@@ -46,7 +46,7 @@ export class SleepTimerController {
     private attached = false;
 
     constructor(private readonly player: SleepTimerPlayer) {
-        // 已過期嘅喺 storage 清走（唔自動播）
+        // 已過期嘅分鐘倒數喺 storage 清走（唔自動播）；「播完呢集」由 attach 嘅 check 睇載咗邊集再判斷
         this.snapshot = { timer: loadSleepTimer(Date.now()), lastOption: loadLastOption() };
     }
 

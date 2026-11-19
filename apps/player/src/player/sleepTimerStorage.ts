@@ -65,7 +65,9 @@ const toTimer = (value: unknown): SleepTimerState | null => {
 };
 
 /**
- * 同一分頁重新載入照計；已過期 / 壞咗嘅就清走（唔會自動播，只係冇 timer）
+ * 同一分頁重新載入照計；壞咗 / 已過期嘅分鐘倒數就清走（唔會自動播，只係冇 timer）。
+ * 「播完呢集」過咗 background 截止時間都照還原：同一集要等播完先清（S-1180），
+ * 由 SleepTimerController 睇載咗邊集再判斷（唔係同一集就淨係清、唔暫停）
  */
 export const loadSleepTimer = (now: number): SleepTimerState | null => {
     const raw = readItem(session, SLEEP_TIMER_STORAGE_KEY);
@@ -73,7 +75,7 @@ export const loadSleepTimer = (now: number): SleepTimerState | null => {
         return null;
     }
     const timer = toTimer(parseJson(raw));
-    if (!timer || now >= timer.deadline) {
+    if (!timer || (timer.kind === 'minutes' && now >= timer.deadline)) {
         writeItem(session, SLEEP_TIMER_STORAGE_KEY, null);
         return null;
     }
