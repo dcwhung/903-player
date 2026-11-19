@@ -25,6 +25,7 @@ import { parsePort, previewUrl, startPreview, viteBin } from './previewServer.mj
 import {
     VERSION_PLACEHOLDER,
     VERSION_TEXT,
+    VISUAL_TIMEZONE,
     VISUAL_VIEWPORTS,
     diffGeometry,
     parseVisualArgs,
@@ -217,6 +218,8 @@ const capture = async (browser, base, { scene, viewport }, file) => {
             hasTouch: viewport.touch,
             colorScheme: 'dark',
             deviceScaleFactor: 1,
+            // 本地時間（月亮掣 21:00–05:00 時段、日期）唔跟跑嘅機時區，同 E2E_NOW 嘅 +08:00 一致
+            timezoneId: VISUAL_TIMEZONE,
             // 減少動態：app 直接切換、唔播過場，碟唔自轉。過場行到一半或者啱啱行完嘅 layer，
             // Chromium 嘅 raster 每次有幾粒 pixel 唔同（tab 滑塊邊、卡片圓角）；暫停嘅碟停喺隨機角度。
             // 靜止版面同正常動態一樣，比對嘅係版面

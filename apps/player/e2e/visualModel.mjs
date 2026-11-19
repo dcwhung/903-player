@@ -35,6 +35,23 @@ export const VISUAL_VIEWPORTS = Object.freeze([
     viewport('desktop', 1920, 1080),
 ]);
 
+/**
+ * 截圖 context 嘅時區：app 有跟裝置本地時間嘅 UI（例如 21:00–05:00 先出嘅睡眠 timer 月亮掣），
+ * 唔固定就會跟跑嘅機（CI 係 UTC），同一個 E2E_NOW 出唔同畫面
+ */
+export const VISUAL_TIMEZONE = 'Asia/Hong_Kong';
+/** 日間情境嘅時鐘起點：同 harness E2E_NOW 同一日（30/11 星期一），14:00 唔喺夜間時段 */
+export const VISUAL_DAY_NOW = '2026-11-30T14:00:00+08:00';
+const DAY_SUFFIX = '-day';
+
+/** 複製指定情境做日間版：id 加 -day、時鐘換做 now，seed / run 照用；冇呢個情境就 throw */
+export const dayScenes = (scenes, ids, now) =>
+    ids.map((id) => {
+        const scene = scenes.find((item) => item.id === id);
+        if (!scene) throw new Error(`冇呢個情境：${id}`);
+        return { ...scene, id: `${id}${DAY_SUFFIX}`, now };
+    });
+
 /** 截圖檔名（唔連副檔名）同報告用嘅名 */
 export const shotName = (sceneId, { id }) => `${sceneId}@${id}`;
 
