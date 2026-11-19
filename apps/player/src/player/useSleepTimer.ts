@@ -44,15 +44,17 @@ const createClock = () => {
 
 const idle = () => () => undefined;
 
-/** ticking 先每秒 re-render；restartKey 變（開 / 改 timer）就重新訂閱，唔好顯示停咗好耐嘅舊時間 */
+/**
+ * ticking 先每秒 re-render；restartKey 變（開 / 改 timer）就換一個新時鐘（由而家起計）並重新訂閱，
+ * 唔好顯示停咗好耐嘅舊時間（S-1182：render 期間跟 prop 調整 state，唔使 disable exhaustive-deps）
+ */
 const useClock = (ticking: boolean, restartKey: unknown): number => {
-    const [clock] = useState(createClock);
-    const subscribe = useMemo(
-        () => (ticking ? (listener: () => void) => clock.subscribe(listener) : idle),
-        // restartKey 唔喺 callback 入面用，但佢變就要新 subscribe（攞最新時間）
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [clock, ticking, restartKey],
-    );
+    const [current, setCurrent] = useState(() => ({ key: restartKey, clock: createClock() }));
+    if (current.key !== restartKey) {
+        setCurrent({ key: restartKey, clock: createClock() });
+    }
+    const { clock } = current;
+    const subscribe = useMemo(() => (ticking ? clock.subscribe : idle), [clock, ticking]);
     return useSyncExternalStore(subscribe, clock.getSnapshot, clock.getSnapshot);
 };
 

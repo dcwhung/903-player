@@ -105,6 +105,7 @@ export const BOOKMARK_MIGRATED_STORAGE_KEY = '903player:bookmarks-migrated:v1';
 export const TODAY_INFO_SEEN_STORAGE_KEY = '903player:today-info-seen:v1';
 
 export const MS_PER_SECOND = 1000;
+export const SECONDS_PER_MINUTE = 60;
 /** 報畀鎖屏嘅播放速度（app 冇變速） */
 export const MEDIA_SESSION_PLAYBACK_RATE = 1;
 /**

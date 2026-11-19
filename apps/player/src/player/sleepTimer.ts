@@ -2,10 +2,9 @@ import {
     MS_PER_SECOND,
     NIGHT_END_HOUR,
     NIGHT_START_HOUR,
+    SECONDS_PER_MINUTE,
     SLEEP_TIMER_MINUTES,
 } from '../config/constants';
-
-const SECONDS_PER_MINUTE = 60;
 
 export type SleepTimerMinutes = (typeof SLEEP_TIMER_MINUTES)[number];
 /** 15 / 30 / 60 分鐘，或者「播完呢集」 */
