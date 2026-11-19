@@ -441,6 +441,8 @@
     --mini-player-height: calc(var(--touch-target-min) + var(--touch-target) + var(--space-4));
     /* 得一段錄音（例如廣播劇一集）冇指示點：頂同底一樣 --space-4，唔使留指示點嘅撳得到範圍 */
     --mini-player-height-single: calc(var(--touch-target) + var(--space-4) * 2);
+    /* mini player 播放掣外圈（播放進度，M7）粗幼；同 MiniPlayerProgress 嘅 SVG（44 單位入面 3）一致 */
+    --mini-progress-ring: calc(3px * var(--ui-scale));
     /*
      * mini player 長按 → 左滑關閉（useDismissGesture）：撳住縮少少、浮起大少少；
      * 時間同 src/components/pages/home/MiniPlayer/miniPlayerDismiss.ts LONG_PRESS_MS / DISMISS_SLIDE_MS 一致
