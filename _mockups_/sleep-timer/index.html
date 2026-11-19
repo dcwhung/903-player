@@ -129,196 +129,203 @@
     <body>
         <main>
             <header>
-                <h1>9d 睡眠 timer：入口位置 preview</h1>
+                <h1>9d 睡眠 timer preview（v2：grill 之後）</h1>
                 <p>
-                    真 app 截圖（v2.0.0）加上新掣。月亮掣冇開 = 細 icon；開咗 =
-                    實色膠囊顯示剩餘分鐘（例：23）。 撳月亮開底部選單：15 / 30 / 60
-                    分鐘、播完呢集；時間到用 10 秒淡出音量先暫停。
+                    真 app 截圖（v2.0.0）加上新掣。每行可以左右掃睇其他裝置。入口用方案
+                    B；月亮掣只喺裝置本地時間 21:00–05:00 出現，timer 開緊時一直出。
                 </p>
             </header>
-
             <section>
-                <h2><span class="tag">方案 A</span>唱片圈左上角（ⓘ 嘅對面）</h2>
+                <h2>日間（05:00–21:00）：零改變</h2>
+                <p>冇月亮掣，同而家 v2.0.0 一模一樣；e2e:visual 新加嘅 14:00 情境要 0 diff。</p>
+                <div class="row">
+                    <figure>
+                        <img src="phone-none.webp" alt="手機直：日間" loading="lazy" />
+                        <figcaption>手機直・日間</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="square-none.webp" alt="HomeView：日間" loading="lazy" />
+                        <figcaption>HomeView・日間</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="phoneL-none.webp" alt="手機橫：日間" loading="lazy" />
+                        <figcaption>手機橫・日間</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="tabletL-none.webp" alt="平板橫主頁播放卡：日間" loading="lazy" />
+                        <figcaption>平板橫主頁播放卡・日間</figcaption>
+                    </figure>
+                </div>
+            </section>
+            <section>
+                <h2>夜間 21:00–05:00：月亮掣（方案 B）</h2>
                 <p>
-                    所有裝置同一個位：唱片圈頂嗰行左邊，同右邊
-                    ⓘ（有資料嘅節目先有）對稱；控制列（由頭 / 播放 / 收藏）唔郁。
+                    內頁頁頭右上（HomeView 喺清單掣左邊）；闊版主頁播放卡喺卡頭下面嗰行左邊。未開 =
+                    細 icon；開咗 = 實色膠囊顯示剩餘分鐘（向上取整）。
                 </p>
                 <div class="row">
                     <figure>
-                        <img src="phone-a-off.webp" alt="手機直：方案 A 未開" loading="lazy" />
+                        <img src="phone-b-off.webp" alt="手機直：未開" loading="lazy" />
                         <figcaption>手機直・未開</figcaption>
                     </figure>
                     <figure>
-                        <img src="phone-a-on.webp" alt="手機直：方案 A 開咗" loading="lazy" />
+                        <img src="phone-b-on.webp" alt="手機直：開咗" loading="lazy" />
                         <figcaption>手機直・開咗（剩 23 分）</figcaption>
                     </figure>
                     <figure>
-                        <img src="square-a-off.webp" alt="HomeView：方案 A 未開" loading="lazy" />
+                        <img src="square-b-off.webp" alt="HomeView：未開" loading="lazy" />
                         <figcaption>HomeView・未開</figcaption>
                     </figure>
                     <figure>
-                        <img src="square-a-on.webp" alt="HomeView：方案 A 開咗" loading="lazy" />
-                        <figcaption>HomeView・開咗</figcaption>
+                        <img src="square-b-on.webp" alt="HomeView：開咗" loading="lazy" />
+                        <figcaption>HomeView・開咗（剩 23 分）</figcaption>
                     </figure>
                     <figure>
-                        <img src="phoneL-a-on.webp" alt="手機橫：方案 A 開咗" loading="lazy" />
-                        <figcaption>手機橫・開咗</figcaption>
+                        <img src="phoneL-b-off.webp" alt="手機橫：未開" loading="lazy" />
+                        <figcaption>手機橫・未開</figcaption>
                     </figure>
                     <figure>
-                        <img
-                            src="tabletL-a-on.webp"
-                            alt="平板橫主頁播放卡：方案 A 開咗"
-                            loading="lazy"
-                        />
-                        <figcaption>平板橫主頁播放卡・開咗</figcaption>
-                    </figure>
-                </div>
-            </section>
-
-            <section>
-                <h2><span class="tag">方案 B</span>頁頭右上（返回掣對面）</h2>
-                <p>
-                    內頁：頁頭右邊（HomeView
-                    喺清單掣左邊）。主頁闊版播放卡冇頁頭，放喺卡頭下面嗰行左邊（同方案 A 差唔多）。
-                    手機橫嘅頁頭喺左欄，掣會離唱片較遠。
-                </p>
-                <div class="row">
-                    <figure>
-                        <img src="phone-b-off.webp" alt="手機直：方案 B 未開" loading="lazy" />
-                        <figcaption>手機直・未開</figcaption>
+                        <img src="phoneL-b-on.webp" alt="手機橫：開咗" loading="lazy" />
+                        <figcaption>手機橫・開咗（剩 23 分）</figcaption>
                     </figure>
                     <figure>
-                        <img src="phone-b-on.webp" alt="手機直：方案 B 開咗" loading="lazy" />
-                        <figcaption>手機直・開咗</figcaption>
+                        <img src="tabletL-b-off.webp" alt="平板橫主頁播放卡：未開" loading="lazy" />
+                        <figcaption>平板橫主頁播放卡・未開</figcaption>
                     </figure>
                     <figure>
-                        <img src="square-b-off.webp" alt="HomeView：方案 B 未開" loading="lazy" />
-                        <figcaption>HomeView・未開</figcaption>
-                    </figure>
-                    <figure>
-                        <img src="square-b-on.webp" alt="HomeView：方案 B 開咗" loading="lazy" />
-                        <figcaption>HomeView・開咗</figcaption>
-                    </figure>
-                    <figure>
-                        <img src="phoneL-b-on.webp" alt="手機橫：方案 B 開咗" loading="lazy" />
-                        <figcaption>手機橫・開咗</figcaption>
-                    </figure>
-                    <figure>
-                        <img
-                            src="tabletL-b-on.webp"
-                            alt="平板橫主頁播放卡：方案 B 開咗"
-                            loading="lazy"
-                        />
-                        <figcaption>平板橫主頁播放卡・開咗</figcaption>
+                        <img src="tabletL-b-on.webp" alt="平板橫主頁播放卡：開咗" loading="lazy" />
+                        <figcaption>平板橫主頁播放卡・開咗（剩 23 分）</figcaption>
                     </figure>
                 </div>
             </section>
-
             <section>
-                <h2>底部選單（兩個方案共用）</h2>
+                <h2>底部選單</h2>
                 <p>
-                    未開：揀一項即開始。開咗：頂右顯示剩餘時間、剔住而家嗰項、多一粒「關閉
-                    timer」；揀另一項 = 由而家重新計。 「播完呢集」只喺重溫 /
-                    廣播劇有效，直播時變灰。平板 / 電腦闊版選單最闊 480px 置中。
+                    未開：頂部「再開 30 分鐘」（上次揀嘅時長，localStorage 記住），下面 15 / 30 / 60
+                    分鐘、播完呢集（直播變灰）；一揀即計，暫停中都照計。開緊：顯示剩餘時間、剔住而家嗰項、「關閉
+                    timer」；揀另一項 = 由而家重新計。時間到直接暫停（唔淡出）。
                 </p>
                 <div class="row">
                     <figure>
-                        <img src="phone-sheet.webp" alt="手機直：選單未開 timer" loading="lazy" />
+                        <img src="phone-sheet.webp" alt="手機直：選單未開" loading="lazy" />
                         <figcaption>手機直・未開</figcaption>
                     </figure>
                     <figure>
-                        <img
-                            src="phone-sheet-on.webp"
-                            alt="手機直：選單開咗 timer"
-                            loading="lazy"
-                        />
+                        <img src="phone-sheet-on.webp" alt="手機直：選單開緊" loading="lazy" />
                         <figcaption>手機直・開緊</figcaption>
                     </figure>
                     <figure>
-                        <img
-                            src="square-sheet-on.webp"
-                            alt="HomeView：選單開咗 timer"
-                            loading="lazy"
-                        />
+                        <img src="square-sheet.webp" alt="HomeView：選單未開" loading="lazy" />
+                        <figcaption>HomeView・未開</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="square-sheet-on.webp" alt="HomeView：選單開緊" loading="lazy" />
                         <figcaption>HomeView・開緊</figcaption>
                     </figure>
                     <figure>
-                        <img
-                            src="phoneL-sheet-on.webp"
-                            alt="手機橫：選單開咗 timer"
-                            loading="lazy"
-                        />
+                        <img src="phoneL-sheet.webp" alt="手機橫：選單未開" loading="lazy" />
+                        <figcaption>手機橫・未開</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="phoneL-sheet-on.webp" alt="手機橫：選單開緊" loading="lazy" />
                         <figcaption>手機橫・開緊</figcaption>
                     </figure>
                     <figure>
                         <img
-                            src="tabletL-sheet-on.webp"
-                            alt="平板橫：選單開咗 timer"
+                            src="tabletL-sheet.webp"
+                            alt="平板橫主頁播放卡：選單未開"
                             loading="lazy"
                         />
-                        <figcaption>平板橫・開緊</figcaption>
+                        <figcaption>平板橫主頁播放卡・未開</figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            src="tabletL-sheet-on.webp"
+                            alt="平板橫主頁播放卡：選單開緊"
+                            loading="lazy"
+                        />
+                        <figcaption>平板橫主頁播放卡・開緊</figcaption>
                     </figure>
                 </div>
             </section>
-
             <section>
-                <h2>Mini player（可選）</h2>
+                <h2>Mini player</h2>
                 <p>
-                    Mini player 唔加入口（位唔夠）；timer 開緊先喺播放掣左邊出細膠囊「🌙
-                    23」，撳佢開同一個選單。冇開 timer 時 mini player 零改變。
+                    日間零改變；21:00–05:00 播放掣左邊出細月亮（撳開同一個選單）；開緊變「🌙
+                    23」膠囊。實作時標題 / 日期會縮窄讓位（preview 係疊上去，未縮）。
                 </p>
                 <div class="row">
                     <figure>
-                        <img
-                            src="phone-mini-off.webp"
-                            alt="手機主頁 mini player：冇 timer"
-                            loading="lazy"
-                        />
-                        <figcaption>冇 timer（現狀，唔變）</figcaption>
+                        <img src="phone-mini-off.webp" alt="mini player 日間" loading="lazy" />
+                        <figcaption>日間（唔變）</figcaption>
                     </figure>
                     <figure>
                         <img
-                            src="phone-mini-on.webp"
-                            alt="手機主頁 mini player：timer 開緊"
+                            src="phone-mini-night.webp"
+                            alt="mini player 夜間未開"
                             loading="lazy"
                         />
+                        <figcaption>夜間・未開</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="phone-mini-on.webp" alt="mini player timer 開緊" loading="lazy" />
                         <figcaption>timer 開緊</figcaption>
                     </figure>
                 </div>
             </section>
-
             <section>
-                <h2>要你決定</h2>
+                <h2>已定決定（grill 結果）</h2>
                 <table>
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>問題</th>
-                            <th>建議</th>
+                            <th>項目</th>
+                            <th>決定</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>1</td>
-                            <td>入口用方案 A 定 B？</td>
-                            <td>A：所有裝置同一位、貼近唱片同控制；B 喺手機橫離唱片遠</td>
+                            <td>入口</td>
+                            <td>方案 B：頁頭右上 / HomeView 清單掣左邊 / 闊版播放卡卡頭下面左邊</td>
                         </tr>
                         <tr>
-                            <td>2</td>
-                            <td>Mini player 開緊 timer 時出唔出「🌙 23」？</td>
-                            <td>出（冇開 timer 時零改變）</td>
+                            <td>顯示時段</td>
+                            <td>裝置本地時間 21:00–05:00（每分鐘檢查）；開緊 timer 一直出</td>
                         </tr>
                         <tr>
-                            <td>3</td>
-                            <td>時間到暫停之後，timer 自動消失定保留上次揀嘅時長做預設？</td>
-                            <td>消失；下次再撳月亮重新揀</td>
+                            <td>Mini player</td>
+                            <td>21:00–05:00 有月亮入口；開緊變膠囊</td>
                         </tr>
                         <tr>
-                            <td>4</td>
-                            <td>手動暫停 / 轉節目時 timer 點算？</td>
+                            <td>選項</td>
+                            <td>15 / 30 / 60 分鐘、播完呢集（直播灰）；唔做淡出</td>
+                        </tr>
+                        <tr>
+                            <td>播完呢集</td>
                             <td>
-                                照計（同 iOS
-                                時鐘「停止播放」一樣）；轉去直播時「播完呢集」自動改成剩餘分鐘
+                                留喺同一集：播完（ended）先停；轉集 / 轉直播：用剩餘時間做
+                                background timer 繼續計
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>時間到</td>
+                            <td>直接暫停；記住上次時長，下次選單頂出「再開 N 分鐘」；唔自動重開</td>
+                        </tr>
+                        <tr>
+                            <td>暫停 / 轉節目</td>
+                            <td>照計；一揀即計</td>
+                        </tr>
+                        <tr>
+                            <td>準確度</td>
+                            <td>
+                                絕對截止時間 + timeupdate
+                                檢查；sessionStorage，重新載入照計；過咗期就清走唔播
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>e2e:visual</td>
+                            <td>
+                                lane 0 先加 14:00 日間情境；日間 0 diff；22:30 只准月亮掣 pixel diff
+                                + mini player 標題 / 日期位置 diff
                             </td>
                         </tr>
                     </tbody>
