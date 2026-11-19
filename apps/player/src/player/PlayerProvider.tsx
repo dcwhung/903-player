@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AudioController, createAudioElement } from './AudioController';
 import { PlayerContext, type PlayerActions } from './playerContext';
+import { SleepTimerController } from './SleepTimerController';
+import { SleepTimerContext } from './sleepTimerContext';
 import type { Track } from '../types/track';
 import { useMediaSession } from './useMediaSession';
 
@@ -33,7 +35,10 @@ export const PlayerProvider = ({
     const [controller] = useState(
         () => shared ?? new AudioController(audio ?? createAudioElement()),
     );
+    // 睡眠 timer（9d）跟住同一個 controller：時間到暫停、「播完呢集」擋自動接下一集
+    const [sleepTimer] = useState(() => new SleepTimerController(controller));
     useEffect(() => controller.attach(), [controller]);
+    useEffect(() => sleepTimer.attach(), [sleepTimer]);
     useEffect(() => controller.setNextTrack(nextTrack), [controller, nextTrack]);
     const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
 
@@ -59,5 +64,9 @@ export const PlayerProvider = ({
     useMediaSession(actions, state, remote);
     const value = useMemo(() => ({ ...state, ...actions }), [state, actions]);
 
-    return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
+    return (
+        <PlayerContext.Provider value={value}>
+            <SleepTimerContext.Provider value={sleepTimer}>{children}</SleepTimerContext.Provider>
+        </PlayerContext.Provider>
+    );
 };
