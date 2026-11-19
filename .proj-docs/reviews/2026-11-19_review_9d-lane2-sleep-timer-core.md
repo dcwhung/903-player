@@ -62,3 +62,17 @@ React re-render：`SleepTimerContext` value 係 `useState` 固定 instance；con
 ## Handoff receipt
 
 見 subagent 回報（`HANDOFF_RECEIPT`）。
+
+## Re-review（2026-11-19，`f3bd2cf2`）
+
+範圍：只驗 S-1180 / S-1181 / S-1182 嘅修正（`9cb87041..f3bd2cf2`）。Hard gates all pass（改動檔 eslint / prettier / `tsc -p tsconfig.app.json` 0；`vitest related` 101 files / 1517 tests 綠）。
+
+| ID     | Commit     | 驗證                                                                                                                                                                                                                                            | 結果 |
+| ------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| S-1180 | `d414abc5` | `loadSleepTimer` 只清過期 `minutes`；`episode` 交 `attach` 嘅 `check`：載返同一集 → 等播完先清（新 test）；冇載嘢 / 另一集 → 照 deadline 淨係清、唔 `pause` / `play`（新 test）。同用戶決定 (1) 同 plan「重新載入過咗期就清走、唔自動播」都一致 | ✅   |
+| S-1181 | `f3bd2cf2` | `SECONDS_PER_MINUTE` 搬入 `config/constants.ts`，`sleepTimer.ts` 同 `utils/time.ts` 共用                                                                                                                                                        | ✅   |
+| S-1182 | `f3bd2cf2` | `useClock` 改用 render 期間跟 `restartKey` 換新 clock（React 認可嘅「prop 變調整 state」做法），`eslint-disable` 已刪；原有 tick / 換 timer 攞最新時間 test 照綠                                                                                | ✅   |
+
+註（畀 Lane 3，唔係 finding）：S-1180 之後，重新載入過期嘅「播完呢集」喺 constructor 到 `attach` effect 之間仍然喺 snapshot（剩餘 = 0）；Lane 3 UI 如果喺首次 paint 已經讀 `useSleepTimer`，可能閃一格實色月亮 `0:00`，Lane 3 review 時留意。
+
+**Re-review 結果：✅ pass（100 / 100），backlog S-1180–S-1182 已清。**
