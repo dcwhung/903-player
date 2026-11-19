@@ -153,3 +153,9 @@ export const NIGHT_START_HOUR = 21;
 export const NIGHT_END_HOUR = 5;
 /** 夜間時段每分鐘（對正分鐘邊界）重新檢查 */
 export const NIGHT_WINDOW_CHECK_MS = 60_000;
+/** 睡眠 timer 每晚自動（用戶 2026-11-19）：時間 + 選項 + 今晚觸發咗未（localStorage） */
+export const SLEEP_TIMER_SCHEDULE_STORAGE_KEY = '903player:sleep-timer-schedule:v1';
+/** 每晚自動嘅時間四捨五入到幾多分鐘 */
+export const SLEEP_TIMER_SCHEDULE_ROUND_MINUTES = 5;
+/** 排程時間之後幾耐內開始播先生效（同 NIGHT_END_HOUR:00 以早到者為準） */
+export const SLEEP_TIMER_SCHEDULE_WINDOW_HOURS = 3;

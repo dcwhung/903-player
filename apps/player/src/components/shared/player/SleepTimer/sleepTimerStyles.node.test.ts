@@ -18,39 +18,79 @@ const tight = (value: string | undefined): string =>
 const SQUARE =
     '@media (min-width: 520px) and (max-width: 568px) and (min-height: 520px) and (max-height: 568px)';
 
+const BLUR_SUPPORTS =
+    '@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) and (color: color-mix(in srgb, red, blue))';
+
 describe('sleep timer sheet styles', () => {
-    it('should paint the panel 80% opaque from a token, keeping a solid fallback', () => {
+    it('should paint the panel 80% opaque with a backdrop blur from tokens, solid where unsupported', () => {
         const sheet = cssDeclarations(sheetCss, '.sheet');
+        const blurred = atRuleDeclarations(sheetCss, BLUR_SUPPORTS, '.sheet');
         expect(tokens['--sleep-timer-sheet-opacity']).toBe('80%');
-        expect(
-            tight(
-                atRuleDeclarations(
-                    sheetCss,
-                    '@supports (color: color-mix(in srgb, red, blue))',
-                    '.sheet',
-                ).background,
-            ),
-        ).toBe(
+        expect(tokens['--sleep-timer-sheet-blur']).toBe('14px');
+        expect(sheet.background).toBe('var(--color-surface)');
+        expect(sheet['backdrop-filter']).toBeUndefined();
+        expect(tight(blurred.background)).toBe(
             'color-mix(in srgb, var(--color-surface) var(--sleep-timer-sheet-opacity), transparent)',
         );
-        expect(sheet.background).toBe('var(--color-surface)');
+        expect(blurred['backdrop-filter']).toBe('blur(var(--sleep-timer-sheet-blur))');
+        expect(blurred['-webkit-backdrop-filter']).toBe('blur(var(--sleep-timer-sheet-blur))');
     });
 
-    it('should outline inactive options with the old button colour and no fill', () => {
+    it('should lay the options out on 6 columns: numbers span 2, the bottom row spans 3', () => {
+        expect(cssDeclarations(sheetCss, '.options')['grid-template-columns']).toBe(
+            'repeat(6, minmax(0, 1fr))',
+        );
+        expect(cssDeclarations(sheetCss, '.caption')['grid-column']).toBe('span 6');
+        expect(cssDeclarations(sheetCss, ".option[data-kind='number']")['grid-column']).toBe(
+            'span 2',
+        );
+        expect(cssDeclarations(sheetCss, ".option[data-kind='wide']")['grid-column']).toBe(
+            'span 3',
+        );
+    });
+
+    it('should draw unselected options as muted text in a grey outline, no fill', () => {
         const option = cssDeclarations(sheetCss, '.option');
         expect(option.background).toBe('transparent');
         expect(option.border).toBe('var(--sleep-timer-option-border) solid var(--color-track)');
-        expect(option.color).toBe('var(--color-text)');
+        expect(option.color).toBe('var(--color-text-muted)');
     });
 
-    it('should highlight the last / running option like the now playing date cell: cream border, cream bold text, no fill', () => {
-        const active = cssDeclarations(
-            sheetCss,
-            ".option[data-last='true'], .option[aria-pressed='true']",
+    it('should draw the selected option with a solid cream outline and bigger cream bold text', () => {
+        const selected = cssDeclarations(sheetCss, ".option[aria-pressed='true']");
+        expect(selected['border-color']).toBe('var(--color-accent)');
+        expect(selected['border-style']).toBe('solid');
+        expect(selected.color).toBe('var(--color-accent-text)');
+        expect(
+            cssDeclarations(sheetCss, ".option[aria-pressed='true'] .optionLabel")['font-size'],
+        ).toBe('var(--sleep-timer-option-selected-size)');
+        expect(
+            cssDeclarations(
+                sheetCss,
+                ".option[data-kind='number'][aria-pressed='true'] .optionLabel",
+            )['font-size'],
+        ).toBe('var(--sleep-timer-number-selected-size)');
+        expect(tokens['--sleep-timer-option-selected-size']).toBe('calc(19px * var(--ui-scale))');
+        expect(tokens['--sleep-timer-number-size']).toBe('calc(19px * var(--ui-scale))');
+        expect(tokens['--sleep-timer-number-selected-size']).toBe('calc(22px * var(--ui-scale))');
+    });
+
+    it('should draw the nightly schedule with a dashed cream outline and cream text', () => {
+        const scheduled = cssDeclarations(sheetCss, ".option[data-scheduled='true']");
+        expect(scheduled['border-color']).toBe('var(--color-accent)');
+        expect(scheduled['border-style']).toBe('dashed');
+        expect(scheduled.color).toBe('var(--color-accent-text)');
+    });
+
+    it('should show the remaining time bold and the scheduled time faded, top right', () => {
+        expect(cssDeclarations(sheetCss, '.status').color).toBe('var(--color-accent-text)');
+        expect(cssDeclarations(sheetCss, ".status[data-kind='remaining']")['font-weight']).toBe(
+            '700',
         );
-        expect(active['border-color']).toBe('var(--color-accent)');
-        expect(active.color).toBe('var(--color-accent-text)');
-        expect(active.background).toBe('transparent');
+        const scheduled = cssDeclarations(sheetCss, ".status[data-kind='scheduled']");
+        expect(scheduled['font-weight']).toBe('500');
+        expect(scheduled.opacity).toBe('var(--sleep-timer-scheduled-opacity)');
+        expect(tokens['--sleep-timer-scheduled-opacity']).toBe('0.7');
     });
 });
 

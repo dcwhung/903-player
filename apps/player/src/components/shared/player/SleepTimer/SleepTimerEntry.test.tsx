@@ -58,7 +58,7 @@ describe('SleepTimerEntry', () => {
         expect(button).not.toHaveTextContent(/\d/);
     });
 
-    it('should open the menu with four options in a 2x2 grid and no remarks', async () => {
+    it('should open the menu: caption, 15 / 30 / 60, then end of episode | stop, no remarks', async () => {
         renderWithSleepTimer(inPage());
 
         click(moon()!);
@@ -67,13 +67,18 @@ describe('SleepTimerEntry', () => {
         expect(dialog).toHaveAttribute('aria-modal', 'true');
         expect(moon()).toHaveAttribute('aria-expanded', 'true');
         const grid = within(dialog).getByTestId('sleep-timer-options');
-        expect(
-            within(grid)
-                .getAllByRole('button')
-                .map((b) => b.textContent),
-        ).toEqual(['15 分鐘', '30 分鐘', '60 分鐘', '播完呢集']);
-        // 未開：冇「剩餘｜關閉」tab 掣
-        expect(within(dialog).queryByRole('group')).not.toBeInTheDocument();
+        expect(grid).toHaveTextContent(/^幾多分鐘後/);
+        const buttons = within(grid).getAllByRole('button');
+        expect(buttons.map((b) => b.textContent)).toEqual(['15', '30', '60', '播完呢集', '停用']);
+        expect(buttons.slice(0, 3).map((b) => b.getAttribute('aria-label'))).toEqual([
+            '15 分鐘',
+            '30 分鐘',
+            '60 分鐘',
+        ]);
+        // 冇 timer、冇排程：「停用」揀中，表頭右邊乜都唔出（冇「剩餘｜關閉」tab 掣）
+        expect(option('停用')).toHaveAttribute('aria-pressed', 'true');
+        expect(within(dialog).queryByTestId('sleep-timer-status')).not.toBeInTheDocument();
+        expect(within(dialog).queryByRole('group', { name: '休眠狀態' })).not.toBeInTheDocument();
     });
 
     it('should start the timer, close the menu and count down as mm:ss', async () => {
@@ -163,19 +168,21 @@ describe('SleepTimerEntry', () => {
         expect(bar.parentElement).toBe(screen.getByTestId('home'));
     });
 
-    it('should outline the last option while no timer is running', async () => {
+    it('should mark the nightly schedule with a dashed option and "HH:MM 開始" once the timer ends', async () => {
         renderWithSleepTimer(inPage());
         startTimer('60 分鐘');
         act(() => vi.advanceTimersByTime(60 * MINUTE_MS));
 
         click(moon()!);
 
-        expect(option('60 分鐘')).toHaveAttribute('data-last', 'true');
+        expect(option('60 分鐘')).toHaveAttribute('data-scheduled', 'true');
         expect(option('60 分鐘')).toHaveAttribute('aria-pressed', 'false');
-        expect(option('15 分鐘')).toHaveAttribute('data-last', 'false');
+        expect(option('15 分鐘')).toHaveAttribute('data-scheduled', 'false');
+        expect(option('停用')).toHaveAttribute('aria-pressed', 'true');
+        expect(within(sheet()!).getByTestId('sleep-timer-status')).toHaveTextContent('22:30 開始');
     });
 
-    it('should show the running option solid and a remaining｜off tab while running', async () => {
+    it('should show the running option selected and "剩餘 mm:ss" top right while running', async () => {
         renderWithSleepTimer(inPage());
         startTimer('30 分鐘');
         act(() => vi.advanceTimersByTime(6 * MINUTE_MS + 46 * SECOND_MS));
@@ -183,25 +190,54 @@ describe('SleepTimerEntry', () => {
         click(moon()!);
 
         expect(option('30 分鐘')).toHaveAttribute('aria-pressed', 'true');
+        expect(option('30 分鐘')).toHaveAttribute('data-scheduled', 'false');
         expect(option('15 分鐘')).toHaveAttribute('aria-pressed', 'false');
-        const tabs = within(sheet()!).getByRole('group', { name: '休眠狀態' });
-        const [remaining, off] = within(tabs).getAllByRole('button');
-        expect(remaining).toHaveTextContent('剩餘 23:14');
-        expect(remaining).toHaveAttribute('aria-pressed', 'true');
-        expect(off).toHaveTextContent('關閉');
-        expect(off).toHaveAttribute('aria-pressed', 'false');
+        expect(option('停用')).toHaveAttribute('aria-pressed', 'false');
+        const status = within(sheet()!).getByTestId('sleep-timer-status');
+        expect(status).toHaveTextContent('剩餘 23:14');
+        expect(status).toHaveAttribute('data-kind', 'remaining');
     });
 
-    it('should cancel the timer from the off tab', async () => {
+    it('should stop only tonight with 停用 while running, keeping the nightly schedule', async () => {
         renderWithSleepTimer(inPage());
         startTimer('30 分鐘');
         click(moon()!);
 
-        click(within(sheet()!).getByRole('button', { name: '關閉' }));
+        click(option('停用'));
 
         expect(sheet()).not.toBeInTheDocument();
         expect(moon()).toHaveAttribute('data-active', 'false');
         expect(document.querySelector('[data-sleep-timer-bar]')).not.toBeInTheDocument();
+        click(moon()!);
+        expect(within(sheet()!).getByTestId('sleep-timer-status')).toHaveTextContent('22:30 開始');
+        expect(option('30 分鐘')).toHaveAttribute('data-scheduled', 'true');
+    });
+
+    it('should cancel the nightly schedule with 停用 when no timer is running', async () => {
+        renderWithSleepTimer(inPage());
+        startTimer('30 分鐘');
+        click(moon()!);
+        click(option('停用'));
+        click(moon()!);
+
+        click(option('停用'));
+
+        expect(sheet()).not.toBeInTheDocument();
+        click(moon()!);
+        expect(within(sheet()!).queryByTestId('sleep-timer-status')).not.toBeInTheDocument();
+        expect(option('30 分鐘')).toHaveAttribute('data-scheduled', 'false');
+    });
+
+    it('should show a scheduled "end of episode" without its remaining time', async () => {
+        const { loadEpisode } = renderWithSleepTimer(inPage());
+        await loadEpisode(600, 1);
+        startTimer('播完呢集 剩餘時間：9:59');
+        click(moon()!);
+        click(option('停用'));
+
+        click(moon()!);
+
+        expect(option('播完呢集')).toHaveAttribute('data-scheduled', 'true');
     });
 
     it('should restart from now when another option is picked while running', async () => {

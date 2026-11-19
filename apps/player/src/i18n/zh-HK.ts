@@ -114,10 +114,16 @@ export const zhHK = {
         minutes: '{minutes} 分鐘',
         episode: '播完呢集',
         episodeRemaining: '剩餘時間：{time}',
-        // 開緊時標題右邊 tab 掣（主頁「節目｜廣播劇」款）
-        status: '休眠狀態',
+        // 表頭右上：開緊 = 剩餘時間；有每晚排程未開 = 幾點開始
         remaining: '剩餘 {time}',
-        off: '關閉',
+        scheduledAt: '{time} 開始',
+        // 15 / 30 / 60 上面嗰行細字（掣只寫數字，讀屏用 minutes）
+        minutesCaption: '幾多分鐘後',
+        // 開緊 = 只停今晚；未開再撳 = 取消每晚排程
+        stop: '停用',
+        // 每晚自動生效時嘅 toast
+        autoStartMinutes: '休眠 {minutes} 分鐘後啟動',
+        autoStartEpisode: '休眠播完呢集後啟動',
     },
     miniPlayer: {
         region: '正在播放（今日節目）',

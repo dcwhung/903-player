@@ -1,5 +1,10 @@
-import { SLEEP_TIMER_LAST_STORAGE_KEY, SLEEP_TIMER_STORAGE_KEY } from '../config/constants';
+import {
+    SLEEP_TIMER_LAST_STORAGE_KEY,
+    SLEEP_TIMER_SCHEDULE_STORAGE_KEY,
+    SLEEP_TIMER_STORAGE_KEY,
+} from '../config/constants';
 import { isSleepTimerOption, type SleepTimerOption, type SleepTimerState } from './sleepTimer';
+import { toSchedule, type SleepTimerSchedule } from './sleepTimerSchedule';
 
 /**
  * 私密瀏覽 / 封鎖網站資料時 storage 可能拋錯：一律當冇，唔可以令播放器壞（9d）
@@ -94,3 +99,11 @@ export const loadLastOption = (): SleepTimerOption | null => {
 
 export const saveLastOption = (option: SleepTimerOption): void =>
     writeItem(local, SLEEP_TIMER_LAST_STORAGE_KEY, JSON.stringify(option));
+
+/** 每晚自動排程（跨分頁 / 重開 app 都記得）；壞資料當冇 */
+export const loadSchedule = (): SleepTimerSchedule | null =>
+    toSchedule(parseJson(readItem(local, SLEEP_TIMER_SCHEDULE_STORAGE_KEY)));
+
+/** null = 取消排程 */
+export const saveSchedule = (schedule: SleepTimerSchedule | null): void =>
+    writeItem(local, SLEEP_TIMER_SCHEDULE_STORAGE_KEY, schedule && JSON.stringify(schedule));

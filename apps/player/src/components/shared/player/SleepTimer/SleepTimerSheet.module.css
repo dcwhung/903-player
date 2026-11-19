@@ -53,14 +53,20 @@
     transition: transform var(--arc-sheet-slide-ms) ease-out;
 }
 
-/* 底色 80% 不透明（用戶 2026-11-19）：隱約見到後面嘅頁面 */
-@supports (color: color-mix(in srgb, red, blue)) {
+/*
+ * 底色 80% 不透明 + 背景模糊（用戶 2026-11-19）：隱約見到後面嘅頁面但唔搶眼。
+ * 兩樣都識先用；唔識 backdrop-filter 嘅就留返上面實色，唔會半透明疊住後面嘅字
+ */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) and
+    (color: color-mix(in srgb, red, blue)) {
     .sheet {
         background: color-mix(
             in srgb,
             var(--color-surface) var(--sleep-timer-sheet-opacity),
             transparent
         );
+        -webkit-backdrop-filter: blur(var(--sleep-timer-sheet-blur));
+        backdrop-filter: blur(var(--sleep-timer-sheet-blur));
     }
 }
 
@@ -95,10 +101,9 @@
     background: var(--color-track);
 }
 
-/* 表頭：月亮 + 「睡眠 timer」，開緊時 tab 掣推去最右（窄嘅播放卡放唔落就落下一行，唔好出界） */
+/* 表頭：月亮 +「休眠」，右上剩餘時間 / 排程時間 */
 .header {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
     min-height: var(--touch-target);
@@ -117,46 +122,42 @@
     white-space: nowrap;
 }
 
-/*
- * 「剩餘 23:14｜關閉」：主頁「節目｜廣播劇」款（HomeTabs.module.css，.claude/CLAUDE.md Tab 掣款式）——
- * 膠囊軌道（--home-tab-track 底、--home-tab-inset 內距），揀中格強調色膠囊墊底，其他格透明底
- */
-.tabs {
-    display: flex;
-    gap: var(--home-tab-inset);
+/* 右上：開緊「剩餘 23:14」（粗）；有每晚排程未開「22:30 開始」（淡） */
+.status {
     margin-left: auto;
-    padding: var(--home-tab-inset);
-    border-radius: var(--radius-full);
-    background: var(--home-tab-track);
-    flex-shrink: 0;
-}
-
-.tab {
-    min-height: var(--touch-target);
-    padding: 0 var(--space-3);
-    border: none;
-    border-radius: var(--radius-full);
-    background: transparent;
-    color: var(--color-text);
-    font-size: var(--font-size-sm);
+    color: var(--color-accent-text);
+    font-size: var(--font-size-lg);
     font-variant-numeric: tabular-nums;
-    font-weight: 500;
     white-space: nowrap;
 }
 
-.tab[aria-pressed='true'] {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
+.status[data-kind='remaining'] {
     font-weight: 700;
 }
 
-/* 2×2 大掣 */
+.status[data-kind='scheduled'] {
+    font-weight: 500;
+    opacity: var(--sleep-timer-scheduled-opacity);
+}
+
+/*
+ * D 款（用戶 2026-11-19，所有裝置同一款）：6 欄 grid。第一行細字「幾多分鐘後」，
+ * 15 / 30 / 60 各佔 2 欄，下面「播完呢集」｜「停用」各佔 3 欄
+ */
 .options {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: var(--space-3);
 }
 
+.caption {
+    grid-column: span 6;
+    margin-bottom: calc(-1 * var(--space-1));
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+/* 未揀中：淡白字 + 灰框，冇底色 */
 .option {
     display: flex;
     flex-direction: column;
@@ -164,12 +165,20 @@
     align-items: center;
     justify-content: center;
     min-height: var(--sleep-timer-option-height);
-    padding: var(--space-2);
-    /* 冇底色：用返以前掣底色做框邊（用戶 2026-11-19） */
+    padding: var(--space-1);
     border: var(--sleep-timer-option-border) solid var(--color-track);
     border-radius: var(--radius-md);
     background: transparent;
-    color: var(--color-text);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.option[data-kind='number'] {
+    grid-column: span 2;
+}
+
+.option[data-kind='wide'] {
+    grid-column: span 3;
 }
 
 .optionLabel {
@@ -177,20 +186,34 @@
     font-weight: 700;
 }
 
+.option[data-kind='number'] .optionLabel {
+    font-size: var(--sleep-timer-number-size);
+}
+
 .optionDetail {
     color: var(--color-text-muted);
     font-size: var(--font-size-xs);
-    font-variant-numeric: tabular-nums;
 }
 
-/*
- * 揀中（未開 = 上次揀嗰粒，撳一下即開始；開緊 = 而家嗰粒）：似日子條「現正播放」嗰格
- *（DateStrip.module.css）——強調色框邊 + 強調色粗字，冇底色
- */
-.option[data-last='true'],
+/* 揀中（開緊嘅選項；未開 =「停用」）：奶黃實線框 + 奶黃粗字，字大一級（似日子條「現正播放」） */
 .option[aria-pressed='true'] {
     border-color: var(--color-accent);
-    background: transparent;
+    border-style: solid;
+    color: var(--color-accent-text);
+}
+
+.option[aria-pressed='true'] .optionLabel {
+    font-size: var(--sleep-timer-option-selected-size);
+}
+
+.option[data-kind='number'][aria-pressed='true'] .optionLabel {
+    font-size: var(--sleep-timer-number-selected-size);
+}
+
+/* 每晚排程（未開時）：奶黃虛線框 + 奶黃字 */
+.option[data-scheduled='true'] {
+    border-color: var(--color-accent);
+    border-style: dashed;
     color: var(--color-accent-text);
 }
 

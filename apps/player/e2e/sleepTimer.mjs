@@ -52,7 +52,7 @@ const checkDaytimeHidden = async ({ browser, base, errors, log }) => {
     await ctx.close();
 };
 
-/** 夜間：線條月亮 → 揀 15 分鐘 → 實色 + 分秒 + 頁頂條 → 改 30 分鐘 → 關閉 */
+/** 夜間：線條月亮 → 揀 15 分鐘 → 實色 + 分秒 + 頁頂條 → 改 30 分鐘 →「停用」 */
 const checkStartChangeCancel = async ({ browser, base, errors, log }) => {
     const { ctx, p } = await newE2EPage(browser, errors);
     await p.goto(`${base}${SHOW_ROUTE}`);
@@ -67,7 +67,7 @@ const checkStartChangeCancel = async ({ browser, base, errors, log }) => {
 
     await moon.click();
     const options = await menu(p).getByTestId('sleep-timer-options').getByRole('button').count();
-    log(options === 4, `睡眠 timer：選單有 4 粒大掣（${options}）`);
+    log(options === 5, `睡眠 timer：選單有 15 / 30 / 60 / 播完呢集 / 停用 5 粒掣（${options}）`);
     await menu(p).getByRole('button', { name: '15 分鐘' }).click();
     await menu(p).waitFor({ state: 'detached', timeout: UI_WAIT_MS });
     const text = (await moon.textContent()) ?? '';
@@ -93,11 +93,11 @@ const checkStartChangeCancel = async ({ browser, base, errors, log }) => {
     log(/^(30:00|29:\d\d)$/.test(changed), `睡眠 timer：改 30 分鐘由而家重新計（${changed}）`);
 
     await moon.click();
-    await menu(p).getByRole('button', { name: '關閉' }).click();
+    await menu(p).getByRole('button', { name: '停用' }).click();
     await menu(p).waitFor({ state: 'detached', timeout: UI_WAIT_MS });
     log(
         (await moon.getAttribute('aria-label')) === MOON_OFF && !(await pageBar(p).isVisible()),
-        '睡眠 timer：撳「關閉」變返未開、冇進度條',
+        '睡眠 timer：撳「停用」變返未開、冇進度條',
     );
     return ctx.close();
 };
@@ -257,6 +257,39 @@ const checkSquareHeader = async ({ browser, base, errors, log }) => {
     return ctx.close();
 };
 
+/**
+ * 每晚自動（用戶 2026-11-19）：22:30 手動揀 30 分鐘 = 每晚 22:30；「停用」只停今晚，選單右上「22:30 開始」；
+ * 第二晚 22:30 播緊就自動開，出 toast「休眠 30 分鐘後啟動」
+ */
+const checkNightly = async ({ browser, base, errors, log }) => {
+    const { ctx, p } = await newE2EPage(browser, errors);
+    await p.goto(`${base}${SHOW_ROUTE}`);
+    await ensurePlaying(p);
+    const moon = moonIn(pageHeader(p));
+    await pick(p, moon, '30 分鐘');
+    await pick(p, moon, '停用');
+    await moon.click();
+    const status = menu(p).getByTestId('sleep-timer-status');
+    const scheduled = menu(p).getByRole('button', { name: '30 分鐘' });
+    log(
+        (await status.textContent()) === '22:30 開始' &&
+            (await scheduled.getAttribute('data-scheduled')) === 'true',
+        `睡眠 timer：「停用」只停今晚，選單右上「${await status.textContent()}」、30 虛線框`,
+    );
+    await p.keyboard.press('Escape');
+    await menu(p).waitFor({ state: 'detached', timeout: UI_WAIT_MS });
+
+    await p.clock.fastForward(24 * 60 * MINUTE_MS);
+    const toast = p.getByText('休眠 30 分鐘後啟動');
+    const shown = await isShown(toast, { timeout: UI_WAIT_MS });
+    const text = (await moon.textContent()) ?? '';
+    log(
+        shown && /^(30:00|29:\d\d)$/.test(text),
+        `睡眠 timer：第二晚 22:30 播緊自動開 30 分鐘，出 toast（${shown}、${text}）`,
+    );
+    return ctx.close();
+};
+
 /** run.mjs 入口：每個情境各自一個 context / section */
 export const runSleepTimerChecks = async (env, section) => {
     await section('睡眠 timer：日間', () => checkDaytimeHidden(env));
@@ -266,4 +299,5 @@ export const runSleepTimerChecks = async (env, section) => {
     await section('睡眠 timer：mini player', () => checkMiniPlayer(env));
     await section('睡眠 timer：闊版主頁', () => checkWideHomeCard(env));
     await section('睡眠 timer：HomeView 頁頭', () => checkSquareHeader(env));
+    await section('睡眠 timer：每晚自動', () => checkNightly(env));
 };
