@@ -2,6 +2,15 @@ import type { ReactNode } from 'react';
 import { t } from '../../../../i18n/t';
 import { PERCENT, toPercent } from '../../../../utils/ratio';
 import styles from './MiniPlayer.module.css';
+import {
+    CENTER,
+    CIRCUMFERENCE,
+    DASH_DECIMALS,
+    RADIUS,
+    RING_WIDTH,
+    START_AT_TOP,
+    VIEW_BOX_SIZE,
+} from './miniPlayerRing';
 
 interface MiniPlayerProgressProps {
     /** 0–1 */
@@ -11,23 +20,6 @@ interface MiniPlayerProgressProps {
     /** 圈入面嘅播放 / 暫停掣 */
     children: ReactNode;
 }
-
-/*
- * viewBox 用播放掣原本嘅 44 × 44（--touch-target），外圈粗幼 3（--mini-progress-ring）：
- * 成個 SVG 跟 --ui-scale 縮放，圈同 CSS 留嘅位（.toggle padding）一齊放大，唔會錯開
- */
-const VIEW_BOX_SIZE = 44;
-const RING_WIDTH = 3;
-const CENTER = VIEW_BOX_SIZE / 2;
-const RADIUS = CENTER - RING_WIDTH / 2;
-/*
- * 圓周（唔用 pathLength：舊版 iOS Safari 對 circle 嘅 pathLength 計 dash 唔準），
- * 小數留兩個位，每秒更新唔使出長串數字
- */
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-const DASH_DECIMALS = 2;
-/** 由 3 點（SVG 圓起點）轉去 12 點，之後順時針 */
-const START_AT_TOP = `rotate(-90 ${CENTER} ${CENTER})`;
 
 /**
  * 播放進度外圈（M7）：包住播放 / 暫停掣，由 12 點順時針；軌道淡色。
