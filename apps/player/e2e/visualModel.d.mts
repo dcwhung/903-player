@@ -15,6 +15,15 @@ export interface VisualViewport {
 export const VISUAL_VIEWPORTS: readonly VisualViewport[];
 export const GEOMETRY_REPORT_LIMIT: number;
 
+export const VISUAL_TIMEZONE: string;
+export const VISUAL_DAY_NOW: string;
+
+export function dayScenes<S extends { id: string; now?: string }>(
+    scenes: readonly S[],
+    ids: readonly string[],
+    now: string,
+): (S & { now: string })[];
+
 export function shotName(sceneId: string, viewport: { id: string }): string;
 
 export interface VisualFilter {
