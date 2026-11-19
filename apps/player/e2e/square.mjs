@@ -1,6 +1,6 @@
 // HomeView 節目頁 e2e（P10 lane 6，_mockups_/home-view 節目頁 S3 / S5）：544×544 方形螢幕，
 // 播放器為主（唱片 256px 置中、頁頭下面 16px、日子條貼近底邊），集數清單收入頁頭清單掣（badge = 集數）
-// 開嘅 sheet：由底升起、icon 變實色；再撳掣、✕、Escape、向下拉都閂到，閂咗焦點返清單掣；減少動態即刻切換。
+// 開嘅 sheet：由底升起、清單掣冇揀中狀態（開閂一樣，P10 v2.0.2）；再撳掣、✕、Escape、向下拉都閂到，閂咗焦點返清單掣；減少動態即刻切換。
 // 今日節目頁（P10 lane 7a，S6）：同一個普通播放器（冇卡疊 / 指示點），「現正播放」下面節目 selector
 // （揀中有外框、未上架灰色停用、多過 4 個左右捲，仲有格嗰邊淡出），頁頭清單掣 badge = 今日節目數、ⓘ 跟住而家個節目；
 // 第一次入（未睇過今日節目資料）自動開節目表 sheet、每行展開資料，之後唔再開（用戶 2026-11-18）。
@@ -122,7 +122,7 @@ const checkLayout = async (env) => {
     await ctx.close();
 };
 
-/** sheet 開咗：dialog、icon 實色（aria-expanded）、焦點入表、由畫面 38% 開始貼底、行數 = 集數 */
+/** sheet 開咗：dialog、aria-expanded 但掣冇揀中樣（透明底，P10 v2.0.2）、焦點入表、由畫面 38% 開始貼底、行數 = 集數 */
 const checkOpened = async (env, p, how) => {
     const shown = await isShown(sheet(p), { timeout: SHEET_WAIT_MS });
     // 等升起動畫完先量位置
@@ -151,8 +151,8 @@ const checkOpened = async (env, p, how) => {
             pageTitle: document.querySelector('main header h1')?.textContent ?? null,
             focused: dialog?.contains(document.activeElement) ?? false,
             rows: dialog?.querySelectorAll('li[data-episode-key]').length ?? 0,
-            filled: getComputedStyle(
-                document.querySelector('button[aria-expanded="true"]') ?? document.body,
+            buttonBg: getComputedStyle(
+                document.querySelector('button[aria-label^="集數清單"]') ?? document.body,
             ).backgroundColor,
         };
     });
@@ -162,18 +162,18 @@ const checkOpened = async (env, p, how) => {
             expanded === 'true' &&
             state.focused &&
             state.rows === EPISODES &&
-            state.filled !== 'rgba(0, 0, 0, 0)' &&
+            state.buttonBg === 'rgba(0, 0, 0, 0)' &&
             squareSheetSized(state) &&
             state.banner !== null &&
             state.banner === state.pageTitle &&
             infoBannerSized(state) &&
             state.arrows === 0 &&
             state.closeOnBanner,
-        `HomeView 清單 sheet（${how}）：升起、icon 實色、焦點入表、${state.rows} 行、頂有節目 banner（同資料 sheet 64:27、✕ 喺圖上、冇箭咀）、最高 75%、480px 置中（${JSON.stringify(state)}）`,
+        `HomeView 清單 sheet（${how}）：升起、清單掣冇揀中樣、焦點入表、${state.rows} 行、頂有節目 banner（同資料 sheet 64:27、✕ 喺圖上、冇箭咀）、最高 75%、480px 置中（${JSON.stringify(state)}）`,
     );
 };
 
-/** sheet 閂咗：dialog 冇咗、icon 返原樣、焦點返清單掣 */
+/** sheet 閂咗：dialog 冇咗、焦點返清單掣 */
 const checkClosed = async (env, p, how) => {
     const gone = await isShown(sheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
     const expanded = await listButton(p).getAttribute('aria-expanded');
@@ -183,7 +183,7 @@ const checkClosed = async (env, p, how) => {
     );
     env.log(
         gone && expanded === 'false' && focused,
-        `HomeView 清單 sheet 由${how}閂：表冇咗、icon 返原樣、焦點返清單掣（expanded ${expanded}、focus ${focused}）`,
+        `HomeView 清單 sheet 由${how}閂：表冇咗、焦點返清單掣（expanded ${expanded}、focus ${focused}）`,
     );
 };
 

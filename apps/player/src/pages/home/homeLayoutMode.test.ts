@@ -19,19 +19,19 @@ describe('homeLayoutMode', () => {
     );
 });
 
-// HomeView 由內頁返主頁（P10 v2.0.1 用戶反饋）：播放卡收埋（唔停播），全闊格 + 右邊把手
-describe('homeLayoutMode with the card folded away', () => {
+// HomeView（P10 v2.0.2 用戶反饋）：永遠唔出卡，有 mini player 就全闊格 + 右邊把手
+describe('homeLayoutMode on HomeView (handle only)', () => {
     it.each([
-        // 闊版, 有 mini player, 卡閂咗, 卡收埋, 版面
+        // 闊版, 有 mini player, 卡閂咗, 淨係把手, 版面
         [true, true, false, true, 'fillWithHandle'],
-        // 冇嘢播：收埋都冇卡可以收，照舊填滿
+        // 冇嘢播：冇把手，照舊填滿
         [true, false, false, true, 'fill'],
         [true, true, true, true, 'fillWithHandle'],
         [false, true, false, true, 'stack'],
     ] as const)(
-        'should pick the layout for wide %s, mini player %s, closed %s, folded %s',
-        (wide, hasMiniPlayer, cardClosed, cardFolded, expected) => {
-            expect(homeLayoutMode({ wide, hasMiniPlayer, cardClosed, cardFolded })).toBe(expected);
+        'should pick the layout for wide %s, mini player %s, closed %s, handle only %s',
+        (wide, hasMiniPlayer, cardClosed, handleOnly, expected) => {
+            expect(homeLayoutMode({ wide, hasMiniPlayer, cardClosed, handleOnly })).toBe(expected);
         },
     );
 });
