@@ -68,16 +68,16 @@ describe('DailyDramaPage item info（P9.5 #12）', () => {
 });
 
 /*
- * v2.0.1 用戶反饋（2026-11-19）：每部裝置嘅每日劇集數清單頂都有資料 sheet 嘅 banner（圖 + 劇集名），
- * 喺「集數 / 共 N 集」上面；簡介唔喺清單出（撳 ⓘ 睇）
+ * v2.0.1 用戶反饋（2026-11-19）：只有 HomeView 由下彈出嘅集數 sheet 先有 banner；
+ * 其他裝置嘅每日劇集數清單欄唔加（「集數」上面冇 banner），資料 sheet 照舊有
  */
-describe('DailyDramaPage episode list banner', () => {
+describe('DailyDramaPage episode list column (non-HomeView)', () => {
     beforeEach(() => {
         vi.useFakeTimers({ toFake: ['Date'] });
         vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
         Element.prototype.scrollIntoView = vi.fn();
         HTMLElement.prototype.scrollTo = vi.fn();
-        // 有進度：唔自動彈資料 sheet（佢都有 banner）
+        // 有進度：唔自動彈資料 sheet（佢有 banner）
         saveProgress(C18[0]?.id ?? '', 60, 600);
     });
     afterEach(() => {
@@ -94,24 +94,16 @@ describe('DailyDramaPage episode list banner', () => {
         ['Duo open portrait', { width: 612, height: 876 }],
         ['Duo cover landscape', { width: 612, height: 426 }],
         ['Duo open landscape', { width: 876, height: 612 }],
-    ])(
-        'should top the list with the drama name on %s, without the summary',
-        async (_, viewport) => {
-            stubViewport(viewport);
-            openC18();
+    ])('should have no banner above 集數 on %s', async (_, viewport) => {
+        stubViewport(viewport);
+        openC18();
 
-            const region = await screen.findByRole('region', { name: '集數' });
-            const banner = within(region).getByTestId('info-banner');
-            expect(within(banner).getByText('18 樓 C 座')).toBeInTheDocument();
-            expect(within(banner).queryByRole('heading')).not.toBeInTheDocument();
-            const heading = within(region).getByRole('heading', { name: '集數' });
-            expect(
-                banner.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING,
-            ).toBeTruthy();
-            expect(within(region).queryByText('每日劇示範簡介')).not.toBeInTheDocument();
-            expect(
-                within(region).queryByRole('button', { name: '劇集資料' }),
-            ).not.toBeInTheDocument();
-        },
-    );
+        const heading = await screen.findByRole('heading', { name: '集數' });
+        expect(heading).toBeInTheDocument();
+        expect(screen.queryByTestId('info-banner')).not.toBeInTheDocument();
+        // 劇集有圖：資料 sheet 照舊有 banner（證明上面唔係因為冇圖先冇）
+        await userEvent.click(screen.getByRole('button', { name: '劇集資料' }));
+        const sheet = await screen.findByRole('dialog', { name: '劇集資料' });
+        expect(within(sheet).getByTestId('info-banner')).toBeInTheDocument();
+    });
 });

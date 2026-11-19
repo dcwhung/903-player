@@ -397,27 +397,3 @@
         display: none;
     }
 }
-
-/*
- * 清單頂有 banner（EpisodeList top，節目頁 / 每日劇，v2.0.1 用戶反饋）：banner + 標題列 + 清單一齊捲，
- * 捲動 panel 由 ul 換做呢層（同 .list 一樣填滿剩低高度、捲到盡頭唔帶動成頁）；ul 唔再自己捲
- */
-.scroller {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-}
-
-.scroller > .list {
-    flex: none;
-    overflow: visible;
-}
-
-/* banner 同下面標題列之間嘅空位（同頁面間距一樣） */
-.top {
-    flex-shrink: 0;
-    margin-bottom: var(--space-3);
-}

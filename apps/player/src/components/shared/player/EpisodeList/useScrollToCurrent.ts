@@ -8,7 +8,7 @@ import type { EpisodeItem, EpisodeScrollAlign } from './episodeListTypes';
 const ORIENTATION_QUERY = '(orientation: landscape)';
 
 /** top：捲到播緊嗰集（頂、露半行上一集）；新清單冇播緊嗰集就由頂開始 */
-const scrollToTop = (list: HTMLElement, fresh: boolean) => {
+const scrollToTop = (list: HTMLUListElement, fresh: boolean) => {
     const row = list.querySelector('[aria-current="true"]');
     const behavior = fresh ? 'auto' : scrollBehavior();
     if (row) scrollRowToTop(list, row.closest('li') ?? row, behavior);
@@ -33,7 +33,7 @@ const useScrollMemo = (listKey: string | undefined, landscape: boolean | undefin
  * 同一張清單轉集（自動播下一集）就順滑捲
  */
 export const useScrollToCurrent = (
-    listRef: RefObject<HTMLElement | null>,
+    listRef: RefObject<HTMLUListElement | null>,
     items: EpisodeItem[],
     align: EpisodeScrollAlign,
 ) => {

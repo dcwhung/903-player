@@ -1,5 +1,4 @@
 import type { ComponentProps, ReactNode } from 'react';
-import { InfoBanner } from '../../components/shared/common/ItemInfo/InfoBanner';
 import { ListButton } from '../../components/shared/common/ListSheet/ListButton';
 import { ListSheet } from '../../components/shared/common/ListSheet/ListSheet';
 import { PageHeaderActions } from '../../components/shared/common/PageHeader/PageHeaderActions';
@@ -16,21 +15,15 @@ import page from '../shared/Page.module.css';
 
 type ListSheetState = ReturnType<typeof useListSheet>;
 
-/*
- * 節目頁 / 每日劇集數清單頂（v2.0.1 用戶反饋 2026-11-19）：同資料 sheet 同一個 banner（useShowInfo /
- * useDailyInfo 嘅 sheet.banner：圖 + 名 + 播放時間），同一個比例同樣式；冇箭咀，主持 / 簡介撳 ⓘ 睇。
- * 冇圖（冇 banner）就同資料 sheet 一樣唔出，清單照舊由「集數 / 共 N 集」開始
+/**
+ * HomeView 集數表頂（由底彈出嘅 ListSheet，v2.0.1 用戶反饋 2026-11-19）：同資料 sheet 同一個 banner
+ * （圖 + 名 + 播放時間）、同一個比例，✕ 疊喺圖上；冇箭咀，主持 / 簡介撳 ⓘ 睇。節目頁、每日劇共用。
+ * 其他裝置嘅清單欄唔加 banner（用戶：只有由下彈出嘅 sheet 先要）
  */
-
-/** HomeView 集數表：banner 做表頂（✕ 疊喺圖上），同資料 sheet 一樣比例 */
 export const listSheetInfo = ({ banner }: ItemInfoSheetView['sheet']) => ({
     banner,
     bannerSize: 'info' as const,
 });
-
-/** 其他裝置：banner 喺清單欄「集數 / 共 N 集」上面，同清單一齊捲（EpisodeList top） */
-export const listTop = ({ banner }: ItemInfoSheetView['sheet']) =>
-    banner && <InfoBanner banner={banner} placement="list" />;
 
 interface ShowEpisodesProps {
     /** HomeView（SQUARE_QUERY）：清單收入 sheet；否則照舊係清單欄 */
@@ -42,7 +35,7 @@ interface ShowEpisodesProps {
     /** 由「我的收藏」撳入嚟嗰集：捲過去、短暫 highlight */
     focusKey: string | undefined;
     list: ListSheetState;
-    /** 節目資料（useShowInfo sheet）：清單頂 banner（listSheetInfo / listTop） */
+    /** 節目資料（useShowInfo sheet）：HomeView 表頂 banner（listSheetInfo） */
     info: ItemInfoSheetView['sheet'];
 }
 
@@ -73,12 +66,7 @@ export const ShowEpisodes = ({
     ) : (
         <div className={page.listColumn}>
             {header}
-            <EpisodeList
-                items={items}
-                onSelect={onSelect}
-                focusKey={focusKey}
-                top={listTop(info)}
-            />
+            <EpisodeList items={items} onSelect={onSelect} focusKey={focusKey} />
         </div>
     );
 

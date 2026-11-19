@@ -486,12 +486,10 @@ describe('ShowPage', () => {
         renderWithProviders(<ShowPage />, { ...ROUTE, recordings: RECORDINGS });
 
         const region = await screen.findByRole('region', { name: '集數' });
-        // v2.0.1：清單頂有 banner，捲動 panel 係包住 banner + 標題列 + 清單嗰層（EpisodeList top）
-        const panel = region.querySelector('[data-sheet-scroll]');
+        const list = within(region).getByRole('list');
         await waitFor(() => expect(HTMLElement.prototype.scrollTo).toHaveBeenCalled());
         const scrolled = vi.mocked(HTMLElement.prototype.scrollTo).mock.contexts;
-        expect(panel).not.toBeNull();
-        expect(scrolled.every((el) => el === panel)).toBe(true);
+        expect(scrolled.every((el) => el === list)).toBe(true);
         expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
     });
 
