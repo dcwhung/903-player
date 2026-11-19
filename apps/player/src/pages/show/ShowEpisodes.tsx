@@ -8,11 +8,22 @@ import {
     episodeCountText,
     type EpisodeItem,
 } from '../../components/shared/player/EpisodeList/EpisodeList';
+import type { ItemInfoSheetView } from '../../hooks/useItemInfoSheet';
 import type { useListSheet } from '../../hooks/useListSheet';
 import { t } from '../../i18n/t';
+import { bannerDetails } from '../../selectors/itemInfo';
 import page from '../shared/Page.module.css';
 
 type ListSheetState = ReturnType<typeof useListSheet>;
+
+/**
+ * HomeView 集數表頂（P10 v2.0.1 用戶反饋）：同資料 sheet 一樣嘅 banner（圖 + 名 + 播放時間），
+ * 表頭箭咀展開 banner 以外嘅資料（主持 / 簡介，bannerDetails）。節目頁、每日劇共用
+ */
+export const listSheetInfo = ({ banner, sections, label }: ItemInfoSheetView['sheet']) => ({
+    banner,
+    details: { info: bannerDetails(sections, banner), label },
+});
 
 interface ShowEpisodesProps {
     /** HomeView（SQUARE_QUERY）：清單收入 sheet；否則照舊係清單欄 */
@@ -24,6 +35,8 @@ interface ShowEpisodesProps {
     /** 由「我的收藏」撳入嚟嗰集：捲過去、短暫 highlight */
     focusKey: string | undefined;
     list: ListSheetState;
+    /** 節目資料（useShowInfo sheet）：HomeView 表頂 banner + 箭咀展開資料 */
+    info: ItemInfoSheetView['sheet'];
 }
 
 /**
@@ -37,6 +50,7 @@ export const ShowEpisodes = ({
     onSelect,
     focusKey,
     list,
+    info,
 }: ShowEpisodesProps) =>
     square ? (
         <ListSheet
@@ -45,6 +59,7 @@ export const ShowEpisodes = ({
             title={t('episodes.title')}
             summary={episodeCountText(items)}
             returnFocusTo={list.buttonRef}
+            {...listSheetInfo(info)}
         >
             <EpisodeList items={items} onSelect={onSelect} focusKey={focusKey} heading={false} />
         </ListSheet>

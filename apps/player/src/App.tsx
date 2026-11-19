@@ -3,6 +3,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toast } from './components/shared/common/Toast/Toast';
 import { RecordingsProvider } from './data/RecordingsProvider';
 import { useReopenHomePlayerCardOnPlay } from './hooks/homePlayerCardClosed';
+import { HomeAwayObserver } from './hooks/homeReturn';
 import { useRestoreMiniPlayerOnPlay } from './hooks/miniPlayerDismissed';
 import { useViewportGap } from './hooks/useViewportGap';
 import { DramaPage } from './pages/drama/DramaPage';
@@ -41,6 +42,8 @@ export const App = ({ playerController }: AppProps) => {
                 <PlaybackObservers />
                 {/* 轉頁要同步 render（唔用 startTransition），View Transitions 先影到新一頁（utils/viewTransition） */}
                 <HashRouter useTransitions={false}>
+                    {/* 記低去過內頁未：HomeView 由內頁返主頁收埋播放卡（hooks/homeReturn） */}
+                    <HomeAwayObserver />
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/show/:showId" element={<ShowPage />} />

@@ -1,6 +1,7 @@
 import type { Drama, ShowConfig } from '@903-player/catalog';
 import {
     arcInfoSections,
+    bannerDetails,
     dailyInfoBanner,
     dailyInfoSections,
     formatPlayTime,
@@ -278,5 +279,34 @@ describe('arcInfoSections disc', () => {
         expect(arcInfoSections(drama(), '戀愛二分一', { summary: '短篇' }, 'disc.webp')).toEqual([
             { kind: 'arc', title: '戀愛二分一', art: 'disc.webp', summary: '短篇' },
         ]);
+    });
+});
+
+// HomeView 清單 sheet 表頭（P10 v2.0.1）：banner 代替咗嗰段，箭咀展開淨低嘅欄位（同資料 sheet 一樣）
+describe('bannerDetails', () => {
+    const full = show({
+        airTime: { start: '22:00', end: '23:45' },
+        hosts: ['主持甲'],
+        summary: '簡介',
+        tileArt: 'tile.webp',
+    });
+
+    it('should give the hosts and summary under a show banner, without the play time it already shows', () => {
+        expect(bannerDetails(showInfoSections(full), showInfoBanner(full))).toEqual({
+            hosts: ['主持甲'],
+            summary: '簡介',
+        });
+    });
+
+    it('should give the daily drama summary under its banner', () => {
+        const daily = drama({ kind: 'daily', summary: '劇集簡介', tileArt: 'd.webp' });
+        expect(bannerDetails(dailyInfoSections(daily), dailyInfoBanner(daily))).toEqual({
+            summary: '劇集簡介',
+        });
+    });
+
+    it('should give nothing without a banner or a matching section', () => {
+        expect(bannerDetails(showInfoSections(full), undefined)).toEqual({});
+        expect(bannerDetails([], showInfoBanner(full))).toEqual({});
     });
 });

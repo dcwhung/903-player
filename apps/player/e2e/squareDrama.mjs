@@ -30,14 +30,16 @@ const OTHER_ARC = '你生日所以我生日';
 const OTHER_EPISODES = 3;
 const OTHER_BUTTON = `${OTHER_ARC}集數清單，共 ${OTHER_EPISODES} 集`;
 const DAILY_BUTTON = /^集數清單，共 \d+ 集$/;
-// mockup：唱片 256px、頁頭下面 16px；sheet 由畫面 38% 開始
+// mockup：唱片 256px、頁頭下面 16px
 const DISC_PX = 256;
 const HEADER_GAP_PX = 16;
-const SHEET_TOP_SHARE = 0.38;
 const TOLERANCE_PX = 1.5;
 const SHEET_TOLERANCE_PX = 3;
-// mockup 短篇表 banner 約 110px 高（544 闊）
-const BANNER_PX = 110;
+// P10 v2.0.1 用戶反饋：集數 / 短篇 / 全集表跟內容高、最高畫面 75%（頂最高到 25%），闊度同資料 sheet 一樣 480px 置中
+const SQUARE_SHEET_MAX_SHARE = 0.75;
+const SQUARE_SHEET_WIDTH_PX = 480;
+// 短篇表 banner 比例同 mockup 一樣（544 闊約 110px 高）；表 480 闊
+const BANNER_PX = (SQUARE_SHEET_WIDTH_PX * 110) / SQUARE.width;
 const BANNER_TOLERANCE_PX = 4;
 // 開 / 閂動畫完成都夠
 const SHEET_WAIT_MS = 3000;
@@ -49,6 +51,14 @@ const allSheet = (p) => p.getByRole('dialog', { name: '全集' });
 const arcSheet = (p) => p.getByRole('dialog', { name: '集數' });
 const allButton = (p) => p.getByRole('button', { name: ALL_BUTTON });
 const arcButton = (p) => p.getByRole('button', { name: ARC_BUTTON });
+
+/** HomeView 集數 / 短篇 / 全集表（square.mjs 都用）：貼底、頂唔高過畫面 25%、同資料 sheet 一樣 480px 闊置中 */
+export const squareSheetSized = ({ top, bottom, left, width }) =>
+    top !== null &&
+    top >= SQUARE.height * (1 - SQUARE_SHEET_MAX_SHARE) - SHEET_TOLERANCE_PX &&
+    near(bottom, SQUARE.height, SHEET_TOLERANCE_PX) &&
+    near(width, SQUARE_SHEET_WIDTH_PX, SHEET_TOLERANCE_PX) &&
+    near(left, (SQUARE.width - SQUARE_SHEET_WIDTH_PX) / 2, SHEET_TOLERANCE_PX);
 
 /** 第一次入（新 context 冇進度）：全集表一入嚟就自動開 */
 const openSeries = async (env, contextOptions = {}) => {
@@ -199,6 +209,8 @@ const lookArcSheet = (p) =>
         return {
             top: r.top,
             bottom: r.bottom,
+            left: r.left,
+            width: r.width,
             bannerTitle: banner?.querySelector('h2')?.textContent ?? null,
             bannerH: banner?.getBoundingClientRect().height ?? null,
             rows: dialog.querySelectorAll('li[data-episode-key]').length,
@@ -237,9 +249,8 @@ const checkSeriesArc = async (env) => {
             near(s.bannerH, BANNER_PX, BANNER_TOLERANCE_PX) &&
             s.rows === ARC_EPISODES &&
             s.all &&
-            near(s.top, SQUARE.height * SHEET_TOP_SHARE, SHEET_TOLERANCE_PX) &&
-            near(s.bottom, SQUARE.height, SHEET_TOLERANCE_PX),
-        `HomeView 全集表揀短篇即刻換去短篇表：焦點入表 ${inside}、banner「${s.bannerTitle}」${s.bannerH}px、${s.rows} 集、有全集掣、由 38% 開始（${JSON.stringify(s)}）`,
+            squareSheetSized(s),
+        `HomeView 全集表揀短篇即刻換去短篇表：焦點入表 ${inside}、banner「${s.bannerTitle}」${s.bannerH}px、${s.rows} 集、有全集掣、最高 75%、480px 置中（${JSON.stringify(s)}）`,
     );
     await p.keyboard.press('Escape');
     await isShown(arcSheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
@@ -267,13 +278,13 @@ const checkSeriesArc = async (env) => {
     const arcGone = await isShown(arcSheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
     const expanded = await arcButton(p).getAttribute('aria-expanded');
     await settle(p);
-    const allTop = await allSheet(p).evaluate((el) => el.getBoundingClientRect().top);
+    const all = await allSheet(p).evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, left: r.left, width: r.width };
+    });
     env.log(
-        switched &&
-            arcGone &&
-            expanded === 'true' &&
-            near(allTop, SQUARE.height * SHEET_TOP_SHARE, SHEET_TOLERANCE_PX),
-        `HomeView 短篇表「全集」掣換去全集表（全集表 ${switched}、短篇表冇咗 ${arcGone}、清單掣 expanded ${expanded}、全集表頂 ${allTop}）`,
+        switched && arcGone && expanded === 'true' && squareSheetSized(all),
+        `HomeView 短篇表「全集」掣換去全集表（全集表 ${switched}、短篇表冇咗 ${arcGone}、清單掣 expanded ${expanded}、全集表 ${JSON.stringify(all)}）`,
     );
     await p.keyboard.press('Escape');
     await isShown(allSheet(p), { state: 'detached', timeout: SHEET_WAIT_MS });
@@ -396,12 +407,21 @@ const checkDaily = async (env) => {
     logPlayerLayout(env, l, 'HomeView 每日劇集頁');
     await button.click();
     const opened = await isShown(arcSheet(p), { timeout: SHEET_WAIT_MS });
-    const rows = await arcSheet(p).evaluate(
-        (el) => el.querySelectorAll('li[data-episode-key]').length,
-    );
+    await settle(p);
+    const s = await arcSheet(p).evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+            rows: el.querySelectorAll('li[data-episode-key]').length,
+            banner: el.querySelector('[data-testid="info-banner"] h2')?.textContent ?? null,
+            top: r.top,
+            bottom: r.bottom,
+            left: r.left,
+            width: r.width,
+        };
+    });
     env.log(
-        opened && rows >= Number(count),
-        `HomeView 每日劇集頁：清單掣開集數 sheet（${rows} 行，badge ${count}）`,
+        opened && s.rows >= Number(count) && s.banner !== null && squareSheetSized(s),
+        `HomeView 每日劇集頁：清單掣開集數 sheet（${s.rows} 行，badge ${count}）、頂有劇集 banner、最高 75%、480px 置中（${JSON.stringify(s)}）`,
     );
     await ctx.close();
 };

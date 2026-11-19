@@ -12,7 +12,7 @@ import { checkNoPointerRing, checkTabWrap, focusedName, scrimPoint } from './foc
 import { PHONE, ensurePlaying, isShown, newE2EPage, runSection, succeeds } from './harness.mjs';
 import { CATALOG_DIR, CATALOG_FOLDER, openWithCatalog } from './remoteCatalog.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
-import { SQUARE_DRAMA_SCENARIOS } from './squareDrama.mjs';
+import { SQUARE_DRAMA_SCENARIOS, squareSheetSized } from './squareDrama.mjs';
 
 /** HomeView 假設尺寸；刻意寫死做獨立對照，唔 import src 常數 */
 const SQUARE = { width: 544, height: 544 };
@@ -26,14 +26,12 @@ const SELECTOR_VISIBLE = 4;
 const SELECTOR = '[data-show-selector]';
 const EPISODES = SAMPLE_RECORDINGS.filter((r) => r.showId === 'gongzi').length;
 const LIST_BUTTON = `集數清單，共 ${EPISODES} 集`;
-// mockup：唱片 256px、頁頭下面 16px；sheet 由畫面 38% 開始（--list-sheet-height 62%）
+// mockup：唱片 256px、頁頭下面 16px
 const DISC_PX = 256;
 const HEADER_GAP_PX = 16;
-const SHEET_TOP_SHARE = 0.38;
 // 日子條底離畫面底最多幾遠（mockup 36px；app 8px 底 padding）
 const STRIP_BOTTOM_MAX_GAP_PX = 36;
 const TOLERANCE_PX = 1.5;
-const SHEET_TOLERANCE_PX = 3;
 // 開 / 閂動畫（--view-transition-fade）完成都夠
 const SHEET_WAIT_MS = 3000;
 // 向下拉閂：拉過表高一半以上
@@ -139,9 +137,14 @@ const checkOpened = async (env, p, how) => {
     const state = await p.evaluate(() => {
         const dialog = document.querySelector('[role="dialog"]');
         const r = dialog?.getBoundingClientRect();
+        const banner = dialog?.querySelector('[data-testid="info-banner"] h2');
         return {
             top: r?.top ?? null,
             bottom: r?.bottom ?? null,
+            left: r?.left ?? null,
+            width: r?.width ?? null,
+            banner: banner?.textContent ?? null,
+            pageTitle: document.querySelector('main header h1')?.textContent ?? null,
             focused: dialog?.contains(document.activeElement) ?? false,
             rows: dialog?.querySelectorAll('li[data-episode-key]').length ?? 0,
             filled: getComputedStyle(
@@ -156,9 +159,10 @@ const checkOpened = async (env, p, how) => {
             state.focused &&
             state.rows === EPISODES &&
             state.filled !== 'rgba(0, 0, 0, 0)' &&
-            near(state.top, SQUARE.height * SHEET_TOP_SHARE, SHEET_TOLERANCE_PX) &&
-            near(state.bottom, SQUARE.height, SHEET_TOLERANCE_PX),
-        `HomeView 清單 sheet（${how}）：升起、icon 實色、焦點入表、${state.rows} 行（${JSON.stringify(state)}）`,
+            squareSheetSized(state) &&
+            state.banner !== null &&
+            state.banner === state.pageTitle,
+        `HomeView 清單 sheet（${how}）：升起、icon 實色、焦點入表、${state.rows} 行、頂有節目 banner、最高 75%、480px 置中（${JSON.stringify(state)}）`,
     );
 };
 

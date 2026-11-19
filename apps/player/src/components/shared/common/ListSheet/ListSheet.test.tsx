@@ -152,3 +152,56 @@ describe('ListSheet', () => {
         expect(onAction).toHaveBeenCalledOnce();
     });
 });
+
+// HomeView 節目頁 / 每日劇清單 sheet 表頂（P10 v2.0.1）：同資料 sheet 一樣嘅 banner，表頭箭咀展開主持 / 簡介
+describe('ListSheet with a banner and details', () => {
+    const BANNER = {
+        kind: 'show' as const,
+        art: '/tile.webp',
+        title: '公子會',
+        subtitle: '逢星期六播放',
+    };
+    const renderSheet = (info = { hosts: ['主持甲'], summary: '節目簡介' }) =>
+        render(
+            <ListSheet
+                open
+                onClose={vi.fn()}
+                title="集數"
+                summary="共 2 集"
+                banner={BANNER}
+                details={{ info, label: '節目資料' }}
+            >
+                <ul>
+                    <li>28/11</li>
+                </ul>
+            </ListSheet>,
+        );
+
+    it('should show the banner name and schedule on top', () => {
+        renderSheet();
+
+        const banner = screen.getByTestId('info-banner');
+        expect(within(banner).getByRole('heading', { name: '公子會' })).toBeInTheDocument();
+        expect(within(banner).getByText('逢星期六播放')).toBeInTheDocument();
+    });
+
+    it('should keep the details folded until the chevron opens them', async () => {
+        renderSheet();
+        const toggle = screen.getByRole('button', { name: '節目資料' });
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        // 收埋：Collapse inert + aria-hidden，Tab / 讀屏都入唔到
+        expect(screen.getByText('節目簡介').closest('[inert]')).not.toBeNull();
+
+        await userEvent.click(toggle);
+
+        expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByText('節目簡介').closest('[inert]')).toBeNull();
+        expect(screen.getByText('主持甲')).toBeVisible();
+    });
+
+    it('should have no chevron when there are no details', () => {
+        renderSheet({} as { hosts: string[]; summary: string });
+
+        expect(screen.queryByRole('button', { name: '節目資料' })).not.toBeInTheDocument();
+    });
+});

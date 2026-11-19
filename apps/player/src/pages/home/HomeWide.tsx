@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { DramaShelfItem } from '../../components/pages/home/DramaShelf/DramaTile';
 import { HomePlayerHandle } from '../../components/pages/home/HomePlayerCard/HomePlayerHandle';
 import type { MiniPlayerProps } from '../../components/pages/home/MiniPlayer/MiniPlayer';
-import { useClosedHomePlayerCard } from '../../hooks/homePlayerCardClosed';
+import { useClosedHomePlayerCard, type ClosedPlayerCard } from '../../hooks/homePlayerCardClosed';
 import type { HomeTab } from '../../hooks/useHomeTab';
 import type { ThirdTab } from '../../selectors/bookmarks';
 import styles from './HomePage.module.css';
@@ -30,7 +30,46 @@ interface HomeWideProps extends WideGridProps {
     third: ThirdTab | null;
     /** 第三個 tab 嘅內容（左欄，右邊播放卡照舊） */
     saved: ReactNode;
+    /** 撳把手出返 HomeView 返主頁收埋咗嘅卡（hooks/homeReturn） */
+    onUnfold: () => void;
 }
+
+/**
+ * fillWithHandle 嘅把手：✕ 閂咗（停咗播）用記低嘅節目、「已暫停」；
+ * 冇閂、HomeView 返主頁收埋咗張卡（照播）就用 mini player 而家嘅節目同播放狀態
+ */
+const WideHandle = ({
+    closed,
+    miniPlayer,
+    onOpen,
+    focusOnMount,
+}: {
+    closed: ClosedPlayerCard | null;
+    miniPlayer: MiniPlayerProps | null;
+    onOpen: () => void;
+    focusOnMount: boolean;
+}) => {
+    if (closed) {
+        return (
+            <HomePlayerHandle
+                theme={closed.theme}
+                showName={closed.showName}
+                onOpen={onOpen}
+                focusOnMount={focusOnMount}
+            />
+        );
+    }
+    if (!miniPlayer) return null;
+    return (
+        <HomePlayerHandle
+            theme={miniPlayer.theme}
+            showName={miniPlayer.showName}
+            status={miniPlayer.isPlaying ? 'playing' : 'paused'}
+            onOpen={onOpen}
+            focusOnMount={focusOnMount}
+        />
+    );
+};
 
 /**
  * 闊橫版主頁（WIDE_BANNER_QUERY）：冇橫額釘頂，tab 喺頂，下面填滿格；
@@ -45,9 +84,10 @@ export const HomeWide = ({
     miniPlayer,
     third,
     saved,
+    onUnfold,
     ...grid
 }: HomeWideProps) => {
-    const toggle = useHomeCardToggle(miniPlayer);
+    const toggle = useHomeCardToggle(miniPlayer, onUnfold);
     const { mode, frozen, holding } = useCardMotion(latestMode, miniPlayer?.item);
     // 開始播就即刻清走閂咗嘅卡（useReopenHomePlayerCardOnPlay），但 O1 影舊畫面前把手要仲喺度先淡得走
     const closed = useHeldWhile(useClosedHomePlayerCard(), holding);
@@ -75,10 +115,10 @@ export const HomeWide = ({
                     frozen={frozen}
                 />
             )}
-            {mode === 'fillWithHandle' && closed && (
-                <HomePlayerHandle
-                    theme={closed.theme}
-                    showName={closed.showName}
+            {mode === 'fillWithHandle' && (
+                <WideHandle
+                    closed={closed}
+                    miniPlayer={miniPlayer}
                     onOpen={toggle.open}
                     focusOnMount={toggle.focus === 'handle'}
                 />

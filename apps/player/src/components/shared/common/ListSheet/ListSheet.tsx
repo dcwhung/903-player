@@ -1,5 +1,10 @@
-import { useCallback, useId, type ReactNode, type RefObject } from 'react';
-import type { InfoBanner as InfoBannerData } from '../../../../selectors/itemInfo';
+import { useCallback, useId, useState, type ReactNode, type RefObject } from 'react';
+import {
+    hasInlineInfo,
+    type InfoBanner as InfoBannerData,
+    type InlineInfo,
+} from '../../../../selectors/itemInfo';
+import { InlineItemInfo } from '../ItemInfo/InlineItemInfo';
 import { SheetOverlay } from '../Sheet/SheetOverlay';
 import motion from '../Sheet/SheetMotion.module.css';
 import { useSheetBehaviour } from '../Sheet/useSheetBehaviour';
@@ -31,7 +36,40 @@ interface ListSheetProps {
     banner?: InfoBannerData | undefined;
     /** 表頭右邊嘅掣（例如短篇表「全集」） */
     action?: ReactNode;
+    /**
+     * banner 嗰段嘅其他資料（主持 / 簡介，bannerDetails）：有就標題旁邊出箭咀（label = 讀屏名），
+     * 預設收埋，展開喺清單上面（同全集表劇集資料一樣）。HomeView 節目頁 / 每日劇集數表用
+     */
+    details?: { info: InlineInfo; label: string } | undefined;
 }
+
+type Details = NonNullable<ListSheetProps['details']>;
+
+/** 撳遮罩閂 */
+const backdropOf = (onClose: () => void) => ({
+    className: styles.backdrop,
+    testId: 'list-sheet-backdrop',
+    onClick: onClose,
+});
+
+/** 表頭資料箭咀：有資料先出，預設收埋 */
+const useDetailsToggle = (details: ListSheetProps['details']) => {
+    const [expanded, setExpanded] = useState(false);
+    const shown = details && hasInlineInfo(details.info) ? details : undefined;
+    const toggle = shown && {
+        expanded,
+        label: shown.label,
+        onToggle: () => setExpanded((was) => !was),
+    };
+    return { shown, expanded, toggle };
+};
+
+/** 表頭箭咀展開嘅資料（清單上面，唔跟清單捲） */
+const SheetDetails = ({ details, expanded }: { details: Details; expanded: boolean }) => (
+    <div className={styles.details}>
+        <InlineItemInfo info={details.info} expanded={expanded} />
+    </div>
+);
 
 /**
  * 清單 sheet（HomeView，P10 lane 6，_mockups_/home-view 節目頁）：由畫面底升起，蓋住播放器下半；
@@ -49,8 +87,10 @@ export const ListSheet = ({
     returnFocusTo,
     banner,
     action,
+    details,
 }: ListSheetProps) => {
     const titleId = useId();
+    const { shown, expanded, toggle } = useDetailsToggle(details);
     const { setSheet, backdropRef, listRef, handlers } = useSheetBehaviour(
         open,
         onClose,
@@ -59,14 +99,10 @@ export const ListSheet = ({
     const bindList = useCallback((el: HTMLElement | null) => listRef(scrollPanelOf(el)), [listRef]);
     const { mounted, state, inert, overlayRef } = useSheetPresence(open);
     if (!mounted) return null;
-    const backdrop = {
-        className: styles.backdrop,
-        testId: 'list-sheet-backdrop',
-        onClick: onClose,
-    };
     return (
         <SheetOverlay
-            {...{ state, inert, overlayRef, backdropRef, backdrop }}
+            {...{ state, inert, overlayRef, backdropRef }}
+            backdrop={backdropOf(onClose)}
             className={styles.overlay ?? ''}
         >
             <section
@@ -80,9 +116,10 @@ export const ListSheet = ({
                 {...handlers}
             >
                 <ListSheetHeader
-                    {...{ titleId, title, summary, closeLabel, onClose, banner, action }}
+                    {...{ titleId, title, summary, closeLabel, onClose, banner, action, toggle }}
                 />
                 <div ref={bindList} className={styles.list} data-role="sheet-list">
+                    {shown && <SheetDetails details={shown} expanded={expanded} />}
                     {children}
                 </div>
             </section>

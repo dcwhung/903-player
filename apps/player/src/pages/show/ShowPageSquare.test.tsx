@@ -83,6 +83,21 @@ describe('ShowPage HomeView（P10 lane 6）', () => {
         expect(audio.src).toBe(RECORDINGS[2]?.url);
     });
 
+    it('should top the episode sheet with the info banner and fold-out details', async () => {
+        // P10 v2.0.1 用戶反饋（截圖 28）：同資料 sheet 一樣嘅 banner（節目名 + 播放時間），箭咀展開簡介
+        stubViewport(SQUARE);
+        withProgress();
+        renderWithProviders(<ShowPage />, ROUTE);
+
+        await userEvent.click(await screen.findByRole('button', { name: LIST_BUTTON }));
+
+        const sheet = screen.getByRole('dialog', { name: '集數' });
+        const banner = within(sheet).getByTestId('info-banner');
+        expect(within(banner).getByRole('heading', { name: '公子會' })).toBeInTheDocument();
+        await userEvent.click(within(sheet).getByRole('button', { name: '節目資料' }));
+        expect(within(sheet).getByText('節目示範簡介')).toBeVisible();
+    });
+
     it('should close the sheet when the list button is pressed again', async () => {
         stubViewport(SQUARE);
         withProgress();

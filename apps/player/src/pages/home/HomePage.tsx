@@ -7,6 +7,7 @@ import { useDramaItems } from './useHomeDramaItems';
 import { useRecordings } from '../../data/useRecordings';
 import { useHomeArrival } from '../../hooks/useHomeArrival';
 import { useClosedHomePlayerCard } from '../../hooks/homePlayerCardClosed';
+import { useCardFoldedOnReturn } from '../../hooks/homeReturn';
 import { useHomeTab } from '../../hooks/useHomeTab';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { transitionSide, useWideHome } from '../../hooks/useWideHome';
@@ -78,8 +79,15 @@ export const HomePage = () => {
     const miniPlayer = useMiniPlayer();
     const { wide, shelf, pageHandles } = useWideHome();
     const cardClosed = useClosedHomePlayerCard() !== null;
-    // 用邊款版面：闊版睇有冇 mini player、播放卡畀 ✕ 閂咗未
-    const mode = homeLayoutMode({ wide, hasMiniPlayer: miniPlayer !== null, cardClosed });
+    // HomeView 由內頁返嚟：張卡收埋（照播），把手開返
+    const fold = useCardFoldedOnReturn();
+    // 用邊款版面：闊版睇有冇 mini player、播放卡畀 ✕ 閂咗 / 收埋未
+    const mode = homeLayoutMode({
+        wide,
+        hasMiniPlayer: miniPlayer !== null,
+        cardClosed,
+        cardFolded: fold.folded,
+    });
     // HomeView 有播放卡：左欄得半個方形畫面闊
     const savedLayout = useSavedLayout(mode, shelf && mode === 'split' && !pageHandles);
     useHomeArrival();
@@ -105,7 +113,7 @@ export const HomePage = () => {
             {mode === 'stack' ? (
                 <HomeStack {...props} />
             ) : (
-                <HomeWide {...props} mode={mode} shelf={shelf} />
+                <HomeWide {...props} mode={mode} shelf={shelf} onUnfold={fold.unfold} />
             )}
         </ThemeScope>
     );

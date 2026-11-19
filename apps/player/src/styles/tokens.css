@@ -171,6 +171,8 @@
     --list-badge-inset-top: 3px;
     --list-badge-inset-end: 1px;
     --list-sheet-height: 62%;
+    /* HomeView 集數 / 短篇 / 全集表（P10 v2.0.1 用戶反饋）：跟內容高，最高畫面 75%；闊度同資料 sheet（--page-max-width） */
+    --square-sheet-max-height: 75%;
     /* HomeView 節目頁唱片直徑（mockup 256px；唱片 = 播放器格闊 × --disc-large-share，Disc.module.css .large 同用） */
     --square-player-disc: 256px;
     --disc-large-share: 0.72;

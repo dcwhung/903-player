@@ -70,6 +70,20 @@ describe('DailyDramaPage HomeView（P10 lane 7b）', () => {
         );
     });
 
+    it('should top the episode sheet with the drama banner and fold-out summary', async () => {
+        // P10 v2.0.1：跟節目頁清單 sheet 一樣（同資料 sheet 嘅 banner + 箭咀展開簡介）
+        stubViewport(SQUARE);
+        withProgress();
+        openC18();
+
+        await userEvent.click(await screen.findByRole('button', { name: LIST_BUTTON }));
+
+        const sheet = screen.getByRole('dialog', { name: '集數' });
+        expect(within(sheet).getByTestId('info-banner')).toBeInTheDocument();
+        await userEvent.click(within(sheet).getByRole('button', { name: '劇集資料' }));
+        expect(within(sheet).getByText('每日劇示範簡介')).toBeVisible();
+    });
+
     it('should auto-open the episode sheet when entered from 我的收藏 and return focus after Escape', async () => {
         stubViewport(SQUARE);
         openC18({ focusId: C18[0]?.id });
