@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>睡眠 timer 入口</title>
+        <style>
+            /* 9d 睡眠 timer preview：真 app 截圖（v2.0.0 e2e build）+ 注入嘅月亮掣 / 底部選單；位置由真 DOM 量度 */
+            :root {
+                --bg: #eef1f5;
+                --surface: #ffffff;
+                --ink: #18202b;
+                --note: #5d6775;
+                --line: #d3d9e2;
+                --accent: #3b6fb6;
+                --font: -apple-system, 'PingFang HK', 'Noto Sans TC', sans-serif;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #10151c;
+                    --surface: #1a212b;
+                    --ink: #e8edf3;
+                    --note: #9aa5b3;
+                    --line: #2e3845;
+                    --accent: #7fa8e6;
+                    color-scheme: dark;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #10151c;
+                --surface: #1a212b;
+                --ink: #e8edf3;
+                --note: #9aa5b3;
+                --line: #2e3845;
+                --accent: #7fa8e6;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 20px 16px 56px;
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font);
+                font-size: 15px;
+                line-height: 1.55;
+            }
+            main {
+                display: grid;
+                gap: 28px;
+                max-width: 1840px;
+                margin-inline: auto;
+            }
+            h1 {
+                margin: 0;
+                font-size: 22px;
+            }
+            h2 {
+                margin: 0 0 4px;
+                font-size: 18px;
+            }
+            p {
+                margin: 0;
+                color: var(--note);
+            }
+            section {
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                padding: 16px;
+                display: grid;
+                gap: 12px;
+            }
+            .row {
+                display: flex;
+                gap: 16px;
+                overflow-x: auto;
+                padding-bottom: 6px;
+                align-items: flex-start;
+            }
+            figure {
+                margin: 0;
+                flex: none;
+                display: grid;
+                gap: 6px;
+            }
+            figure img {
+                display: block;
+                height: 360px;
+                width: auto;
+                border-radius: 10px;
+                border: 1px solid var(--line);
+            }
+            figcaption {
+                font-size: 13px;
+                color: var(--note);
+            }
+            .tag {
+                display: inline-block;
+                padding: 1px 8px;
+                border-radius: 999px;
+                background: var(--accent);
+                color: var(--surface);
+                font-size: 12px;
+                font-weight: 600;
+                margin-right: 6px;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                font-size: 14px;
+            }
+            th,
+            td {
+                border: 1px solid var(--line);
+                padding: 6px 10px;
+                text-align: left;
+                vertical-align: top;
+            }
+            @media (max-width: 640px) {
+                figure img {
+                    height: 260px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header>
+                <h1>9d 睡眠 timer：入口位置 preview</h1>
+                <p>
+                    真 app 截圖（v2.0.0）加上新掣。月亮掣冇開 = 細 icon；開咗 =
+                    實色膠囊顯示剩餘分鐘（例：23）。 撳月亮開底部選單：15 / 30 / 60
+                    分鐘、播完呢集；時間到用 10 秒淡出音量先暫停。
+                </p>
+            </header>
+
+            <section>
+                <h2><span class="tag">方案 A</span>唱片圈左上角（ⓘ 嘅對面）</h2>
+                <p>
+                    所有裝置同一個位：唱片圈頂嗰行左邊，同右邊
+                    ⓘ（有資料嘅節目先有）對稱；控制列（由頭 / 播放 / 收藏）唔郁。
+                </p>
+                <div class="row">
+                    <figure>
+                        <img src="phone-a-off.webp" alt="手機直：方案 A 未開" loading="lazy" />
+                        <figcaption>手機直・未開</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="phone-a-on.webp" alt="手機直：方案 A 開咗" loading="lazy" />
+                        <figcaption>手機直・開咗（剩 23 分）</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="square-a-off.webp" alt="HomeView：方案 A 未開" loading="lazy" />
+                        <figcaption>HomeView・未開</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="square-a-on.webp" alt="HomeView：方案 A 開咗" loading="lazy" />
+                        <figcaption>HomeView・開咗</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="phoneL-a-on.webp" alt="手機橫：方案 A 開咗" loading="lazy" />
+                        <figcaption>手機橫・開咗</figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            src="tabletL-a-on.webp"
+                            alt="平板橫主頁播放卡：方案 A 開咗"
+                            loading="lazy"
+                        />
+                        <figcaption>平板橫主頁播放卡・開咗</figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
+                <h2><span class="tag">方案 B</span>頁頭右上（返回掣對面）</h2>
+                <p>
+                    內頁：頁頭右邊（HomeView
+                    喺清單掣左邊）。主頁闊版播放卡冇頁頭，放喺卡頭下面嗰行左邊（同方案 A 差唔多）。
+                    手機橫嘅頁頭喺左欄，掣會離唱片較遠。
+                </p>
+                <div class="row">
+                    <figure>
+                        <img src="phone-b-off.webp" alt="手機直：方案 B 未開" loading="lazy" />
+                        <figcaption>手機直・未開</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="phone-b-on.webp" alt="手機直：方案 B 開咗" loading="lazy" />
+                        <figcaption>手機直・開咗</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="square-b-off.webp" alt="HomeView：方案 B 未開" loading="lazy" />
+                        <figcaption>HomeView・未開</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="square-b-on.webp" alt="HomeView：方案 B 開咗" loading="lazy" />
+                        <figcaption>HomeView・開咗</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="phoneL-b-on.webp" alt="手機橫：方案 B 開咗" loading="lazy" />
+                        <figcaption>手機橫・開咗</figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            src="tabletL-b-on.webp"
+                            alt="平板橫主頁播放卡：方案 B 開咗"
+                            loading="lazy"
+                        />
+                        <figcaption>平板橫主頁播放卡・開咗</figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
+                <h2>底部選單（兩個方案共用）</h2>
+                <p>
+                    未開：揀一項即開始。開咗：頂右顯示剩餘時間、剔住而家嗰項、多一粒「關閉
+                    timer」；揀另一項 = 由而家重新計。 「播完呢集」只喺重溫 /
+                    廣播劇有效，直播時變灰。平板 / 電腦闊版選單最闊 480px 置中。
+                </p>
+                <div class="row">
+                    <figure>
+                        <img src="phone-sheet.webp" alt="手機直：選單未開 timer" loading="lazy" />
+                        <figcaption>手機直・未開</figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            src="phone-sheet-on.webp"
+                            alt="手機直：選單開咗 timer"
+                            loading="lazy"
+                        />
+                        <figcaption>手機直・開緊</figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            src="square-sheet-on.webp"
+                            alt="HomeView：選單開咗 timer"
+                            loading="lazy"
+                        />
+                        <figcaption>HomeView・開緊</figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            src="phoneL-sheet-on.webp"
+                            alt="手機橫：選單開咗 timer"
+                            loading="lazy"
+                        />
+                        <figcaption>手機橫・開緊</figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            src="tabletL-sheet-on.webp"
+                            alt="平板橫：選單開咗 timer"
+                            loading="lazy"
+                        />
+                        <figcaption>平板橫・開緊</figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
+                <h2>Mini player（可選）</h2>
+                <p>
+                    Mini player 唔加入口（位唔夠）；timer 開緊先喺播放掣左邊出細膠囊「🌙
+                    23」，撳佢開同一個選單。冇開 timer 時 mini player 零改變。
+                </p>
+                <div class="row">
+                    <figure>
+                        <img
+                            src="phone-mini-off.webp"
+                            alt="手機主頁 mini player：冇 timer"
+                            loading="lazy"
+                        />
+                        <figcaption>冇 timer（現狀，唔變）</figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            src="phone-mini-on.webp"
+                            alt="手機主頁 mini player：timer 開緊"
+                            loading="lazy"
+                        />
+                        <figcaption>timer 開緊</figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
+                <h2>要你決定</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>問題</th>
+                            <th>建議</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>入口用方案 A 定 B？</td>
+                            <td>A：所有裝置同一位、貼近唱片同控制；B 喺手機橫離唱片遠</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Mini player 開緊 timer 時出唔出「🌙 23」？</td>
+                            <td>出（冇開 timer 時零改變）</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>時間到暫停之後，timer 自動消失定保留上次揀嘅時長做預設？</td>
+                            <td>消失；下次再撳月亮重新揀</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>手動暫停 / 轉節目時 timer 點算？</td>
+                            <td>
+                                照計（同 iOS
+                                時鐘「停止播放」一樣）；轉去直播時「播完呢集」自動改成剩餘分鐘
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </body>
+</html>
