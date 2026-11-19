@@ -7,10 +7,11 @@ import { withViewTransition } from '../../utils/viewTransition';
 /**
  * 卡角 ✕ / 右邊把手：
  * ✕ = 同 mini player 左滑關閉一樣停播、收埋（onDismiss），記低閂咗邊個畀把手顯示，張卡縮入把手；
- * 把手 = 再出返張卡（mini player 唔再收埋），停喺暫停，唔會自動播。
+ * 把手 = 再出返張卡（mini player 唔再收埋），停喺暫停，唔會自動播；
+ * HomeView 返主頁收埋咗嘅卡（onUnfold，冇停播）都係撳把手出返，照播緊。
  * 焦點跟住用戶動作去把手 / 張卡（自動因播放再出返唔郁焦點）
  */
-export const useHomeCardToggle = (miniPlayer: MiniPlayerProps | null) => {
+export const useHomeCardToggle = (miniPlayer: MiniPlayerProps | null, onUnfold: () => void) => {
     const [focus, setFocus] = useState<'card' | 'handle' | null>(null);
     return {
         focus,
@@ -28,6 +29,7 @@ export const useHomeCardToggle = (miniPlayer: MiniPlayerProps | null) => {
             withViewTransition(() => {
                 restoreMiniPlayer();
                 openHomePlayerCard();
+                onUnfold();
             }, 'open');
         },
     };

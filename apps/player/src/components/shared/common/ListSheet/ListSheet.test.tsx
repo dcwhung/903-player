@@ -152,3 +152,55 @@ describe('ListSheet', () => {
         expect(onAction).toHaveBeenCalledOnce();
     });
 });
+
+// HomeView 節目頁 / 每日劇清單 sheet 表頂（v2.0.1 用戶反饋 2026-11-19）：同資料 sheet 一樣嘅 banner、同一個比例；
+// 冇箭咀，主持 / 簡介唔喺表入面出（撳 ⓘ 睇）
+describe('ListSheet with a banner', () => {
+    const BANNER = {
+        kind: 'show' as const,
+        art: '/tile.webp',
+        title: '公子會',
+        subtitle: '逢星期六播放',
+    };
+    const renderSheet = (bannerSize?: 'square' | 'info') =>
+        render(
+            <ListSheet
+                open
+                onClose={vi.fn()}
+                title="集數"
+                summary="共 2 集"
+                banner={BANNER}
+                bannerSize={bannerSize}
+            >
+                <ul>
+                    <li>28/11</li>
+                </ul>
+            </ListSheet>,
+        );
+
+    it('should show the banner name and schedule on top, with the close button over it', () => {
+        renderSheet('info');
+
+        const banner = screen.getByTestId('info-banner');
+        expect(within(banner).getByRole('heading', { name: '公子會' })).toBeInTheDocument();
+        expect(within(banner).getByText('逢星期六播放')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '關閉清單' })).toHaveAttribute('data-on-banner');
+    });
+
+    it('should have no expand arrow, only the close button', () => {
+        renderSheet('info');
+
+        expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
+            '關閉清單',
+        ]);
+    });
+
+    // 預設（HomeView 短篇表）照舊係矮 banner；節目頁 / 每日劇集數表要求先跟資料 sheet
+    it.each([
+        ['info', 'info'],
+        ['square', undefined],
+    ] as const)('should size the banner as %s when bannerSize is %s', (expected, bannerSize) => {
+        renderSheet(bannerSize);
+        expect(screen.getByRole('dialog')).toHaveAttribute('data-banner-size', expected);
+    });
+});

@@ -154,6 +154,8 @@ export const zhHK = {
     homeCard: {
         // 把手出現 = 撳咗 ✕ 停咗播（useHomeCardToggle），所以名入面講埋狀態
         reopen: '已暫停：{name}，打開播放器',
+        // HomeView 由內頁返主頁收埋咗張卡（冇停播，hooks/homeReturn）
+        reopenPlaying: '播放中：{name}，打開播放器',
     },
     // 闊橫版內頁右邊把手（InnerPageHandle）：播緊 / 暫停緊其他節目 / 劇集，撳 = 返主頁
     pageHandle: {

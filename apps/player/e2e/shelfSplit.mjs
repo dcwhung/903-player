@@ -159,7 +159,13 @@ const splitHomeWithProbe = async (env, viewport, route) => {
 const shelfCard = (p, name) =>
     p.getByRole('navigation', { name: SHELF }).getByRole('button', { name });
 
-/** 第一張（Bad Girl）返主頁時係 focus 緊，撳一下就入頁 */
+/**
+ * 第一張（Bad Girl）返主頁時係 focus 緊，撳一下就入頁。HomeView 返主頁播放卡收埋（填滿格，冇疊卡），
+ * 等格仔出現就得
+ */
+const firstCardReady = (p, pageHandles) =>
+    pageHandles ? firstCardFocused(p) : shelfCard(p, FIRST_CARD).waitFor({ timeout: WAIT_MS });
+
 const firstCardFocused = (p) =>
     p
         .getByRole('navigation', { name: SHELF })
@@ -175,7 +181,7 @@ const firstCardFocused = (p) =>
 const checkZoom = async (env, { label, viewport, pageHandles }) => {
     // 播緊公子會，撳 Bad Girl（其他節目）
     const other = await splitHomeWithProbe(env, viewport, SHOW_ROUTE);
-    await firstCardFocused(other.p);
+    await firstCardReady(other.p, pageHandles);
     const into = await transitionsAround(
         other.p,
         () => shelfCard(other.p, FIRST_CARD).click(),
@@ -191,7 +197,7 @@ const checkZoom = async (env, { label, viewport, pageHandles }) => {
 
     // 播緊 Bad Girl，撳返佢自己張卡
     const own = await splitHomeWithProbe(env, viewport, OPEN_HASH);
-    await firstCardFocused(own.p);
+    await firstCardReady(own.p, pageHandles);
     const ownInto = await transitionsAround(
         own.p,
         () => shelfCard(own.p, FIRST_CARD).click(),
@@ -206,8 +212,58 @@ const checkZoom = async (env, { label, viewport, pageHandles }) => {
     await own.ctx.close();
 };
 
+/**
+ * 播緊嘢由內頁撳返回（P10 v2.0.1 用戶反饋截圖 25 → 26）：HomeView 直接返主頁選單（全闊填滿格），
+ * 播放卡收埋、右邊把手（播放中，冇停播），撳把手先出返張卡；Duo 打開・橫照舊出張卡。
+ * 減少動態都一樣（冇過場，直接切換）
+ */
+const checkReturnFolded = async (env, { label, viewport, pageHandles }, reducedMotion) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport, reducedMotion });
+    await p.goto(`${env.base}${SHOW_ROUTE}`);
+    await ensurePlaying(p);
+    await goBack(p);
+    await p.locator('nav[aria-busy="false"]').waitFor({ timeout: WAIT_MS });
+    const look = () =>
+        p.evaluate(() => {
+            const handle = document.querySelector('[data-home-handle]');
+            return {
+                layout: document.querySelector('main')?.dataset.layout ?? null,
+                card: document.querySelector('section[data-home-card]') !== null,
+                handle: handle?.getAttribute('aria-label') ?? null,
+                playing: navigator.mediaSession.playbackState === 'playing',
+            };
+        });
+    const back = await look();
+    const motion = reducedMotion === 'reduce' ? '（減少動態）' : '';
+    if (pageHandles) {
+        env.log(
+            back.layout === 'split' && back.card,
+            `${label} 播緊返主頁：照舊出播放卡${motion}（${JSON.stringify(back)}）`,
+        );
+        await ctx.close();
+        return;
+    }
+    env.log(
+        back.layout === 'fillWithHandle' &&
+            !back.card &&
+            back.handle?.startsWith('播放中：') === true &&
+            back.playing,
+        `${label} 播緊返主頁：主頁選單 + 把手，播放卡收埋、照播${motion}（${JSON.stringify(back)}）`,
+    );
+    await p.locator('[data-home-handle]').click();
+    await p.locator('section[data-home-card]').waitFor({ timeout: WAIT_MS });
+    const opened = await look();
+    env.log(
+        opened.layout === 'split' && opened.card && opened.handle === null,
+        `${label} 撳把手出返播放卡${motion}（${JSON.stringify(opened)}）`,
+    );
+    await ctx.close();
+};
+
 const SCENARIOS = [
     ['新主頁', checkSplit],
+    ['播緊返主頁', (env, device) => checkReturnFolded(env, device)],
+    ['播緊返主頁（減少動態）', (env, device) => checkReturnFolded(env, device, 'reduce')],
     ['冇播放卡', checkFill],
     ['撳疊卡', checkOpen],
     ['疊卡過場', checkZoom],

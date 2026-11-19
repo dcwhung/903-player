@@ -649,6 +649,84 @@ const checkOpenPortraitToday = async (env) => {
     await ctx.close();
 };
 
+/**
+ * 闔上・橫 / Seated 左欄集數清單（P10 v2.0.1 用戶反饋截圖 24）：每行冇收藏掣（星同佢留嘅位都冇），
+ * 冇時間嘅狀態字（「未收聽」）一行放得落；播放器嘅 ☆ 照喺度
+ */
+const lookListRows = (p) =>
+    p.evaluate(() => {
+        const list = document.querySelector('main section[data-variant="page"]');
+        const rows = [...(list?.querySelectorAll('li[data-episode-key]') ?? [])];
+        const lines = (el) => {
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+        };
+        const statuses = rows
+            .map((row) => row.querySelector('[role="progressbar"]')?.nextElementSibling)
+            .filter((el) => el && !el.querySelector('[data-status-time]'));
+        const stars = [...(list?.querySelectorAll('button[aria-label^="收藏 "]') ?? [])].filter(
+            (b) => b.getBoundingClientRect().width > 0,
+        );
+        const playerStar = [...document.querySelectorAll('main button[aria-pressed]')].filter(
+            (b) => !list?.contains(b) && b.getBoundingClientRect().width > 0,
+        ).length;
+        return {
+            rows: rows.length,
+            stars: stars.length,
+            wrapped: statuses.filter((el) => lines(el) > 1).map((el) => el.textContent),
+            statuses: statuses.length,
+            playerStar,
+        };
+    });
+
+/** 第一次入廣播劇頁自動彈嘅表（全集表 / 資料表）：Escape 閂走，見到左欄清單 */
+const dismissAutoSheets = async (p) => {
+    for (let i = 0; i < 2; i += 1) {
+        const dialog = p.getByRole('dialog');
+        if (!(await isShown(dialog, { timeout: SHEET_SETTLE_MS }))) return;
+        await p.keyboard.press('Escape');
+        await isShown(dialog, { state: 'detached', timeout: WAIT_MS });
+    }
+};
+
+const checkCoverListStars = async (env, label, viewport, route, catalog = false) => {
+    const contextOptions = { viewport, reducedMotion: 'reduce' };
+    const { ctx, p } = catalog
+        ? await openWithCatalog(env, { catalogBody: dailyCatalog(env.base), contextOptions })
+        : await newE2EPage(env.browser, env.errors, contextOptions);
+    await p.goto(`${env.base}${route}`);
+    await p.locator('main li[data-episode-key]').first().waitFor({ timeout: WAIT_MS });
+    await dismissAutoSheets(p);
+    const look = await lookListRows(p);
+    env.log(
+        look.rows > 0 &&
+            look.stars === 0 &&
+            look.statuses > 0 &&
+            look.wrapped.length === 0 &&
+            look.playerStar > 0,
+        `Duo ${label}：左欄清單冇收藏掣、「未收聽」唔斷行，播放器 ☆ 照喺度（${JSON.stringify(look)}）`,
+    );
+    await ctx.close();
+};
+
+/** 對照：打開・橫（闊橫版）左欄清單照舊有收藏掣 */
+const checkOpenLandscapeListStars = async (env) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, {
+        viewport: OPEN_LANDSCAPE,
+        reducedMotion: 'reduce',
+    });
+    await p.goto(`${env.base}${SHOW_ROUTE}`);
+    await p.locator('main li[data-episode-key]').first().waitFor({ timeout: WAIT_MS });
+    await dismissAutoSheets(p);
+    const look = await lookListRows(p);
+    env.log(
+        look.rows > 0 && look.stars === look.rows,
+        `Duo 打開・橫節目頁：左欄清單每行照舊有收藏掣（${look.stars} / ${look.rows}）`,
+    );
+    await ctx.close();
+};
+
 const SCENARIOS = [
     ['Duo 打開・直主頁', checkOpenPortraitHome],
     ['Duo 打開・直節目頁', checkOpenPortraitShow],
@@ -688,6 +766,24 @@ const SCENARIOS = [
     ['Duo 打開・橫全集表', (env) => checkDockedSheetFlush(env, '打開・橫', OPEN_LANDSCAPE)],
     ['Duo 闔上・橫資料表', (env) => checkInfoSheetFlush(env, '闔上・橫', COVER_LANDSCAPE, 0)],
     ['Duo Seated 資料表', (env) => checkInfoSheetFlush(env, 'Seated', SEATED, 0)],
+    [
+        'Duo 闔上・橫節目頁清單冇收藏掣',
+        (env) => checkCoverListStars(env, '闔上・橫節目頁', COVER_LANDSCAPE, SHOW_ROUTE),
+    ],
+    [
+        'Duo 闔上・橫廣播劇頁清單冇收藏掣',
+        (env) => checkCoverListStars(env, '闔上・橫廣播劇頁', COVER_LANDSCAPE, SERIES_ROUTE),
+    ],
+    [
+        'Duo 闔上・橫每日劇集頁清單冇收藏掣',
+        (env) =>
+            checkCoverListStars(env, '闔上・橫每日劇集頁', COVER_LANDSCAPE, '#/drama/c18', true),
+    ],
+    [
+        'Duo Seated 節目頁清單冇收藏掣',
+        (env) => checkCoverListStars(env, 'Seated 節目頁', SEATED, SHOW_ROUTE),
+    ],
+    ['Duo 打開・橫清單收藏掣對照', checkOpenLandscapeListStars],
     [
         'Duo 打開・橫資料表',
         (env) => checkInfoSheetFlush(env, '打開・橫', OPEN_LANDSCAPE, HANDLE_RESERVE_PX),

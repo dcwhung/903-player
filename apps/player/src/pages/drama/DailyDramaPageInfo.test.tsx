@@ -1,7 +1,9 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Drama } from '@903-player/catalog';
+import { stubViewport } from '../../../tests/landscape';
 import { renderWithProviders } from '../../../tests/renderWithProviders';
+import { NON_SQUARE_VIEWPORTS } from '../../../tests/viewports';
 import { dailyEpisodesOf } from '../../catalog/dramas';
 import { saveProgress } from '../../services/progressStore';
 import { DramaPage } from './DramaPage';
@@ -63,5 +65,37 @@ describe('DailyDramaPage item info（P9.5 #12）', () => {
         expect(screen.queryByRole('dialog', { name: '劇集資料' })).not.toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', { name: '劇集資料' }));
         expect(await screen.findByRole('dialog', { name: '劇集資料' })).toBeInTheDocument();
+    });
+});
+
+/*
+ * v2.0.1 用戶反饋（2026-11-19）：只有 HomeView 由下彈出嘅集數 sheet 先有 banner；
+ * 其他裝置嘅每日劇集數清單欄唔加（「集數」上面冇 banner），資料 sheet 照舊有
+ */
+describe('DailyDramaPage episode list column (non-HomeView)', () => {
+    beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-23T08:00:00Z'));
+        Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
+        // 有進度：唔自動彈資料 sheet（佢有 banner）
+        saveProgress(C18[0]?.id ?? '', 60, 600);
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+    });
+
+    it.each(NON_SQUARE_VIEWPORTS)('should have no banner above 集數 on %s', async (_, viewport) => {
+        stubViewport(viewport);
+        openC18();
+
+        const heading = await screen.findByRole('heading', { name: '集數' });
+        expect(heading).toBeInTheDocument();
+        expect(screen.queryByTestId('info-banner')).not.toBeInTheDocument();
+        // 劇集有圖：資料 sheet 照舊有 banner（證明上面唔係因為冇圖先冇）
+        await userEvent.click(screen.getByRole('button', { name: '劇集資料' }));
+        const sheet = await screen.findByRole('dialog', { name: '劇集資料' });
+        expect(within(sheet).getByTestId('info-banner')).toBeInTheDocument();
     });
 });
