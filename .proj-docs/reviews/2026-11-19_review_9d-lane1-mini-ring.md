@@ -43,7 +43,7 @@ All pass：`eslint`（4 個 diff `.tsx`）exit 0；`prettier --check`（6 個 di
 - 44px 撳得到範圍同行高唔變，只用 `padding` + `background-clip: content-box` 縮實色圓底，元素位置 diff 只會係新外圈
 - viewBox 用 44 單位，SVG 跟 `--touch-target` 一齊按 `--ui-scale` 放大，圈同 padding 留嘅位唔會錯開；避開舊 iOS `pathLength` 問題有寫原因
 
-## Handoff receipt
+## Handoff receipt（第一輪，`c6656e9b`）
 
 ```handoff-receipt
 protocol: 1
@@ -60,4 +60,34 @@ next_action: merge_develop
 next_agent: null
 branch: "feature/mini-player/progress-ring"
 context: "9d lane 1 @c6656e9b (PR #282 -> release/v2.1.0): pass, no red/yellow. Ring geometry, a11y (progressbar sibling of button, svg aria-hidden) and --ui-scale scaling match M7. Lane backlog to clear in this PR this session: S-1160 (move ring geometry consts to miniPlayerRing.ts + node test locking --mini-progress-ring and .toggle padding to RING_WIDTH; mutation stayed 103/103 green) and S-1161 (main agent puts 'Design Origin: mockup: _mockups_/sleep-timer/index.html (M7)' as PR body first line). QA S1 mini-player: manual VoiceOver/TalkBack touch-explore on the toggle; cite CI e2e for c6656e9b (in_progress at review time). Merge into release/v2.1.0 only after QA S1 + CI green. Report committed locally, not pushed"
+```
+
+## Re-review（`63c89d2c`）
+
+範圍：只驗 S-1160 / S-1161 嘅修正同 `c6656e9b..63c89d2c` diff（`MiniPlayerProgress.tsx`、新檔 `miniPlayerRing.ts`、`miniPlayerRing.node.test.ts`）。
+
+| ID     | 結果 | 證據                                                                                                                                                                                                                                                                                                                                                                               |
+| ------ | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-1160 | ✅   | 幾何常數搬晒去 `miniPlayerRing.ts`（值同註解冇變），`MiniPlayerProgress.tsx` 淨係 import。新 node test 鎖 `--touch-target` = `VIEW_BOX_SIZE`、`--mini-progress-ring` = `RING_WIDTH`、`.toggle` 闊高 / padding / `background-clip`、`.ring` `pointer-events`。重做上一輪 mutation（token 6px + 拎走 padding / `background-clip`）：2 個新 test 紅（105 / 107），還原後 107 / 107 綠 |
+| S-1161 | ✅   | PR #282 body 第一行：`Design Origin: mockup: _mockups_/sleep-timer/index.html (M7)`                                                                                                                                                                                                                                                                                                |
+
+Gates（`63c89d2c`）：MiniPlayer folder 9 個 test 檔 107 / 107 綠；`eslint` 3 個改咗嘅 `.ts(x)` exit 0；`prettier --check` 冇問題；`tsc -b --noEmit`（`apps/player`）exit 0。CI `Lint, unit & build` @ `63c89d2c` 審閱時仍然 `in_progress`。冇新 finding，lane backlog 清晒。
+
+## Handoff receipt（re-review，`63c89d2c`）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "100%"
+next_action: merge_develop
+next_agent: null
+branch: "feature/mini-player/progress-ring"
+context: "Re-review PR #282 @63c89d2c: S-1160 closed (geometry in miniPlayerRing.ts; node test locks token/viewBox/.toggle padding+background-clip/.ring pointer-events; previous mutation now fails 2 tests, reverted 107/107 green) and S-1161 closed (PR body first line Design Origin). No lane backlog left. Next: QA S1 mini-player (manual VoiceOver/TalkBack touch-explore on toggle; cite CI e2e for 63c89d2c, in_progress at re-review). Merge into release/v2.1.0 only after QA S1 + CI green. Re-review report committed locally, not pushed (CI running)"
 ```
