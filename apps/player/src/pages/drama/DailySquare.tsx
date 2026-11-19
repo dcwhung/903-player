@@ -13,7 +13,7 @@ import { useListSheet } from '../../hooks/useListSheet';
 import { t } from '../../i18n/t';
 import { formatSpokenDate } from '../../utils/date';
 import page from '../shared/Page.module.css';
-import { ShowHeaderActions } from '../show/ShowEpisodes';
+import { ShowHeaderActions, listSheetInfo } from '../show/ShowEpisodes';
 import { DramaHeader } from './DramaHeader';
 import type { useDailyDramaPage } from './useDramaPage';
 
@@ -69,6 +69,7 @@ export const DailySquare = ({ drama, view }: { drama: DramaConfig; view: DailyVi
                     title={t('episodes.title')}
                     summary={episodeCountText(items)}
                     returnFocusTo={list.buttonRef}
+                    {...listSheetInfo(info.sheet)}
                 >
                     <EpisodeList
                         items={items}

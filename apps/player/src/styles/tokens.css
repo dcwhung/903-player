@@ -163,14 +163,13 @@
     --arc-sheet-badge-outline: 2px;
     /*
      * HomeView（P10 lane 6，_mockups_/home-view 節目頁）：頁頭清單掣右上角嘅數量 badge（16px 高、
-     * 10px 粗體字），同由底升起嘅清單 sheet 高度（mockup .sheet 由畫面 38% 開始）。
+     * 10px 粗體字）。
      * 只有 SQUARE_QUERY 嘅頁先 render 清單掣 / sheet，其他裝置用唔到
      */
     --list-badge-size: 16px;
     --list-badge-font: 10px;
     --list-badge-inset-top: 3px;
     --list-badge-inset-end: 1px;
-    --list-sheet-height: 62%;
     /*
      * 睡眠 timer（9d，_mockups_/sleep-timer）：頁頂 / mini player 卡頂進度條高度；底部選單最闊幾多
      *（手機打橫 / 平板置中，唔拉到成個畫面咁闊）、2×2 大掣高度、月亮 icon 大細
@@ -190,6 +189,8 @@
     --sleep-timer-option-border: calc(2px * var(--ui-scale));
     /* 開緊時頁頭右格要幾闊：44px 掣嘅左右 padding + 月亮 + 「1:58:30」（--font-size-lg 粗體等闊數字） */
     --sleep-timer-header-room: calc(104px * var(--ui-scale));
+    /* HomeView 集數 / 短篇 / 全集表（P10 v2.0.1 用戶反饋）：跟內容高，最高畫面 75%；闊度同資料 sheet（--page-max-width） */
+    --square-sheet-max-height: 75%;
     /* HomeView 節目頁唱片直徑（mockup 256px；唱片 = 播放器格闊 × --disc-large-share，Disc.module.css .large 同用） */
     --square-player-disc: 256px;
     --disc-large-share: 0.72;

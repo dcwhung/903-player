@@ -64,21 +64,23 @@ const SHOW_NAMES = [
     '聖艾粒LaLaLaLa',
 ];
 
-describe.each([
-    ['Duo 打開・橫', DUO_OPEN_LANDSCAPE],
-    ['HomeView', HOME_VIEW],
-])('HomePage shelf split on %s', (_name, viewport) => {
-    beforeEach(() => {
-        vi.useFakeTimers({ toFake: ['Date'] });
-        vi.setSystemTime(new Date('2026-10-19T08:00:00Z')); // 香港 19/10 16:00
-        stubViewport(viewport);
-    });
-    afterEach(() => {
-        vi.useRealTimers();
-        vi.unstubAllGlobals();
-        openHomePlayerCard();
-        restoreMiniPlayer();
-    });
+const setUp = (viewport: { width: number; height: number }) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-19T08:00:00Z')); // 香港 19/10 16:00
+    stubViewport(viewport);
+};
+
+const tearDown = () => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    openHomePlayerCard();
+    restoreMiniPlayer();
+};
+
+// 有播放卡先分兩欄：得 Duo 打開・橫；HomeView 主頁永遠唔出卡（P10 v2.0.2，見 HomePageSquareHandle.test.tsx）
+describe('HomePage shelf split on Duo 打開・橫', () => {
+    beforeEach(() => setUp(DUO_OPEN_LANDSCAPE));
+    afterEach(tearDown);
 
     it('should pin the wide banner above the tabs, outside the card list', async () => {
         await arriveHomeWith(BADGIRL_TODAY);
@@ -110,14 +112,6 @@ describe.each([
         expect(today.closest('[data-zoom-key]')?.querySelector('[data-corner]')).toBeNull();
     });
 
-    it('should use the original fill grid, banner first, when there is no player card', () => {
-        renderWithProviders(<HomePage />);
-
-        expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'fill');
-        expect(shelf()).not.toHaveAttribute('data-stacked');
-        expect(shelf()).toContainElement(screen.getByRole('img', { name: BANNER_ALT }));
-    });
-
     it('should stack the cards beside the player card while something plays', async () => {
         await arriveHomeWith(BADGIRL_TODAY);
 
@@ -133,6 +127,22 @@ describe.each([
         expect(screen.getByRole('navigation', { name: t('home.dramasNav') })).toHaveAttribute(
             'data-stacked',
         );
+    });
+});
+
+describe.each([
+    ['Duo 打開・橫', DUO_OPEN_LANDSCAPE],
+    ['HomeView', HOME_VIEW],
+])('HomePage fill grid on %s', (_name, viewport) => {
+    beforeEach(() => setUp(viewport));
+    afterEach(tearDown);
+
+    it('should use the original fill grid, banner first, when there is no player card', () => {
+        renderWithProviders(<HomePage />);
+
+        expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'fill');
+        expect(shelf()).not.toHaveAttribute('data-stacked');
+        expect(shelf()).toContainElement(screen.getByRole('img', { name: BANNER_ALT }));
     });
 
     it('should open a show page from its card', async () => {
@@ -159,28 +169,19 @@ describe('HomePage on an existing wide landscape screen', () => {
     });
 });
 
-// W-788：HomeView 有播放卡時左欄得半個方形畫面闊，收藏 tab 用直版排法；Duo 打開・橫左欄夠闊，照用闊版
+// 有嘢播時收藏 tab：Duo 打開・橫左欄夠闊，照用闊版；HomeView 主頁冇卡（P10 v2.0.2），收藏 tab 全闊亦用闊版
 describe.each([
-    ['Duo 打開・橫', DUO_OPEN_LANDSCAPE, 'wide'],
-    ['HomeView', HOME_VIEW, 'phone'],
-])('HomePage saved tab beside the player card on %s', (_name, viewport, layout) => {
-    beforeEach(() => {
-        vi.useFakeTimers({ toFake: ['Date'] });
-        vi.setSystemTime(new Date('2026-10-19T08:00:00Z'));
-        stubViewport(viewport);
-    });
-    afterEach(() => {
-        vi.useRealTimers();
-        vi.unstubAllGlobals();
-        openHomePlayerCard();
-        restoreMiniPlayer();
-    });
+    ['Duo 打開・橫', DUO_OPEN_LANDSCAPE],
+    ['HomeView', HOME_VIEW],
+])('HomePage saved tab while something plays on %s', (_name, viewport) => {
+    beforeEach(() => setUp(viewport));
+    afterEach(tearDown);
 
-    it(`should lay the saved tab out as ${layout}`, async () => {
+    it('should lay the saved tab out as wide', async () => {
         addBookmark(BADGIRL_TODAY);
         await arriveHomeWith(BADGIRL_TODAY);
         await userEvent.click(screen.getByRole('button', { name: t('home.tabSaved') }));
 
-        expect(document.querySelector('[data-saved-mode]')).toHaveAttribute('data-layout', layout);
+        expect(document.querySelector('[data-saved-mode]')).toHaveAttribute('data-layout', 'wide');
     });
 });

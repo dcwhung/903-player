@@ -83,6 +83,25 @@ describe('ShowPage HomeView（P10 lane 6）', () => {
         expect(audio.src).toBe(RECORDINGS[2]?.url);
     });
 
+    it('should top the episode sheet with the info banner and no fold-out details', async () => {
+        // v2.0.1 用戶反饋（2026-11-19，截圖 30）：同資料 sheet 一樣嘅 banner（節目名 + 播放時間）、同一個比例；
+        // 冇箭咀，主持 / 簡介唔喺清單出（撳 ⓘ 睇）
+        stubViewport(SQUARE);
+        withProgress();
+        renderWithProviders(<ShowPage />, ROUTE);
+
+        await userEvent.click(await screen.findByRole('button', { name: LIST_BUTTON }));
+
+        const sheet = screen.getByRole('dialog', { name: '集數' });
+        const banner = within(sheet).getByTestId('info-banner');
+        expect(within(banner).getByRole('heading', { name: '公子會' })).toBeInTheDocument();
+        expect(within(banner).getByText(/^逢星期六.*播放$/)).toBeInTheDocument();
+        expect(sheet).toHaveAttribute('data-banner-size', 'info');
+        expect(within(sheet).queryByRole('button', { name: '節目資料' })).not.toBeInTheDocument();
+        expect(within(sheet).queryByText('節目示範簡介')).not.toBeInTheDocument();
+        expect(within(sheet).queryByRole('list', { name: '主持' })).not.toBeInTheDocument();
+    });
+
     it('should close the sheet when the list button is pressed again', async () => {
         stubViewport(SQUARE);
         withProgress();

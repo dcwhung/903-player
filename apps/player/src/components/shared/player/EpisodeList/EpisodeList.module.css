@@ -382,3 +382,18 @@
         flex-wrap: wrap;
     }
 }
+
+/*
+ * iPhone Duo 闔上・橫（DUO_COVER_LANDSCAPE_QUERY，P10 v2.0.1 用戶反饋）：左欄得 46% 闊，
+ * 頁面集數清單（variant page）每行唔出收藏掣同佢留嘅位，狀態字（「未收聽」）攞返個位唔使斷行；
+ * 收藏照用播放器嘅 ☆。只限呢個姿勢（同其他裝置嘅條件唔重疊）
+ */
+@media (orientation: landscape) and (min-width: 600px) and (max-width: 639px) and (max-height: 450px) {
+    [data-variant='page'] .bookmarkSpace {
+        display: none;
+    }
+
+    [data-variant='page'] .item > .bookmark {
+        display: none;
+    }
+}

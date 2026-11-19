@@ -127,6 +127,7 @@ export const ShowPage = () => {
                         onSelect={data.pressEpisode}
                         focusKey={data.focusKey}
                         list={list}
+                        info={data.info.sheet}
                     />
                 )}
                 <InnerPageHandle page={{ kind: 'show', showId }} />
