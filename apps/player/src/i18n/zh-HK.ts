@@ -117,6 +117,8 @@ export const zhHK = {
         // 表頭右上：開緊 = 剩餘時間；有每晚排程未開 = 幾點開始
         remaining: '剩餘 {time}',
         scheduledAt: '{time} 開始',
+        // 每晚排程嗰粒掣嘅讀屏名（S-1202）：「30 分鐘，每晚 22:30」
+        scheduledOption: '{label}，每晚 {time}',
         // 15 / 30 / 60 上面嗰行細字（掣只寫數字，讀屏用 minutes）
         minutesCaption: '幾多分鐘後',
         // 開緊 = 只停今晚；未開再撳 = 取消每晚排程

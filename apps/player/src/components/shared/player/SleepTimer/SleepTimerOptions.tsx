@@ -53,8 +53,20 @@ export interface ChoiceState {
     running: SleepTimerOption | null;
     /** 每晚排程嘅選項（只喺未開時標出嚟） */
     scheduled: SleepTimerOption | null;
+    /** 每晚排程時間（「22:30」），排程嗰粒讀屏名用 */
+    scheduleTime: string | null;
     pick: (option: SleepTimerOption) => void;
 }
+
+/** 每晚排程嗰粒：讀屏都要知（S-1202），例如「30 分鐘，每晚 22:30」 */
+const scheduledName = (
+    label: string,
+    scheduled: boolean,
+    state: ChoiceState,
+): string | undefined =>
+    scheduled && state.scheduleTime !== null
+        ? t('sleepTimer.scheduledOption', { label, time: state.scheduleTime })
+        : undefined;
 
 export const MinuteButton = ({
     minutes,
@@ -62,17 +74,21 @@ export const MinuteButton = ({
 }: {
     minutes: SleepTimerMinutes;
     state: ChoiceState;
-}) => (
-    <OptionButton
-        kind="number"
-        label={t('sleepTimer.minutes', { minutes })}
-        selected={state.running === minutes}
-        scheduled={state.scheduled === minutes}
-        onPress={() => state.pick(minutes)}
-    >
-        <span className={styles.optionLabel}>{minutes}</span>
-    </OptionButton>
-);
+}) => {
+    const label = t('sleepTimer.minutes', { minutes });
+    const scheduled = state.scheduled === minutes;
+    return (
+        <OptionButton
+            kind="number"
+            label={scheduledName(label, scheduled, state) ?? label}
+            selected={state.running === minutes}
+            scheduled={scheduled}
+            onPress={() => state.pick(minutes)}
+        >
+            <span className={styles.optionLabel}>{minutes}</span>
+        </OptionButton>
+    );
+};
 
 /** 「播完呢集」：細字「剩餘時間：9:59」（排程嗰粒唔出）；直播 / 未知長度變灰 */
 export const EpisodeButton = ({
@@ -86,6 +102,7 @@ export const EpisodeButton = ({
     return (
         <OptionButton
             kind="wide"
+            label={scheduledName(t('sleepTimer.episode'), scheduled, state)}
             selected={state.running === 'episode'}
             scheduled={scheduled}
             unavailable={left === undefined}

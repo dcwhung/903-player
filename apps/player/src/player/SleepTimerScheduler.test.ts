@@ -217,6 +217,68 @@ describe('SleepTimerScheduler', () => {
         expect(reloaded.autoStarts).toEqual([]);
     });
 
+    it("should not record a daytime pick (04:58 rounds to 05:00): only tonight's timer runs (W-820)", async () => {
+        vi.setSystemTime(at(30, 4, 58));
+        const { scheduler, timer, play } = setup();
+        await play();
+
+        expect(scheduler.pick(30)).toBe(true);
+
+        expect(timer.getSnapshot().timer?.option).toBe(30);
+        expect(scheduler.getSnapshot()).toBeNull();
+        expect(localStorage.getItem(SLEEP_TIMER_SCHEDULE_STORAGE_KEY)).toBeNull();
+    });
+
+    it('should keep the old night schedule when a daytime pick is made (05:32 → 05:30)', async () => {
+        const { scheduler, player } = await scheduleTonight();
+        runUntil(at(30, 5, 32));
+        await player.play();
+
+        scheduler.pick(15);
+
+        expect(scheduler.getSnapshot()).toMatchObject({ minuteOfDay: 23 * 60 + 10, option: 30 });
+    });
+
+    it('should record 20:58 as a 21:00 night schedule', async () => {
+        vi.setSystemTime(at(30, 20, 58));
+        const { scheduler, play } = setup();
+        await play();
+
+        scheduler.pick(60);
+
+        expect(scheduler.getSnapshot()).toMatchObject({ minuteOfDay: 21 * 60, option: 60 });
+    });
+
+    it('should follow a schedule changed in another tab and not write the old one back (S-1200)', async () => {
+        const { scheduler, player, autoStarts } = await scheduleTonight();
+        const fromOtherTab = { minuteOfDay: 23 * 60 + 30, option: 15, firedFor: null };
+        localStorage.setItem(SLEEP_TIMER_SCHEDULE_STORAGE_KEY, JSON.stringify(fromOtherTab));
+
+        window.dispatchEvent(
+            new StorageEvent('storage', { key: SLEEP_TIMER_SCHEDULE_STORAGE_KEY }),
+        );
+
+        expect(scheduler.getSnapshot()).toEqual(fromOtherTab);
+        runUntil(at(30, 23, 0));
+        await player.play();
+        runUntil(at(30, 23, 30));
+        expect(autoStarts).toEqual([15]);
+        expect(
+            JSON.parse(localStorage.getItem(SLEEP_TIMER_SCHEDULE_STORAGE_KEY) ?? ''),
+        ).toMatchObject({ minuteOfDay: 23 * 60 + 30, option: 15, firedFor: at(30, 23, 30) });
+    });
+
+    it('should drop the schedule when another tab cancels it', async () => {
+        const { scheduler } = await scheduleTonight();
+        localStorage.removeItem(SLEEP_TIMER_SCHEDULE_STORAGE_KEY);
+
+        window.dispatchEvent(
+            new StorageEvent('storage', { key: SLEEP_TIMER_SCHEDULE_STORAGE_KEY }),
+        );
+
+        expect(scheduler.getSnapshot()).toBeNull();
+    });
+
     it('should ignore broken stored data', () => {
         localStorage.setItem(SLEEP_TIMER_SCHEDULE_STORAGE_KEY, '{"minuteOfDay":9999,"option":7}');
 

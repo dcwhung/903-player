@@ -175,8 +175,9 @@ describe('SleepTimerEntry', () => {
 
         click(moon()!);
 
-        expect(option('60 分鐘')).toHaveAttribute('data-scheduled', 'true');
-        expect(option('60 分鐘')).toHaveAttribute('aria-pressed', 'false');
+        // S-1202：讀屏讀到邊粒係每晚排程
+        expect(option('60 分鐘，每晚 22:30')).toHaveAttribute('data-scheduled', 'true');
+        expect(option('60 分鐘，每晚 22:30')).toHaveAttribute('aria-pressed', 'false');
         expect(option('15 分鐘')).toHaveAttribute('data-scheduled', 'false');
         expect(option('停用')).toHaveAttribute('aria-pressed', 'true');
         expect(within(sheet()!).getByTestId('sleep-timer-status')).toHaveTextContent('22:30 開始');
@@ -210,7 +211,7 @@ describe('SleepTimerEntry', () => {
         expect(document.querySelector('[data-sleep-timer-bar]')).not.toBeInTheDocument();
         click(moon()!);
         expect(within(sheet()!).getByTestId('sleep-timer-status')).toHaveTextContent('22:30 開始');
-        expect(option('30 分鐘')).toHaveAttribute('data-scheduled', 'true');
+        expect(option('30 分鐘，每晚 22:30')).toHaveAttribute('data-scheduled', 'true');
     });
 
     it('should cancel the nightly schedule with 停用 when no timer is running', async () => {
@@ -237,7 +238,7 @@ describe('SleepTimerEntry', () => {
 
         click(moon()!);
 
-        expect(option('播完呢集')).toHaveAttribute('data-scheduled', 'true');
+        expect(option('播完呢集，每晚 22:30')).toHaveAttribute('data-scheduled', 'true');
     });
 
     it('should restart from now when another option is picked while running', async () => {

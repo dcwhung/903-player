@@ -51,6 +51,7 @@ const useMenuState = (onDone: () => void) => {
     const state: ChoiceState = {
         running,
         scheduled: running === null ? (schedule?.option ?? null) : null,
+        scheduleTime: schedule ? formatScheduleTime(schedule.minuteOfDay) : null,
         pick: (option) => {
             if (pick(option)) onDone();
         },

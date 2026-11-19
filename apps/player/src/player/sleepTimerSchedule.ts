@@ -1,6 +1,7 @@
 import {
     MS_PER_SECOND,
     NIGHT_END_HOUR,
+    NIGHT_START_HOUR,
     SECONDS_PER_MINUTE,
     SLEEP_TIMER_SCHEDULE_ROUND_MINUTES,
     SLEEP_TIMER_SCHEDULE_WINDOW_HOURS,
@@ -44,6 +45,12 @@ export const minuteOfDay = (instant: number): number => {
 
 const pad = (value: number): string => String(value).padStart(2, '0');
 
+/**
+ * 排程時間係唔係夜間時段（本地 21:00–05:00，同月亮掣一樣）：日間時間唔記、唔觸發，日間版面 / 播放零改變（W-820）
+ */
+export const isNightSchedule = (minutes: number): boolean =>
+    minutes >= NIGHT_START_HOUR * MINUTES_PER_HOUR || minutes < NIGHT_END_HOUR * MINUTES_PER_HOUR;
+
 /** 22:30 */
 export const formatScheduleTime = (minutes: number): string =>
     `${pad(Math.floor(minutes / MINUTES_PER_HOUR))}:${pad(minutes % MINUTES_PER_HOUR)}`;
@@ -65,12 +72,13 @@ const nextNightEnd = (start: number): number => {
 
 /**
  * 而家喺邊晚嘅有效時段入面：排程時刻起 3 個鐘內、同埋 05:00 之前（以早到者為準），跨午夜都得。
- * 冇就 null（未到 / 過咗）
+ * 冇就 null（未到 / 過咗 / 日間時間嘅舊排程）
  */
 export const occurrenceAt = (
     minutes: number,
     now: number,
 ): { start: number; end: number } | null => {
+    if (!isNightSchedule(minutes)) return null;
     const today = onDay(now, minutes, 0);
     const start = today <= now ? today : onDay(now, minutes, -1);
     const end = Math.min(start + SCHEDULE_WINDOW_MS, nextNightEnd(start));

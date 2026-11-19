@@ -1,9 +1,5 @@
-import {
-    SLEEP_TIMER_LAST_STORAGE_KEY,
-    SLEEP_TIMER_SCHEDULE_STORAGE_KEY,
-    SLEEP_TIMER_STORAGE_KEY,
-} from '../config/constants';
-import { isSleepTimerOption, type SleepTimerOption, type SleepTimerState } from './sleepTimer';
+import { SLEEP_TIMER_SCHEDULE_STORAGE_KEY, SLEEP_TIMER_STORAGE_KEY } from '../config/constants';
+import { isSleepTimerOption, type SleepTimerState } from './sleepTimer';
 import { toSchedule, type SleepTimerSchedule } from './sleepTimerSchedule';
 
 /**
@@ -90,15 +86,6 @@ export const loadSleepTimer = (now: number): SleepTimerState | null => {
 /** null = 清走（取消 / 時間到） */
 export const saveSleepTimer = (timer: SleepTimerState | null): void =>
     writeItem(session, SLEEP_TIMER_STORAGE_KEY, timer && JSON.stringify(timer));
-
-/** 上次揀嘅選項（跨分頁 / 重開 app 都記得） */
-export const loadLastOption = (): SleepTimerOption | null => {
-    const value = parseJson(readItem(local, SLEEP_TIMER_LAST_STORAGE_KEY));
-    return isSleepTimerOption(value) ? value : null;
-};
-
-export const saveLastOption = (option: SleepTimerOption): void =>
-    writeItem(local, SLEEP_TIMER_LAST_STORAGE_KEY, JSON.stringify(option));
 
 /** 每晚自動排程（跨分頁 / 重開 app 都記得）；壞資料當冇 */
 export const loadSchedule = (): SleepTimerSchedule | null =>

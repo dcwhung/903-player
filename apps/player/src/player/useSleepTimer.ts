@@ -11,8 +11,6 @@ export interface UseSleepTimerOptions {
 export interface SleepTimerApi {
     /** null = 冇開 */
     timer: SleepTimerState | null;
-    /** 上次揀嘅選項（未開時嗰粒用框線 highlight） */
-    lastOption: SleepTimerOption | null;
     /** 每秒更新嘅 Date.now()：用嚟計 remainingMs(now) / fraction(now) */
     now: number;
     /** 剩餘 ms；冇 timer = 0 */
@@ -94,7 +92,7 @@ export const useSleepTimer = ({
     if (!controller) {
         throw new Error('useSleepTimer must be used inside <PlayerProvider>');
     }
-    const { timer, lastOption } = useSyncExternalStore(
+    const { timer } = useSyncExternalStore(
         controller.subscribe,
         controller.getSnapshot,
         controller.getSnapshot,
@@ -102,7 +100,6 @@ export const useSleepTimer = ({
     const now = useClock(timer !== null || tickWhileIdle, timer);
     return {
         timer,
-        lastOption,
         now,
         remainingMs: controller.remainingMs,
         fraction: controller.fraction,

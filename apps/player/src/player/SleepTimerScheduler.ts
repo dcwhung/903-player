@@ -1,8 +1,9 @@
-import { SLEEP_TIMER_CHECK_MS } from '../config/constants';
+import { SLEEP_TIMER_CHECK_MS, SLEEP_TIMER_SCHEDULE_STORAGE_KEY } from '../config/constants';
 import type { AudioController } from './AudioController';
 import type { SleepTimerOption } from './sleepTimer';
 import type { SleepTimerController } from './SleepTimerController';
 import {
+    isNightSchedule,
     minuteOfDay,
     occurrenceAt,
     roundScheduleInstant,
@@ -49,29 +50,44 @@ export class SleepTimerScheduler {
 
     attach = (): (() => void) => {
         const unsubscribe = this.player.subscribe(this.check);
+        // 另一個分頁改 / 取消咗排程：跟住佢（S-1200），唔可以之後用舊值寫返落去
+        window.addEventListener('storage', this.onStorage);
         this.attached = true;
         this.syncInterval();
         this.check();
         return () => {
             unsubscribe();
+            window.removeEventListener('storage', this.onStorage);
             this.attached = false;
             this.syncInterval();
         };
     };
 
     /**
-     * 手動揀：開 timer，記低做每晚排程；今晚當用咗（timer 已經開緊，之後再播唔會再開多次）。
+     * 手動揀：開 timer，記低做每晚排程（只限夜間 21:00–05:00）；今晚當用咗（timer 已經開緊，之後再播唔會再開多次）。
      * 開唔到（「播完呢集」聽緊直播）就乜都唔記
      */
     pick = (option: SleepTimerOption): boolean => {
         if (!this.timer.start(option)) return false;
         const at = roundScheduleInstant(Date.now());
-        this.setSchedule({ minuteOfDay: minuteOfDay(at), option, firedFor: at });
+        const minutes = minuteOfDay(at);
+        // 日間時間（例如 04:58 → 05:00）只開今次，唔記排程、唔蓋走舊嘅夜間排程（W-820）
+        if (isNightSchedule(minutes)) {
+            this.setSchedule({ minuteOfDay: minutes, option, firedFor: at });
+        }
         return true;
     };
 
     /** 取消每晚排程（今晚開緊嘅 timer 唔郁） */
     clear = (): void => this.setSchedule(null);
+
+    private onStorage = (event: StorageEvent): void => {
+        // key null = 另一個分頁 localStorage.clear()
+        if (event.key !== SLEEP_TIMER_SCHEDULE_STORAGE_KEY && event.key !== null) return;
+        this.schedule = loadSchedule();
+        this.syncInterval();
+        this.listeners.forEach((listener) => listener());
+    };
 
     private check = (): void => {
         const schedule = this.schedule;

@@ -11,12 +11,7 @@ import {
     type SleepTimerOption,
     type SleepTimerState,
 } from './sleepTimer';
-import {
-    loadLastOption,
-    loadSleepTimer,
-    saveLastOption,
-    saveSleepTimer,
-} from './sleepTimerStorage';
+import { loadSleepTimer, saveSleepTimer } from './sleepTimerStorage';
 
 /** 睡眠 timer 用到嘅 player 功能（AudioController 嘅一部分） */
 export type SleepTimerPlayer = Pick<
@@ -25,10 +20,8 @@ export type SleepTimerPlayer = Pick<
 >;
 
 export interface SleepTimerSnapshot {
-    /** null = 冇開 timer */
+    /** null = 冇開 timer（「上次時長」已由每晚排程取代，S-1201） */
     timer: SleepTimerState | null;
-    /** 上次揀嘅選項（localStorage）：未開時嗰粒用框線 highlight */
-    lastOption: SleepTimerOption | null;
 }
 
 /**
@@ -47,7 +40,7 @@ export class SleepTimerController {
 
     constructor(private readonly player: SleepTimerPlayer) {
         // 已過期嘅分鐘倒數喺 storage 清走（唔自動播）；「播完呢集」由 attach 嘅 check 睇載咗邊集再判斷
-        this.snapshot = { timer: loadSleepTimer(Date.now()), lastOption: loadLastOption() };
+        this.snapshot = { timer: loadSleepTimer(Date.now()) };
     }
 
     subscribe = (listener: () => void): (() => void) => {
@@ -80,8 +73,7 @@ export class SleepTimerController {
         if (!timer) {
             return false;
         }
-        saveLastOption(option);
-        this.setTimer(timer, option);
+        this.setTimer(timer);
         return true;
     };
 
@@ -139,8 +131,8 @@ export class SleepTimerController {
     /** 「播完呢集」播完：AudioController 已經停低 */
     private onEpisodeEnded = (): void => this.setTimer(null);
 
-    private setTimer(timer: SleepTimerState | null, lastOption = this.snapshot.lastOption): void {
-        this.snapshot = { timer, lastOption };
+    private setTimer(timer: SleepTimerState | null): void {
+        this.snapshot = { timer };
         saveSleepTimer(timer);
         this.syncStopAfterCurrent();
         this.syncInterval();

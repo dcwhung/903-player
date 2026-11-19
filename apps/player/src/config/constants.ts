@@ -142,8 +142,6 @@ export const DISC_SCRUB_MIN_DEGREES = 6;
 
 /** 睡眠 timer（9d）：截止時間 / 狀態，同一分頁重新載入照計（sessionStorage） */
 export const SLEEP_TIMER_STORAGE_KEY = '903player:sleep-timer:v1';
-/** 睡眠 timer 上次揀嘅選項（localStorage）：未開時嗰粒用框線 highlight */
-export const SLEEP_TIMER_LAST_STORAGE_KEY = '903player:sleep-timer-last:v1';
 /** 睡眠 timer 分鐘選項（另外仲有「播完呢集」） */
 export const SLEEP_TIMER_MINUTES = [15, 30, 60] as const;
 /** 除咗 timeupdate 之外每秒檢查一次截止時間（iOS 背景 setTimeout 會延遲，所以比較絕對時間） */

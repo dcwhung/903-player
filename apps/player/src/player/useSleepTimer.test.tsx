@@ -47,7 +47,6 @@ describe('useSleepTimer', () => {
     it('should start with no timer and no last option', () => {
         const { result } = setup();
         expect(result.current.timer.timer).toBeNull();
-        expect(result.current.timer.lastOption).toBeNull();
         expect(result.current.timer.remainingMs(Date.now())).toBe(0);
     });
 
@@ -94,7 +93,6 @@ describe('useSleepTimer', () => {
         act(() => vi.advanceTimersByTime(15 * MINUTE_MS));
 
         expect(result.current.timer.timer).toBeNull();
-        expect(result.current.timer.lastOption).toBe(15);
         expect(result.current.player.isPlaying).toBe(false);
         expect(audio.pause).toHaveBeenCalled();
     });
