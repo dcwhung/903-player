@@ -31,6 +31,8 @@ export interface PlayerHandleProps {
     /** 淡出緊：淡完（animationend；cancel 咗或者冇動畫就靠 useLeaveFallback）叫 onLeft 先拆走 */
     leaving?: boolean;
     onLeft?: () => void;
+    /** 撳咗由把手個框 zoom 入頁（data-zoom-key，utils/cardZoom）：HomeView 主頁把手先有 */
+    zoomKey?: string;
 }
 
 /** 右邊緣一條窄把手：而家嘅嘢嘅色、細字狀態、細碟、直寫名、‹ */
@@ -49,6 +51,7 @@ export const PlayerHandle = ({ theme, status, leaving = false, ...props }: Playe
                 className={styles.handle}
                 aria-label={props.label}
                 {...{ [`data-${props.variant}-handle`]: '' }}
+                data-zoom-key={props.zoomKey}
                 data-leaving={leaving ? '' : undefined}
                 // 淡出緊 = 播緊嘅已經係呢頁自己嘅嘢：唔再 focus / 撳得到，讀屏都唔再讀舊名（S-667）。
                 // inert 已經擋咗撳，onClick 再擋一次畀未支援 inert 嘅瀏覽器

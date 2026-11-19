@@ -2,8 +2,15 @@
 // 左欄頂固定闊版橫額 + 分類掣 + 疊卡 scroller，右欄播放卡（左右各半，Duo 對齊摺位）；
 // 冇播放卡 / 閂咗卡（兩欄或以上）用返原本闊橫版填滿格：橫額做第一格、一版放晒唔捲（用戶 2026-11-18）。Duo 打開・橫（876×612）同 HomeView（544×544）同一套。
 // 現有裝置唔受影響由 `npm run e2e:visual` 驗。每個情境用獨立 context
-import { goBack, installZoomProbe, single, transitionsAround } from './cardZoom.mjs';
-import { BANNER_ALT, ensurePlaying, newE2EPage, reachesHash, runSection } from './harness.mjs';
+import { goBack, installZoomProbe, single, transitionsAround, transitionsOf } from './cardZoom.mjs';
+import {
+    BANNER_ALT,
+    ensurePlaying,
+    newE2EPage,
+    reachesHash,
+    runSection,
+    succeeds,
+} from './harness.mjs';
 
 /** 刻意寫死做獨立對照（Progressier simulator 實測 / HomeView 假設） */
 const DEVICES = [
@@ -160,7 +167,7 @@ const shelfCard = (p, name) =>
     p.getByRole('navigation', { name: SHELF }).getByRole('button', { name });
 
 /**
- * 第一張（Bad Girl）返主頁時係 focus 緊，撳一下就入頁。HomeView 返主頁播放卡收埋（填滿格，冇疊卡），
+ * 第一張（Bad Girl）返主頁時係 focus 緊，撳一下就入頁。HomeView 主頁冇播放卡（填滿格，冇疊卡），
  * 等格仔出現就得
  */
 const firstCardReady = (p, pageHandles) =>
@@ -212,28 +219,50 @@ const checkZoom = async (env, { label, viewport, pageHandles }) => {
     await own.ctx.close();
 };
 
+/** 主頁版面 + 卡 / 把手 + 播緊未 */
+const homeState = (p) =>
+    p.evaluate((bannerAlt) => {
+        const handle = document.querySelector('[data-home-handle]');
+        const banner = document.querySelector(`img[alt="${bannerAlt}"]`);
+        return {
+            layout: document.querySelector('main')?.dataset.layout ?? null,
+            card: document.querySelector('section[data-home-card]') !== null,
+            handle: handle?.getAttribute('aria-label') ?? null,
+            bannerInGrid: banner?.closest('nav') !== null && banner !== null,
+            playing: navigator.mediaSession.playbackState === 'playing',
+        };
+    }, BANNER_ALT);
+
+/** HomeView 主頁冇卡：全闊填滿格（橫額喺格入面）+ 右邊把手，狀態 status（播放中 / 已暫停） */
+const squareHome = (state, status) =>
+    state.layout === 'fillWithHandle' &&
+    !state.card &&
+    state.bannerInGrid &&
+    state.handle?.startsWith(`${status}：`) === true;
+
 /**
- * 播緊嘢由內頁撳返回（P10 v2.0.1 用戶反饋截圖 25 → 26）：HomeView 直接返主頁選單（全闊填滿格），
- * 播放卡收埋、右邊把手（播放中，冇停播），撳把手先出返張卡；Duo 打開・橫照舊出張卡。
- * 減少動態都一樣（冇過場，直接切換）
+ * 撳 HomeView 主頁把手（P10 v2.0.2 用戶反饋）：直接入嗰個節目 / 劇集嘅播放頁（同 mini player / 卡角 ↗），
+ * 唔出卡；過場同格仔入頁一樣由把手個框 zoom（減少動態冇過場、直接轉頁）
  */
-const checkReturnFolded = async (env, { label, viewport, pageHandles }, reducedMotion) => {
+const tapSquareHandle = async (p, hash, reducedMotion) => {
+    const into = await transitionsAround(p, () => p.locator('[data-home-handle]').click(), hash);
+    const moved =
+        reducedMotion === 'reduce' ? into.reached && into.runs.length === 0 : single(into, 'zoom');
+    return { into, moved };
+};
+
+/**
+ * 播緊嘢由內頁撳返回：HomeView 主頁永遠唔出卡（P10 v2.0.2），全闊填滿格 + 右邊把手（播放中，冇停播），
+ * 撳把手直接返嗰個節目頁、照播；Duo 打開・橫照舊出張卡。減少動態都一樣（冇過場，直接切換）
+ */
+const checkReturnHome = async (env, { label, viewport, pageHandles }, reducedMotion) => {
     const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport, reducedMotion });
+    await ctx.addInitScript(installZoomProbe);
     await p.goto(`${env.base}${SHOW_ROUTE}`);
     await ensurePlaying(p);
     await goBack(p);
     await p.locator('nav[aria-busy="false"]').waitFor({ timeout: WAIT_MS });
-    const look = () =>
-        p.evaluate(() => {
-            const handle = document.querySelector('[data-home-handle]');
-            return {
-                layout: document.querySelector('main')?.dataset.layout ?? null,
-                card: document.querySelector('section[data-home-card]') !== null,
-                handle: handle?.getAttribute('aria-label') ?? null,
-                playing: navigator.mediaSession.playbackState === 'playing',
-            };
-        });
-    const back = await look();
+    const back = await homeState(p);
     const motion = reducedMotion === 'reduce' ? '（減少動態）' : '';
     if (pageHandles) {
         env.log(
@@ -244,26 +273,83 @@ const checkReturnFolded = async (env, { label, viewport, pageHandles }, reducedM
         return;
     }
     env.log(
-        back.layout === 'fillWithHandle' &&
-            !back.card &&
-            back.handle?.startsWith('播放中：') === true &&
-            back.playing,
-        `${label} 播緊返主頁：主頁選單 + 把手，播放卡收埋、照播${motion}（${JSON.stringify(back)}）`,
+        squareHome(back, '播放中') && back.playing,
+        `${label} 播緊返主頁：主頁選單 + 把手，冇播放卡、照播${motion}（${JSON.stringify(back)}）`,
     );
-    await p.locator('[data-home-handle]').click();
-    await p.locator('section[data-home-card]').waitFor({ timeout: WAIT_MS });
-    const opened = await look();
+    const { into, moved } = await tapSquareHandle(p, SHOW_ROUTE, reducedMotion);
+    const playing = await p.evaluate(() => navigator.mediaSession.playbackState === 'playing');
     env.log(
-        opened.layout === 'split' && opened.card && opened.handle === null,
-        `${label} 撳把手出返播放卡${motion}（${JSON.stringify(opened)}）`,
+        moved && playing,
+        `${label} 撳把手直接入播緊嘅節目頁、照播${motion}（${JSON.stringify({ into, playing })}）`,
     );
     await ctx.close();
 };
 
+/**
+ * HomeView 第一次開 app（重新載入）有續聽：唔出卡，全闊格 + 「已暫停」把手；
+ * 撳把手入嗰個節目 / 劇集頁：同 mini player / 卡角 ↗ 一樣帶埋嗰集，入頁播嗰集（useShowPage 嘅 S-507）
+ */
+const checkSquareFirstLoad = async (env, { label, viewport }) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport });
+    await ctx.addInitScript(installZoomProbe);
+    await p.goto(`${env.base}${SHOW_ROUTE}`);
+    await ensurePlaying(p);
+    await openHome(p, env.base);
+    await p.locator('[data-home-handle]').waitFor({ timeout: WAIT_MS });
+    const first = await homeState(p);
+    env.log(
+        squareHome(first, '已暫停') && !first.playing,
+        `${label} 第一次開 app 有續聽：全闊格 + 已暫停把手，冇播放卡（${JSON.stringify(first)}）`,
+    );
+    const before = await transitionsOf(p);
+    await p.locator('[data-home-handle]').click();
+    const landed = await succeeds(
+        p.waitForURL((url) => /^#\/(show|drama)\//.test(new URL(url).hash), { timeout: WAIT_MS }),
+    );
+    const runs = (await transitionsOf(p)).slice(before.length);
+    const hash = new URL(p.url()).hash;
+    const playing = await p.evaluate(() => navigator.mediaSession.playbackState === 'playing');
+    env.log(
+        landed && runs.length === 1 && runs[0].kind === 'zoom' && playing,
+        `${label} 第一次開 app 撳把手入播放頁（${hash}），zoom 過場、同 mini player 一樣播嗰集（${JSON.stringify({ runs, playing })}）`,
+    );
+    await ctx.close();
+};
+
+/** Duo 打開・橫唔變：✕ 閂卡之後撳把手出返張卡，留喺主頁（唔入頁） */
+const checkDuoHandleUnfolds = async (env, { label, viewport }) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport });
+    await p.goto(`${env.base}${SHOW_ROUTE}`);
+    await ensurePlaying(p);
+    await openHome(p, env.base);
+    await p.getByRole('button', { name: '關閉播放器', exact: true }).click();
+    await p.locator('[data-home-handle]').waitFor({ timeout: WAIT_MS });
+    const closed = await homeState(p);
+    await p.locator('[data-home-handle]').click();
+    await p.locator('section[data-home-card]').waitFor({ timeout: WAIT_MS });
+    const opened = await homeState(p);
+    const hash = new URL(p.url()).hash;
+    env.log(
+        closed.layout === 'fillWithHandle' &&
+            opened.layout === 'split' &&
+            opened.card &&
+            opened.handle === null &&
+            // 載入主頁冇 hash（''）；轉過頁返嚟係 #/
+            ['', HOME_HASH].includes(hash),
+        `${label} ✕ 閂卡再撳把手：出返播放卡、留喺主頁（${JSON.stringify({ closed, opened, hash })}）`,
+    );
+    await ctx.close();
+};
+
+/** 按裝置揀：Duo 打開・橫（內頁有把手）用 duo，HomeView 用 square */
+const perDevice = (duo, square) => (env, device) =>
+    device.pageHandles ? duo(env, device) : square(env, device);
+
 const SCENARIOS = [
-    ['新主頁', checkSplit],
-    ['播緊返主頁', (env, device) => checkReturnFolded(env, device)],
-    ['播緊返主頁（減少動態）', (env, device) => checkReturnFolded(env, device, 'reduce')],
+    ['新主頁', perDevice(checkSplit, checkSquareFirstLoad)],
+    ['閂卡撳把手', perDevice(checkDuoHandleUnfolds, () => undefined)],
+    ['播緊返主頁', (env, device) => checkReturnHome(env, device)],
+    ['播緊返主頁（減少動態）', (env, device) => checkReturnHome(env, device, 'reduce')],
     ['冇播放卡', checkFill],
     ['撳疊卡', checkOpen],
     ['疊卡過場', checkZoom],
