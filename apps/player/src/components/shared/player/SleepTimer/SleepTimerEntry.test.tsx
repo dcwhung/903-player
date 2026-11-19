@@ -4,8 +4,8 @@ import { SleepTimerEntry } from './SleepTimerEntry';
 
 const SECOND_MS = 1000;
 
-const moon = () => screen.queryByRole('button', { name: /^睡眠 timer/ });
-const sheet = () => screen.queryByRole('dialog', { name: '睡眠 timer' });
+const moon = () => screen.queryByRole('button', { name: /^休眠/ });
+const sheet = () => screen.queryByRole('dialog', { name: '休眠' });
 const option = (name: string) => within(sheet()!).getByRole('button', { name });
 
 /** 頁面 ThemeScope（頁頂進度條掛喺佢度） */
@@ -51,7 +51,7 @@ describe('SleepTimerEntry', () => {
         renderWithSleepTimer(inPage());
 
         const button = moon()!;
-        expect(button).toHaveAccessibleName('睡眠 timer');
+        expect(button).toHaveAccessibleName('休眠');
         expect(button).toHaveAttribute('data-active', 'false');
         expect(button).toHaveAttribute('aria-haspopup', 'dialog');
         expect(button).toHaveAttribute('aria-expanded', 'false');
@@ -82,14 +82,14 @@ describe('SleepTimerEntry', () => {
         startTimer('30 分鐘');
 
         expect(sheet()).not.toBeInTheDocument();
-        expect(moon()).toHaveAccessibleName('睡眠 timer，剩餘 30 分 0 秒');
+        expect(moon()).toHaveAccessibleName('休眠，剩餘 30 分 0 秒');
         expect(moon()).toHaveAttribute('data-active', 'true');
         expect(moon()).toHaveTextContent('30:00');
 
         act(() => vi.advanceTimersByTime(6 * MINUTE_MS + 46 * SECOND_MS));
 
         expect(moon()).toHaveTextContent('23:14');
-        expect(moon()).toHaveAccessibleName('睡眠 timer，剩餘 23 分 14 秒');
+        expect(moon()).toHaveAccessibleName('休眠，剩餘 23 分 14 秒');
     });
 
     it('should keep showing in the daytime while a timer is running', async () => {
@@ -184,7 +184,7 @@ describe('SleepTimerEntry', () => {
 
         expect(option('30 分鐘')).toHaveAttribute('aria-pressed', 'true');
         expect(option('15 分鐘')).toHaveAttribute('aria-pressed', 'false');
-        const tabs = within(sheet()!).getByRole('group', { name: '睡眠 timer 狀態' });
+        const tabs = within(sheet()!).getByRole('group', { name: '休眠狀態' });
         const [remaining, off] = within(tabs).getAllByRole('button');
         expect(remaining).toHaveTextContent('剩餘 23:14');
         expect(remaining).toHaveAttribute('aria-pressed', 'true');

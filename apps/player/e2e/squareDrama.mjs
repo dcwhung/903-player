@@ -81,9 +81,9 @@ const look = (p) =>
         };
         const gauge = document.querySelector('[data-player-gauge]');
         const header = document.querySelector('main header');
-        // 清單掣（夜間佢左邊仲有睡眠 timer 月亮掣，都係開 dialog）
+        // 清單掣（夜間佢左邊仲有休眠月亮掣，都係開 dialog）
         const button = header?.querySelector(
-            'button[aria-haspopup="dialog"]:not([aria-label^="睡眠 timer"])',
+            'button[aria-haspopup="dialog"]:not([aria-label^="休眠"])',
         );
         // 日子條自己左右捲（剪走嘅日子唔算出界）
         const outside = [...document.querySelectorAll('main button, main [role="slider"]')]

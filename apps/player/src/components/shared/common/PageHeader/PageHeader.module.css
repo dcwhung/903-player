@@ -66,6 +66,26 @@
             );
     }
 
+    /*
+     * 夜間出咗月亮（未開）：兩邊格各加一粒掣位，標題照置中，長名照用縮字 / 跑馬燈（用戶 2026-11-19 #6）。
+     * 日間冇月亮，呢條唔生效
+     */
+    .header:has(> [data-header-actions]):has(> [data-placement='beside']) {
+        grid-template-columns: calc(3 * var(--touch-target)) minmax(0, 1fr) calc(
+                3 * var(--touch-target)
+            );
+    }
+
+    /* 月亮貼住清單掣（+ ⓘ）左邊：右格加闊咗，唔可以用格嘅左邊（#5） */
+    .header:has(> [data-header-actions]) > [data-placement='beside'] {
+        right: calc(2 * var(--touch-target));
+    }
+
+    /* 冇 ⓘ（得清單掣）：直接貼清單掣，唔好隔一粒掣位 */
+    .header:has(> [data-header-actions] > :only-child) > [data-placement='beside'] {
+        right: var(--touch-target);
+    }
+
     /* 睡眠 timer 開緊：月亮 + 分秒喺清單掣左邊向左伸，兩邊格一齊加闊（同下面 .header 一樣） */
     .header:has(> [data-header-actions]):has(> [data-placement='beside'][data-active='true']) {
         grid-template-columns:

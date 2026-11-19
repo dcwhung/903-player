@@ -42,6 +42,7 @@
     margin: 0 auto;
     padding: var(--space-2) var(--space-5) calc(env(safe-area-inset-bottom) + var(--space-5));
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    /* 唔識 color-mix 嘅舊瀏覽器：實色（下面 @supports 先透明） */
     background: var(--color-surface);
     box-shadow: var(--shadow-floating);
     color: var(--color-text);
@@ -50,6 +51,17 @@
     touch-action: none;
     /* 向下拉閂：放手後滑走 / 彈返（useSheetDrag 改 transform） */
     transition: transform var(--arc-sheet-slide-ms) ease-out;
+}
+
+/* 底色 80% 不透明（用戶 2026-11-19）：隱約見到後面嘅頁面 */
+@supports (color: color-mix(in srgb, red, blue)) {
+    .sheet {
+        background: color-mix(
+            in srgb,
+            var(--color-surface) var(--sleep-timer-sheet-opacity),
+            transparent
+        );
+    }
 }
 
 /* 平板橫播放卡：表同卡一樣闊，唔使再收窄 */
@@ -153,10 +165,10 @@
     justify-content: center;
     min-height: var(--sleep-timer-option-height);
     padding: var(--space-2);
-    /* 透明框線先預留位：上次揀嗰粒加色唔會郁 */
-    border: 2px solid transparent;
+    /* 冇底色：用返以前掣底色做框邊（用戶 2026-11-19） */
+    border: var(--sleep-timer-option-border) solid var(--color-track);
     border-radius: var(--radius-md);
-    background: var(--color-track);
+    background: transparent;
     color: var(--color-text);
 }
 
@@ -171,19 +183,15 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* 未開：上次揀嗰粒強調色框線，撳一下即開始 */
-.option[data-last='true'] {
-    border-color: var(--color-accent);
-}
-
-/* 開緊嗰粒：實色 */
+/*
+ * 揀中（未開 = 上次揀嗰粒，撳一下即開始；開緊 = 而家嗰粒）：似日子條「現正播放」嗰格
+ *（DateStrip.module.css）——強調色框邊 + 強調色粗字，冇底色
+ */
+.option[data-last='true'],
 .option[aria-pressed='true'] {
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-}
-
-.option[aria-pressed='true'] .optionDetail {
-    color: inherit;
+    border-color: var(--color-accent);
+    background: transparent;
+    color: var(--color-accent-text);
 }
 
 /* 直播 / 未載到：「播完呢集」變灰，撳唔到 */

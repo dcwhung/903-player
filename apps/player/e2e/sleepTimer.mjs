@@ -6,9 +6,9 @@ import { ensurePlaying, isShown, newE2EPage, waitForPlaybackState } from './harn
 import { VISUAL_DAY_NOW } from './visualModel.mjs';
 
 const SHOW_ROUTE = '#/show/gongzi';
-const MOON = /^睡眠 timer/;
-const MOON_OFF = '睡眠 timer';
-const MENU = '睡眠 timer';
+const MOON = /^休眠/;
+const MOON_OFF = '休眠';
+const MENU = '休眠';
 const UI_WAIT_MS = 5000;
 const MINUTE_MS = 60_000;
 // 時間到之後多行幾耐（每秒檢查一次，再等 pause 嘅 effect）
@@ -17,6 +17,7 @@ const EXPIRE_MARGIN_MS = 3000;
 const END_LEAD_SECONDS = 2;
 const ENDED_WAIT_MS = 10_000;
 const WIDE = { width: 1180, height: 820 };
+const SQUARE = { width: 544, height: 544 };
 
 /** app 自己 new 嘅 <audio> 唔喺 DOM：攔 play() 記低佢（同 visualScenes.mjs 一樣） */
 const captureAudio = (ctx) =>
@@ -61,7 +62,7 @@ const checkStartChangeCancel = async ({ browser, base, errors, log }) => {
     const shown = await isShown(moon, { timeout: UI_WAIT_MS });
     log(shown, '睡眠 timer：夜間（22:30）節目頁頁頭有月亮掣');
     if (!shown) return ctx.close();
-    log((await moon.getAttribute('aria-label')) === MOON_OFF, '睡眠 timer：未開係「睡眠 timer」');
+    log((await moon.getAttribute('aria-label')) === MOON_OFF, '睡眠 timer：未開係「休眠」');
     log(!(await pageBar(p).isVisible()), '睡眠 timer：未開冇頁頂進度條');
 
     await moon.click();
@@ -191,6 +192,17 @@ const checkWideHomeCard = async ({ browser, base, errors, log }) => {
     const shown = await isShown(moon, { timeout: UI_WAIT_MS });
     log(shown, '睡眠 timer：闊版主頁播放卡有月亮掣');
     if (!shown) return ctx.close();
+    // 頁頭列「⤢」：開頁掣入面最後嗰格
+    const expand = card.locator('button').first().locator('span').last();
+    const rightEdges = async () => {
+        const [m, e] = await Promise.all([moon.boundingBox(), expand.boundingBox()]);
+        return { moon: m ? m.x + m.width : NaN, expand: e ? e.x + e.width : NaN };
+    };
+    const off = await rightEdges();
+    log(
+        Math.abs(off.moon - off.expand) < 1,
+        `睡眠 timer：闊版月亮右邊同「⤢」右邊對齊（${off.moon} / ${off.expand}）`,
+    );
     await moon.click();
     const sheet = menu(p);
     await sheet.waitFor({ timeout: UI_WAIT_MS });
@@ -203,6 +215,45 @@ const checkWideHomeCard = async ({ browser, base, errors, log }) => {
     await sheet.waitFor({ state: 'detached', timeout: UI_WAIT_MS });
     const box = await pageBar(p).boundingBox();
     log(box?.width === WIDE.width, `睡眠 timer：闊版主頁頁頂全闊進度條（${box?.width}）`);
+    const on = await rightEdges();
+    log(
+        Math.abs(on.moon - on.expand) < 1,
+        `睡眠 timer：闊版開咗分秒向左伸，右邊照對齊「⤢」（${on.moon} / ${on.expand}）`,
+    );
+    return ctx.close();
+};
+
+/**
+ * HomeView（冇 ⓘ）：月亮直接貼清單掣左邊；夜間標題格兩邊各讓一粒掣位，標題照置中、唔疊月亮
+ * （用戶 2026-11-19 #5 #6）
+ */
+const checkSquareHeader = async ({ browser, base, errors, log }) => {
+    const { ctx, p } = await newE2EPage(browser, errors, { viewport: SQUARE, hasTouch: true });
+    await p.goto(`${base}${SHOW_ROUTE}`);
+    await ensurePlaying(p);
+    const header = pageHeader(p);
+    const moon = moonIn(header);
+    const shown = await isShown(moon, { timeout: UI_WAIT_MS });
+    log(shown, '睡眠 timer：HomeView 頁頭有月亮掣');
+    if (!shown) return ctx.close();
+    const list = header.getByRole('button', { name: /^集數清單/ });
+    const [moonBox, listBox, titleBox, infoCount] = await Promise.all([
+        moon.boundingBox(),
+        list.boundingBox(),
+        header.locator('h1').boundingBox(),
+        header.getByRole('button', { name: '節目資料' }).count(),
+    ]);
+    const gap = (listBox?.x ?? NaN) - ((moonBox?.x ?? NaN) + (moonBox?.width ?? NaN));
+    log(
+        infoCount === 0 && Math.abs(gap) < 1,
+        `睡眠 timer：HomeView 冇 ⓘ 時月亮貼住清單掣左邊（間隙 ${gap}px）`,
+    );
+    const titleCenter = (titleBox?.x ?? NaN) + (titleBox?.width ?? NaN) / 2;
+    log(
+        Math.abs(titleCenter - SQUARE.width / 2) < 1 &&
+            (titleBox?.x ?? NaN) + (titleBox?.width ?? NaN) <= (moonBox?.x ?? NaN),
+        `睡眠 timer：HomeView 夜間標題照置中（${titleCenter}）、唔疊月亮`,
+    );
     return ctx.close();
 };
 
@@ -214,4 +265,5 @@ export const runSleepTimerChecks = async (env, section) => {
     await section('睡眠 timer：播完呢集', () => checkEndOfEpisode(env));
     await section('睡眠 timer：mini player', () => checkMiniPlayer(env));
     await section('睡眠 timer：闊版主頁', () => checkWideHomeCard(env));
+    await section('睡眠 timer：HomeView 頁頭', () => checkSquareHeader(env));
 };

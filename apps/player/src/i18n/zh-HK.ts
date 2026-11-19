@@ -104,18 +104,18 @@ export const zhHK = {
         // 日子條入面有集數嘅日子（撳落去播嗰集；同集數清單「播放 …」分開）
         pickDay: '轉去 {date}',
     },
-    // 睡眠 timer（9d，_mockups_/sleep-timer）：月亮掣、底部選單；冇說明字
+    // 睡眠 timer（9d，_mockups_/sleep-timer）：月亮掣、底部選單；冇說明字。標題同掣名叫「休眠」（用戶 2026-11-19）
     sleepTimer: {
-        title: '睡眠 timer',
+        title: '休眠',
         // 月亮掣讀屏名：開緊時加剩餘時間（{remaining} = spokenRemaining）
-        button: '睡眠 timer',
-        buttonActive: '睡眠 timer，剩餘 {remaining}',
+        button: '休眠',
+        buttonActive: '休眠，剩餘 {remaining}',
         spokenRemaining: '{minutes} 分 {seconds} 秒',
         minutes: '{minutes} 分鐘',
         episode: '播完呢集',
         episodeRemaining: '剩餘時間：{time}',
         // 開緊時標題右邊 tab 掣（主頁「節目｜廣播劇」款）
-        status: '睡眠 timer 狀態',
+        status: '休眠狀態',
         remaining: '剩餘 {time}',
         off: '關閉',
     },

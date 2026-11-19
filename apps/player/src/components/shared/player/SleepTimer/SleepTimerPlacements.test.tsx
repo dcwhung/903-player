@@ -5,7 +5,7 @@ import { CardDots } from '../../../pages/home/HomePlayerCard/CardHeader';
 import { MiniPlayer, type MiniPlayerProps } from '../../../pages/home/MiniPlayer/MiniPlayer';
 import { PageHeader } from '../../common/PageHeader/PageHeader';
 
-const MOON = /^睡眠 timer/;
+const MOON = /^休眠/;
 
 const miniProps = (overrides: Partial<MiniPlayerProps> = {}): MiniPlayerProps => ({
     showName: '公子會',
@@ -89,7 +89,7 @@ describe('sleep timer placements', () => {
         const region = screen.getByRole('region', { name: '正在播放（今日節目）' });
         fireEvent.click(within(region).getByRole('button', { name: MOON }));
 
-        const dialog = screen.getByRole('dialog', { name: '睡眠 timer' });
+        const dialog = screen.getByRole('dialog', { name: '休眠' });
         // 卡有 transform（左滑關閉）：選單唔可以喺卡入面，否則 position: fixed 會跟卡
         expect(region).not.toContainElement(dialog);
         fireEvent.click(within(dialog).getByRole('button', { name: '15 分鐘' }));
@@ -103,7 +103,7 @@ describe('sleep timer placements', () => {
         const onChange = vi.fn();
         renderWithSleepTimer(<MiniPlayer {...miniProps({ onChange })} />);
         fireEvent.click(screen.getByRole('button', { name: MOON }));
-        const dialog = screen.getByRole('dialog', { name: '睡眠 timer' });
+        const dialog = screen.getByRole('dialog', { name: '休眠' });
 
         fireEvent.pointerDown(dialog, { pointerId: 1, clientX: 300, clientY: 400, button: 0 });
         fireEvent.pointerMove(dialog, { pointerId: 1, clientX: 100, clientY: 400 });

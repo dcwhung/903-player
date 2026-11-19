@@ -145,4 +145,42 @@ describe('useSleepTimer', () => {
 
         expect(result.current.timer.now).toBe(START + SLEEP_TIMER_CHECK_MS);
     });
+
+    it('should share one clock so every consumer shows the same second (moon and menu)', () => {
+        const audio = new FakeAudio();
+        const seen: Record<string, number> = {};
+        const Probe = ({ name, idle = false }: { name: string; idle?: boolean }) => {
+            seen[name] = useSleepTimer({ tickWhileIdle: idle }).now;
+            return null;
+        };
+        const Starter = () => {
+            const { start } = useSleepTimer();
+            starter = start;
+            return null;
+        };
+        let starter: ((option: 15) => boolean) | undefined;
+        const { rerender } = render(
+            <PlayerProvider audio={audio.asAudio()}>
+                <Starter />
+                <Probe name="moon" />
+            </PlayerProvider>,
+        );
+        act(() => {
+            starter?.(15);
+        });
+        // 選單遲咗 0.4 秒先開：唔可以有自己一個錯開咗嘅時鐘
+        act(() => vi.advanceTimersByTime(400));
+        rerender(
+            <PlayerProvider audio={audio.asAudio()}>
+                <Starter />
+                <Probe name="moon" />
+                <Probe name="menu" idle />
+            </PlayerProvider>,
+        );
+
+        for (let tick = 0; tick < 3; tick += 1) {
+            act(() => vi.advanceTimersByTime(SLEEP_TIMER_CHECK_MS / 2));
+            expect(seen.menu).toBe(seen.moon);
+        }
+    });
 });
