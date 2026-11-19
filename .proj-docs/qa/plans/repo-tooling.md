@@ -19,7 +19,7 @@
     - `tsconfig.json` `vitest.config.ts` `apps/player/tsconfig.app.json` `apps/player/tsconfig.node.json`
     - `packages/catalog/{package.json,tsconfig.json,tsconfig.node.json,tsconfig.src.json,vitest.config.ts}` `packages/catalog/src/console.d.ts`
     - `.github/workflows/ci.yml` `.github/workflows/deploy.yml` `.proj-docs/qa/ledger-ignore`（S-762）`vercel.json`（S-757）
-    - `apps/player/e2e/run.mjs` `apps/player/e2e/harness.mjs` `apps/player/vite.config.ts` `apps/player/scripts/catalogCaching.{ts,test.ts}`（workbox runtime catalog route，Phase 1）
+    - `apps/player/e2e/run.mjs` `apps/player/e2e/harness.mjs` `apps/player/src/e2eTimezone.test.ts`（9d Lane 3：harness context 預設香港時區） `apps/player/vite.config.ts` `apps/player/scripts/catalogCaching.{ts,test.ts}`（workbox runtime catalog route，Phase 1）
     - `apps/player/scripts/e2eCatalogNotFound.{ts,test.ts}`（AC-7）
     - `apps/player/scripts/tsconfigTypes.test.ts`（AC-8）
     - `apps/player/e2e/{previewServer.mjs,visualDiff.mjs,visualModel.mjs,visualModel.d.mts,visualScenes.mjs,visualScenes.d.mts}` `apps/player/src/{e2eVisualModel,e2eVisualScenes}.node.test.ts`（AC-10 / AC-11；`e2e/remoteCatalog.mjs` 嘅 `catalogRoute` export 屬 catalog-data 鏈）
@@ -34,6 +34,7 @@
     - AC-9：`npm test`（`generateIcons.test.ts`：centerSquareCrop = admin centerCrop、兩張 maskable 邊位取樣 = 原圖、角位 = 底色）；`git diff --name-only <base>` 確認 `public/` 只改 maskable；IHDR 尺寸；e2e / PWA 換版由 CI 同 code 嘅 run 引用
     - AC-10：`npm test -- apps/player/src/e2e`（`e2eVisualModel.node.test.ts`）；`npm run e2e:visual`（全套一次，約 5 分鐘；cloud sandbox 加 `PW_CHROMIUM_PATH`）對 base 全部一樣；`npm run e2e`（`previewServer.mjs` 抽出後全綠，CI 同 SHA 綠就引用）；`node e2e/visualDiff.mjs --scene <冇嘅名>` / `--viewport 1x1` exit 1
     - AC-11：`npm test -- apps/player/src/e2e`（`e2eVisualScenes.node.test.ts`）；`VISUAL_BASE=HEAD npm run e2e:visual`（一次，234/234 一樣）；lint / unit / build / e2e 由 CI 同 SHA 證
+    - 9d Lane 3 harness 時區（S-1149）：`npm test -- apps/player/src/e2eTimezone`；e2e 由 CI 同 SHA 證
     - AC-8：`npm test -- apps/player/scripts`（`tsconfigTypes.test.ts`）；root `package.json` 冇 `tsx`、player 冇 `drama-from-folder` script（`git grep`）；lint / unit / build / e2e 由 CI 同 SHA 證
 - PWA gate: no（App 外觀 1.36.0：manifest 文字 / icon 只喺 catalog 有 branding 先變、SW 策略 / 更新邏輯唔變，AC-7 驗；之前：`sw.js` / manifest / 更新邏輯冇改；dist 一樣即係 SW precache 一樣。Phase 1 起 `VITE_CATALOG_URL` 有設先加 catalog runtimeCaching route，production 冇設 → `sw.js` 冇 route；PWA 換版由 e2e section 證。2b-2 `vite.config.ts` 加 `catalogSnapshot()` plugin：只改 precache 內容（snapshot 圖），SW 策略唔變；驗證屬 catalog-data AC-5，PWA 換版由 CI e2e 證）
 - Out of scope: `deploy-api.yml`（屬 api 鏈）、`.vscode/` / `apps/player/scripts/arcCover/`（S-762 起 ledger-ignore）、各功能鏈（各自 plan）

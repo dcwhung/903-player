@@ -1,11 +1,6 @@
-import { SLEEP_TIMER_LAST_STORAGE_KEY, SLEEP_TIMER_STORAGE_KEY } from '../config/constants';
+import { SLEEP_TIMER_STORAGE_KEY } from '../config/constants';
 import type { SleepTimerState } from './sleepTimer';
-import {
-    loadLastOption,
-    loadSleepTimer,
-    saveLastOption,
-    saveSleepTimer,
-} from './sleepTimerStorage';
+import { loadSleepTimer, saveSleepTimer } from './sleepTimerStorage';
 
 const NOW = 1_000_000;
 const TIMER: SleepTimerState = {
@@ -108,30 +103,5 @@ describe('sleep timer session storage', () => {
         expect(() => saveSleepTimer(TIMER)).not.toThrow();
         expect(() => saveSleepTimer(null)).not.toThrow();
         expect(loadSleepTimer(NOW)).toBeNull();
-    });
-});
-
-describe('sleep timer last option', () => {
-    it('should remember the last option in localStorage', () => {
-        saveLastOption(30);
-        expect(localStorage.getItem(SLEEP_TIMER_LAST_STORAGE_KEY)).not.toBeNull();
-        expect(loadLastOption()).toBe(30);
-        saveLastOption('episode');
-        expect(loadLastOption()).toBe('episode');
-    });
-
-    it('should return null when nothing or something invalid is stored', () => {
-        expect(loadLastOption()).toBeNull();
-        localStorage.setItem(SLEEP_TIMER_LAST_STORAGE_KEY, '45');
-        expect(loadLastOption()).toBeNull();
-        localStorage.setItem(SLEEP_TIMER_LAST_STORAGE_KEY, '{');
-        expect(loadLastOption()).toBeNull();
-    });
-
-    it('should not throw when localStorage throws', () => {
-        throwOnStorage('getItem');
-        throwOnStorage('setItem');
-        expect(() => saveLastOption(15)).not.toThrow();
-        expect(loadLastOption()).toBeNull();
     });
 });

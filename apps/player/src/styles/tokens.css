@@ -171,6 +171,25 @@
     --list-badge-inset-top: 3px;
     --list-badge-inset-end: 1px;
     --list-sheet-height: 62%;
+    /*
+     * 睡眠 timer（9d，_mockups_/sleep-timer）：頁頂 / mini player 卡頂進度條高度；底部選單最闊幾多
+     *（手機打橫 / 平板置中，唔拉到成個畫面咁闊）、2×2 大掣高度、月亮 icon 大細
+     */
+    --sleep-timer-bar-height: calc(3px * var(--ui-scale));
+    --sleep-timer-sheet-max-width: calc(480px * var(--ui-scale));
+    --sleep-timer-option-height: calc(52px * var(--ui-scale));
+    /* 選單底色不透明度（後面頁面隱約見到）同 2×2 掣框邊粗幼（用戶 2026-11-19） */
+    --sleep-timer-sheet-opacity: 80%;
+    --sleep-timer-sheet-blur: 14px;
+    /* 選單右上「22:30 開始」（每晚排程未開）淡啲 */
+    --sleep-timer-scheduled-opacity: 0.7;
+    /* 選單掣字：15 / 30 / 60 平時 19px、揀中 22px；「播完呢集」/「停用」揀中大一級 19px */
+    --sleep-timer-number-size: calc(19px * var(--ui-scale));
+    --sleep-timer-number-selected-size: calc(22px * var(--ui-scale));
+    --sleep-timer-option-selected-size: calc(19px * var(--ui-scale));
+    --sleep-timer-option-border: calc(2px * var(--ui-scale));
+    /* 開緊時頁頭右格要幾闊：44px 掣嘅左右 padding + 月亮 + 「1:58:30」（--font-size-lg 粗體等闊數字） */
+    --sleep-timer-header-room: calc(104px * var(--ui-scale));
     /* HomeView 節目頁唱片直徑（mockup 256px；唱片 = 播放器格闊 × --disc-large-share，Disc.module.css .large 同用） */
     --square-player-disc: 256px;
     --disc-large-share: 0.72;

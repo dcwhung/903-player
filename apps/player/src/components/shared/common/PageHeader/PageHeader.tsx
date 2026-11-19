@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { t } from '../../../../i18n/t';
 import { BackIcon } from '../icons/icons';
 import { Marquee } from '../Marquee/Marquee';
+import { SleepTimerEntry } from '../../player/SleepTimer/SleepTimerEntry';
 import styles from './PageHeader.module.css';
 import { useFitText } from './useFitText';
 
@@ -27,6 +28,15 @@ interface PageHeaderProps {
     trailing?: ReactNode;
 }
 
+/** 右格有冇嘢（清單掣 + ⓘ、指示點）：有就月亮擺佢左邊 */
+const hasContent = (node: ReactNode): boolean =>
+    node !== undefined && node !== null && typeof node !== 'boolean';
+
+/**
+ * 頁頭：返回掣 + 標題 + 右格。睡眠 timer 月亮掣（9d）絕對定位喺右格（唔佔格），現有頁頭元素位置唔變；
+ * DOM 喺右格嘅嘢前面：同畫面一樣由左至右（Tab / 讀屏次序），清單掣 / ⓘ 照舊係最右嗰粒。
+ * 日間冇 timer 就完全唔出
+ */
 export const PageHeader = ({ title, onBack, variant = 'label', trailing }: PageHeaderProps) => (
     <header className={styles.header}>
         <button
@@ -43,6 +53,7 @@ export const PageHeader = ({ title, onBack, variant = 'label', trailing }: PageH
         ) : (
             <span className={styles.title}>{title}</span>
         )}
+        <SleepTimerEntry placement={hasContent(trailing) ? 'beside' : 'header'} />
         {trailing ?? <span aria-hidden="true" />}
     </header>
 );

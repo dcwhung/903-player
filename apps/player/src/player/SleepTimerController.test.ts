@@ -3,7 +3,6 @@ import {
     EARLY_ADVANCE_SECONDS,
     MS_PER_SECOND,
     SLEEP_TIMER_CHECK_MS,
-    SLEEP_TIMER_LAST_STORAGE_KEY,
     SLEEP_TIMER_STORAGE_KEY,
 } from '../config/constants';
 import type { Recording } from '../types/recording';
@@ -11,6 +10,8 @@ import { AudioController } from './AudioController';
 import { SleepTimerController } from './SleepTimerController';
 
 const MINUTE_MS = 60 * MS_PER_SECOND;
+/** 舊版「上次時長」key（S-1201：由每晚排程取代，唔再寫） */
+const OLD_LAST_OPTION_KEY = '903player:sleep-timer-last:v1';
 const START = new Date('2026-11-30T22:30:00+08:00').getTime();
 const DURATION = 1200;
 
@@ -179,7 +180,7 @@ describe('SleepTimerController end of episode', () => {
         expect(timer.episodeRemainingMs()).toBeUndefined();
         expect(timer.start('episode')).toBe(false);
         expect(timer.getSnapshot().timer).toBeNull();
-        expect(localStorage.getItem(SLEEP_TIMER_LAST_STORAGE_KEY)).toBeNull();
+        expect(localStorage.getItem(OLD_LAST_OPTION_KEY)).toBeNull();
     });
 
     it('should expose the remaining time of this episode for the menu', async () => {
@@ -292,15 +293,14 @@ describe('SleepTimerController end of episode', () => {
 });
 
 describe('SleepTimerController storage', () => {
-    it('should remember the last option', async () => {
+    it('should not remember a last option any more (replaced by the nightly schedule)', async () => {
         const { timer } = await setup();
-        expect(timer.getSnapshot().lastOption).toBeNull();
 
         timer.start(30);
         timer.cancel();
 
-        expect(timer.getSnapshot().lastOption).toBe(30);
-        expect(localStorage.getItem(SLEEP_TIMER_LAST_STORAGE_KEY)).toBe('30');
+        expect(timer.getSnapshot()).toEqual({ timer: null });
+        expect(localStorage.getItem(OLD_LAST_OPTION_KEY)).toBeNull();
     });
 
     it('should keep counting after a reload in the same tab', async () => {
@@ -312,7 +312,6 @@ describe('SleepTimerController storage', () => {
         const { timer, pause } = await setup({ autoplay: false });
 
         expect(timer.getSnapshot().timer?.option).toBe(30);
-        expect(timer.getSnapshot().lastOption).toBe(30);
         expect(timer.remainingMs(Date.now())).toBe(20 * MINUTE_MS);
         elapse(20 * MINUTE_MS);
         expect(timer.getSnapshot().timer).toBeNull();

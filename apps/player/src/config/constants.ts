@@ -142,8 +142,6 @@ export const DISC_SCRUB_MIN_DEGREES = 6;
 
 /** 睡眠 timer（9d）：截止時間 / 狀態，同一分頁重新載入照計（sessionStorage） */
 export const SLEEP_TIMER_STORAGE_KEY = '903player:sleep-timer:v1';
-/** 睡眠 timer 上次揀嘅選項（localStorage）：未開時嗰粒用框線 highlight */
-export const SLEEP_TIMER_LAST_STORAGE_KEY = '903player:sleep-timer-last:v1';
 /** 睡眠 timer 分鐘選項（另外仲有「播完呢集」） */
 export const SLEEP_TIMER_MINUTES = [15, 30, 60] as const;
 /** 除咗 timeupdate 之外每秒檢查一次截止時間（iOS 背景 setTimeout 會延遲，所以比較絕對時間） */
@@ -153,3 +151,9 @@ export const NIGHT_START_HOUR = 21;
 export const NIGHT_END_HOUR = 5;
 /** 夜間時段每分鐘（對正分鐘邊界）重新檢查 */
 export const NIGHT_WINDOW_CHECK_MS = 60_000;
+/** 睡眠 timer 每晚自動（用戶 2026-11-19）：時間 + 選項 + 今晚觸發咗未（localStorage） */
+export const SLEEP_TIMER_SCHEDULE_STORAGE_KEY = '903player:sleep-timer-schedule:v1';
+/** 每晚自動嘅時間四捨五入到幾多分鐘 */
+export const SLEEP_TIMER_SCHEDULE_ROUND_MINUTES = 5;
+/** 排程時間之後幾耐內開始播先生效（同 NIGHT_END_HOUR:00 以早到者為準） */
+export const SLEEP_TIMER_SCHEDULE_WINDOW_HOURS = 3;

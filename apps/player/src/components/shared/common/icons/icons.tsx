@@ -139,3 +139,12 @@ export const ChevronIcon = (props: IconProps) => (
         <path d="M9 5l7 7-7 7" />
     </StrokeIcon>
 );
+
+/** 睡眠 timer 月亮（9d，_mockups_/sleep-timer）：未開 = 線條；開緊 = 實色 */
+const MOON_PATH = 'M20.5 13.2A8.5 8.5 0 1 1 10.8 3.5a6.6 6.6 0 0 0 9.7 9.7z';
+
+export const MoonIcon = ({ filled = false, ...props }: IconProps & { filled?: boolean }) => (
+    <StrokeIcon fill={filled ? 'currentColor' : 'none'} {...props}>
+        <path d={MOON_PATH} />
+    </StrokeIcon>
+);
