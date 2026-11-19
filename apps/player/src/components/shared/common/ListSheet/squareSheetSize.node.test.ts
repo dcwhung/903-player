@@ -21,9 +21,18 @@ describe('HomeView episode sheets size', () => {
 
     it.each(SHEETS)('%s: content height up to the cap, as wide as the info sheet', (_name, css) => {
         const sheet = cssDeclarations(css, '.sheet', SQUARE_QUERY);
-        expect(sheet.height).toBe('auto');
+        // 實際高度：HomeView 規則冇寫就用頂層 .sheet，兩層都冇寫 = 預設 auto（跟內容高）
+        expect(sheet.height ?? cssDeclarations(css, '.sheet').height ?? 'auto').toBe('auto');
         expect(sheet['max-height']).toBe('var(--square-sheet-max-height)');
         expect(sheet['max-width']).toBe(cssDeclarations(info, '.sheet')['max-width']);
         expect(sheet.margin).toBe('0 auto');
+    });
+
+    // ListSheet 只喺 HomeView render：唔再有固定高度（S-1149，舊 --list-sheet-height 已刪）
+    it('ListSheet: no fixed height anywhere, no leftover --list-sheet-height token', () => {
+        const css = SHEETS[0][1];
+        expect(cssDeclarations(css, '.sheet').height).toBeUndefined();
+        expect(cssDeclarations(css, '.sheet', SQUARE_QUERY).height).toBeUndefined();
+        expect(tokens).not.toContain('--list-sheet-height');
     });
 });

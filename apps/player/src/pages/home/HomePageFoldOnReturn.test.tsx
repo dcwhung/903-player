@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useNavigate } from 'react-router-dom';
 import { stubViewport } from '../../../tests/landscape';
@@ -24,8 +24,8 @@ const BADGIRL = 'Bad Girl大過佬';
 const BADGIRL_TODAY = recording('badgirl', '2026-10-19', '1000');
 const RECORDINGS = [recording('badgirl', '2026-10-16', '1000'), BADGIRL_TODAY];
 
-/** 內頁（App 嘅 HomeAwayObserver 記低去過主頁以外）：播完返主頁 */
-const InnerPage = ({ target }: { target: Track }) => {
+/** 內頁（App 嘅 HomeAwayObserver 記低去過主頁以外）：載入（預設播埋）之後返主頁 */
+const InnerPage = ({ target, autoplay = true }: { target: Track; autoplay?: boolean }) => {
     const { load } = usePlayer();
     const navigate = useNavigate();
     return (
@@ -34,7 +34,7 @@ const InnerPage = ({ target }: { target: Track }) => {
             <button
                 type="button"
                 onClick={async () => {
-                    await load(target, { autoplay: true });
+                    await load(target, { autoplay });
                     navigate('/');
                 }}
             >
@@ -44,15 +44,23 @@ const InnerPage = ({ target }: { target: Track }) => {
     );
 };
 
-const returnHomePlaying = async () => {
-    renderWithProviders(<HomePage />, {
+const returnHome = async (autoplay: boolean) => {
+    const { audio } = renderWithProviders(<HomePage />, {
         route: '/show/badgirl',
         recordings: RECORDINGS,
-        extraRoutes: [{ path: '/show/badgirl', element: <InnerPage target={BADGIRL_TODAY} /> }],
+        extraRoutes: [
+            {
+                path: '/show/badgirl',
+                element: <InnerPage target={BADGIRL_TODAY} autoplay={autoplay} />,
+            },
+        ],
     });
     await userEvent.click(screen.getByRole('button', { name: 'play then home' }));
     await screen.findByRole('main');
+    return audio;
 };
+
+const returnHomePlaying = () => returnHome(true);
 
 const setUp = (viewport: { width: number; height: number }) => {
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -93,6 +101,17 @@ describe('HomePage on HomeView returning from an inner page', () => {
         await returnHomePlaying();
 
         await userEvent.click(screen.getByRole('button', { name: /打開播放器$/ }));
+
+        expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'split');
+        expect(screen.getByRole('region', { name: SHOW_CARD })).toBeInTheDocument();
+    });
+
+    // 暫停住返主頁都收卡（用戶 2026-11-19 確認）；喺主頁開始播（例如鎖屏 / 耳機掣）就出返張卡（useOnPlayStart(unfold)，S-1150）
+    it('should unfold the card when playback starts on home after a paused return', async () => {
+        const audio = await returnHome(false);
+        expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'fillWithHandle');
+
+        await act(() => audio.play());
 
         expect(screen.getByRole('main')).toHaveAttribute('data-layout', 'split');
         expect(screen.getByRole('region', { name: SHOW_CARD })).toBeInTheDocument();

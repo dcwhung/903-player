@@ -1,6 +1,6 @@
 /*
  * HomeView 清單 sheet（_mockups_/home-view 節目頁 .sheet）：成頁上面嘅遮罩 + 由底升起嘅表，
- * 入面清單自己捲；HomeView 跟內容高、最高 --square-sheet-max-height（見檔尾 SQUARE_QUERY）。
+ * 入面清單自己捲；冇固定高度（跟內容高），只喺 HomeView render，最高 --square-sheet-max-height（見檔尾 SQUARE_QUERY）。
  * 樣式同全集表（ArcSheet.module.css）一致：圓頂角、grab bar、表頭 + ✕
  */
 .overlay {
@@ -22,7 +22,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-    height: var(--list-sheet-height);
     padding-top: var(--space-2);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     background: var(--color-bg);
@@ -148,7 +147,6 @@
     .sheet {
         --info-banner-ratio: var(--square-sheet-banner-ratio);
 
-        height: auto;
         max-width: var(--page-max-width);
         max-height: var(--square-sheet-max-height);
         margin: 0 auto;
