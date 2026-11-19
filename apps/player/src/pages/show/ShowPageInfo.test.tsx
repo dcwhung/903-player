@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { ShowConfig } from '@903-player/catalog';
 import { stubLandscape, stubViewport } from '../../../tests/landscape';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
+import { NON_SQUARE_VIEWPORTS } from '../../../tests/viewports';
 import { saveProgress } from '../../services/progressStore';
 import { ShowPage } from './ShowPage';
 
@@ -138,5 +139,37 @@ describe('ShowPage auto-opened info sheet focus return', () => {
         const button = await escapeAutoOpened();
         expect(button.closest('header')).not.toBeNull();
         expect(button).toHaveFocus();
+    });
+});
+
+/*
+ * v2.0.1 用戶反饋（2026-11-19）：只有 HomeView 由下彈出嘅集數 sheet 先有 banner；
+ * 其他裝置嘅集數清單欄唔加（「集數」上面冇 banner），資料 sheet 照舊有
+ */
+describe('ShowPage episode list column (non-HomeView)', () => {
+    beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-19T08:00:00Z'));
+        Element.prototype.scrollIntoView = vi.fn();
+        HTMLElement.prototype.scrollTo = vi.fn();
+        info.enabled = true;
+        // 有進度：唔自動彈資料 sheet（佢有 banner）
+        saveProgress('show:gongzi:2026-10-10', 60, 600);
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+    });
+
+    it.each(NON_SQUARE_VIEWPORTS)('should have no banner above 集數 on %s', async (_, viewport) => {
+        stubViewport(viewport);
+        renderWithProviders(<ShowPage />, ROUTE);
+
+        const heading = await screen.findByRole('heading', { name: '集數' });
+        expect(heading).toBeInTheDocument();
+        expect(screen.queryByTestId('info-banner')).not.toBeInTheDocument();
+        // 節目有圖：資料 sheet 照舊有 banner（證明上面唔係因為冇圖先冇）
+        await userEvent.click(screen.getByRole('button', { name: '節目資料' }));
+        expect(within(await infoSheet()).getByTestId('info-banner')).toBeInTheDocument();
     });
 });

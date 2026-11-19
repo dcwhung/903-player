@@ -1,6 +1,6 @@
 import { ShowTile } from '../../components/pages/home/ShowTile/ShowTile';
 import { ThemeScope } from '../../components/shared/common/ThemeScope/ThemeScope';
-import { SHORT_LANDSCAPE_LAYOUT_QUERY } from '../../config/layout';
+import { SHORT_LANDSCAPE_LAYOUT_QUERY, SQUARE_QUERY } from '../../config/layout';
 import { allShows } from '../../catalog/shows';
 import { HOME_THEME } from '../../config/showThemes';
 import { useDramaItems } from './useHomeDramaItems';
@@ -63,11 +63,11 @@ const useShowContent = (right: HomeRight) => {
 
 /**
  * 收藏 tab 版面：闊橫版 wide；手機打橫 land；其他（直版）phone。
- * HomeView 有播放卡時左欄得半個方形畫面闊，闊版兩欄最近收聽放唔落字，用直版（W-788）
+ * HomeView 主頁冇播放卡（淨係把手），收藏 tab 一定全闊，照用 wide（W-788 嘅半闊左欄已經唔會出現）
  */
-const useSavedLayout = (mode: HomeLayoutMode, narrowColumn: boolean): SavedLayout => {
+const useSavedLayout = (mode: HomeLayoutMode): SavedLayout => {
     const sideways = useMediaQuery(SHORT_LANDSCAPE_LAYOUT_QUERY);
-    if (mode !== 'stack' && !narrowColumn) return 'wide';
+    if (mode !== 'stack') return 'wide';
     return sideways ? 'land' : 'phone';
 };
 
@@ -78,10 +78,16 @@ export const HomePage = () => {
     const miniPlayer = useMiniPlayer();
     const { wide, shelf, pageHandles } = useWideHome();
     const cardClosed = useClosedHomePlayerCard() !== null;
+    // HomeView：主頁永遠唔分兩欄，有嘢播都淨係出把手（撳就入播放頁，HomeWide）
+    const square = useMediaQuery(SQUARE_QUERY);
     // 用邊款版面：闊版睇有冇 mini player、播放卡畀 ✕ 閂咗未
-    const mode = homeLayoutMode({ wide, hasMiniPlayer: miniPlayer !== null, cardClosed });
-    // HomeView 有播放卡：左欄得半個方形畫面闊
-    const savedLayout = useSavedLayout(mode, shelf && mode === 'split' && !pageHandles);
+    const mode = homeLayoutMode({
+        wide,
+        hasMiniPlayer: miniPlayer !== null,
+        cardClosed,
+        handleOnly: square,
+    });
+    const savedLayout = useSavedLayout(mode);
     useHomeArrival();
     // 主頁右邊有乜：格仔入頁揀過場用（useTileOpen）
     const right: HomeRight = {
@@ -105,7 +111,7 @@ export const HomePage = () => {
             {mode === 'stack' ? (
                 <HomeStack {...props} />
             ) : (
-                <HomeWide {...props} mode={mode} shelf={shelf} />
+                <HomeWide {...props} mode={mode} shelf={shelf} handleOpensPage={square} />
             )}
         </ThemeScope>
     );

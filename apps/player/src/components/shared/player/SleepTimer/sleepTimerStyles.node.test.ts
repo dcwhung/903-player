@@ -36,6 +36,11 @@ describe('sleep timer sheet styles', () => {
         expect(blurred['-webkit-backdrop-filter']).toBe('blur(var(--sleep-timer-sheet-blur))');
     });
 
+    // v2.0.2（#286）起 HomeView 主頁冇播放卡（淨係把手），卡嘅選單（data-side）唔會喺 HomeView 出現
+    it('should keep no HomeView override for the home card sheet', () => {
+        expect(atRuleDeclarations(sheetCss, SQUARE, ".overlay[data-side='true']")).toEqual({});
+    });
+
     it('should lay the options out on 6 columns: numbers span 2, the bottom row spans 3', () => {
         expect(cssDeclarations(sheetCss, '.options')['grid-template-columns']).toBe(
             'repeat(6, minmax(0, 1fr))',

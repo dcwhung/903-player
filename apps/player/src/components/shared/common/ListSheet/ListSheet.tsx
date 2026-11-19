@@ -29,9 +29,21 @@ interface ListSheetProps {
     returnFocusTo?: RefObject<HTMLElement | null> | undefined;
     /** 表頂 banner（例如 HomeView 短篇表：劇集橫額 + 短篇名）：✕ 疊喺圖上 */
     banner?: InfoBannerData | undefined;
+    /**
+     * banner 比例：square（預設）= HomeView 全集表 / 短篇表嗰種矮 banner（--square-sheet-banner-ratio）；
+     * info = 同資料 sheet 一樣（節目頁 / 每日劇集數表，v2.0.1 用戶反饋 2026-11-19）
+     */
+    bannerSize?: 'square' | 'info';
     /** 表頭右邊嘅掣（例如短篇表「全集」） */
     action?: ReactNode;
 }
+
+/** 撳遮罩閂 */
+const backdropOf = (onClose: () => void) => ({
+    className: styles.backdrop,
+    testId: 'list-sheet-backdrop',
+    onClick: onClose,
+});
 
 /**
  * 清單 sheet（HomeView，P10 lane 6，_mockups_/home-view 節目頁）：由畫面底升起，蓋住播放器下半；
@@ -48,6 +60,7 @@ export const ListSheet = ({
     children,
     returnFocusTo,
     banner,
+    bannerSize = 'square',
     action,
 }: ListSheetProps) => {
     const titleId = useId();
@@ -59,14 +72,10 @@ export const ListSheet = ({
     const bindList = useCallback((el: HTMLElement | null) => listRef(scrollPanelOf(el)), [listRef]);
     const { mounted, state, inert, overlayRef } = useSheetPresence(open);
     if (!mounted) return null;
-    const backdrop = {
-        className: styles.backdrop,
-        testId: 'list-sheet-backdrop',
-        onClick: onClose,
-    };
     return (
         <SheetOverlay
-            {...{ state, inert, overlayRef, backdropRef, backdrop }}
+            {...{ state, inert, overlayRef, backdropRef }}
+            backdrop={backdropOf(onClose)}
             className={styles.overlay ?? ''}
         >
             <section
@@ -76,6 +85,7 @@ export const ListSheet = ({
                 aria-modal="true"
                 aria-labelledby={titleId}
                 data-banner={banner !== undefined}
+                data-banner-size={banner ? bannerSize : undefined}
                 tabIndex={-1}
                 {...handlers}
             >

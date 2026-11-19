@@ -54,7 +54,7 @@ export const installZoomProbe = () => {
     };
 };
 
-const transitionsOf = (p) => p.evaluate(() => window.__e2eTransitions);
+export const transitionsOf = (p) => p.evaluate(() => window.__e2eTransitions);
 
 /** 過場完：冇 kind 標記、冇格仔標住做來源、html 冇殘留格仔框 */
 const cleanedUp = (p) =>
