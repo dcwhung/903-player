@@ -114,3 +114,54 @@ next_agent: null
 branch: "feature/layout/home-view-square"
 context: "P10 lane 7b @a98f864 (PR #278 -> release/v2.0.0): W-796 (square: playing arc A + pick B in 全集表 -> page shows A, list button/badge/arc sheet show B; reproduced; recommend opening B's arc sheet on pick and reverting to playing arc on close - ask user once) + S-1147 (notice hides status/連線中 while listening) + S-1148 (dup SERIES_LIST) are lane backlog to clear in this PR this session with re-review. Judgements 1-3, 5, 6, 8 accepted. allRef: phone/landscape/Duo still on ArcPicker 全集 chip, square on ListButton, no regression. Report committed locally, not pushed"
 ```
+
+---
+
+# Re-review — 2026-11-19 — `42e2215`
+
+- 範圍：`git diff f417399..42e2215`（11 files，+401 / −83），只驗 W-796 / S-1147 / S-1148 嘅修正
+- 用戶決定（2026-11-18）：W-796 用方案 A（揀 B → 開 B 嘅短篇表；冇播 B 就閂 → 跟返播緊嘅 A）
+- Hard Gates：all pass — lint 0 + prettier 過（`lint-lane7b2.log`）、unit 490 files / 5113 綠（`test-lane7b2.log`）、e2e 1097 PASS / 0 FAIL（`e2e-lane7b2.log`）、visual 18/180 全部 `drama-series` 外框、0 個元素位置唔同，同上一輪一樣係已接受嘅 lane 6c（`visual-lane7b2.log`）；log 喺 session scratchpad。Reviewer 另跑：`tsc --noEmit -p apps/player` exit 0；`vitest related`（6 個改咗嘅 source）20 files / 262 綠
+- 評分：正確性 25/25（W-796 已修），其他維度不變 → **100/100，✅ pass**
+
+## 逐項
+
+| ID     | 結論    | 證據                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W-796  | ✅ 已修 | `useSquareSheets.ts`：`pickArc` = `all.pick` + `arcList.show()`；全集表 / 短篇表 `onClose` 都係 `closeAll`，載入咗（`start === undefined`）而 `upNext.arc ≠ view.arc` 就 `followPlayingArc()`（`setPicked(null)`，唔經 `useArcPick`，唔會重新載入）。e2e：播緊「三十六計」揀「你生日所以我生日」→ 即刻開佢嘅短篇表（3 集、焦點入表），頁面仍然三十六計；Escape → 焦點返清單掣、badge 36、清單掣講三十六計；再揀撳一集播 → 頁面 / badge 變 3。截圖 `l7b2/3-…`、`4-…` 對得上；unit 5 個新 case |
+| S-1147 | ✅ 已修 | `ArcTitle`：`status === 'unloaded'` 先由下架字取代狀態行；聽緊保留「現正播放 / 已暫停 / 連線中…」，下架字取代集名行（同 `NowPlaying` 一致）；unit 驗 3 個狀態 + 連線中 + unloaded                                                                                                                                                                                                                                                                                                            |
+| S-1148 | ✅ 已修 | `components/pages/drama/seriesEpisodeList.ts` `SERIES_EPISODE_LIST` 由 `SeriesListColumn` 同 `ArcEpisodesSheet` 共用，值不變                                                                                                                                                                                                                                                                                                                                                                 |
+
+## Developer 判斷
+
+| #   | 判斷                                                   | 結論                                                                                                                                                                                                        |
+| --- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | 未揀短篇（全集層）揀短篇：載入續聽集 + 開佢嘅短篇表    | 接受：載入係原本 `useArcPick`（冇播先載入）；開短篇表跟 mockup「揀咗 = 短篇層、清單掣開短篇表」，同播緊時一致。e2e「全集表揀短篇即刻換去短篇表」PASS                                                        |
+| 2   | 暫停 A 揀 B：照舊載入 B，唔使 revert                   | 接受：`useArcPick` 喺 `!isPlaying` 時 `player.load(resume)` → `loaded` 變 B，`followPlaying` 見 `upNext.arc === view.arc` 唔郁；載入未完就閂都只係短暫跟返 A，載入完 `playingArc` = B，結果一樣             |
+| 3   | 未聽短篇有資料會自動彈資料 → 短篇表等資料閂咗先出      | 接受（Observation）：`arcOpen` 加 `!view.infoSheet.open`，避免兩張 modal 疊；資料表係 modal，期間撳唔到清單掣，冇卡死路徑。呢條 branch 冇 unit / e2e（catalog 冇有資料嘅未聽短篇），屬冇 L2 嘅推論，唔開 ID |
+| 4   | 由「我的收藏」入 B（focusKey）而播緊 A：閂短篇表跟返 A | 接受：同一條 `closeAll` 路徑；方形頁唱片區講 A（`upNext = loaded`），唔跟返就會重現 W-796 嘅頁面 / 清單掣唔一致；冇嘢載入時 `start` 有值，唔 revert，入嚟睇 B 照舊                                          |
+
+## 指定檢查：手機 / Duo 系列頁零改變
+
+- `useViewedArc` 加 `followPlaying`，`useSeriesArcs` 改 `...viewed` 再由 `useArcPick` 嘅 `pickArc` 蓋過（spread 次序啱），`arcPicked` 照舊回傳；`followPlayingArc` 只喺 `useSquareSheets` 用
+- `pick` / `close` 嘅 override 只喺 `SeriesSquare` 傳畀 `SeriesArcSheet`；`SeriesListColumn` 照舊傳 `view.sheet`，淨係常數搬檔（值相同）；`useListSheet.show` 新增、其他 caller 冇用
+- visual 18/180 同上一輪一樣（只有 lane 6c 外框、0 元素位移）；e2e 手機 / Duo 全集表 / 焦點條目 PASS
+
+## Handoff receipt
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: null
+branch: "feature/layout/home-view-square"
+context: "Re-review P10 lane 7b @42e2215 (PR #278 -> release/v2.0.0): W-796 fixed per user option A (pick arc -> its arc sheet; close without playing -> followPlayingArc reverts to loaded arc, no reload; e2e + 5 unit), S-1147 fixed (status kept while listening, notice replaces episode line), S-1148 fixed (shared SERIES_EPISODE_LIST). Judgements 1-4 accepted (3 = untested info-sheet-first branch, observation only). Phone/Duo series page unchanged (square-only overrides; visual 18/180 = accepted lane 6c ring, 0 element moves). No new IDs. Report committed locally, not pushed"
+```
