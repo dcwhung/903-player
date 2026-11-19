@@ -2,7 +2,6 @@ import { t } from '../../../../i18n/t';
 import styles from './MiniPlayer.module.css';
 import { MiniPlayerDots } from './MiniPlayerDots';
 import type { MiniPlayerMode } from './miniPlayerMode';
-import { MiniPlayerProgress } from './MiniPlayerProgress';
 import { MiniPlayerRow } from './MiniPlayerRow';
 import type { MiniPlayerProps } from './miniPlayerTypes';
 
@@ -12,7 +11,7 @@ type MiniPlayerCardProps = Omit<MiniPlayerProps, 'region'> & {
     armed: boolean;
 };
 
-/** card 入面：節目列 + 指示點（多段先有）+ 進度 + 讀屏 / 鍵盤用嘅「關閉播放器」掣 */
+/** card 入面：節目列（播放掣外圈係進度）+ 指示點（多段先有）+ 讀屏 / 鍵盤用嘅「關閉播放器」掣 */
 export const MiniPlayerCard = ({
     labels,
     keys,
@@ -34,7 +33,6 @@ export const MiniPlayerCard = ({
         {mode === 'multi' && (
             <MiniPlayerDots {...{ keys, labels, index, tags, positionLabel, onChange }} />
         )}
-        <MiniPlayerProgress progress={props.progress} timeText={props.timeText} />
         <button type="button" className={styles.srOnly} onClick={onDismiss}>
             {t('miniPlayer.dismissLabel')}
         </button>

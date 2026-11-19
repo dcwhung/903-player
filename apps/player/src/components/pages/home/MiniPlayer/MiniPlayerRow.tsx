@@ -5,6 +5,7 @@ import { Disc } from '../../../shared/common/Disc/Disc';
 import { PauseIcon, PlayIcon } from '../../../shared/common/icons/icons';
 import { Marquee } from '../../../shared/common/Marquee/Marquee';
 import styles from './MiniPlayer.module.css';
+import { MiniPlayerProgress } from './MiniPlayerProgress';
 
 interface MiniPlayerRowProps {
     showName: string;
@@ -18,6 +19,10 @@ interface MiniPlayerRowProps {
     hint?: string;
     isPlaying: boolean;
     isAudible: boolean;
+    /** 0–1：播放掣外圈 */
+    progress: number;
+    /** 例如「12:40 / 1:58:30」；未知長度時冇 */
+    timeText?: string;
     upright: boolean;
     onToggle: () => void;
     onOpen: () => void;
@@ -40,7 +45,7 @@ const MiniPlayerName = ({ name, tag }: { name: string; tag?: MiniPlayerTag }) =>
     </span>
 );
 
-/** 節目碟 + 名 + 副題（撳入節目頁 / 廣播劇頁；放唔落就跑馬燈），右邊係播放 / 暫停 */
+/** 節目碟 + 名 + 副題（撳入節目頁 / 廣播劇頁；放唔落就跑馬燈），右邊係播放 / 暫停（外圈 = 播放進度） */
 export const MiniPlayerRow = (props: MiniPlayerRowProps) => (
     <div className={styles.row}>
         <button
@@ -61,17 +66,19 @@ export const MiniPlayerRow = (props: MiniPlayerRowProps) => (
                 <Marquee className={styles.subtitle} text={props.hint ?? props.subtitle} />
             </span>
         </button>
-        <button
-            type="button"
-            className={styles.toggle}
-            aria-label={t(props.isPlaying ? 'player.pause' : 'player.play')}
-            onClick={props.onToggle}
-        >
-            {props.isPlaying ? (
-                <PauseIcon size={TOGGLE_ICON_SIZE} />
-            ) : (
-                <PlayIcon size={TOGGLE_ICON_SIZE} />
-            )}
-        </button>
+        <MiniPlayerProgress progress={props.progress} timeText={props.timeText}>
+            <button
+                type="button"
+                className={styles.toggle}
+                aria-label={t(props.isPlaying ? 'player.pause' : 'player.play')}
+                onClick={props.onToggle}
+            >
+                {props.isPlaying ? (
+                    <PauseIcon size={TOGGLE_ICON_SIZE} />
+                ) : (
+                    <PlayIcon size={TOGGLE_ICON_SIZE} />
+                )}
+            </button>
+        </MiniPlayerProgress>
     </div>
 );

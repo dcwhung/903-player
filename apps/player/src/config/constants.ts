@@ -105,6 +105,7 @@ export const BOOKMARK_MIGRATED_STORAGE_KEY = '903player:bookmarks-migrated:v1';
 export const TODAY_INFO_SEEN_STORAGE_KEY = '903player:today-info-seen:v1';
 
 export const MS_PER_SECOND = 1000;
+export const SECONDS_PER_MINUTE = 60;
 /** 報畀鎖屏嘅播放速度（app 冇變速） */
 export const MEDIA_SESSION_PLAYBACK_RATE = 1;
 /**
@@ -138,3 +139,17 @@ export const DISC_SCRUB_FAST_DEGREES_PER_MS = 1.35;
 export const DISC_SCRUB_DEAD_ZONE_RATIO = 0.2;
 /** 轉少過呢個角度當係 tap，唔 seek */
 export const DISC_SCRUB_MIN_DEGREES = 6;
+
+/** 睡眠 timer（9d）：截止時間 / 狀態，同一分頁重新載入照計（sessionStorage） */
+export const SLEEP_TIMER_STORAGE_KEY = '903player:sleep-timer:v1';
+/** 睡眠 timer 上次揀嘅選項（localStorage）：未開時嗰粒用框線 highlight */
+export const SLEEP_TIMER_LAST_STORAGE_KEY = '903player:sleep-timer-last:v1';
+/** 睡眠 timer 分鐘選項（另外仲有「播完呢集」） */
+export const SLEEP_TIMER_MINUTES = [15, 30, 60] as const;
+/** 除咗 timeupdate 之外每秒檢查一次截止時間（iOS 背景 setTimeout 會延遲，所以比較絕對時間） */
+export const SLEEP_TIMER_CHECK_MS = 1000;
+/** 夜間時段（裝置本地時間）：NIGHT_START_HOUR:00 ≤ t 或 t < NIGHT_END_HOUR:00 先出月亮掣 */
+export const NIGHT_START_HOUR = 21;
+export const NIGHT_END_HOUR = 5;
+/** 夜間時段每分鐘（對正分鐘邊界）重新檢查 */
+export const NIGHT_WINDOW_CHECK_MS = 60_000;
