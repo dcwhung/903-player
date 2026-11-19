@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { ShowConfig } from '@903-player/catalog';
 import { stubLandscape, stubViewport } from '../../../tests/landscape';
 import { recording, renderWithProviders } from '../../../tests/renderWithProviders';
+import { NON_SQUARE_VIEWPORTS } from '../../../tests/viewports';
 import { saveProgress } from '../../services/progressStore';
 import { ShowPage } from './ShowPage';
 
@@ -160,16 +161,7 @@ describe('ShowPage episode list column (non-HomeView)', () => {
         vi.unstubAllGlobals();
     });
 
-    it.each([
-        ['phone portrait', { width: 390, height: 844 }],
-        ['phone landscape', { width: 844, height: 390 }],
-        ['tablet', { width: 820, height: 1180 }],
-        ['desktop', { width: 1280, height: 800 }],
-        ['Duo cover portrait', { width: 426, height: 612 }],
-        ['Duo open portrait', { width: 612, height: 876 }],
-        ['Duo cover landscape', { width: 612, height: 426 }],
-        ['Duo open landscape', { width: 876, height: 612 }],
-    ])('should have no banner above 集數 on %s', async (_, viewport) => {
+    it.each(NON_SQUARE_VIEWPORTS)('should have no banner above 集數 on %s', async (_, viewport) => {
         stubViewport(viewport);
         renderWithProviders(<ShowPage />, ROUTE);
 

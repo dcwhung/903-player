@@ -195,14 +195,12 @@ describe('ListSheet with a banner', () => {
         ]);
     });
 
-    it('should size the banner like the info sheet only when asked', () => {
-        // 預設（HomeView 短篇表）照舊係矮 banner；節目頁 / 每日劇集數表跟資料 sheet
-        renderSheet('info');
-        expect(screen.getByRole('dialog')).toHaveAttribute('data-banner-size', 'info');
-    });
-
-    it('should keep the short banner by default', () => {
-        renderSheet();
-        expect(screen.getByRole('dialog')).toHaveAttribute('data-banner-size', 'square');
+    // 預設（HomeView 短篇表）照舊係矮 banner；節目頁 / 每日劇集數表要求先跟資料 sheet
+    it.each([
+        ['info', 'info'],
+        ['square', undefined],
+    ] as const)('should size the banner as %s when bannerSize is %s', (expected, bannerSize) => {
+        renderSheet(bannerSize);
+        expect(screen.getByRole('dialog')).toHaveAttribute('data-banner-size', expected);
     });
 });
