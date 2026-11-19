@@ -129,7 +129,7 @@
     <body>
         <main>
             <header>
-                <h1>9d 睡眠 timer preview（v3）</h1>
+                <h1>9d 睡眠 timer preview（v4）</h1>
                 <p>
                     真 app 截圖（v2.0.0）加上新掣。每行可以左右掃睇其他裝置。月亮掣只喺裝置本地時間
                     21:00–05:00 出現，timer 開緊時一直出。示範狀態：揀咗 30 分鐘，剩 23:14。
@@ -162,7 +162,8 @@
                 <p>
                     內頁頁頭右上（HomeView
                     喺清單掣左邊）；闊版主頁播放卡喺卡頭下面嗰行（指示點同一行）右邊。未開 =
-                    線條月亮；開咗 = 實色月亮 + 剩餘分鐘（冇底色），頁頂全闊進度條隨時間扣減。
+                    線條月亮；開咗 = 實色月亮 +
+                    剩餘分秒（例：23:14，冇底色），頁頂全闊進度條隨時間扣減；進度條同月亮都用當頁主題強調色（同播放掣同色：節目頁跟節目主題，主頁跟奶油金）。
                 </p>
                 <div class="row">
                     <figure>
@@ -255,8 +256,8 @@
                 <p>
                     Mini player 底部已經係播放進度條，所以 timer
                     進度要第二個位。M1：同內頁一樣用頁頂全闊條；M2：mini player
-                    頂邊一條細條；M3：月亮外圈圓環。實作時標題 / 日期會縮窄讓位（preview
-                    係疊上去）。
+                    頂邊一條細條；M3：月亮外圈圓環；M4：外圈包埋月亮同數字（膠囊形進度框）。實作時標題
+                    / 日期會縮窄讓位（preview 係疊上去）。
                 </p>
                 <div class="row">
                     <figure>
@@ -283,6 +284,10 @@
                         <img src="phone-mini-m3.webp" alt="M3 月亮外圈" loading="lazy" />
                         <figcaption>M3・月亮外圈</figcaption>
                     </figure>
+                    <figure>
+                        <img src="phone-mini-m4.webp" alt="M4 外圈包埋數字" loading="lazy" />
+                        <figcaption>M4・外圈包埋數字</figcaption>
+                    </figure>
                 </div>
             </section>
             <section>
@@ -305,12 +310,13 @@
                         </tr>
                         <tr>
                             <td>開緊顯示</td>
-                            <td>實色月亮 + 剩餘分鐘；頁頂全闊進度條</td>
+                            <td>實色月亮 + 剩餘分秒；頁頂全闊進度條（當頁主題強調色）</td>
                         </tr>
                         <tr>
                             <td>選單</td>
                             <td>
-                                2×2 大掣；上次時長 highlight；開緊時標題右邊「剩餘｜關閉」；冇說明字
+                                2×2 大掣；上次時長
+                                highlight；開緊時標題右邊「剩餘｜關閉」tab（節目｜廣播劇款）；冇說明字
                             </td>
                         </tr>
                         <tr>
