@@ -13,6 +13,7 @@
     - AC-8 2026-11-16 刪 CLI（S-751 / S-1015）：root devDeps 刪 `tsx`、player 刪 `drama-from-folder` script（player 1.36.2）；lockfile 只少 `tsx` 頂層條目；`tsconfig.scripts-test.json` 嘅 `types`（S-567 guard）由 `apps/player/scripts/tsconfigTypes.test.ts` 鎖（drama AC-11）
     - AC-9 內建 icon 生成（player 1.37.3 / admin 0.9.2；review `.proj-docs/reviews/2026-11-17_review_builtin-maskable.md`；用戶 2026-11-17 揀滿版）：`generateIcons.mjs` 由 `design/app-icon.png` 生成；maskable（player `public/icon-maskable-512.png` + admin `src/assets/icon/icon-maskable-192.png`）= 置中正方形裁切畫滿 canvas、底色 `#98bdde` 只喺透明位（同 admin `drawIcon` / `centerCrop`，`centerSquareCrop` 鎖死，S-1103）；其他內建 icon byte-for-byte 不變；manifest / `sw.js` 策略不變
     - AC-10 「現有裝置零改變」比對工具（P10 lane 0；`.proj-docs/plans/2026-11-17_plan_p10-duo-homeview.md`「Verification」；review `.proj-docs/reviews/2026-11-17_review_p10-lane0-visual-diff.md`）：`npm run e2e:visual`（root → `apps/player` `node e2e/visualDiff.mjs`）將 base（預設同 `origin/main` 嘅 merge-base；`--base` / `VISUAL_BASE`）同 working tree 各 build 一次，凍結嘅現有 viewport（`visualModel.mjs`）× 情境（`visualScenes.mjs`）逐張截圖 + 元素位置比對，全部一樣 exit 0、有唔同 / 參數錯 exit 1；`e2e/previewServer.mjs` 由 `run.mjs` 抽出（`npm run e2e` 行為不變：撞 port / `E2E_PORT` 錯照舊講原因就停）；app / UI code 冇改
+    - AC-11 日間情境 + 時區（9d lane 0；`.proj-docs/plans/2026-11-19_plan_9d-sleep-timer.md` Lane 0；review `.proj-docs/reviews/2026-11-19_review_9d-lane0-day-scenes.md`）：`visualScenes.mjs` 加 `home-paused-day` / `show-day` / `today-day`（`VISUAL_DAY_NOW` 香港 14:00，seed / run 同夜間版共用，經 `visualModel.mjs` `dayScenes()`）；`visualDiff.mjs` 每個 context `timezoneId` = `VISUAL_TIMEZONE`（`Asia/Hong_Kong`）；13 情境 × 18 viewport = 234 張；app / UI code 冇改
 - Scope files:
     - `package.json` `package-lock.json` `apps/player/package.json` `eslint.config.js`
     - `tsconfig.json` `vitest.config.ts` `apps/player/tsconfig.app.json` `apps/player/tsconfig.node.json`
@@ -21,7 +22,7 @@
     - `apps/player/e2e/run.mjs` `apps/player/e2e/harness.mjs` `apps/player/vite.config.ts` `apps/player/scripts/catalogCaching.{ts,test.ts}`（workbox runtime catalog route，Phase 1）
     - `apps/player/scripts/e2eCatalogNotFound.{ts,test.ts}`（AC-7）
     - `apps/player/scripts/tsconfigTypes.test.ts`（AC-8）
-    - `apps/player/e2e/{previewServer.mjs,visualDiff.mjs,visualModel.mjs,visualModel.d.mts,visualScenes.mjs}` `apps/player/src/e2eVisualModel.node.test.ts`（AC-10；`e2e/remoteCatalog.mjs` 嘅 `catalogRoute` export 屬 catalog-data 鏈）
+    - `apps/player/e2e/{previewServer.mjs,visualDiff.mjs,visualModel.mjs,visualModel.d.mts,visualScenes.mjs,visualScenes.d.mts}` `apps/player/src/{e2eVisualModel,e2eVisualScenes}.node.test.ts`（AC-10 / AC-11；`e2e/remoteCatalog.mjs` 嘅 `catalogRoute` export 屬 catalog-data 鏈）
     - `apps/player/scripts/{generateIcons.mjs,generateIcons.test.ts,iconLayout.mjs,iconLayout.d.mts,pngPixels.ts,chromiumLaunch.mjs}` `design/app-icon.png` `apps/player/public/{icon-192.png,icon-512.png,icon-maskable-512.png,apple-touch-icon.png,favicon.png,og-icon.jpg}`（AC-9；admin 副本屬 admin 鏈）
 - Commands:
     - （Phase 0a；冇 bump version 嗰陣先用）`npm run build`，再喺 `apps/player/dist` 跑 `find . -type f | sort | xargs sha256sum`，同 `origin/main` 獨立 worktree build 嘅清單 `diff`（一次）
@@ -32,6 +33,7 @@
     - AC-7：`npm test -- apps/player/scripts`；`deploy.yml` YAML parse `on`；PWA：冇 URL production build manifest / index.html 同 origin/main 比、branded build 見 catalog-data AC-10；PWA 換版 section + production smoke 由 CI 同 SHA 證
     - AC-9：`npm test`（`generateIcons.test.ts`：centerSquareCrop = admin centerCrop、兩張 maskable 邊位取樣 = 原圖、角位 = 底色）；`git diff --name-only <base>` 確認 `public/` 只改 maskable；IHDR 尺寸；e2e / PWA 換版由 CI 同 code 嘅 run 引用
     - AC-10：`npm test -- apps/player/src/e2e`（`e2eVisualModel.node.test.ts`）；`npm run e2e:visual`（全套一次，約 5 分鐘；cloud sandbox 加 `PW_CHROMIUM_PATH`）對 base 全部一樣；`npm run e2e`（`previewServer.mjs` 抽出後全綠，CI 同 SHA 綠就引用）；`node e2e/visualDiff.mjs --scene <冇嘅名>` / `--viewport 1x1` exit 1
+    - AC-11：`npm test -- apps/player/src/e2e`（`e2eVisualScenes.node.test.ts`）；`VISUAL_BASE=HEAD npm run e2e:visual`（一次，234/234 一樣）；lint / unit / build / e2e 由 CI 同 SHA 證
     - AC-8：`npm test -- apps/player/scripts`（`tsconfigTypes.test.ts`）；root `package.json` 冇 `tsx`、player 冇 `drama-from-folder` script（`git grep`）；lint / unit / build / e2e 由 CI 同 SHA 證
 - PWA gate: no（App 外觀 1.36.0：manifest 文字 / icon 只喺 catalog 有 branding 先變、SW 策略 / 更新邏輯唔變，AC-7 驗；之前：`sw.js` / manifest / 更新邏輯冇改；dist 一樣即係 SW precache 一樣。Phase 1 起 `VITE_CATALOG_URL` 有設先加 catalog runtimeCaching route，production 冇設 → `sw.js` 冇 route；PWA 換版由 e2e section 證。2b-2 `vite.config.ts` 加 `catalogSnapshot()` plugin：只改 precache 內容（snapshot 圖），SW 策略唔變；驗證屬 catalog-data AC-5，PWA 換版由 CI e2e 證）
 - Out of scope: `deploy-api.yml`（屬 api 鏈）、`.vscode/` / `apps/player/scripts/arcCover/`（S-762 起 ledger-ignore）、各功能鏈（各自 plan）
