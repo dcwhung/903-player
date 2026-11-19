@@ -31,7 +31,7 @@ interface HomeWideProps extends WideGridProps {
     third: ThirdTab | null;
     /** 第三個 tab 嘅內容（左欄，右邊播放卡照舊） */
     saved: ReactNode;
-    /** HomeView：主頁冇卡，撳把手直接入播放頁（useHandlePageOpen）；其他闊版撳把手出返張卡 */
+    /** HomeView：主頁冇卡，撳把手直接入播放頁（useHomeHandleOpen）；其他闊版撳把手出返張卡 */
     handleOpensPage: boolean;
 }
 

@@ -29,7 +29,7 @@ export const zoomKey = {
     today: 'today',
     /** 收藏 tab 嘅一行（一集，用集數 id，同收藏 storage 一致，S-743） */
     episode: (id: string) => `episode:${id}`,
-    /** HomeView 主頁右邊把手：撳就由把手個框 zoom 入播放頁（pages/home/useHandlePageOpen） */
+    /** HomeView 主頁右邊把手：撳就由把手個框 zoom 入播放頁（pages/home/useHomeHandleOpen） */
     homeHandle: 'home-handle',
 } as const;
 
