@@ -67,7 +67,7 @@ const AmbientOverlay = ({
     levelRef,
 }: AmbientOverlayProps) => {
     const player = usePlayer();
-    const night = useAmbientNight(acknowledgedExpiryAt);
+    const { night, fading } = useAmbientNight(acknowledgedExpiryAt);
     const [overlay, setOverlay] = useState<HTMLDivElement | null>(null);
     const overlayRef = useRef<HTMLDivElement | null>(null);
     // useLeaveFallback 要 ref、useInertBackground 要 state（mount 咗先 inert）：一個 callback ref 兩樣都設
@@ -95,6 +95,7 @@ const AmbientOverlay = ({
             tabIndex={-1}
             data-state={leaving ? 'leaving' : 'shown'}
             data-ambient-night={night ? '' : undefined}
+            data-ambient-night-fading={fading ? '' : undefined}
             {...handlers}
         >
             <AmbientContent view={view} isAudible={player.isAudible} />

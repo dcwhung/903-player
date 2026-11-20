@@ -530,8 +530,8 @@
     --ambient-night-disc-opacity: 0.28;
     --ambient-night-icon-filter: grayscale(0.6) brightness(0.45);
     /*
-     * 轉暗 / 轉返光 60 秒（用戶 2026-11-20；比 --view-transition-* 慢好多，所以另開 token），線性：
-     * 夜間程度（data-ambient-night-level 嘅 opacity）同顏色一齊行，叫醒時讀到嘅暗度就係睇到嘅暗度。
+     * 轉暗 / 轉返光 60 秒（用戶 2026-11-20；比 --view-transition-* 慢好多，所以另開 token）。
+     * 長過場揀線性，唔跟 --ease-view-transition（嗰條快出慢收，60 秒會頭幾秒就暗晒）；S-1390。
      * 叫醒遮罩 3 秒淡出；疊喺頁面上面、閒置畫面下面
      */
     --ambient-night-fade: 60s;

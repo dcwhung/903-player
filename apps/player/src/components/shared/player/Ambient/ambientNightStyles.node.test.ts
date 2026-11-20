@@ -54,6 +54,29 @@ describe('ambient night styles (9c)', () => {
         expect(selectors).toContain('.backdrop::after');
     });
 
+    // W-857：60 秒過場淨係夜間切換緊先有，日間暫停 / 換色調唔可以跟住慢
+    it('should scope every 60 s transition to the night switch (data-ambient-night-fading)', () => {
+        const nightFadeRules = atRuleSelectors(css, NO_MOTION_PREF).filter(
+            (selector) =>
+                atRuleDeclarations(css, NO_MOTION_PREF, selector)['transition-duration'] ===
+                'var(--ambient-night-fade)',
+        );
+        const parts = nightFadeRules.flatMap((selector) =>
+            selector.split(',').map((s) => s.trim()),
+        );
+        expect(parts.length).toBeGreaterThan(0);
+        expect(
+            parts.filter((part) => !part.startsWith('.overlay[data-ambient-night-fading] ')),
+        ).toEqual([]);
+        expect(parts).toContain('.overlay[data-ambient-night-fading] .discBox > :last-child');
+        expect(parts).toContain('.overlay[data-ambient-night-fading] .ringFill');
+        expect(parts).toContain('.overlay[data-ambient-night-fading] .scope');
+    });
+
+    it('should keep linear easing for the long fade (S-1390)', () => {
+        expect(tokens['--ambient-night-ease']).toBe('linear');
+    });
+
     it('should never block the page under the wake veil and fade it only when motion is allowed', () => {
         const veil = cssDeclarations(css, '.veil');
         expect(veil['pointer-events']).toBe('none');

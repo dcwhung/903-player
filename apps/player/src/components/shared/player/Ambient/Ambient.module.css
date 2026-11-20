@@ -312,24 +312,26 @@
 }
 
 /*
- * 轉暗 / 轉返光 60 秒（--ambient-night-fade）；減少動態唔過場，直接切換（CLAUDE.md Motion）。
- * 只過場顏色 / filter / opacity：唱片轉、跑馬燈、timer 細條長度照舊。時間（.clock）承繼 .scope 嘅字色
+ * 轉暗 / 轉返光 60 秒（--ambient-night-fade）：淨係夜間切換緊（data-ambient-night-fading，useNightFade 切換前設、
+ * token 時長後拆）先過場；日間暫停（唱片變暗、進度圈轉灰）、換節目色調照舊即時（W-857）。
+ * 減少動態唔過場，直接切換（CLAUDE.md Motion）。只過場顏色 / filter / opacity：唱片轉、跑馬燈、timer 細條長度照舊。
+ * 時間（.clock）承繼 .scope 嘅字色
  */
 @media (prefers-reduced-motion: no-preference) {
-    .scope,
-    .backdrop::after,
-    .appLabel,
-    .appIcon,
-    .date,
-    .name,
-    .status,
-    .timer,
-    .ringTrack,
-    .ringFill,
-    .discBox > :last-child,
-    .scope [data-sleep-timer-bar],
-    .scope [data-sleep-timer-bar] > *,
-    .nightLevel {
+    .overlay[data-ambient-night-fading] .scope,
+    .overlay[data-ambient-night-fading] .backdrop::after,
+    .overlay[data-ambient-night-fading] .appLabel,
+    .overlay[data-ambient-night-fading] .appIcon,
+    .overlay[data-ambient-night-fading] .date,
+    .overlay[data-ambient-night-fading] .name,
+    .overlay[data-ambient-night-fading] .status,
+    .overlay[data-ambient-night-fading] .timer,
+    .overlay[data-ambient-night-fading] .ringTrack,
+    .overlay[data-ambient-night-fading] .ringFill,
+    .overlay[data-ambient-night-fading] .discBox > :last-child,
+    .overlay[data-ambient-night-fading] .scope [data-sleep-timer-bar],
+    .overlay[data-ambient-night-fading] .scope [data-sleep-timer-bar] > *,
+    .overlay[data-ambient-night-fading] .nightLevel {
         transition-duration: var(--ambient-night-fade);
         transition-property: color, background-color, stroke, filter, opacity;
         transition-timing-function: var(--ambient-night-ease);

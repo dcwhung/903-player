@@ -661,12 +661,66 @@ const goNight = async (env, p, label) => {
     return dark;
 };
 
+/** 日間暫停：唱片變暗即刻跟（同 tokens.css --ambient-paused-filter 刻意寫死做獨立對照） */
+const PAUSED_BRIGHTNESS = 'brightness(0.7)';
+const DAY_PAUSE_WITHIN_MS = 1000;
+
+/** 唱片（Disc 根）嘅 filter / 過場 + 覆蓋層有冇夜間切換緊 */
+const lookDisc = (p) =>
+    ambient(p).evaluate((dialog) => {
+        const disc =
+            dialog.querySelector('[data-ambient-status]').lastElementChild.previousElementSibling
+                .lastElementChild;
+        const style = getComputedStyle(disc);
+        return {
+            filter: style.filter,
+            duration: style.transitionDuration,
+            fading: dialog.hasAttribute('data-ambient-night-fading'),
+        };
+    });
+
+/** W-857：日間閒置畫面出緊時暫停（鎖屏 / 耳機），唱片 1 秒內變暗，唔會跟 60 秒夜間過場 */
+const checkDayPauseInstant = async (env) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, {
+        viewport: SQUARE,
+        hasTouch: true,
+    });
+    // app 自己 new 嘅 <audio> 唔喺 DOM：攔 play() 記低佢，之後當鎖屏 / 耳機咁喺外面暫停（同 sleepTimer.mjs）
+    await ctx.addInitScript(() => {
+        const play = HTMLMediaElement.prototype.play;
+        HTMLMediaElement.prototype.play = function capturePlay(...args) {
+            window.__e2eAudio = this;
+            return play.apply(this, args);
+        };
+    });
+    await p.goto(`${env.base}${SHOW_ROUTE}`);
+    await ensurePlaying(p);
+    await goIdle(p);
+    if (!(await appears(p))) {
+        env.log(false, '夜間低光：日間暫停——閒置畫面冇出');
+        return ctx.close();
+    }
+    await p.evaluate(() => window.__e2eAudio.pause());
+    await waitForPlaybackState(p, 'paused');
+    await p.waitForTimeout(DAY_PAUSE_WITHIN_MS);
+    const disc = await lookDisc(p);
+    env.log(
+        disc.filter.includes(PAUSED_BRIGHTNESS) && disc.duration === '0s' && !disc.fading,
+        `夜間低光：日間暫停唱片 1 秒內變暗、冇 60 秒過場（${JSON.stringify(disc)}）`,
+    );
+    return ctx.close();
+};
+
 /** 公子會：轉暗（60 秒過場）+ 顏色 + 截圖 → 叫醒遮罩 3 秒淡出 → 「停用」之後再閒置係日間 */
 const checkNightTimer = async (env) => {
     const { ctx, p } = await openShow(env);
     if (!(await goNight(env, p, '公子會'))) return ctx.close();
     const fade = (await lookNight(p)).fade;
-    env.log(fade === NIGHT_FADE, `夜間低光：轉暗過場 ${fade}`);
+    const switching = await lookDisc(p);
+    env.log(
+        fade === NIGHT_FADE && switching.duration === NIGHT_FADE && switching.fading,
+        `夜間低光：轉暗切換緊先有 60 秒過場（底 ${fade}、唱片 ${JSON.stringify(switching)}）`,
+    );
     await checkNightPalette(env, p, '公子會');
     await shoot(p, 'night-gongzi');
 
@@ -792,6 +846,7 @@ export const runAmbientChecks = async (env, section) => {
     await section('閒置畫面：sheet 開緊', () => checkSheetOpen(env));
     await section('閒置畫面：冇嘢載住', () => checkNothingLoaded(env));
     await section('閒置畫面：手機', () => checkPhone(env));
+    await section('夜間低光：日間暫停即時', () => checkDayPauseInstant(env));
     await section('夜間低光：轉暗 + 叫醒 + 停用', () => checkNightTimer(env));
     await section('夜間低光：時間到', () => checkNightExpiry(env));
     await section('夜間低光：05:00', () => checkNightDawn(env));

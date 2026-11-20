@@ -462,6 +462,8 @@ describe('AmbientScreen night (9c)', () => {
         const shownAt = ambient();
         expect(shownAt).not.toBeNull();
         expect(isNight()).toBe(false);
+        // W-857：切換緊先開 60 秒過場（切換前已經設好，過場有起點）
+        expect(shownAt).toHaveAttribute('data-ambient-night-fading');
         act(() => {
             vi.advanceTimersToNextFrame();
             vi.advanceTimersToNextFrame();
