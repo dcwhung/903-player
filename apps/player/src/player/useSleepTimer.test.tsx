@@ -50,6 +50,18 @@ describe('useSleepTimer', () => {
         expect(result.current.timer.remainingMs(Date.now())).toBe(0);
     });
 
+    it('should expose the expiry after the timer runs out (9c night)', () => {
+        const { result } = setup();
+        expect(result.current.timer.expiry).toBeNull();
+        act(() => {
+            result.current.timer.start(15);
+        });
+
+        act(() => vi.advanceTimersByTime(15 * MINUTE_MS));
+
+        expect(result.current.timer.expiry).toEqual({ at: Date.now(), startedAt: START });
+    });
+
     it('should tick every second while a timer is running', () => {
         const { result } = setup();
         act(() => {

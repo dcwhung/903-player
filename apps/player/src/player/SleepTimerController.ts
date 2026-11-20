@@ -19,9 +19,20 @@ export type SleepTimerPlayer = Pick<
     'subscribe' | 'getSnapshot' | 'hasPlayIntent' | 'pause' | 'setStopAfterCurrent'
 >;
 
+/** 9c：timer 時間到（停咗播 / 播完呢集）嗰刻同嗰個 timer 幾時開始 */
+export interface SleepTimerExpiry {
+    at: number;
+    startedAt: number;
+}
+
 export interface SleepTimerSnapshot {
     /** null = 冇開 timer（「上次時長」已由每晚排程取代，S-1201） */
     timer: SleepTimerState | null;
+    /**
+     * 9c 夜間低光：上一個 timer 時間到、之後用戶未撳播 / 未再開 / 未取消（冇就唔出呢個 key）。
+     * 叫醒閒置畫面唔清（閒置畫面自己記住叫醒過邊次）
+     */
+    expiry?: SleepTimerExpiry;
 }
 
 /**
@@ -37,6 +48,11 @@ export class SleepTimerController {
     private readonly listeners = new Set<() => void>();
     private interval: ReturnType<typeof setInterval> | undefined;
     private attached = false;
+    /**
+     * 時間到之後 player 停定咗未（hasPlayIntent 變 false）：pause() 之後 audio pause event 未到前
+     * isPlaying 仲係 true，唔可以當係用戶撳播而清走 expiry
+     */
+    private expiryStopped = false;
 
     constructor(private readonly player: SleepTimerPlayer) {
         // 已過期嘅分鐘倒數喺 storage 清走（唔自動播）；「播完呢集」由 attach 嘅 check 睇載咗邊集再判斷
@@ -103,6 +119,7 @@ export class SleepTimerController {
     private check = (): void => {
         const { timer } = this.snapshot;
         if (!timer) {
+            this.checkExpiryCleared();
             return;
         }
         const now = Date.now();
@@ -122,17 +139,36 @@ export class SleepTimerController {
 
     /** 時間到：先清 timer（pause 會再觸發 check），播緊先暫停 */
     private expire(): void {
-        this.setTimer(null);
+        this.setTimer(null, this.expiryOf(this.snapshot.timer));
         if (this.player.hasPlayIntent()) {
             this.player.pause();
         }
     }
 
     /** 「播完呢集」播完：AudioController 已經停低 */
-    private onEpisodeEnded = (): void => this.setTimer(null);
+    private onEpisodeEnded = (): void => this.setTimer(null, this.expiryOf(this.snapshot.timer));
 
-    private setTimer(timer: SleepTimerState | null): void {
-        this.snapshot = { timer };
+    private expiryOf(timer: SleepTimerState | null): SleepTimerExpiry | undefined {
+        return timer ? { at: Date.now(), startedAt: timer.startedAt } : undefined;
+    }
+
+    /** 時間到之後：player 停定咗再有播放意圖 = 用戶撳播，清走 expiry */
+    private checkExpiryCleared(): void {
+        if (!this.snapshot.expiry) {
+            return;
+        }
+        if (!this.player.hasPlayIntent()) {
+            this.expiryStopped = true;
+        } else if (this.expiryStopped) {
+            this.setTimer(null);
+        }
+    }
+
+    /** 開 / 改 / 取消 / 時間到都經呢度；冇傳 expiry = 清走（開新 timer、取消都當用戶掂過） */
+    private setTimer(timer: SleepTimerState | null, expiry?: SleepTimerExpiry): void {
+        // 時間到嗰陣本身已暫停：即刻當停定（之後冇 interval，下一次 check 可能已經係用戶撳播）
+        this.expiryStopped = expiry !== undefined && !this.player.hasPlayIntent();
+        this.snapshot = expiry ? { timer, expiry } : { timer };
         saveSleepTimer(timer);
         this.syncStopAfterCurrent();
         this.syncInterval();
