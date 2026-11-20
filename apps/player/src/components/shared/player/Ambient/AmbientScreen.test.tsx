@@ -335,26 +335,6 @@ describe('AmbientScreen', () => {
         expect(scoped.getByText('22:30').closest('[data-overflow]')).toBeNull();
     });
 
-    it('should read the clock once while drawing each digit in its own fixed-width slot', async () => {
-        const { load } = renderAmbient();
-        await load();
-        idle();
-
-        const scoped = within(ambient() as HTMLElement);
-        // 讀屏淨係讀一次「22:30」；畫面逐個字一格（aria-hidden），數字格定闊
-        expect(scoped.getAllByText('22:30')).toHaveLength(1);
-        const face = (ambient() as HTMLElement).querySelector('[data-ambient-clock-face]');
-        expect(face).toHaveAttribute('aria-hidden', 'true');
-        expect([...(face?.children ?? [])].map((slot) => slot.textContent)).toEqual([
-            '2',
-            '2',
-            ':',
-            '3',
-            '0',
-        ]);
-        expect(face?.querySelectorAll('[data-clock-digit]')).toHaveLength(4);
-    });
-
     it('should keep the disc upright with no ring and 直播 for a live stream', async () => {
         const { load } = renderAmbient();
         await load({ duration: Number.POSITIVE_INFINITY });

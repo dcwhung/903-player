@@ -55,7 +55,7 @@
 /*
  * 左唱片、右時間；padding / gap 用 cqw（覆蓋層係 container，入面先跟佢）。
  * 用戶 2026-11-20：唱片格定闊、右格闊度 = 時間，成組置中，左右留白一樣（之前 1fr 1fr，時間闊過格、凸出右邊）。
- * 時間數字放定闊格（見 .clockDigit），每分鐘闊度一樣，成組唔會跟住移
+ * 時間嘅負字距最尾一個字都減，但「0」右邊本身有留白，字形邊已經喺框入面（e2e 量 pixel 左右差 ≤ 2px），唔使補
  */
 .layout {
     display: grid;
@@ -119,34 +119,6 @@
     font-weight: var(--ambient-clock-weight);
     letter-spacing: var(--ambient-clock-tracking);
     line-height: 1;
-}
-
-/*
- * 定闊數字格（用戶 2026-11-20 B 方案）：時間闊度每分鐘一樣。字形喺格入面置中；頭尾兩格貼外邊，
- * 字形邊同唱片邊對稱（唔係留成半格空位）
- */
-.clockFace {
-    display: flex;
-}
-
-.clockDigit {
-    flex-shrink: 0;
-    inline-size: var(--ambient-clock-digit);
-    letter-spacing: 0;
-    text-align: center;
-}
-
-.clockDigit:first-child {
-    text-align: start;
-}
-
-.clockDigit:last-child {
-    text-align: end;
-}
-
-/* 數字右邊本身有留白：右格收到字形邊（負 margin），置中先跟睇得見嘅字計（.side p 會清 margin，所以要兩層） */
-.side .clock {
-    margin-inline-end: calc(var(--ambient-clock-bearing) * -1);
 }
 
 .date {
