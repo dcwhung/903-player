@@ -2,13 +2,13 @@
 
 ## 進度（2026-11-20）
 
-| 步驟    | 狀態                                                     |
-| ------- | -------------------------------------------------------- |
-| Preview | ✅ 第 7 版（用戶已揀晒）                                 |
-| Plan    | ✅ 用戶 2026-11-20 confirm                               |
-| Lane 3  | 待開始：所有閒置畫面加模糊 app icon 底圖 + 左上 app 標籤 |
-| Lane 4  | 待開始：夜間低光（timer 過三分一轉暗、淡入淡出、狀態）   |
-| S3      | 待開始：QA S3 重做（版本維持 2.2.0）+ 更新 PR #295       |
+| 步驟    | 狀態                                                               |
+| ------- | ------------------------------------------------------------------ |
+| Preview | ✅ 第 7 版（用戶已揀晒）                                           |
+| Plan    | ✅ 用戶 2026-11-20 confirm                                         |
+| Lane 3  | ✅ PR #298：所有閒置畫面加模糊 app icon 底圖 + 左上 app 標籤       |
+| Lane 4  | ✅ PR #299：夜間低光（timer 過三分一轉暗、淡入淡出、狀態）         |
+| S3      | ✅ QA S3 after 9c @ `0794deea`（版本維持 2.2.0）；之後更新 PR #295 |
 
 - Preview：https://claude.ai/artifact/S7oKy6yV53L2jnEpZeXm2M（`_mockups_/home-view-night/`，branch `docs/mockup/home-view-night`）
 - 需求來源：`.proj-docs/plans/2026-11-04_plan_requirements-priority.md` 9c；9b plan `.proj-docs/plans/2026-11-20_plan_9b-home-view-ambient.md`

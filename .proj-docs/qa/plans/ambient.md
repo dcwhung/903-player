@@ -35,7 +35,7 @@
     - 9c Lane 4：`Ambient/{AmbientWakeVeil.tsx,ambientNightPalette.ts,useAmbientNight.{ts,test.tsx},useAmbientWake.ts,ambientNightStyles.node.test.ts}`、`src/selectors/ambientNight.{ts,test.ts}`；`player/SleepTimerController.ts` / `useSleepTimer.ts`（`expiry`，屬 player-core）
     - 共用 mount / 入口（屬其他鏈）：`src/App.tsx`（pwa-shell 等）、`e2e/run.mjs`（repo-tooling、coming-soon）、`styles/tokens.css` `--ambient-*`（ui-foundation、coming-soon）
     - 共用但屬其他鏈：`config/constants.ts` / `i18n/zh-HK.ts`（ui-foundation、coming-soon）、`selectors/pageHandle.ts`（home）、`components/shared/common/Marquee/*`（mini-player）
-    - Design Origin（只凍結，S3 v2.2.0 補入）：`_mockups_/home-view-ambient/{index.html,*.webp}`（repo root path，L1 視覺基準，冇 test）
+    - Design Origin（只凍結，S3 v2.2.0 補入）：`_mockups_/home-view-ambient/{index.html,*.webp}`（repo root path，L1 視覺基準，冇 test）；9c：`_mockups_/home-view-night/{index.html,*.webp}`（S3 after 9c 補入）
 - Commands:
     - npm test -- apps/player/src/hooks/useIdle apps/player/src/hooks/useMinuteClock apps/player/src/hooks/useScreenWakeLock apps/player/src/selectors/ambient apps/player/src/utils/clock apps/player/src/utils/modalDialog apps/player/src/player/useNightWindow apps/player/src/selectors/pageHandle（加 `--coverage` 睇被改檔 ≥ 80%）
     - npm test -- apps/player/src/components/shared/player/Ambient apps/player/src/config/appShortName apps/player/src/catalog/catalogImageCors（Lane 2 / 3 / 4；`selectors/ambient` 子字串已包 `ambientNight`；`--coverage`）
