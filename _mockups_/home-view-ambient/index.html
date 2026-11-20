@@ -7,7 +7,7 @@
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
             rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap"
         />
         <style>
             /* 9b HomeView 閒置 ambient preview：544×544 方形螢幕，框用 cqw 縮放；節目色調用公子會（黑 + 金） */
@@ -157,7 +157,7 @@
             }
             .disc {
                 border-radius: 50%;
-                background: #000 url('disc-gongzi.webp') center / cover;
+                background: #000 var(--disc, url('disc-gongzi.webp')) center / cover;
                 position: relative;
                 flex: none;
             }
@@ -408,6 +408,37 @@
                 height: 100%;
                 object-fit: cover;
             }
+            /* 第 2 輪：B 款超粗體時間 */
+            .b.bold .clock {
+                font-weight: 800;
+                letter-spacing: -0.03em;
+                font-size: 18cqw;
+            }
+            .b .ring .prog {
+                stroke: var(--amb-gold);
+            }
+            .flow {
+                display: grid;
+                grid-template-columns: 1fr auto 1fr auto 1fr;
+                align-items: center;
+                gap: 10px;
+            }
+            .flow .arrow {
+                color: var(--note);
+                font-size: 22px;
+            }
+            .flow figure {
+                min-width: 0;
+            }
+            @media (max-width: 640px) {
+                .flow {
+                    grid-template-columns: 1fr;
+                }
+                .flow .arrow {
+                    justify-self: center;
+                    transform: rotate(90deg);
+                }
+            }
         </style>
     </head>
     <body>
@@ -431,6 +462,347 @@
             </header>
 
             <section>
+                <h2>第 2 輪：B 唱片 + 時間（超粗體）</h2>
+                <p class="note">
+                    時間改做 Poppins
+                    ExtraBold（800）。下面兩行比較底色：上面跟節目色調，下面一律黑色（字同進度圈照跟節目顏色）。
+                </p>
+                <div class="grid">
+                    <figure>
+                        <div class="frame b bold">
+                            <div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke="rgb(255 255 255 / 14%)"
+                                        stroke-width="2.4"
+                                    />
+                                    <circle
+                                        class="prog"
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke-width="2.4"
+                                        stroke-linecap="round"
+                                        stroke-dasharray="295.3"
+                                        stroke-dashoffset="192"
+                                    />
+                                </svg>
+                                <div class="disc spin"></div>
+                            </div>
+                            <div class="side">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                                <div class="show">公子會</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>28/11（六）
+                                </div>
+                            </div>
+                        </div>
+                        <figcaption><b>跟節目：公子會</b></figcaption>
+                    </figure>
+                    <figure>
+                        <div
+                            class="frame b bold"
+                            style="
+                                --amb-bg: #21151a;
+                                --amb-gold: #f08a24;
+                                --amb-muted: #c2aaa6;
+                                --amb-text: #f6eee8;
+                                --disc: url('disc-badgirl.webp');
+                            "
+                        >
+                            <div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke="rgb(255 255 255 / 14%)"
+                                        stroke-width="2.4"
+                                    />
+                                    <circle
+                                        class="prog"
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke-width="2.4"
+                                        stroke-linecap="round"
+                                        stroke-dasharray="295.3"
+                                        stroke-dashoffset="192"
+                                    />
+                                </svg>
+                                <div class="disc spin"></div>
+                            </div>
+                            <div class="side">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                                <div class="show">Bad Girl大過佬</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>30/11（一）
+                                </div>
+                            </div>
+                        </div>
+                        <figcaption><b>跟節目：Bad Girl大過佬</b></figcaption>
+                    </figure>
+                    <figure>
+                        <div
+                            class="frame b bold"
+                            style="
+                                --amb-bg: #0e2230;
+                                --amb-gold: #6ec6ea;
+                                --amb-muted: #9fbacb;
+                                --amb-text: #eef7fb;
+                                --disc: url('disc-sunnyday.webp');
+                            "
+                        >
+                            <div class="timer-bar"><i></i></div>
+                            <div class="timer">
+                                <svg><use href="#i-moon" /></svg>18:36
+                            </div>
+                            <div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke="rgb(255 255 255 / 14%)"
+                                        stroke-width="2.4"
+                                    />
+                                    <circle
+                                        class="prog"
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke-width="2.4"
+                                        stroke-linecap="round"
+                                        stroke-dasharray="295.3"
+                                        stroke-dashoffset="192"
+                                    />
+                                </svg>
+                                <div class="disc spin"></div>
+                            </div>
+                            <div class="side">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                                <div class="show">在晴朗的一天出發</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>30/11（一）
+                                </div>
+                            </div>
+                        </div>
+                        <figcaption>
+                            <b>跟節目：在晴朗的一天出發</b><span>開咗 timer</span>
+                        </figcaption>
+                    </figure>
+                </div>
+                <div class="grid">
+                    <figure>
+                        <div class="frame b bold" style="--amb-bg: #000">
+                            <div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke="rgb(255 255 255 / 14%)"
+                                        stroke-width="2.4"
+                                    />
+                                    <circle
+                                        class="prog"
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke-width="2.4"
+                                        stroke-linecap="round"
+                                        stroke-dasharray="295.3"
+                                        stroke-dashoffset="192"
+                                    />
+                                </svg>
+                                <div class="disc spin"></div>
+                            </div>
+                            <div class="side">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                                <div class="show">公子會</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>28/11（六）
+                                </div>
+                            </div>
+                        </div>
+                        <figcaption><b>一律黑：公子會</b></figcaption>
+                    </figure>
+                    <figure>
+                        <div
+                            class="frame b bold"
+                            style="
+                                --amb-bg: #000;
+                                --amb-gold: #f08a24;
+                                --amb-muted: #a3a3a3;
+                                --disc: url('disc-badgirl.webp');
+                            "
+                        >
+                            <div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke="rgb(255 255 255 / 14%)"
+                                        stroke-width="2.4"
+                                    />
+                                    <circle
+                                        class="prog"
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke-width="2.4"
+                                        stroke-linecap="round"
+                                        stroke-dasharray="295.3"
+                                        stroke-dashoffset="192"
+                                    />
+                                </svg>
+                                <div class="disc spin"></div>
+                            </div>
+                            <div class="side">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                                <div class="show">Bad Girl大過佬</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>30/11（一）
+                                </div>
+                            </div>
+                        </div>
+                        <figcaption><b>一律黑：Bad Girl大過佬</b></figcaption>
+                    </figure>
+                    <figure>
+                        <div
+                            class="frame b bold"
+                            style="
+                                --amb-bg: #000;
+                                --amb-gold: #6ec6ea;
+                                --amb-muted: #a3a3a3;
+                                --disc: url('disc-sunnyday.webp');
+                            "
+                        >
+                            <div class="timer-bar"><i></i></div>
+                            <div class="timer">
+                                <svg><use href="#i-moon" /></svg>18:36
+                            </div>
+                            <div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke="rgb(255 255 255 / 14%)"
+                                        stroke-width="2.4"
+                                    />
+                                    <circle
+                                        class="prog"
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke-width="2.4"
+                                        stroke-linecap="round"
+                                        stroke-dasharray="295.3"
+                                        stroke-dashoffset="192"
+                                    />
+                                </svg>
+                                <div class="disc spin"></div>
+                            </div>
+                            <div class="side">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                                <div class="show">在晴朗的一天出發</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>30/11（一）
+                                </div>
+                            </div>
+                        </div>
+                        <figcaption>
+                            <b>一律黑：在晴朗的一天出發</b><span>開咗 timer</span>
+                        </figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
+                <h2>問題 3 圖解：喺節目頁放低部機，會唔會轉？</h2>
+                <p class="note">
+                    閒置畫面一定係「30 秒冇掂」先出，同 timer
+                    開唔開無關。問題係：你喺主頁格仔以外嘅頁（節目頁、今日節目、廣播劇頁）放低部機，係咪都轉。
+                </p>
+                <div class="flow">
+                    <figure>
+                        <img class="shot" src="now-show.webp" alt="節目頁" />
+                        <figcaption><b>喺節目頁放低</b></figcaption>
+                    </figure>
+                    <div class="arrow" aria-hidden="true">→</div>
+                    <figure>
+                        <div class="frame b bold">
+                            <div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke="rgb(255 255 255 / 14%)"
+                                        stroke-width="2.4"
+                                    />
+                                    <circle
+                                        class="prog"
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke-width="2.4"
+                                        stroke-linecap="round"
+                                        stroke-dasharray="295.3"
+                                        stroke-dashoffset="192"
+                                    />
+                                </svg>
+                                <div class="disc spin"></div>
+                            </div>
+                            <div class="side">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                                <div class="show">公子會</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>28/11（六）
+                                </div>
+                            </div>
+                        </div>
+                        <figcaption>
+                            <b>「任何頁」：30 秒後轉</b><span>掂一下返節目頁</span>
+                        </figcaption>
+                    </figure>
+                    <div class="arrow" aria-hidden="true">或</div>
+                    <figure>
+                        <img class="shot" src="now-show.webp" alt="節目頁" />
+                        <figcaption>
+                            <b>「只主頁」：一直保持節目頁</b><span>要返主頁先會轉</span>
+                        </figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
                 <h2>而家（v2.1.0）</h2>
                 <p class="note">冇閒置畫面：放低部機一直顯示主頁格仔或者節目頁。</p>
                 <div class="grid">
@@ -446,7 +818,7 @@
             </section>
 
             <section>
-                <h2>三款閒置畫面（播緊）</h2>
+                <h2>第 1 輪：三款閒置畫面（播緊）</h2>
                 <p class="note">
                     已定：暫停時顯示暫停咗嗰集。三款都有：時間、日期、節目名、集數日期、播放狀態、進度。
                 </p>
