@@ -4,6 +4,7 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { chromiumExecutablePath } from '../scripts/chromiumLaunch.mjs';
+import { runAmbientChecks } from './ambient.mjs';
 import { runArcSheetChecks } from './arcSheet.mjs';
 import { runBookmarkChecks } from './bookmark.mjs';
 import { runCardZoomChecks } from './cardZoom.mjs';
@@ -1668,6 +1669,9 @@ try {
 
     // 睡眠 timer（9d）：夜間月亮掣、開 / 改 / 關、時間到暫停、播完呢集、mini player / 闊版主頁入口
     await runSleepTimerChecks({ browser, base: BASE, errors, log }, section);
+
+    // HomeView 閒置畫面（9b）：544×544 閒置 30 秒轉、第一下 tap 只叫醒、冇播嘢 / sheet 開緊 / 手機唔轉
+    await runAmbientChecks({ browser, base: BASE, errors, log }, section);
 
     // PWA 換版：有新版自己 reload 一次、播緊唔打斷、兩個 tab 都換（CUI-0017）
     await runPwaUpdateChecks({ browser, errors, log }, section);

@@ -1,0 +1,171 @@
+/*
+ * HomeView 閒置畫面（9b，_mockups_/home-view-ambient 第 3 輪 B 款）：成個 viewport 嘅覆蓋層。
+ * 覆蓋層係 inline-size container：入面嘅大細（--ambient-* token，cqw）跟畫面闊度，同 mockup 一樣按 544 比例
+ */
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--ambient-z);
+    container-type: inline-size;
+    /* 撳落去唔好捲 / 拖：第一下淨係叫醒 */
+    touch-action: none;
+}
+
+/* 出嘅時候焦點喺覆蓋層自己（程式設定，唔係用戶 Tab 過嚟）：唔畫焦點框（C-025 淨係鍵盤操作先出框） */
+.overlay:focus {
+    outline: none;
+}
+
+/* 淡出緊：唔再接 tap（第二下已經係底下嗰頁） */
+.overlay[data-state='leaving'] {
+    pointer-events: none;
+}
+
+/* 淡入淡出用 View Transition token；減少動態直接切換（收起嗰下 JS 唔等淡出，見 useAmbientPresence） */
+@media (prefers-reduced-motion: no-preference) {
+    .overlay {
+        animation: ambient-fade-in var(--view-transition-fade) var(--ease-view-transition) both;
+    }
+
+    .overlay[data-state='leaving'] {
+        animation: ambient-fade-out var(--view-transition-fade) var(--ease-view-transition) both;
+    }
+}
+
+@keyframes ambient-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes ambient-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+/* 節目色調（ThemeScope fullPage={false}）：填滿覆蓋層 */
+.scope {
+    position: absolute;
+    inset: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+/* 左唱片、右時間；padding / gap 用 cqw（覆蓋層係 container，入面先跟佢） */
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: var(--ambient-gap);
+    height: 100%;
+    padding: var(--ambient-pad);
+    font-variant-numeric: tabular-nums;
+}
+
+/* 唱片格：正方形，進度圈貼邊，唱片（Disc large）喺正中 */
+.discBox {
+    --disc-large-share: var(--ambient-disc-share);
+
+    position: relative;
+    display: grid;
+    width: 100%;
+    aspect-ratio: 1;
+    place-items: center;
+}
+
+/* 暫停：唱片停轉、變暗（轉唔轉由 Disc spinning 管） */
+[data-ambient-status='paused'] .discBox > :last-child {
+    filter: var(--ambient-paused-filter);
+}
+
+.ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.ringTrack {
+    stroke: var(--color-track);
+}
+
+.ringFill {
+    stroke: var(--color-accent);
+}
+
+[data-ambient-status='paused'] .ringFill {
+    stroke: var(--color-text-muted);
+}
+
+.side {
+    display: grid;
+    gap: var(--ambient-side-gap);
+    min-width: 0;
+}
+
+.side p {
+    margin: 0;
+}
+
+/* 所有閒置畫面狀態用同一款時間：Poppins SemiBold 600、24 小時、等闊數字（用戶 2026-11-20） */
+.clock {
+    font-size: var(--ambient-clock-size);
+    font-weight: var(--ambient-clock-weight);
+    letter-spacing: var(--ambient-clock-tracking);
+    line-height: 1;
+}
+
+.date {
+    font-size: var(--ambient-date-size);
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+.name {
+    font-family: var(--theme-title-font);
+    font-size: var(--ambient-name-size);
+    font-weight: 700;
+    color: var(--color-accent-text);
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    gap: var(--ambient-status-gap);
+    font-size: var(--ambient-status-size);
+    color: var(--color-text-muted);
+}
+
+.status svg {
+    flex-shrink: 0;
+}
+
+/* 睡眠 timer 剩餘時間：右上，月亮 + 分秒（淨係顯示） */
+.timer {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + var(--ambient-timer-top));
+    right: var(--ambient-timer-right);
+    display: flex;
+    align-items: center;
+    gap: var(--ambient-timer-gap);
+    margin: 0;
+    font-size: var(--ambient-timer-size);
+    font-weight: 500;
+    color: var(--color-accent-text);
+}
+
+/* 叫醒掣：透明、蓋住成個畫面；鍵盤焦點用內框 */
+.wake {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.wake:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-accent);
+    outline-offset: calc(var(--focus-ring-width) * -1);
+}
