@@ -18,17 +18,22 @@
     - AC-13（PR #296，用戶 2026-11-20）置中：唱片格定闊 `--ambient-disc-col`、右格 `max-content`，成組置中；22:30 節目同廣播劇短篇（series）睇得見嘅左右留白差 ≤ 4px；方案 A：Poppins 冇等闊數字，每分鐘重新置中移幾 px 接受（冇固定數字格）
     - AC-14 右格闊度 = 時間闊度（文字格唔闊過時間、唔凸出）
     - AC-15 節目名 / 副題各一行（`contain: inline-size` 唔撐闊右格），放唔落用共用 `Marquee` 跑馬燈（copy `aria-hidden`）；時間唔係跑馬燈；減少動態 → 唔郁、省略號（`Marquee.module.css` reduce，屬 mini-player 鏈）
+    - AC-16（9c Lane 3，L1：`.proj-docs/plans/2026-11-20_plan_9c-home-view-night.md`「用戶決定」底圖 / 左上 app 標籤）所有閒置畫面有底圖：`icon-maskable-512.png`（經 `BASE_URL`）放大 + 模糊，上面蓋節目底色（`--ambient-backdrop-tint-mix` 62%）；底圖鋪滿、`aria-hidden`、喺內容下面；留白 / 焦點框量法收埋底圖照舊過
+    - AC-17 左上 app 標籤：`apple-touch-icon.png` + build-time 短名 `__APP_SHORT_NAME__`（= manifest `short_name`；冇 branding「903 Player」，branding 有設跟 `shortName ?? name`）；`aria-hidden`、冇膠囊底（透明 / 冇 background-image / 冇框）；同右上 timer 頂邊 / 中線差 ≤ 2px、左右邊距鏡像；唔撞唱片 / 右格
+    - AC-18（W-856）長短名（24 字 shortName / 40 字 name）截斷「…」，唔撞最闊倒數「1:58:30」、唔出畫面
 - Scope files（確實清單 = ledger 入面呢條鏈嘅行）:
     - Core: `src/hooks/{useIdle,useScreenWakeLock,useMinuteClock}.{ts,test.ts}` `src/selectors/ambient.{ts,test.ts}` `src/utils/{clock,modalDialog}.{ts,test.ts}`
     - 1-hop importers: `src/player/useNightWindow.{ts,test.ts}`（import `utils/clock`；同 player-core 共用）
     - Lane 2 UI: `src/components/shared/player/Ambient/*`（`AmbientScreen` / `AmbientView` / `AmbientDisc` / `useAmbientPresence` / `useInertBackground` / `ambientRing` / `Ambient.module.css` / `AmbientScreen.test.tsx`）、`e2e/ambient.mjs`
+    - 9c Lane 3：`Ambient/AmbientAppLabel.{tsx,test.tsx}`、`src/config/appShortName.{ts,test.ts}`、`src/appShortName.d.ts`；`vite.config.ts` define（repo-tooling）、`catalog/catalogImageCors.node.test.ts` 豁免（catalog-data）
     - 共用 mount / 入口（屬其他鏈）：`src/App.tsx`（pwa-shell 等）、`e2e/run.mjs`（repo-tooling、coming-soon）、`styles/tokens.css` `--ambient-*`（ui-foundation、coming-soon）
     - 共用但屬其他鏈：`config/constants.ts` / `i18n/zh-HK.ts`（ui-foundation、coming-soon）、`selectors/pageHandle.ts`（home）、`components/shared/common/Marquee/*`（mini-player）
     - Design Origin（只凍結，S3 v2.2.0 補入）：`_mockups_/home-view-ambient/{index.html,*.webp}`（repo root path，L1 視覺基準，冇 test）
 - Commands:
     - npm test -- apps/player/src/hooks/useIdle apps/player/src/hooks/useMinuteClock apps/player/src/hooks/useScreenWakeLock apps/player/src/selectors/ambient apps/player/src/utils/clock apps/player/src/utils/modalDialog apps/player/src/player/useNightWindow apps/player/src/selectors/pageHandle（加 `--coverage` 睇被改檔 ≥ 80%）
-    - npm test -- apps/player/src/components/shared/player/Ambient（Lane 2；`--coverage`）
-    - e2e：`e2e/ambient.mjs` 6 個 section「閒置畫面：播緊 + 叫醒 / 暫停 + timer / 廣播劇短篇 / sheet 開緊 / 冇嘢載住 / 手機」（AC-13–15 版面檢查喺頭三個）（入口只有 `npm run e2e`，CI 同 SHA 綠就引用）
+    - npm test -- apps/player/src/components/shared/player/Ambient apps/player/src/config/appShortName apps/player/src/catalog/catalogImageCors（Lane 2 / 3；`--coverage`）
+    - AC-17 branding（一次）：catalog.json 只有 `branding.text` 嘅本機 server + `VITE_CATALOG_URL=… npx vite build --outDir <scratchpad>` → dist manifest `short_name` = bundle 標籤字
+    - e2e：`e2e/ambient.mjs` 6 個 section「閒置畫面：播緊 + 叫醒 / 暫停 + timer / 廣播劇短篇 / sheet 開緊 / 冇嘢載住 / 手機」（AC-13–17 版面檢查喺頭三個；AC-18 喺「暫停 + timer」）（入口只有 `npm run e2e`，CI 同 SHA 綠就引用）
     - `npm run e2e:visual`（現有裝置零改變；每個 PR，developer 跑 / CI 綠就引用）
-- PWA gate: no（唔掂 sw / manifest / 更新邏輯 / build）
+- PWA gate: no（唔掂 sw / 更新邏輯；9c `vite.config.ts` 只加 define + manifest 文字抽變數，冇 URL production build manifest 同 base byte 一樣）
 - Out of scope: 睡眠 timer 本身（player-core AC-6 / mini-player AC-4）；內頁把手 UI（home AC-4）
