@@ -164,6 +164,41 @@
             </header>
 
             <section>
+                <h2>第 5 輪：左上加 app 標籤（似瀏覽器分頁，用短名）</h2>
+                <p class="note">
+                    用戶要求（2026-11-20）：左上角 app icon + 短名（manifest short_name，預設「903
+                    Player」，admin branding
+                    有設就跟設定）。正常用半透明節目表面色膠囊；夜間跟住壓暗。
+                </p>
+                <div class="grid">
+                    <figure>
+                        <img class="shot" src="gongzi-labelDay.webp" alt="正常：公子會" />
+                        <figcaption><b>正常：公子會</b></figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            class="shot"
+                            src="gongzi-labelNightApp.webp"
+                            alt="夜間 app 主色：公子會"
+                        />
+                        <figcaption><b>夜間 app 主色：公子會</b></figcaption>
+                    </figure>
+                    <figure>
+                        <img class="shot" src="chisee-labelDay.webp" alt="正常：芝See菇Bi Family" />
+                        <figcaption><b>正常：芝See菇Bi Family</b></figcaption>
+                    </figure>
+                    <figure>
+                        <img
+                            class="shot"
+                            src="chisee-labelNightApp.webp"
+                            alt="夜間 app 主色：芝See菇Bi Family"
+                        />
+                        <figcaption><b>夜間 app 主色：芝See菇Bi Family</b></figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
                 <h2>第 4 輪：所有閒置畫面加模糊 app icon 底圖</h2>
                 <p class="note">
                     用戶要求（2026-11-20）：底圖用 app icon，模糊後鋪滿；正常畫面上面再蓋 62%
@@ -323,9 +358,22 @@
                                 <td>自動 60 秒淡入轉返正常</td>
                             </tr>
                             <tr>
+                                <td>1</td>
+                                <td>夜間顏色</td>
+                                <td>跟 app 主色（深藍 + 暗奶油 + 暗金）</td>
+                            </tr>
+                            <tr>
+                                <td>8</td>
+                                <td>模糊 app icon 底圖 + 左上 app 標籤</td>
+                                <td>
+                                    所有閒置畫面（正常同夜間）都加；同 9c 一齊喺 v2.3.0 出，v2.2.0
+                                    照而家出
+                                </td>
+                            </tr>
+                            <tr>
                                 <td>7</td>
                                 <td>暗咗掂 mon 叫醒</td>
-                                <td>返正常頁面，由暗 60 秒淡入轉光</td>
+                                <td>返正常頁面，由暗 3 秒淡入轉光</td>
                             </tr>
                         </tbody>
                     </table>
