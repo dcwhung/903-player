@@ -46,6 +46,62 @@ const openShow = async (env, viewport = SQUARE) => {
 
 const shoot = (p, name) => p.screenshot({ ...SHOT, path: `${OUT}/ambient-${name}.png` });
 
+// 畫面左右邊各取一條（避開頂邊 timer 條同四角）：唔應該有焦點框
+const EDGE_STRIP_PX = 4;
+const EDGE_STRIP_TOP = 120;
+const EDGE_STRIP_HEIGHT = 300;
+// 每個色板（0–255）同節目底色最多差幾多（截圖壓縮 / 抗鋸齒）
+const EDGE_COLOR_TOLERANCE = 6;
+
+/** 一條 PNG 截圖入面每個 pixel 同 bg（[r, g, b]）差幾多：喺瀏覽器 decode，唔使額外 PNG library */
+const maxDiffFrom = (p, png, bg) =>
+    p.evaluate(
+        async ({ data, rgb }) => {
+            const bitmap = await createImageBitmap(
+                await (await fetch(`data:image/png;base64,${data}`)).blob(),
+            );
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            const g = canvas.getContext('2d');
+            g.drawImage(bitmap, 0, 0);
+            const px = g.getImageData(0, 0, bitmap.width, bitmap.height).data;
+            let max = 0;
+            for (let i = 0; i < px.length; i += 4) {
+                for (let c = 0; c < 3; c += 1) max = Math.max(max, Math.abs(px[i + c] - rgb[c]));
+            }
+            return max;
+        },
+        { data: png.toString('base64'), rgb: bg },
+    );
+
+/**
+ * W-850：出閒置畫面時焦點喺覆蓋層自己、冇焦點框；左右邊緣 pixel 都係節目底色（唔係全屏框）
+ */
+const checkNoFocusRing = async (env, p) => {
+    const focus = await p.evaluate(() => {
+        const el = document.activeElement;
+        const scope = el?.querySelector('[data-theme-scope]');
+        const bg = scope ? getComputedStyle(scope).backgroundColor : '';
+        return {
+            dialog: el?.getAttribute('role') === 'dialog',
+            outline: el ? getComputedStyle(el).outlineStyle : '',
+            bg: (bg.match(/\d+/g) ?? []).slice(0, 3).map(Number),
+        };
+    });
+    const strip = (x) =>
+        p.screenshot({
+            clip: { x, y: EDGE_STRIP_TOP, width: EDGE_STRIP_PX, height: EDGE_STRIP_HEIGHT },
+        });
+    const left = await maxDiffFrom(p, await strip(0), focus.bg);
+    const right = await maxDiffFrom(p, await strip(SQUARE.width - EDGE_STRIP_PX), focus.bg);
+    env.log(
+        focus.dialog &&
+            focus.outline === 'none' &&
+            left <= EDGE_COLOR_TOLERANCE &&
+            right <= EDGE_COLOR_TOLERANCE,
+        `閒置畫面：焦點喺覆蓋層、冇全屏焦點框（outline ${focus.outline}，邊緣色差 ${left} / ${right}）`,
+    );
+};
+
 /** 播緊：出閒置畫面、#root inert、時間 / 節目名；tap 暫停掣位置只叫醒，照播、同一頁 */
 const checkShowAndWake = async (env) => {
     const { ctx, p } = await openShow(env);
@@ -63,6 +119,7 @@ const checkShowAndWake = async (env) => {
         `閒置畫面：底下 #root inert、有時間同節目名（${state.text}）`,
     );
     await shoot(p, 'playing');
+    await checkNoFocusRing(env, p);
 
     // 第一下撳喺暫停掣嘅位置：只叫醒，唔會暫停
     await p.touchscreen.tap(pause.x + pause.width / 2, pause.y + pause.height / 2);

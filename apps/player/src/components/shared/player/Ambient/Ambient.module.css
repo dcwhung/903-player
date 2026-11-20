@@ -11,6 +11,11 @@
     touch-action: none;
 }
 
+/* 出嘅時候焦點喺覆蓋層自己（程式設定，唔係用戶 Tab 過嚟）：唔畫焦點框（C-025 淨係鍵盤操作先出框） */
+.overlay:focus {
+    outline: none;
+}
+
 /* 淡出緊：唔再接 tap（第二下已經係底下嗰頁） */
 .overlay[data-state='leaving'] {
     pointer-events: none;

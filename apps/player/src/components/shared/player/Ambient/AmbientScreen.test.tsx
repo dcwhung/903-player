@@ -9,6 +9,7 @@ import { PlayerProvider } from '../../../../player/PlayerProvider';
 import { usePlayer } from '../../../../player/usePlayer';
 import { useSleepTimer } from '../../../../player/useSleepTimer';
 import { AmbientScreen } from './AmbientScreen';
+import { WAKE_CLICK_GRACE_MS } from './useAmbientPresence';
 
 const SQUARE = { width: 544, height: 544 };
 const PHONE = { width: 390, height: 844 };
@@ -152,13 +153,82 @@ describe('AmbientScreen', () => {
         expect(ambient()).not.toBeNull();
     });
 
-    it('should make the page underneath inert while shown and focus the wake button', async () => {
+    it('should make the page underneath inert while shown and focus the overlay itself', async () => {
         const { load, container } = renderAmbient();
         await load();
         idle();
 
         expect(container).toHaveAttribute('inert');
-        expect(screen.getByRole('button', { name: WAKE })).toHaveFocus();
+        // 焦點喺覆蓋層（tabIndex -1），唔喺成個畫面咁大嘅叫醒掣（W-850：唔出全屏焦點框）
+        expect(ambient()).toHaveFocus();
+        expect(ambient()).toHaveAttribute('tabindex', '-1');
+        expect(screen.getByRole('button', { name: WAKE })).not.toHaveFocus();
+    });
+
+    it('should give focus back to the element focused before it showed', async () => {
+        const { load } = renderAmbient();
+        await load();
+        const pageButton = screen.getByRole('button', { name: '底下嘅掣' });
+        pageButton.focus();
+        idle();
+        expect(pageButton).not.toHaveFocus();
+
+        fireEvent.keyDown(ambient() as HTMLElement, { key: 'Escape' });
+
+        expect(ambient()).toBeNull();
+        expect(pageButton).toHaveFocus();
+    });
+
+    it('should dismiss after the grace time when pointerup is not followed by a click', async () => {
+        const { load } = renderAmbient();
+        await load();
+        idle();
+        const wake = screen.getByRole('button', { name: WAKE });
+
+        fireEvent.pointerDown(wake);
+        fireEvent.pointerUp(wake);
+        idle(WAKE_CLICK_GRACE_MS - 1);
+        expect(ambient()).not.toBeNull();
+        idle(1);
+
+        expect(ambient()).toBeNull();
+    });
+
+    it('should dismiss on pointercancel', async () => {
+        const { load } = renderAmbient();
+        await load();
+        idle();
+        const wake = screen.getByRole('button', { name: WAKE });
+
+        fireEvent.pointerDown(wake);
+        fireEvent.pointerCancel(wake);
+
+        expect(ambient()).toBeNull();
+    });
+
+    it('should dismiss on wheel', async () => {
+        const { load } = renderAmbient();
+        await load();
+        idle();
+
+        fireEvent.wheel(ambient() as HTMLElement);
+
+        expect(ambient()).toBeNull();
+    });
+
+    it('should dismiss on any other key without passing it to the page', async () => {
+        const { load } = renderAmbient();
+        await load();
+        idle();
+        const outside = vi.fn();
+        document.addEventListener('keydown', outside);
+
+        const notPrevented = fireEvent.keyDown(ambient() as HTMLElement, { key: 'a' });
+
+        expect(notPrevented).toBe(false);
+        expect(outside).not.toHaveBeenCalled();
+        expect(ambient()).toBeNull();
+        document.removeEventListener('keydown', outside);
     });
 
     it('should swallow the first tap: only wake, never reach the page underneath', async () => {
@@ -193,7 +263,7 @@ describe('AmbientScreen', () => {
         await load();
         idle();
 
-        fireEvent.keyDown(screen.getByRole('button', { name: WAKE }), { key: 'Escape' });
+        fireEvent.keyDown(ambient() as HTMLElement, { key: 'Escape' });
         expect(ambient()).toBeNull();
 
         idle(AMBIENT_IDLE_MS - 1);

@@ -17,7 +17,7 @@ import { prefersReducedMotion } from '../../../../utils/motion';
  * pointerup 之後等 click 最多幾耐：正常 click 喺 pointerup 後即刻到；拖咗 / 瀏覽器唔出 click 就靠呢個收起，
  * 唔會卡喺「叫醒緊」
  */
-const WAKE_CLICK_GRACE_MS = 500;
+export const WAKE_CLICK_GRACE_MS = 500;
 
 /** none = 冇出；shown = 出緊；waking = 撳落咗未放手（覆蓋層照接住 pointerup / click）；leaving = 淡出緊 */
 type Phase = 'none' | 'shown' | 'waking' | 'leaving';
