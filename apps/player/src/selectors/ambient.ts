@@ -27,18 +27,21 @@ export interface AmbientView {
     /** 節目「17/10（六）」；劇集「短篇 · 第 N 集」/ 日子；直播「直播」 */
     subtitle: string;
     status: HandleStatus;
-    /** 進度圈 0–1；直播（冇長度）係 null，唔出圈 */
+    /** 進度圈 0–1；直播或者未知長度（metadata 未到）係 null，唔出圈 */
     progress: number | null;
-    /** 直播（冇長度）：唱片擺正唔轉、唔出進度圈 */
+    /** 直播（串流，duration Infinity）：唱片擺正唔轉、唔出進度圈 */
     live: boolean;
 }
 
+/** 直播 = 串流（duration Infinity）：唱片擺正唔轉、唔出進度圈、副題「直播」 */
+const isLive = (duration: number): boolean => duration === Number.POSITIVE_INFINITY;
+
 /**
- * 有冇長度：metadata 未到（0 / NaN）同串流（Infinity）都當直播，
- * 進度圈冇意思（hasKnownDuration 當 Infinity 讀到，所以要另外睇 isFinite）
+ * 進度圈：直播冇；metadata 未到（0 / NaN）都未有圈，但唔當直播，副題照出集數 / 日子
+ * （hasKnownDuration 當 Infinity 讀到，所以直播要先睇）
  */
-const isLive = (duration: number): boolean =>
-    !hasKnownDuration(duration) || !Number.isFinite(duration);
+const progressOf = (currentTime: number, duration: number): number | null =>
+    isLive(duration) || !hasKnownDuration(duration) ? null : ratio(currentTime, duration);
 
 /** 唱片：節目碟；劇集用嗰集嘅碟（短篇有自己碟就用，冇就成套劇嘅碟），同最近收聽一樣 */
 const artOf = (track: Track): string =>
@@ -60,7 +63,7 @@ export const ambientView = ({
         ...trackView(track, isPlaying),
         art: artOf(track),
         subtitle: live ? t('ambient.live') : episodeLabel(track),
-        progress: live ? null : ratio(currentTime, duration),
+        progress: progressOf(currentTime, duration),
         live,
     };
 };

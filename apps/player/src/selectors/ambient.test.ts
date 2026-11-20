@@ -69,17 +69,32 @@ describe('ambientView', () => {
         expect(ambientView(input({ currentTime: DURATION + 5 }))?.progress).toBe(1);
     });
 
-    it.each([
-        ['unknown (0)', 0],
-        ['NaN', Number.NaN],
-        ['a live stream (Infinity)', Number.POSITIVE_INFINITY],
-    ])('should treat a %s duration as live: no progress ring, 直播 subtitle', (_name, duration) => {
-        expect(ambientView(input({ duration }))).toMatchObject({
+    it('should treat a live stream (Infinity duration) as live: no ring, 直播 subtitle', () => {
+        expect(ambientView(input({ duration: Number.POSITIVE_INFINITY }))).toMatchObject({
             progress: null,
             live: true,
             subtitle: '直播',
         });
     });
+
+    it.each([
+        ['0', 0],
+        ['NaN', Number.NaN],
+    ])(
+        'should not treat an unknown (%s) duration as live: no ring, normal subtitle',
+        (_n, duration) => {
+            expect(ambientView(input({ duration }))).toMatchObject({
+                progress: null,
+                live: false,
+                subtitle: '17/10（六）',
+            });
+            expect(ambientView(input({ track: CHISEE, duration }))).toMatchObject({
+                progress: null,
+                live: false,
+                subtitle: dramaEpisodeLabel(CHISEE),
+            });
+        },
+    );
 
     it.each([
         ['show', GONGZI],
