@@ -149,8 +149,6 @@ export const SLEEP_TIMER_CHECK_MS = 1000;
 /** 夜間時段（裝置本地時間）：NIGHT_START_HOUR:00 ≤ t 或 t < NIGHT_END_HOUR:00 先出月亮掣 */
 export const NIGHT_START_HOUR = 21;
 export const NIGHT_END_HOUR = 5;
-/** 夜間時段每分鐘（對正分鐘邊界）重新檢查 */
-export const NIGHT_WINDOW_CHECK_MS = 60_000;
 /** 睡眠 timer 每晚自動（用戶 2026-11-19）：時間 + 選項 + 今晚觸發咗未（localStorage） */
 export const SLEEP_TIMER_SCHEDULE_STORAGE_KEY = '903player:sleep-timer-schedule:v1';
 /** 每晚自動嘅時間四捨五入到幾多分鐘 */
