@@ -509,6 +509,11 @@
     --ambient-label-weight: 600;
     --ambient-label-gap: 1.6cqw;
     /*
+     * W-856：標籤最闊去到邊，右邊留俾 timer：最闊嘅倒數「月亮 + 1:58:30」（播完呢集長集）≈ 20cqw，
+     * 再加約 4cqw 間距；長短名截斷（…），唔撞 timer
+     */
+    --ambient-label-timer-reserve: 24cqw;
+    /*
      * mini player 長按 → 左滑關閉（useDismissGesture）：撳住縮少少、浮起大少少；
      * 時間同 src/components/pages/home/MiniPlayer/miniPlayerDismiss.ts LONG_PRESS_MS / DISMISS_SLIDE_MS 一致
      */

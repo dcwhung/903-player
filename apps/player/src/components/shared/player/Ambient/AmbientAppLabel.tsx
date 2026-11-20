@@ -11,6 +11,6 @@ const ICON_SRC = `${import.meta.env.BASE_URL}apple-touch-icon.png`;
 export const AmbientAppLabel = () => (
     <p className={styles.appLabel} data-ambient-label="" aria-hidden="true">
         <img className={styles.appIcon} src={ICON_SRC} alt="" />
-        <span>{APP_SHORT_NAME}</span>
+        <span className={styles.appName}>{APP_SHORT_NAME}</span>
     </p>
 );

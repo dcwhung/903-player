@@ -94,6 +94,11 @@
     display: flex;
     align-items: center;
     gap: var(--ambient-label-gap);
+    /*
+     * W-856：branding 短名可以好長（catalog shortName ≤ 24 字、冇設就用 name ≤ 40 字）：
+     * 闊度封頂（左右邊距 + 右上 timer 最闊嘅留位），長過就「…」，唔撞 timer、唔出畫面
+     */
+    max-width: calc(100% - 2 * var(--ambient-timer-right) - var(--ambient-label-timer-reserve));
     height: var(--ambient-top-row);
     margin: 0;
     font-family: var(--font-family);
@@ -104,9 +109,17 @@
 }
 
 .appIcon {
+    flex-shrink: 0;
     width: var(--ambient-label-icon);
     height: var(--ambient-label-icon);
     border-radius: var(--ambient-label-icon-radius);
+}
+
+/* 靜態截斷（唔跑馬燈：掛牆畫面左上角唔使郁） */
+.appName {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /*

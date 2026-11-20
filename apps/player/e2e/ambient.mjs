@@ -5,7 +5,7 @@
 // 版面（用戶 2026-11-20）：唱片 + 文字成組置中，左右留白（睇得見嘅 pixel）差 ≤ 4px；右格闊度 = 時間，
 // 節目名 / 副題一行、唔闊過時間（長就跑馬燈）。節目（公子會）同廣播劇短篇（芝See，名同副題都長）都驗。
 // 9c（_mockups_/home-view-night 第 4、6 輪）：模糊 app icon 底圖 + 左上 app 標籤（冇膠囊底、同右上 timer 同一條線、
-// 唔撞內容）。量留白 / 焦點框嗰陣暫時收埋底圖，同節目底色比。
+// 唔撞內容；branding 長名截斷「…」唔撞 timer，W-856）。量留白 / 焦點框嗰陣暫時收埋底圖，同節目底色比。
 // 截圖（播緊 / 暫停 / 開咗 timer / 廣播劇）輸出去 e2e/screenshots/ambient-*.png。每個情境用獨立 context
 import {
     DRAMA_AUDIO_BASE,
@@ -336,6 +336,59 @@ const checkBackdropAndLabel = async (env, p, label) => {
     );
 };
 
+// W-856：branding 長名（catalog shortName 上限 24 字；冇設 shortName 就用 name，上限 40 字）
+// 同最闊嘅倒數（播完呢集長集「1:58:30」）。e2e build 冇 branding，喺頁面直接換字再量
+const LONG_NAMES = [
+    { label: '24 字短名', text: '叱咤'.repeat(12) },
+    { label: '40 字 name', text: '叱咤'.repeat(20) },
+];
+const WIDEST_COUNTDOWN = '1:58:30';
+
+/** 換標籤名同 timer 分秒，同一個 evaluate 入面量（timer 每秒 re-render 會換返），量完還原 */
+const measureLongName = (p, text) =>
+    ambient(p).evaluate(
+        (dialog, { name, countdown }) => {
+            const span = dialog.querySelector('[data-ambient-label] span');
+            const label = dialog.querySelector('[data-ambient-label]');
+            const timer = dialog.querySelector('[data-ambient-timer]');
+            const digits = timer.querySelector('[aria-hidden="true"]');
+            const was = { name: span.textContent, countdown: digits.textContent };
+            span.textContent = name;
+            digits.textContent = countdown;
+            const box = (el) => {
+                const r = el.getBoundingClientRect();
+                return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+            };
+            const out = {
+                label: box(label),
+                timer: box(timer),
+                truncated: span.scrollWidth > span.clientWidth,
+                ellipsis: getComputedStyle(span).textOverflow,
+                width: innerWidth,
+            };
+            span.textContent = was.name;
+            digits.textContent = was.countdown;
+            return out;
+        },
+        { name: text, countdown: WIDEST_COUNTDOWN },
+    );
+
+/** W-856：長名截斷（…），唔撞右上 timer（最闊倒數）、唔出畫面 */
+const checkLongAppName = async (env, p) => {
+    for (const { label, text } of LONG_NAMES) {
+        const m = await measureLongName(p, text);
+        env.log(
+            !overlaps(m.label, m.timer) &&
+                m.label.left >= 0 &&
+                m.label.right <= m.width &&
+                m.truncated &&
+                m.ellipsis === 'ellipsis',
+            `閒置畫面：app 標籤 ${label} 截斷（…）、唔撞 timer「${WIDEST_COUNTDOWN}」、唔出畫面` +
+                `（標籤右 ${m.label.right} / timer 左 ${m.timer.left} / 闊 ${m.width}）`,
+        );
+    }
+};
+
 /** 播緊：出閒置畫面、#root inert、時間 / 節目名；tap 暫停掣位置只叫醒，照播、同一頁 */
 const checkShowAndWake = async (env) => {
     const { ctx, p } = await openShow(env);
@@ -419,6 +472,7 @@ const checkPausedAndTimer = async (env) => {
         // 呢度時鐘已經行到 22:31：Poppins 冇等闊數字，「1」右邊留白大，字形留白差 ~5px（成組照置中，框計）
         await checkLayout(env, p, '開咗 timer', { margins: false });
         await checkBackdropAndLabel(env, p, '開咗 timer');
+        await checkLongAppName(env, p);
     }
     return ctx.close();
 };
