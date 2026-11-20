@@ -118,3 +118,30 @@ context: "PR #299 9c Lane 4 review: 1 Warning (W-857 60 s transition also applie
 blockers:
   - "W-857 Ambient.module.css 60 s transitions not scoped to night switch: day pause dims disc / ring and show-theme change take 60 s (Chromium: 3 s after pause disc brightness 0.975 vs target 0.5)"
 ```
+
+## Re-review — W-857 / S-1390（HEAD `5c135a1b`）
+
+- 範圍：淨係 `78a40f88..5c135a1b`（`useAmbientNight.ts`、`AmbientScreen.tsx`、`Ambient.module.css`、`tokens.css`、相關 test、`e2e/ambient.mjs`）；冇搵新 🟢
+- Gates：改咗嘅檔 `eslint` 0、`prettier --check` 過；`apps/player` `tsc -b` exit 0；`Ambient/` + `selectors/ambientNight` unit 5 files / 77 tests 全綠（冇跑 full suite / e2e）
+- W-857 修正：`useNightFade` 回 `{ night, fading }`，`fading = shown !== target || 切換後窗口`。target 一變即刻 `fading`（過場規則先生效），雙 rAF 後切換同 `switchCount + 1` 同一批，窗口無縫接上；`cssMs(--ambient-night-fade)` 後拆，effect cleanup 清 timeout，unmount 冇漏。減少動態喺 render 即切、唔加 `switchCount` → 冇 `fading`；時間到 mount 即暗（`shown === target`）→ 冇 `fading`。切換中途 target 反轉會重開窗口，舊 timeout 由 cleanup 清。成組過場選擇器全部改做 `.overlay[data-ambient-night-fading] …`，同報告方案 A 一致
+- L2：Chromium 照抄修正後規則，暫停 + 換色調 0.5 秒後：冇 `fading` → 唱片 `brightness(0.5)`、底色 `rgb(32,64,208)`（即時到位）；有 `fading` → `brightness(0.996)`、`rgb(206,64,34)`（照行 60 秒）
+- 拆 `fading` 嘅 timeout 同過場差唔多同時開始，早幾 ms 拆都只係最後一格即刻到位，睇唔出；60 秒窗口內暫停照慢，係已接受嘅 trade-off
+- S-1390：`tokens.css` 註解改成「長過場揀線性，唔跟 `--ease-view-transition`」，node style test 鎖住 linear ✓
+- 結論：W-857 / S-1390 已修好
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "100%"
+next_action: invoke_qa
+next_agent: quality-assurance
+branch: "feature/layout/ambient-night"
+context: "PR #299 9c Lane 4 re-review at 5c135a1b: W-857 (60 s fade scoped to data-ambient-night-fading) and S-1390 (token comment) verified fixed; ready for QA S1"
+```
