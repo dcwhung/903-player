@@ -190,6 +190,8 @@ export const zhHK = {
         date: '{month}月{day}日 {weekday}',
         // 直播（冇長度）嘅副題，唔出進度圈
         live: '直播',
+        // 暫停緊嘅副題：「已暫停 · 28/11（六）」（{status} = common.status.paused、{sep} = common.separator）
+        paused: '{status}{sep}{subtitle}',
     },
     // 闊橫版內頁右邊把手（InnerPageHandle）：播緊 / 暫停緊其他節目 / 劇集，撳 = 返主頁
     pageHandle: {

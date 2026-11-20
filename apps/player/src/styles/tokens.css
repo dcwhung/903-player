@@ -464,6 +464,31 @@
     /* mini player 播放掣外圈（播放進度，M7）粗幼；同 MiniPlayerProgress 嘅 SVG（44 單位入面 3）一致 */
     --mini-progress-ring: calc(3px * var(--ui-scale));
     /*
+     * HomeView 閒置畫面（9b，_mockups_/home-view-ambient 第 3 輪 B 款）：疊喺短提示（--toast-z）上面。
+     * 大細用 cqw（覆蓋層係 inline-size container，544 闊時同 mockup 一樣）：外邊、兩欄間距、唱片佔格幾多
+     *（Disc large 外圈 10px 都要喺進度圈入面）、右欄行距、時間（Poppins 600，用戶 2026-11-20 揀）、日子、名、
+     * 狀態行同 icon、右上 timer；暫停時唱片變暗
+     */
+    --ambient-z: 50;
+    --ambient-pad: 6cqw;
+    --ambient-gap: 4.4cqw;
+    --ambient-disc-share: 0.78;
+    --ambient-side-gap: 2.4cqw;
+    --ambient-clock-size: 18cqw;
+    --ambient-clock-weight: 600;
+    --ambient-clock-tracking: -0.03em;
+    --ambient-date-size: 4.4cqw;
+    --ambient-name-size: 5.4cqw;
+    --ambient-status-size: 3.8cqw;
+    --ambient-status-icon: 3.6cqw;
+    --ambient-status-gap: 1.4cqw;
+    --ambient-timer-top: 4cqw;
+    --ambient-timer-right: 4.4cqw;
+    --ambient-timer-size: 4cqw;
+    --ambient-timer-icon: 4.4cqw;
+    --ambient-timer-gap: 1.2cqw;
+    --ambient-paused-filter: grayscale(0.4) brightness(0.7);
+    /*
      * mini player 長按 → 左滑關閉（useDismissGesture）：撳住縮少少、浮起大少少；
      * 時間同 src/components/pages/home/MiniPlayer/miniPlayerDismiss.ts LONG_PRESS_MS / DISMISS_SLIDE_MS 一致
      */
