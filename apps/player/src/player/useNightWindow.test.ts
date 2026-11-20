@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { NIGHT_WINDOW_CHECK_MS } from '../config/constants';
+import { MS_PER_MINUTE } from '../config/constants';
 import { useNightWindow } from './useNightWindow';
 
 /** 裝置本地時間 */
@@ -40,7 +40,7 @@ describe('useNightWindow', () => {
         const { result } = renderHook(() => useNightWindow());
         expect(result.current).toBe(true);
 
-        act(() => vi.advanceTimersByTime(NIGHT_WINDOW_CHECK_MS));
+        act(() => vi.advanceTimersByTime(MS_PER_MINUTE));
         expect(result.current).toBe(false);
     });
 
