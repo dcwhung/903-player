@@ -371,6 +371,22 @@ describe('AmbientScreen', () => {
         expect(scope?.style.getPropertyValue('--theme-bg')).toBe(themeFor('gongzi').bg);
     });
 
+    it('should lay the blurred app icon backdrop and the app label under the content when shown', async () => {
+        const { load } = renderAmbient();
+        await load();
+        idle();
+
+        const scope = (ambient() as HTMLElement).querySelector<HTMLElement>('[data-theme-scope]');
+        const backdrop = scope?.querySelector<HTMLElement>('[data-ambient-backdrop]');
+        expect(backdrop).toHaveAttribute('aria-hidden', 'true');
+        expect(backdrop?.style.getPropertyValue('--ambient-backdrop-image')).toBe(
+            `url("${import.meta.env.BASE_URL}icon-maskable-512.png")`,
+        );
+        // 喺節目色調入面（底色 / 字色跟節目），排喺內容前面
+        expect(scope?.firstElementChild).toBe(backdrop);
+        expect(scope?.querySelector('[data-ambient-label]')).toHaveTextContent('903 Player');
+    });
+
     it('should hold a screen wake lock while something is loaded on the square screen', async () => {
         const release = vi.fn(() => Promise.resolve());
         const request = vi.fn(() => Promise.resolve({ released: false, release }));

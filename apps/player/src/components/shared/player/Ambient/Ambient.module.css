@@ -44,12 +44,69 @@
     }
 }
 
-/* 節目色調（ThemeScope fullPage={false}）：填滿覆蓋層 */
+/*
+ * 節目色調（ThemeScope fullPage={false}）：填滿覆蓋層。
+ * isolation：自成一層，底圖（z-index -1）畫喺節目底色上面、內容下面
+ */
 .scope {
     position: absolute;
     inset: 0;
+    isolation: isolate;
     background: var(--color-bg);
     color: var(--color-text);
+}
+
+/*
+ * 9c 底圖（_mockups_/home-view-night 第 4 輪）：所有閒置畫面都有。
+ * ::before = app icon（--ambient-backdrop-image，由 AmbientScreen 經 BASE_URL 傳入）放大 + 模糊；
+ * ::after = 節目底色（--ambient-backdrop-tint-mix）蓋住，字同唱片照樣睇得清
+ */
+.backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.backdrop::before,
+.backdrop::after {
+    position: absolute;
+    content: '';
+}
+
+.backdrop::before {
+    inset: var(--ambient-backdrop-bleed);
+    background: var(--ambient-backdrop-image) center / cover no-repeat;
+    filter: blur(var(--ambient-backdrop-blur)) saturate(var(--ambient-backdrop-saturate));
+}
+
+.backdrop::after {
+    inset: 0;
+    background: color-mix(in srgb, var(--color-bg) var(--ambient-backdrop-tint-mix), transparent);
+}
+
+/* 9c 左上 app 標籤（第 6 輪）：icon + 短名，冇底色；同右上 timer 同一行（.timer 同一個 top / 行高） */
+.appLabel {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + var(--ambient-timer-top));
+    left: var(--ambient-timer-right);
+    display: flex;
+    align-items: center;
+    gap: var(--ambient-label-gap);
+    height: var(--ambient-top-row);
+    margin: 0;
+    font-family: var(--font-family);
+    font-size: var(--ambient-label-size);
+    font-weight: var(--ambient-label-weight);
+    color: var(--color-text);
+    white-space: nowrap;
+}
+
+.appIcon {
+    width: var(--ambient-label-icon);
+    height: var(--ambient-label-icon);
+    border-radius: var(--ambient-label-icon-radius);
 }
 
 /*
@@ -164,6 +221,8 @@
     display: flex;
     align-items: center;
     gap: var(--ambient-timer-gap);
+    /* 同左上 app 標籤一樣行高：兩邊置中喺同一條線（9c 第 6 輪） */
+    height: var(--ambient-top-row);
     margin: 0;
     font-size: var(--ambient-timer-size);
     font-weight: 500;

@@ -61,6 +61,7 @@ const SNAPSHOT_DIR = new URL('./src/catalog/snapshot/data', import.meta.url).pat
 export default defineConfig(async ({ command, mode }): Promise<ViteUserConfig> => {
     const catalogUrl = catalogUrlFor(mode);
     const branding = await resolveBuildBranding({ command, mode, catalogUrl });
+    const manifestNames = manifestText(branding.text);
     return {
         ...(branding.publicDir ? { publicDir: branding.publicDir } : {}),
         base: BASE_PATH,
@@ -68,6 +69,8 @@ export default defineConfig(async ({ command, mode }): Promise<ViteUserConfig> =
         define: {
             __APP_VERSION__: JSON.stringify(APP_VERSION),
             __CATALOG_URL__: JSON.stringify(catalogUrl),
+            // 閒置畫面左上 app 標籤：同 manifest short_name 同一個值（branding 有設就跟）
+            __APP_SHORT_NAME__: JSON.stringify(manifestNames.short_name),
         },
         // Duo 闔上・橫重用手機打橫版面：build 時複製橫版 @media 區塊（scripts/postcssDuoLandscape.ts）
         css: { postcss: { plugins: [duoLandscape()] } },
@@ -88,7 +91,7 @@ export default defineConfig(async ({ command, mode }): Promise<ViteUserConfig> =
                 registerType: 'prompt',
                 includeAssets: ['favicon.png', 'apple-touch-icon.png'],
                 manifest: {
-                    ...manifestText(branding.text),
+                    ...manifestNames,
                     lang: 'zh-HK',
                     start_url: BASE_PATH,
                     scope: BASE_PATH,
