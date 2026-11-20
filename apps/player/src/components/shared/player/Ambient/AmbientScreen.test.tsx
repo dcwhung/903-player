@@ -57,7 +57,8 @@ const renderAmbient = () => {
     };
     const pause = () => act(() => player?.pause());
     const startTimer = () => act(() => void timer?.start(15));
-    return { ...utils, audio, load, pause, startTimer, onPage };
+    const cancelTimer = () => act(() => timer?.cancel());
+    return { ...utils, audio, load, pause, startTimer, cancelTimer, onPage };
 };
 
 const idle = (ms = AMBIENT_IDLE_MS) => act(() => vi.advanceTimersByTime(ms));
@@ -400,5 +401,195 @@ describe('AmbientScreen', () => {
         await load();
 
         expect(request).toHaveBeenCalledWith('screen');
+    });
+});
+
+describe('AmbientScreen night (9c)', () => {
+    const MINUTE = 60_000;
+    /** 15 分鐘 timer 行到三分一（剩 10 分鐘，fraction 2/3） */
+    const THIRD = 5 * MINUTE;
+    const isNight = () => ambient()?.hasAttribute('data-ambient-night') ?? false;
+    const veil = () => document.querySelector('[data-ambient-veil]');
+    const wake = () => fireEvent.keyDown(ambient() as HTMLElement, { key: 'Enter' });
+    /** 夜間程度元素嘅 opacity（jsdom 冇 CSS / transition）：當佢淡入咗 level */
+    const stubNightLevel = (level: string) => {
+        const real = window.getComputedStyle.bind(window);
+        vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudo) =>
+            element instanceof HTMLElement && element.hasAttribute('data-ambient-night-level')
+                ? ({ opacity: level } as CSSStyleDeclaration)
+                : real(element, pseudo),
+        );
+    };
+
+    it('should stay in day while less than a third of the timer has elapsed', async () => {
+        const { load, startTimer } = renderAmbient();
+        await load();
+        startTimer();
+
+        idle(THIRD - 1000);
+
+        expect(ambient()).not.toBeNull();
+        expect(isNight()).toBe(false);
+    });
+
+    it('should go night once a third of the timer has elapsed', async () => {
+        const { load, startTimer } = renderAmbient();
+        await load();
+        startTimer();
+
+        idle(THIRD);
+
+        expect(isNight()).toBe(true);
+        expect(ambient()?.querySelector('[data-ambient-night-level]')).toHaveAttribute(
+            'aria-hidden',
+            'true',
+        );
+    });
+
+    it('should mount in day and switch after two frames (60 s CSS fade has a start)', async () => {
+        stubViewport(SQUARE);
+        const { load, startTimer } = renderAmbient();
+        await load();
+        startTimer();
+        idle(THIRD);
+        // 叫醒（冇 timer 過三分一嘅暗度：level 0，唔出遮罩）再閒置
+        stubNightLevel('0');
+        wake();
+        // 淡出完先拆（jsdom 冇 token 時長 → 0 ms 後備），之後再閒置
+        idle(0);
+        idle();
+
+        const shownAt = ambient();
+        expect(shownAt).not.toBeNull();
+        expect(isNight()).toBe(false);
+        // W-857：切換緊先開 60 秒過場（切換前已經設好，過場有起點）
+        expect(shownAt).toHaveAttribute('data-ambient-night-fading');
+        act(() => {
+            vi.advanceTimersToNextFrame();
+            vi.advanceTimersToNextFrame();
+        });
+        expect(isNight()).toBe(true);
+    });
+
+    it('should return to day when the timer is cancelled', async () => {
+        const { load, startTimer, cancelTimer } = renderAmbient();
+        await load();
+        startTimer();
+        idle(THIRD);
+        expect(isNight()).toBe(true);
+
+        cancelTimer();
+
+        expect(isNight()).toBe(false);
+    });
+
+    it('should stay night after the timer expires and pauses playback', async () => {
+        const { load, startTimer } = renderAmbient();
+        await load();
+        startTimer();
+
+        idle(15 * MINUTE);
+        idle(10 * MINUTE);
+
+        expect(isNight()).toBe(true);
+    });
+
+    it('should show night immediately (no fade) when it shows after an expiry nobody woke', async () => {
+        stubViewport(SQUARE);
+        const { load, startTimer } = renderAmbient();
+        await load();
+        startTimer();
+        // 一直有人用（未閒置）到時間到
+        for (let elapsed = 0; elapsed < 15 * MINUTE; elapsed += AMBIENT_IDLE_MS / 2) {
+            idle(AMBIENT_IDLE_MS / 2);
+            fireEvent.pointerDown(window);
+        }
+        expect(ambient()).toBeNull();
+
+        idle();
+
+        expect(isNight()).toBe(true);
+    });
+
+    it('should come back in day after waking from an expired night', async () => {
+        const { load, startTimer } = renderAmbient();
+        await load();
+        startTimer();
+        idle(15 * MINUTE);
+        wake();
+
+        idle();
+
+        expect(ambient()).not.toBeNull();
+        expect(isNight()).toBe(false);
+    });
+
+    it('should brighten at 05:00 even right after an expiry', async () => {
+        vi.setSystemTime(new Date(2026, 11, 1, 4, 40).getTime());
+        const { load, startTimer } = renderAmbient();
+        await load();
+        startTimer();
+        idle(15 * MINUTE);
+        expect(isNight()).toBe(true);
+
+        idle(5 * MINUTE);
+
+        expect(isNight()).toBe(false);
+    });
+
+    it('should cover the page with a fading veil from the current darkness when woken', async () => {
+        stubViewport(SQUARE);
+        const { load, startTimer } = renderAmbient();
+        await load();
+        startTimer();
+        idle(THIRD);
+        stubNightLevel('0.4');
+
+        wake();
+
+        const shown = veil() as HTMLElement | null;
+        expect(shown).not.toBeNull();
+        expect(shown).toHaveAttribute('aria-hidden', 'true');
+        expect(shown?.parentElement).toBe(document.body);
+        expect(shown?.style.getPropertyValue('--ambient-veil-from')).toBe('0.4');
+    });
+
+    it('should remove the veil when its fade ends', async () => {
+        stubViewport(SQUARE);
+        const { load, startTimer } = renderAmbient();
+        await load();
+        startTimer();
+        idle(THIRD);
+        stubNightLevel('1');
+        wake();
+        const shown = veil() as HTMLElement;
+
+        fireEvent.animationEnd(shown);
+
+        expect(veil()).toBeNull();
+    });
+
+    it('should not show a veil when waking from day', async () => {
+        stubViewport(SQUARE);
+        const { load } = renderAmbient();
+        await load();
+        idle();
+        stubNightLevel('0');
+
+        wake();
+
+        expect(veil()).toBeNull();
+    });
+
+    it('should not show a veil under reduced motion', async () => {
+        const { load, startTimer } = renderAmbient();
+        await load();
+        startTimer();
+        idle(THIRD);
+        stubNightLevel('1');
+
+        wake();
+
+        expect(veil()).toBeNull();
     });
 });

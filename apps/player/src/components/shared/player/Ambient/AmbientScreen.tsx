@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { SQUARE_QUERY } from '../../../../config/layout';
 import { useMiniPlayerDismissed } from '../../../../hooks/miniPlayerDismissed';
@@ -12,7 +12,11 @@ import { useLeaveFallback } from '../PlayerHandle/useLeaveFallback';
 import styles from './Ambient.module.css';
 import { AmbientAppLabel } from './AmbientAppLabel';
 import { AmbientView } from './AmbientView';
+import { AmbientWakeVeil } from './AmbientWakeVeil';
+import { NIGHT_PALETTE_STYLE } from './ambientNightPalette';
+import { useAmbientNight } from './useAmbientNight';
 import { useAmbientPresence, type AmbientPresence } from './useAmbientPresence';
+import { useAmbientWake } from './useAmbientWake';
 import { useInertBackground } from './useInertBackground';
 
 /** 淡出時長 token（Ambient.module.css 嘅淡出動畫用同一個） */
@@ -43,15 +47,27 @@ const AmbientContent = ({ view, isAudible }: { view: AmbientData; isAudible: boo
     </>
 );
 
-type AmbientOverlayProps = Pick<AmbientPresence, 'leaving' | 'onLeft' | 'handlers'>;
+type AmbientOverlayProps = Pick<AmbientPresence, 'leaving' | 'onLeft' | 'handlers'> & {
+    /** 9c 叫醒過嘅時間到（之後再閒置唔即刻暗） */
+    acknowledgedExpiryAt: number | null;
+    /** 夜間程度元素（叫醒時量暗度開遮罩） */
+    levelRef: RefObject<HTMLSpanElement | null>;
+};
 
 /**
  * 覆蓋層（出緊 / 淡出緊先 mount）：播放狀態（每次 timeupdate 都變）同 ambientView 只喺呢度讀，
  * 冇出嘅時候唔會跟住播放進度計（S-1300）。焦點放喺覆蓋層自己（tabIndex -1），
  * 唔放喺成個畫面咁大嘅叫醒掣，唔會出全屏焦點框（W-850）
  */
-const AmbientOverlay = ({ leaving, onLeft, handlers }: AmbientOverlayProps) => {
+const AmbientOverlay = ({
+    leaving,
+    onLeft,
+    handlers,
+    acknowledgedExpiryAt,
+    levelRef,
+}: AmbientOverlayProps) => {
     const player = usePlayer();
+    const { night, fading } = useAmbientNight(acknowledgedExpiryAt);
     const [overlay, setOverlay] = useState<HTMLDivElement | null>(null);
     const overlayRef = useRef<HTMLDivElement | null>(null);
     // useLeaveFallback 要 ref、useInertBackground 要 state（mount 咗先 inert）：一個 callback ref 兩樣都設
@@ -71,28 +87,49 @@ const AmbientOverlay = ({ leaving, onLeft, handlers }: AmbientOverlayProps) => {
     return createPortal(
         <div
             ref={attachOverlay}
-            className={styles.overlay}
+            className={`${styles.nightPalette} ${styles.overlay}`}
+            style={NIGHT_PALETTE_STYLE}
             role="dialog"
             aria-modal="true"
             aria-label={t('ambient.label')}
             tabIndex={-1}
             data-state={leaving ? 'leaving' : 'shown'}
+            data-ambient-night={night ? '' : undefined}
+            data-ambient-night-fading={fading ? '' : undefined}
             {...handlers}
         >
             <AmbientContent view={view} isAudible={player.isAudible} />
+            <span
+                ref={levelRef}
+                className={styles.nightLevel}
+                data-ambient-night-level=""
+                aria-hidden="true"
+            />
         </div>,
         document.body,
     );
 };
 
-/** 方形螢幕先有：閒置偵測、屏幕常亮；覆蓋層出緊先 mount */
+/** 方形螢幕先有：閒置偵測、屏幕常亮；覆蓋層出緊先 mount；9c 叫醒遮罩喺覆蓋層拆走後照留 3 秒 */
 const SquareAmbient = () => {
     const hasTrack = usePlayer().recording !== null;
     const miniPlayerDismissed = useMiniPlayerDismissed();
     // 有嘢載住（播緊 / 暫停住一集）就保持屏幕常亮，唔止閒置畫面出緊先開（用戶 2026-11-20）
     useScreenWakeLock(hasTrack && !miniPlayerDismissed);
-    const { present, ...overlay } = useAmbientPresence({ hasTrack, miniPlayerDismissed });
-    return present ? <AmbientOverlay {...overlay} /> : null;
+    const { acknowledgedExpiryAt, veilFrom, levelRef, onWake, onVeilDone } = useAmbientWake();
+    const { present, ...overlay } = useAmbientPresence({ hasTrack, miniPlayerDismissed }, onWake);
+    return (
+        <>
+            {present && (
+                <AmbientOverlay
+                    {...overlay}
+                    acknowledgedExpiryAt={acknowledgedExpiryAt}
+                    levelRef={levelRef}
+                />
+            )}
+            {veilFrom !== null && <AmbientWakeVeil from={veilFrom} onDone={onVeilDone} />}
+        </>
+    );
 };
 
 /**

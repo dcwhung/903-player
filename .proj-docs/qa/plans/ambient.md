@@ -21,19 +21,26 @@
     - AC-16（9c Lane 3，L1：`.proj-docs/plans/2026-11-20_plan_9c-home-view-night.md`「用戶決定」底圖 / 左上 app 標籤）所有閒置畫面有底圖：`icon-maskable-512.png`（經 `BASE_URL`）放大 + 模糊，上面蓋節目底色（`--ambient-backdrop-tint-mix` 62%）；底圖鋪滿、`aria-hidden`、喺內容下面；留白 / 焦點框量法收埋底圖照舊過
     - AC-17 左上 app 標籤：`apple-touch-icon.png` + build-time 短名 `__APP_SHORT_NAME__`（= manifest `short_name`；冇 branding「903 Player」，branding 有設跟 `shortName ?? name`）；`aria-hidden`、冇膠囊底（透明 / 冇 background-image / 冇框）；同右上 timer 頂邊 / 中線差 ≤ 2px、左右邊距鏡像；唔撞唱片 / 右格
     - AC-18（W-856）長短名（24 字 shortName / 40 字 name）截斷「…」，唔撞最闊倒數「1:58:30」、唔出畫面
+    - AC-19（9c Lane 4，L1 同上 plan「用戶決定」+「補充決定」）轉暗：開咗睡眠 timer、行咗三分一（`fraction ≤ 2/3`；「播完呢集」以揀嗰刻剩餘計）→ `data-ambient-night`，60 秒（`--ambient-night-fade`，linear）淡入；唔喺 21:00–05:00 都照轉暗；叫醒後再閒置仍過三分一 → 再 60 秒轉暗
+    - AC-20 夜間顏色跟 app 主色（`HOME_THEME`）壓暗（`--ambient-night-*`）：底深藍近黑、時間暗奶油、節目名 / 月亮 / 剩餘時間暗金、日子 / 副題暗灰藍、唱片灰淡、底圖蓋 84%；淺色節目（芝See）同公子會一樣；左上標籤 / 底圖照出
+    - AC-21 停 timer /「停用」或過咗 05:00 → 60 秒轉返正常；timer 時間到停播（`SleepTimerController` snapshot `expiry`）→ 一直暗到有人掂，叫醒過再閒置係日間
+    - AC-22 暗咗掂 mon 叫醒：返正常頁面、即刻用得，上面 `pointer-events: none` 暗色遮罩 3 秒（`--ambient-wake-fade`）由當刻暗度淡出後拆走
+    - AC-23 減少動態：夜間切換即時、冇遮罩
+    - AC-24（W-857）60 秒過場只喺夜間切換期間（`[data-ambient-night-fading]`）；日間暫停 / 換節目色調即時（唱片 1 秒內變暗）
 - Scope files（確實清單 = ledger 入面呢條鏈嘅行）:
     - Core: `src/hooks/{useIdle,useScreenWakeLock,useMinuteClock}.{ts,test.ts}` `src/selectors/ambient.{ts,test.ts}` `src/utils/{clock,modalDialog}.{ts,test.ts}`
     - 1-hop importers: `src/player/useNightWindow.{ts,test.ts}`（import `utils/clock`；同 player-core 共用）
     - Lane 2 UI: `src/components/shared/player/Ambient/*`（`AmbientScreen` / `AmbientView` / `AmbientDisc` / `useAmbientPresence` / `useInertBackground` / `ambientRing` / `Ambient.module.css` / `AmbientScreen.test.tsx`）、`e2e/ambient.mjs`
     - 9c Lane 3：`Ambient/AmbientAppLabel.{tsx,test.tsx}`、`src/config/appShortName.{ts,test.ts}`、`src/appShortName.d.ts`；`vite.config.ts` define（repo-tooling）、`catalog/catalogImageCors.node.test.ts` 豁免（catalog-data）
+    - 9c Lane 4：`Ambient/{AmbientWakeVeil.tsx,ambientNightPalette.ts,useAmbientNight.{ts,test.tsx},useAmbientWake.ts,ambientNightStyles.node.test.ts}`、`src/selectors/ambientNight.{ts,test.ts}`；`player/SleepTimerController.ts` / `useSleepTimer.ts`（`expiry`，屬 player-core）
     - 共用 mount / 入口（屬其他鏈）：`src/App.tsx`（pwa-shell 等）、`e2e/run.mjs`（repo-tooling、coming-soon）、`styles/tokens.css` `--ambient-*`（ui-foundation、coming-soon）
     - 共用但屬其他鏈：`config/constants.ts` / `i18n/zh-HK.ts`（ui-foundation、coming-soon）、`selectors/pageHandle.ts`（home）、`components/shared/common/Marquee/*`（mini-player）
     - Design Origin（只凍結，S3 v2.2.0 補入）：`_mockups_/home-view-ambient/{index.html,*.webp}`（repo root path，L1 視覺基準，冇 test）
 - Commands:
     - npm test -- apps/player/src/hooks/useIdle apps/player/src/hooks/useMinuteClock apps/player/src/hooks/useScreenWakeLock apps/player/src/selectors/ambient apps/player/src/utils/clock apps/player/src/utils/modalDialog apps/player/src/player/useNightWindow apps/player/src/selectors/pageHandle（加 `--coverage` 睇被改檔 ≥ 80%）
-    - npm test -- apps/player/src/components/shared/player/Ambient apps/player/src/config/appShortName apps/player/src/catalog/catalogImageCors（Lane 2 / 3；`--coverage`）
+    - npm test -- apps/player/src/components/shared/player/Ambient apps/player/src/config/appShortName apps/player/src/catalog/catalogImageCors（Lane 2 / 3 / 4；`selectors/ambient` 子字串已包 `ambientNight`；`--coverage`）
     - AC-17 branding（一次）：catalog.json 只有 `branding.text` 嘅本機 server + `VITE_CATALOG_URL=… npx vite build --outDir <scratchpad>` → dist manifest `short_name` = bundle 標籤字
-    - e2e：`e2e/ambient.mjs` 6 個 section「閒置畫面：播緊 + 叫醒 / 暫停 + timer / 廣播劇短篇 / sheet 開緊 / 冇嘢載住 / 手機」（AC-13–17 版面檢查喺頭三個；AC-18 喺「暫停 + timer」）（入口只有 `npm run e2e`，CI 同 SHA 綠就引用）
+    - e2e：`e2e/ambient.mjs` 6 個 section「閒置畫面：播緊 + 叫醒 / 暫停 + timer / 廣播劇短篇 / sheet 開緊 / 冇嘢載住 / 手機」（AC-13–17 版面檢查喺頭三個；AC-18 喺「暫停 + timer」）；AC-19–24 喺 6 個「夜間低光：日間暫停即時 / 轉暗 + 叫醒 + 停用 / 時間到 / 05:00 / 減少動態 / 廣播劇短篇」（入口只有 `npm run e2e`，CI 同 SHA 綠就引用）
     - `npm run e2e:visual`（現有裝置零改變；每個 PR，developer 跑 / CI 綠就引用）
 - PWA gate: no（唔掂 sw / 更新邏輯；9c `vite.config.ts` 只加 define + manifest 文字抽變數，冇 URL production build manifest 同 base byte 一樣）
 - Out of scope: 睡眠 timer 本身（player-core AC-6 / mini-player AC-4）；內頁把手 UI（home AC-4）

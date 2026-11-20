@@ -426,3 +426,107 @@ describe('SleepTimerController subscription', () => {
         expect(timer.getSnapshot().timer).not.toBeNull();
     });
 });
+
+describe('SleepTimerController expiry (9c night)', () => {
+    it('should record which timer expired when the countdown pauses playback', async () => {
+        const { timer } = await setup();
+        timer.start(15);
+        const startedAt = timer.getSnapshot().timer?.startedAt;
+
+        elapse(15 * MINUTE_MS);
+
+        expect(timer.getSnapshot().expiry).toEqual({ at: Date.now(), startedAt });
+    });
+
+    it('should record expiry when the episode timer stops at the end of the episode', async () => {
+        const { timer, audio } = await setup();
+        timer.start('episode');
+
+        audio.end();
+
+        expect(timer.getSnapshot().expiry?.at).toBe(Date.now());
+    });
+
+    it('should record expiry even when already paused at the deadline', async () => {
+        const { timer, player } = await setup();
+        timer.start(15);
+        player.pause();
+
+        elapse(15 * MINUTE_MS);
+
+        expect(timer.getSnapshot().expiry).toBeDefined();
+    });
+
+    it('should notify once with the timer cleared and the expiry set together', async () => {
+        const { timer } = await setup();
+        timer.start(15);
+        const seen: unknown[] = [];
+        cleanups.push(timer.subscribe(() => seen.push(timer.getSnapshot())));
+
+        elapse(15 * MINUTE_MS);
+
+        expect(seen).toEqual([
+            { timer: null, expiry: expect.objectContaining({ at: Date.now() }) },
+        ]);
+    });
+
+    it('should keep the expiry after playback has stopped', async () => {
+        const { timer } = await setup();
+        timer.start(15);
+
+        elapse(20 * MINUTE_MS);
+
+        expect(timer.getSnapshot().expiry).toBeDefined();
+    });
+
+    it('should clear the expiry when the user plays again', async () => {
+        const { timer, player } = await setup();
+        timer.start(15);
+        elapse(15 * MINUTE_MS);
+
+        await player.play();
+
+        expect(timer.getSnapshot().expiry).toBeUndefined();
+    });
+
+    it('should clear the expiry when the user plays after it expired while paused', async () => {
+        const { timer, player } = await setup();
+        timer.start(15);
+        player.pause();
+        elapse(15 * MINUTE_MS);
+
+        await player.play();
+
+        expect(timer.getSnapshot().expiry).toBeUndefined();
+    });
+
+    it('should clear the expiry when a new timer starts', async () => {
+        const { timer } = await setup();
+        timer.start(15);
+        elapse(15 * MINUTE_MS);
+
+        timer.start(30);
+
+        expect(timer.getSnapshot().expiry).toBeUndefined();
+    });
+
+    it('should clear the expiry when cancelled', async () => {
+        const { timer } = await setup();
+        timer.start(15);
+        elapse(15 * MINUTE_MS);
+
+        timer.cancel();
+
+        expect(timer.getSnapshot()).toEqual({ timer: null });
+        expect(timer.getSnapshot().expiry).toBeUndefined();
+    });
+
+    it('should not record expiry when the user cancels before the deadline', async () => {
+        const { timer } = await setup();
+        timer.start(15);
+
+        timer.cancel();
+
+        expect(timer.getSnapshot().expiry).toBeUndefined();
+    });
+});
