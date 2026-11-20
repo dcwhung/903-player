@@ -157,3 +157,7 @@ export const SLEEP_TIMER_SCHEDULE_STORAGE_KEY = '903player:sleep-timer-schedule:
 export const SLEEP_TIMER_SCHEDULE_ROUND_MINUTES = 5;
 /** 排程時間之後幾耐內開始播先生效（同 NIGHT_END_HOUR:00 以早到者為準） */
 export const SLEEP_TIMER_SCHEDULE_WINDOW_HOURS = 3;
+/** HomeView 閒置畫面（9b）：方形螢幕咁耐冇操作就轉（用戶 2026-11-19） */
+export const AMBIENT_IDLE_MS = 30_000;
+/** 一分鐘幾多毫秒：閒置畫面時鐘對正分鐘邊界跳 */
+export const MS_PER_MINUTE = MS_PER_SECOND * SECONDS_PER_MINUTE;
