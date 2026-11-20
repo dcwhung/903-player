@@ -47,6 +47,7 @@
 | 睡眠 timer    | `useSleepTimer()` + `SleepTimerBar kind="page"` + `MoonIcon` + `formatCountdown`（淨係顯示，唔係掣）                                                                                                 |
 | 叫醒          | 覆蓋層自己食咗第一下 `pointerdown`（`preventDefault` + `stopPropagation`），收起；底下頁面喺閒置期間加 `inert`，讀屏 / Tab 唔會掂到                                                                  |
 | 過場          | 淡入淡出用 `--view-transition-*` token；`prefers-reduced-motion: reduce` 直接切換，唔等 `animationend`                                                                                               |
+| Wake Lock     | 新 hook `useScreenWakeLock(active)`：HomeView + 有嘢載住先 request；`visibilitychange` 返嚟重新 request（瀏覽器切走會自動放）；唔支援 / reject 靜靜忽略                                              |
 | 讀屏          | 覆蓋層 `role="dialog" aria-modal="true" aria-label="閒置畫面"`；時間 / 節目做一段文字；叫醒掣讀屏名「返回」                                                                                          |
 
 ## Lane
