@@ -72,6 +72,7 @@ beforeEach(() => {
 afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     restoreMiniPlayer();
     sessionStorage.clear();
     document.querySelectorAll('[data-test-modal]').forEach((el) => el.remove());
@@ -314,6 +315,24 @@ describe('AmbientScreen', () => {
         expect(within(dialog).getByText('已暫停 · 17/10（六）')).toBeInTheDocument();
         expect(dialog.querySelector('[data-ambient-status="paused"]')).not.toBeNull();
         expect(dialog.querySelector('[class*="spinning"]')).toBeNull();
+    });
+
+    it('should scroll the name and status line as a marquee when they are wider than the clock', async () => {
+        // jsdom 冇 layout：文字 400px、格 200px（右格闊度 = 時間闊度）
+        vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(400);
+        vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(200);
+        const { load } = renderAmbient();
+        await load();
+        idle();
+
+        const scoped = within(ambient() as HTMLElement);
+        for (const text of ['公子會', '17/10（六）']) {
+            const [first, copy] = scoped.getAllByText(text);
+            expect(first?.closest('[data-overflow]')).not.toBeNull();
+            expect(copy).toHaveAttribute('aria-hidden', 'true');
+        }
+        // 時間定右格闊度：唔係跑馬燈
+        expect(scoped.getByText('22:30').closest('[data-overflow]')).toBeNull();
     });
 
     it('should keep the disc upright with no ring and 直播 for a live stream', async () => {

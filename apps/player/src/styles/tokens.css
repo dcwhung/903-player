@@ -471,6 +471,8 @@
      */
     --ambient-z: 50;
     --ambient-pad: 6cqw;
+    /* 唱片格闊度；右格闊度跟時間，成組置中（用戶 2026-11-20） */
+    --ambient-disc-col: 39cqw;
     --ambient-gap: 4.4cqw;
     --ambient-disc-share: 0.78;
     --ambient-side-gap: 2.4cqw;
