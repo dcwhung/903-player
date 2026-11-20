@@ -78,3 +78,36 @@ next_agent: developer
 branch: "fix/layout/ambient-centered-marquee"
 context: "C-034 replace PR #296 body line 1 with a legal Design Origin (recommended baseline: apps/player/src/components/shared/player/Ambient/AmbientView.tsx + delta note); description only, no CI rerun. S-1340 remove misleading tabular-nums / 等闊數字 comment in Ambient.module.css (clean in this PR per parallel-lane backlog rule). Re-review only these."
 ```
+
+## Re-review（2026-11-20，HEAD `08d2d028`）
+
+只驗上一輪 C-034 / S-1340 嘅修正（`git show 08d2d028`，1 個 CSS 檔；PR body）。
+
+| ID     | 結果    | 證據                                                                                                                                                                                                                                           |
+| ------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C-034  | ✅ 已修 | `gh api .../pulls/296` body 第一行：`Design Origin: baseline: apps/player/src/components/shared/player/Ambient/AmbientView.tsx (release/v2.2.0; delta per user feedback 2026-11-20: ...)`，合法 origin + 路徑存在                              |
+| S-1340 | ✅ 已修 | `.layout` 刪咗 `font-variant-numeric: tabular-nums`；`.clock` 註解改寫明 Poppins 冇等闊數字、方案 A。睡眠 timer 分秒（`.timer` 喺 `.layout` 入面）同樣係 Poppins 數字，之前 tnum 本身冇效（PR 量到 22:30 ≈ 245px / 22:31 ≈ 218px），冇視覺改變 |
+
+- Gates：`Ambient.module.css` `prettier --check` 過；`vitest run AmbientScreen.test.tsx` 22 tests 全綠；冇 code 邏輯改動，lint / type 同上一輪
+- 評分：可維護性 5 → 20，總分 **100 / 100**，冇 🔴 / 🟡，S-1341 / S-1342 係 Observation 唔使改
+
+**結果：✅ pass**
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "100% lines / 92.2% branch (Ambient/**)"
+  no_critical: pass
+  security: n/a
+next_action: proceed_to_qa
+next_agent: quality-assurance
+branch: "fix/layout/ambient-centered-marquee"
+context: "Re-review of C-034 (PR body Design Origin now baseline:) and S-1340 (08d2d028 drops tabular-nums, comment rewritten): both fixed. No open findings; S-1341/S-1342 observations only."
+```
