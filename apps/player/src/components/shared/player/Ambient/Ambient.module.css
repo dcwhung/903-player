@@ -242,6 +242,129 @@
     color: var(--color-accent-text);
 }
 
+/*
+ * 9c 夜間顏色（_mockups_/home-view-night 第 3、6 輪）：HOME_THEME（--ambient-home-*，inline）同黑色壓暗。
+ * 覆蓋層同叫醒遮罩都用；喺呢度解析（:root 冇 --ambient-home-*）
+ */
+.nightPalette {
+    --ambient-night-bg: color-mix(
+        in srgb,
+        var(--ambient-home-bg) var(--ambient-night-bg-mix),
+        var(--ambient-night-shade)
+    );
+    --ambient-night-text: color-mix(
+        in srgb,
+        var(--ambient-home-text) var(--ambient-night-text-mix),
+        var(--ambient-night-shade)
+    );
+    --ambient-night-gold: color-mix(
+        in srgb,
+        var(--ambient-home-accent) var(--ambient-night-gold-mix),
+        var(--ambient-night-shade)
+    );
+    --ambient-night-muted: color-mix(
+        in srgb,
+        var(--ambient-home-muted) var(--ambient-night-muted-mix),
+        var(--ambient-night-shade)
+    );
+    --ambient-night-track: color-mix(
+        in srgb,
+        var(--ambient-home-muted) var(--ambient-night-track-mix),
+        var(--ambient-night-shade)
+    );
+}
+
+/*
+ * 夜間（data-ambient-night）：節目色調換做 app 主色壓暗版（所有節目一樣）。換語意 token，底色、字、
+ * 進度圈、timer 細條全部跟住轉；底圖 ::after 顏色同百分比一齊換（S-1371：84% 夜間底色）
+ */
+.overlay[data-ambient-night] .scope {
+    --color-bg: var(--ambient-night-bg);
+    --color-text: var(--ambient-night-text);
+    --color-text-muted: var(--ambient-night-muted);
+    --color-accent: var(--ambient-night-gold);
+    --color-accent-text: var(--ambient-night-gold);
+    --color-track: var(--ambient-night-track);
+    --ambient-backdrop-tint-mix: var(--ambient-night-tint-mix);
+}
+
+/* 唱片灰淡（蓋過暫停嘅變暗）、左上 app icon 壓暗 */
+.overlay[data-ambient-night] .discBox > :last-child {
+    filter: var(--ambient-night-disc-filter);
+    opacity: var(--ambient-night-disc-opacity);
+}
+
+.overlay[data-ambient-night] .appIcon {
+    filter: var(--ambient-night-icon-filter);
+}
+
+/* 夜間程度（0 → 1）：同顏色一齊過場，叫醒時 JS 讀佢嘅 opacity 做遮罩起點；冇大細、睇唔到 */
+.nightLevel {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.overlay[data-ambient-night] .nightLevel {
+    opacity: 1;
+}
+
+/*
+ * 轉暗 / 轉返光 60 秒（--ambient-night-fade）；減少動態唔過場，直接切換（CLAUDE.md Motion）。
+ * 只過場顏色 / filter / opacity：唱片轉、跑馬燈、timer 細條長度照舊。時間（.clock）承繼 .scope 嘅字色
+ */
+@media (prefers-reduced-motion: no-preference) {
+    .scope,
+    .backdrop::after,
+    .appLabel,
+    .appIcon,
+    .date,
+    .name,
+    .status,
+    .timer,
+    .ringTrack,
+    .ringFill,
+    .discBox > :last-child,
+    .scope [data-sleep-timer-bar],
+    .scope [data-sleep-timer-bar] > *,
+    .nightLevel {
+        transition-duration: var(--ambient-night-fade);
+        transition-property: color, background-color, stroke, filter, opacity;
+        transition-timing-function: var(--ambient-night-ease);
+    }
+}
+
+/*
+ * 9c 叫醒遮罩：暗咗嘅閒置畫面收起後，頁面上面一層夜間底色由叫醒嗰刻嘅暗度（--ambient-veil-from）
+ * 3 秒淡出；唔接 tap，頁面即刻用得。減少動態唔會出（JS 唔 render），萬一設定中途改咗就唔顯示
+ */
+.veil {
+    position: fixed;
+    inset: 0;
+    z-index: var(--ambient-veil-z);
+    background: var(--ambient-night-bg);
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .veil {
+        animation: ambient-veil-out var(--ambient-wake-fade) var(--ambient-night-ease) both;
+    }
+}
+
+@keyframes ambient-veil-out {
+    from {
+        opacity: var(--ambient-veil-from);
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
 /* 叫醒掣：透明、蓋住成個畫面；鍵盤焦點用內框 */
 .wake {
     position: absolute;

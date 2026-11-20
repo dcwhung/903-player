@@ -514,6 +514,31 @@
      */
     --ambient-label-timer-reserve: 24cqw;
     /*
+     * 9c 夜間低光（_mockups_/home-view-night 第 3、6 輪 nightApp）：跟 app 主色（HOME_THEME，由
+     * ambientNightPalette.ts 經 --ambient-home-* 傳入）同黑色 color-mix 壓暗，mix = 主色佔幾多：
+     * 底深藍近黑 16%、時間暗奶油 42%、節目名 / 月亮 / 剩餘時間暗金 46%、日子 / 副題暗灰藍 30%、進度圈軌道 14%；
+     * 底圖蓋 84% 夜間底色；唱片灰淡；左上 app icon 壓暗
+     */
+    --ambient-night-shade: #000000;
+    --ambient-night-bg-mix: 16%;
+    --ambient-night-text-mix: 42%;
+    --ambient-night-gold-mix: 46%;
+    --ambient-night-muted-mix: 30%;
+    --ambient-night-track-mix: 14%;
+    --ambient-night-tint-mix: 84%;
+    --ambient-night-disc-filter: grayscale(1);
+    --ambient-night-disc-opacity: 0.28;
+    --ambient-night-icon-filter: grayscale(0.6) brightness(0.45);
+    /*
+     * 轉暗 / 轉返光 60 秒（用戶 2026-11-20；比 --view-transition-* 慢好多，所以另開 token），線性：
+     * 夜間程度（data-ambient-night-level 嘅 opacity）同顏色一齊行，叫醒時讀到嘅暗度就係睇到嘅暗度。
+     * 叫醒遮罩 3 秒淡出；疊喺頁面上面、閒置畫面下面
+     */
+    --ambient-night-fade: 60s;
+    --ambient-night-ease: linear;
+    --ambient-wake-fade: 3s;
+    --ambient-veil-z: calc(var(--ambient-z) - 1);
+    /*
      * mini player 長按 → 左滑關閉（useDismissGesture）：撳住縮少少、浮起大少少；
      * 時間同 src/components/pages/home/MiniPlayer/miniPlayerDismiss.ts LONG_PRESS_MS / DISMISS_SLIDE_MS 一致
      */

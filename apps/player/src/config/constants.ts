@@ -157,5 +157,7 @@ export const SLEEP_TIMER_SCHEDULE_ROUND_MINUTES = 5;
 export const SLEEP_TIMER_SCHEDULE_WINDOW_HOURS = 3;
 /** HomeView 閒置畫面（9b）：方形螢幕咁耐冇操作就轉（用戶 2026-11-19） */
 export const AMBIENT_IDLE_MS = 30_000;
+/** 9c 夜間低光：睡眠 timer 剩餘比例 ≤ 呢個（即係行咗三分一）閒置畫面就轉暗（用戶 2026-11-20） */
+export const AMBIENT_NIGHT_FRACTION = 2 / 3;
 /** 一分鐘幾多毫秒：閒置畫面時鐘對正分鐘邊界跳 */
 export const MS_PER_MINUTE = MS_PER_SECOND * SECONDS_PER_MINUTE;

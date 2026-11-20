@@ -107,6 +107,8 @@ const useAmbientPhase = (enabled: boolean, idleShown: boolean) => {
  */
 export const useAmbientPresence = (
     eligibility: Omit<AmbientEligibility, 'modalOpen'>,
+    /** 叫醒嗰下（覆蓋層仲喺度，未開始淡出）：9c 量夜間暗度開遮罩 */
+    onWake?: () => void,
 ): AmbientPresence => {
     const enabled = canShowAmbient({ ...eligibility, modalOpen: false });
     const { idle, wake } = useIdle(AMBIENT_IDLE_MS, enabled);
@@ -116,10 +118,11 @@ export const useAmbientPresence = (
         idle && canShowAmbient({ ...eligibility, modalOpen }),
     );
     const finish = useCallback(() => {
+        onWake?.();
         // 減少動態：即刻收起，唔淡出（CLAUDE.md Motion）
         setPhase(prefersReducedMotion() ? 'none' : 'leaving');
         wake();
-    }, [wake, setPhase]);
+    }, [wake, setPhase, onWake]);
     const handlers = useWakeHandlers({ finish, setPhase });
     return {
         present: enabled && phase !== 'none',
