@@ -51,8 +51,14 @@ const staysAway = async (p) => {
     return (await ambient(p).count()) === 0;
 };
 
-const openShow = async (env, viewport = SQUARE) => {
-    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport, hasTouch: true });
+/** now：時鐘起點（預設 harness E2E_NOW 22:30） */
+const openShow = async (env, viewport = SQUARE, now = undefined) => {
+    const { ctx, p } = await newE2EPage(
+        env.browser,
+        env.errors,
+        { viewport, hasTouch: true },
+        now ? { now } : {},
+    );
     await p.goto(`${env.base}${SHOW_ROUTE}`);
     await ensurePlaying(p);
     return { ctx, p };
@@ -121,6 +127,8 @@ const BAND_TOP = 100;
 const BAND_HEIGHT = 344;
 const INK_THRESHOLD = 24;
 const MARGIN_TOLERANCE_PX = 4;
+// 用戶 2026-11-20 B 方案：時間數字定闊格，唔同分鐘（例如尾數 1）字形留白唔同，差 ≤ 6px
+const CLOCK_MARGIN_TOLERANCE_PX = 6;
 // 一行：高度 < 2 × 字號（兩行起碼 2.4 ×）；闊度比較嘅 sub-pixel 餘量
 const ONE_LINE_FONT_SHARE = 2;
 const WIDTH_TOLERANCE_PX = 0.5;
@@ -171,6 +179,8 @@ const lookSide = (p) =>
                 .map(Number),
             side: side.getBoundingClientRect().width,
             clock: box(clock),
+            clockEnd: parseFloat(getComputedStyle(clock).marginInlineEnd),
+            time: clock.firstElementChild?.textContent ?? '',
             name: box(name),
             status: box(status),
         };
@@ -180,30 +190,30 @@ const oneLineWithinClock = (s, line) =>
     line.height < line.font * ONE_LINE_FONT_SHARE && line.width <= s.side + WIDTH_TOLERANCE_PX;
 
 /**
- * 用戶 2026-11-20：成組置中（睇得見嘅左右留白差 ≤ 4px）；右格闊度 = 時間；名 / 副題一行、唔闊過時間
+ * 用戶 2026-11-20：成組置中（睇得見嘅左右留白差 ≤ tolerance）；右格闊度 = 時間；名 / 副題一行、唔闊過時間
  */
-const checkLayout = async (env, p, label, { margins = true } = {}) => {
+const checkLayout = async (env, p, label, { tolerance = MARGIN_TOLERANCE_PX } = {}) => {
     const s = await lookSide(p);
-    if (margins) {
-        const band = await p.screenshot({
-            ...SHOT,
-            clip: { x: 0, y: BAND_TOP, width: SQUARE.width, height: BAND_HEIGHT },
-        });
-        const ink = await inkColumns(p, band, s.bg);
-        const leftPx = ink.left;
-        const rightPx = ink.width - 1 - ink.right;
-        env.log(
-            ink.right >= 0 && Math.abs(leftPx - rightPx) <= MARGIN_TOLERANCE_PX,
-            `閒置畫面（${label}）：唱片 + 文字置中，左右留白 ${leftPx} / ${rightPx}px`,
-        );
-    }
+    const band = await p.screenshot({
+        ...SHOT,
+        clip: { x: 0, y: BAND_TOP, width: SQUARE.width, height: BAND_HEIGHT },
+    });
+    const ink = await inkColumns(p, band, s.bg);
+    const leftPx = ink.left;
+    const rightPx = ink.width - 1 - ink.right;
     env.log(
-        Math.abs(s.side - s.clock.width) <= WIDTH_TOLERANCE_PX &&
+        ink.right >= 0 && Math.abs(leftPx - rightPx) <= tolerance,
+        `閒置畫面（${label}，${s.time}）：唱片 + 文字置中，左右留白 ${leftPx} / ${rightPx}px`,
+    );
+    // 右格 = 時間框減右邊字形留白（負 margin，見 Ambient.module.css .side .clock）
+    env.log(
+        Math.abs(s.side - (s.clock.width + s.clockEnd)) <= WIDTH_TOLERANCE_PX &&
             oneLineWithinClock(s, s.name) &&
             oneLineWithinClock(s, s.status),
-        `閒置畫面（${label}）：右格闊 = 時間（${s.side} / ${s.clock.width}），` +
+        `閒置畫面（${label}）：右格闊 = 時間（${s.side} / ${s.clock.width}${s.clockEnd}），` +
             `名「${s.name.text}」${s.name.width}×${s.name.height}、副題「${s.status.text}」${s.status.width}×${s.status.height} 一行唔闊過時間`,
     );
+    return s;
 };
 
 /** 播緊：出閒置畫面、#root inert、時間 / 節目名；tap 暫停掣位置只叫醒，照播、同一頁 */
@@ -285,8 +295,8 @@ const checkPausedAndTimer = async (env) => {
     );
     if (timer) {
         await shoot(p, 'timer');
-        // 呢度時鐘已經行到 22:31：Poppins 冇等闊數字，「1」右邊留白大，字形留白差 ~5px（成組照置中，框計）
-        await checkLayout(env, p, '開咗 timer', { margins: false });
+        // 呢度時鐘已經行到 22:31（尾數 1）
+        await checkLayout(env, p, '開咗 timer', { tolerance: CLOCK_MARGIN_TOLERANCE_PX });
     }
     return ctx.close();
 };
@@ -314,6 +324,55 @@ const checkSeriesDrama = async (env) => {
         await checkLayout(env, p, '廣播劇短篇');
     }
     await ctx.close();
+};
+
+// 時間唔同分鐘：22:29:45 起 → 閒置後 22:30 → 再過 1 分鐘 22:31；另一個 context 22:10:45 起 → 22:11
+const CLOCK_START_2230 = '2026-11-30T22:29:45+08:00';
+const CLOCK_START_2211 = '2026-11-30T22:10:45+08:00';
+const MINUTE_MS = 60_000;
+const SAME_WIDTH_TOLERANCE_PX = 0.01;
+
+/** 等時間轉到 hhmm（讀屏嗰份字：時間嘅第一個子元素） */
+const clockReads = (p, hhmm) =>
+    succeeds(
+        p.waitForFunction(
+            (text) =>
+                document.querySelector('[data-ambient-clock-face]')?.previousElementSibling
+                    ?.textContent === text,
+            hhmm,
+            { timeout: UI_WAIT_MS },
+        ),
+    );
+
+/**
+ * 用戶 2026-11-20 B 方案：數字定闊格，時間框闊度每分鐘一樣（22:30 / 22:31 / 22:11），成組唔會移；
+ * 每個時間左右留白差 ≤ 6px
+ */
+const checkClockWidth = async (env) => {
+    const widths = [];
+    const first = await openShow(env, SQUARE, CLOCK_START_2230);
+    await goIdle(first.p);
+    if ((await appears(first.p)) && (await clockReads(first.p, '22:30'))) {
+        const opts = { tolerance: CLOCK_MARGIN_TOLERANCE_PX };
+        widths.push(['22:30', (await checkLayout(env, first.p, '時間闊度', opts)).clock.width]);
+        await first.p.clock.fastForward(MINUTE_MS);
+        if (await clockReads(first.p, '22:31')) {
+            widths.push(['22:31', (await checkLayout(env, first.p, '時間闊度', opts)).clock.width]);
+        }
+    }
+    await first.ctx.close();
+    const second = await openShow(env, SQUARE, CLOCK_START_2211);
+    await goIdle(second.p);
+    if ((await appears(second.p)) && (await clockReads(second.p, '22:11'))) {
+        const opts = { tolerance: CLOCK_MARGIN_TOLERANCE_PX };
+        widths.push(['22:11', (await checkLayout(env, second.p, '時間闊度', opts)).clock.width]);
+    }
+    await second.ctx.close();
+    const values = widths.map(([, w]) => w);
+    env.log(
+        widths.length === 3 && Math.max(...values) - Math.min(...values) <= SAME_WIDTH_TOLERANCE_PX,
+        `閒置畫面：時間框闊度每分鐘一樣（${JSON.stringify(widths)}）`,
+    );
 };
 
 /** 集數清單 sheet 開緊：唔轉 */
@@ -349,6 +408,7 @@ export const runAmbientChecks = async (env, section) => {
     await section('閒置畫面：播緊 + 叫醒', () => checkShowAndWake(env));
     await section('閒置畫面：暫停 + timer', () => checkPausedAndTimer(env));
     await section('閒置畫面：廣播劇短篇', () => checkSeriesDrama(env));
+    await section('閒置畫面：時間闊度', () => checkClockWidth(env));
     await section('閒置畫面：sheet 開緊', () => checkSheetOpen(env));
     await section('閒置畫面：冇嘢載住', () => checkNothingLoaded(env));
     await section('閒置畫面：手機', () => checkPhone(env));
