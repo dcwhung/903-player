@@ -103,3 +103,39 @@ next_agent: developer
 branch: "feature/layout/home-view-ambient-ui"
 context: "C-033 add Design Origin line to PR #293 body (no code). W-850 overlay auto-focus shows full-screen focus ring (focus overlay tabIndex=-1 instead). W-851 add unit tests for grace timeout, pointercancel, wheel, any key, focus return. S-1300 gate usePlayer/ambientView to shown subtree. Re-review only these."
 ```
+
+## Re-review（2026-11-20，HEAD `06debe7e`）
+
+只驗上一輪 C-033 / W-850 / W-851 / S-1300 嘅修正（`git diff 7b22c934..06debe7e`，5 個 code 檔）。
+
+Hard gates all pass：改咗嘅檔 `eslint` 0、`prettier --check` 過；`tsc --noEmit -p tsconfig.app.json` exit 0；Ambient unit 1 檔 / 21 tests 全綠；`Ambient/**` lines 100%、branch 92.2%（新增未覆蓋分支：`useInertBackground.ts:18,26` 防禦性 null / 已 inert，`AmbientScreen.tsx:54` `!view`）。
+
+| ID     | 判斷    | 核對（L2）                                                                                                                                                                                                                                                                                                  |
+| ------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C-033  | ✅ 已修 | `gh api .../pulls/293` body 第一行：`Design Origin: mockup: _mockups_/home-view-ambient/index.html（第 3 輪 B 款，時間 600）`                                                                                                                                                                               |
+| W-850  | ✅ 已修 | 覆蓋層 `tabIndex={-1}` 攞焦點、`.overlay:focus { outline: none }`；叫醒掣唔再自動 focus，`:focus-visible` 只喺鍵盤 Tab 到先出。鍵盤事件 target 係覆蓋層，`handlers` 照接。e2e `checkNoFocusRing` 喺之前出框嗰個情境（播緊）驗 outline + 左右 4px 邊條同節目底色差 ≤ 6，避開頂邊 timer 條，舊 2px 框會被捉到 |
+| W-851  | ✅ 已修 | 新 5 個 case：焦點返原位、`WAKE_CLICK_GRACE_MS - 1` 未收 / `+1` 收、pointercancel、wheel、`a` 鍵 `preventDefault` 兼唔傳去 document                                                                                                                                                                         |
+| S-1300 | ✅ 接受 | `AmbientOverlay` 出緊先 mount，`ambientView` / 進度只喺入面計。外層 `SquareAmbient` 仍然 `usePlayer()` 攞 `recording !== null`：player 係單一 context，冇 selector 可用（`useHasMiniPlayer` 都係咁做），外層每次 re-render 只做 `canShowAmbient` 同 hooks，接受                                             |
+
+冇新 🔴 / 🟡；冇新 🟢（re-review 唔搵新 suggestion）。
+
+**Re-review 結果：✅ pass（100/100）**
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "100% lines / 92.2% branch"
+  no_critical: pass
+  security: n/a
+next_action: merge_develop
+next_agent: quality-assurance
+branch: "feature/layout/home-view-ambient-ui"
+context: "9b Lane 2 re-review pass at 06debe7e: C-033, W-850, W-851 fixed; S-1300 accepted (outer usePlayer for hasTrack OK). Next QA S1, CI green, merge into release/v2.2.0"
+```
