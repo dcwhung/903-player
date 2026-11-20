@@ -1,0 +1,21 @@
+# Test Plan — ambient
+
+- Paths：code / test path 相對 `apps/player/`（ledger 寫全 path）；指令喺 repo root 跑（`npm test -- <path>` 係子字串 filter）
+- Chain: HomeView 閒置畫面（9b，v2.2.0）：閒置偵測、屏幕常亮、分鐘時鐘、畫面資料 / 轉唔轉；Lane 2 再加 `AmbientScreen` UI + 叫醒 + `e2e/ambient.mjs`（加 AC 同 scope，沿用呢份 plan）
+- AC（L1：`.proj-docs/plans/2026-11-20_plan_9b-home-view-ambient.md`「用戶決定」+「技術設計」+「補充決定」）:
+    - AC-1 `useIdle(timeoutMs, enabled)`：`AMBIENT_IDLE_MS` 30 秒冇 `pointerdown` / `keydown` / `wheel` / `touchstart`（capture + passive）就 idle；有操作、`visibilitychange` 返 visible、`wake()` 由頭計；enabled false 唔註冊 listener、冇 timer、idle 一定 false
+    - AC-2 `useScreenWakeLock(active)`：active + 前台先 `navigator.wakeLock.request('screen')`；返前台重新 request、唔重覆；inactive / unmount 放返（遲批出嚟都放）；唔支援 / reject / throw 靜靜忽略
+    - AC-3 `useMinuteClock` + `utils/clock`：裝置本地時間 24 小時 `HH:MM`、日子「{月}月{日}日 星期X」（唔補 0）；對正分鐘邊界跳、返前台即刻對
+    - AC-4 `ambientView`：冇 track → null（N3）；名 / 色調 / 狀態共用 `pageHandle.trackView`；節目 = 日子副題、劇集 = `dramaEpisodeLabel`；直播（duration Infinity）唔出圈、副題「直播」；metadata 未到（0 / NaN）唔出圈但唔當直播；進度封頂 1
+    - AC-5 `canShowAmbient` + `hasOpenModalDialog`：有 track、mini player 冇撥走、冇 `[role="dialog"][aria-modal="true"]`（自己除外、docked `aria-modal="false"` 唔計）先轉
+    - AC-6 S-1290：`useNightWindow` 用 `utils/clock.msToNextMinute`（`MS_PER_MINUTE` = 60 000，同舊 `NIGHT_WINDOW_CHECK_MS` 一樣），行為不變
+- Scope files（確實清單 = ledger 入面呢條鏈嘅行）:
+    - Core: `src/hooks/{useIdle,useScreenWakeLock,useMinuteClock}.{ts,test.ts}` `src/selectors/ambient.{ts,test.ts}` `src/utils/{clock,modalDialog}.{ts,test.ts}`
+    - 1-hop importers: `src/player/useNightWindow.{ts,test.ts}`（import `utils/clock`；同 player-core 共用）
+    - 共用但屬其他鏈：`config/constants.ts` / `i18n/zh-HK.ts`（ui-foundation、coming-soon）、`selectors/pageHandle.ts`（home）
+- Commands:
+    - npm test -- apps/player/src/hooks/useIdle apps/player/src/hooks/useMinuteClock apps/player/src/hooks/useScreenWakeLock apps/player/src/selectors/ambient apps/player/src/utils/clock apps/player/src/utils/modalDialog apps/player/src/player/useNightWindow apps/player/src/selectors/pageHandle（加 `--coverage` 睇被改檔 ≥ 80%）
+    - e2e：Lane 1 未有 UI、冇 section；Lane 2 加 `e2e/ambient.mjs`（入口只有 `npm run e2e`，CI 同 SHA 綠就引用）
+    - `npm run e2e:visual`（現有裝置零改變；每個 PR，developer 跑 / CI 綠就引用）
+- PWA gate: no（唔掂 sw / manifest / 更新邏輯 / build）
+- Out of scope: 睡眠 timer 本身（player-core AC-6 / mini-player AC-4）；內頁把手 UI（home AC-4）
