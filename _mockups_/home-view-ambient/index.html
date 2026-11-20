@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="zh-HK">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>HomeView 閒置畫面</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+        />
+        <style>
+            /* 9b HomeView 閒置 ambient preview：544×544 方形螢幕，框用 cqw 縮放；節目色調用公子會（黑 + 金） */
+            :root {
+                --bg: #eef1f5;
+                --surface: #ffffff;
+                --ink: #18202b;
+                --note: #5d6775;
+                --line: #d3d9e2;
+                --accent: #3b6fb6;
+                --font: 'Poppins', 'Noto Sans TC', -apple-system, 'PingFang HK', sans-serif;
+                /* 方形螢幕入面（公子會色調） */
+                --amb-bg: #121212;
+                --amb-text: #f2f2f2;
+                --amb-muted: #a3a3a3;
+                --amb-gold: #e3c06d;
+                --amb-track: rgb(255 255 255 / 14%);
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --bg: #10151c;
+                    --surface: #1a212b;
+                    --ink: #e8edf3;
+                    --note: #9aa5b3;
+                    --line: #2e3845;
+                    --accent: #7fa8e6;
+                    color-scheme: dark;
+                }
+            }
+            :root[data-theme='dark'] {
+                --bg: #10151c;
+                --surface: #1a212b;
+                --ink: #e8edf3;
+                --note: #9aa5b3;
+                --line: #2e3845;
+                --accent: #7fa8e6;
+                color-scheme: dark;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 20px 16px 56px;
+                background: var(--bg);
+                color: var(--ink);
+                font-family: var(--font);
+                font-size: 15px;
+                line-height: 1.55;
+            }
+            main {
+                display: grid;
+                gap: 32px;
+                max-width: 1240px;
+                margin-inline: auto;
+            }
+            h1 {
+                margin: 0;
+                font-size: 22px;
+            }
+            h2 {
+                margin: 0 0 4px;
+                font-size: 18px;
+            }
+            p {
+                margin: 0;
+            }
+            .note {
+                color: var(--note);
+                font-size: 14px;
+            }
+            section {
+                display: grid;
+                gap: 12px;
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+                gap: 20px;
+            }
+            figure {
+                margin: 0;
+                display: grid;
+                gap: 8px;
+                align-content: start;
+            }
+            figcaption {
+                font-size: 14px;
+            }
+            figcaption b {
+                display: block;
+            }
+            figcaption span {
+                color: var(--note);
+            }
+            .shot {
+                width: 100%;
+                aspect-ratio: 1;
+                border-radius: 14px;
+                display: block;
+                border: 1px solid var(--line);
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                font-size: 14px;
+            }
+            th,
+            td {
+                border: 1px solid var(--line);
+                padding: 8px 10px;
+                text-align: left;
+                vertical-align: top;
+            }
+            th {
+                background: var(--surface);
+            }
+            .table-wrap {
+                overflow-x: auto;
+            }
+
+            /* ===== 方形螢幕框（544×544 縮放；1cqw = 5.44px） ===== */
+            .frame {
+                position: relative;
+                width: 100%;
+                aspect-ratio: 1;
+                container-type: inline-size;
+                overflow: hidden;
+                border-radius: 14px;
+                background: var(--amb-bg);
+                color: var(--amb-text);
+                font-family: 'Poppins', 'Noto Sans TC', sans-serif;
+                box-shadow: 0 0 0 1px var(--line);
+            }
+            .frame * {
+                font-variant-numeric: tabular-nums;
+            }
+            .clock {
+                font-weight: 300;
+                letter-spacing: -0.02em;
+                line-height: 1;
+            }
+            .date {
+                color: var(--amb-muted);
+                font-size: 4.4cqw;
+                font-weight: 500;
+            }
+            .disc {
+                border-radius: 50%;
+                background: #000 url('disc-gongzi.webp') center / cover;
+                position: relative;
+                flex: none;
+            }
+            .disc::after {
+                content: '';
+                position: absolute;
+                inset: 42%;
+                border-radius: 50%;
+                background: #0a0a0a;
+                box-shadow: 0 0 0 0.4cqw rgb(255 255 255 / 10%);
+            }
+            @media (prefers-reduced-motion: no-preference) {
+                .spin {
+                    animation: spin 12s linear infinite;
+                }
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(1turn);
+                }
+            }
+            .show {
+                font-weight: 700;
+                font-size: 5.4cqw;
+                color: var(--amb-gold);
+            }
+            .ep {
+                color: var(--amb-muted);
+                font-size: 3.8cqw;
+                display: flex;
+                align-items: center;
+                gap: 1.4cqw;
+            }
+            .ep svg {
+                width: 3.6cqw;
+                height: 3.6cqw;
+                fill: currentColor;
+            }
+            .bar {
+                height: 0.9cqw;
+                border-radius: 1cqw;
+                background: var(--amb-track);
+                overflow: hidden;
+            }
+            .bar i {
+                display: block;
+                height: 100%;
+                width: var(--p, 35%);
+                background: var(--amb-gold);
+            }
+            /* 睡眠 timer（同 9d：頂邊全闊細條 + 月亮 + 剩餘） */
+            .timer-bar {
+                position: absolute;
+                inset: 0 0 auto;
+                height: 0.8cqw;
+                background: var(--amb-track);
+            }
+            .timer-bar i {
+                display: block;
+                height: 100%;
+                width: 62%;
+                background: var(--amb-gold);
+            }
+            .timer {
+                position: absolute;
+                top: 4cqw;
+                right: 4.4cqw;
+                display: flex;
+                align-items: center;
+                gap: 1.2cqw;
+                color: var(--amb-gold);
+                font-size: 4cqw;
+                font-weight: 500;
+            }
+            .timer svg {
+                width: 4.4cqw;
+                height: 4.4cqw;
+                fill: currentColor;
+            }
+
+            /* A 大時鐘 */
+            .a {
+                display: grid;
+                grid-template-rows: 1fr auto;
+                padding: 6% 6% 5%; /* 容器本身唔用 cqw（會跌去 viewport 單位） */
+            }
+            .a .center {
+                display: grid;
+                place-content: center;
+                text-align: center;
+                gap: 2cqw;
+            }
+            .a .clock {
+                font-size: 30cqw;
+            }
+            .a .now {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 1.6cqw 3.4cqw;
+                align-items: center;
+            }
+            .a .disc {
+                width: 14cqw;
+                height: 14cqw;
+                grid-row: span 2;
+            }
+            .a .bar {
+                grid-column: 1 / -1;
+                margin-top: 1.6cqw;
+            }
+
+            /* B 唱片 + 時間 */
+            .b {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                align-items: center;
+                padding: 6%;
+                gap: 5%;
+            }
+            .b .ring {
+                position: relative;
+                width: 100%;
+                aspect-ratio: 1;
+                display: grid;
+                place-items: center;
+            }
+            .b .ring svg {
+                position: absolute;
+                inset: 0;
+                transform: rotate(-90deg);
+            }
+            .b .disc {
+                width: 84%;
+                height: 84%;
+            }
+            .b .side {
+                display: grid;
+                gap: 2.4cqw;
+            }
+            .b .clock {
+                font-size: 17cqw;
+            }
+
+            /* C 封面背景 */
+            .c {
+                display: grid;
+                grid-template-rows: 1fr auto;
+                padding: 6% 6% 5%; /* 容器本身唔用 cqw（會跌去 viewport 單位） */
+                isolation: isolate;
+            }
+            .c::before {
+                content: '';
+                position: absolute;
+                inset: -8%;
+                background: url('banner-gongzi.webp') center / cover;
+                filter: blur(5cqw) saturate(1.2);
+                opacity: 0.55;
+                z-index: -1;
+            }
+            .c::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: radial-gradient(circle at 50% 40%, rgb(0 0 0 / 25%), rgb(0 0 0 / 70%));
+                z-index: -1;
+            }
+            .c .center {
+                display: grid;
+                place-content: center;
+                text-align: center;
+                gap: 2cqw;
+            }
+            .c .clock {
+                font-size: 28cqw;
+                text-shadow: 0 0.6cqw 3cqw rgb(0 0 0 / 50%);
+            }
+            .c .foot {
+                display: grid;
+                gap: 1.6cqw;
+                text-align: center;
+                justify-items: center;
+            }
+            .c .bar {
+                width: 100%;
+                margin-top: 1.6cqw;
+            }
+
+            /* 暫停：唱片唔轉、淡啲 */
+            .paused .disc {
+                filter: grayscale(0.4) brightness(0.7);
+            }
+            .paused .bar i {
+                background: var(--amb-muted);
+            }
+
+            /* 冇播嘢 */
+            .none {
+                display: grid;
+                place-content: center;
+                text-align: center;
+                gap: 2cqw;
+                background: radial-gradient(circle at 50% 30%, #1d2733, #0d1218);
+            }
+            .none .clock {
+                font-size: 30cqw;
+            }
+            .none .hint {
+                margin-top: 4cqw;
+                display: grid;
+                gap: 1.4cqw;
+                justify-items: center;
+            }
+            .tile {
+                display: flex;
+                align-items: center;
+                gap: 3cqw;
+                padding: 2.4cqw 4cqw 2.4cqw 2.4cqw;
+                border-radius: 99cqw;
+                background: rgb(255 255 255 / 8%);
+                font-size: 4cqw;
+            }
+            .tile .disc {
+                width: 9cqw;
+                height: 9cqw;
+            }
+            .tile small {
+                color: var(--amb-muted);
+                font-size: 3.4cqw;
+                display: block;
+            }
+
+            /* 叫醒示意 */
+            .tap {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 16cqw;
+                height: 16cqw;
+                margin: -8cqw;
+                border-radius: 50%;
+                border: 0.8cqw solid rgb(255 255 255 / 80%);
+                background: rgb(255 255 255 / 18%);
+            }
+            .frame img.fill {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+        </style>
+    </head>
+    <body>
+        <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+            <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></symbol>
+            <symbol id="i-pause" viewBox="0 0 24 24">
+                <path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" />
+            </symbol>
+            <symbol id="i-moon" viewBox="0 0 24 24">
+                <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
+            </symbol>
+        </svg>
+
+        <main>
+            <header>
+                <h1>9b HomeView 閒置畫面（ambient）</h1>
+                <p class="note">
+                    方形螢幕（544×544）閒置 30 秒自動轉；掂一下返原本畫面。只影響
+                    HomeView，手機、平板、電腦、Duo 全部唔變。下面用公子會做例，時間假設 22:30。
+                </p>
+            </header>
+
+            <section>
+                <h2>而家（v2.1.0）</h2>
+                <p class="note">冇閒置畫面：放低部機一直顯示主頁格仔或者節目頁。</p>
+                <div class="grid">
+                    <figure>
+                        <img class="shot" src="now-home.webp" alt="現在嘅 HomeView 主頁" />
+                        <figcaption><b>主頁（播緊，右邊把手）</b></figcaption>
+                    </figure>
+                    <figure>
+                        <img class="shot" src="now-show.webp" alt="現在嘅 HomeView 節目頁" />
+                        <figcaption><b>節目頁（播緊）</b></figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
+                <h2>三款閒置畫面（播緊）</h2>
+                <p class="note">
+                    已定：暫停時顯示暫停咗嗰集。三款都有：時間、日期、節目名、集數日期、播放狀態、進度。
+                </p>
+                <div class="grid">
+                    <figure>
+                        <div class="frame a">
+                            <div class="center">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                            </div>
+                            <div class="now">
+                                <div class="disc spin"></div>
+                                <div class="show">公子會</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>28/11（六）· 3:31 / 10:00
+                                </div>
+                                <div class="bar"><i></i></div>
+                            </div>
+                        </div>
+                        <figcaption>
+                            <b>A 大時鐘</b><span>時間做主角，遠睇最清楚；節目資料縮做底部一行</span>
+                        </figcaption>
+                    </figure>
+                    <figure>
+                        <div class="frame b">
+                            <div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke="rgb(255 255 255 / 14%)"
+                                        stroke-width="2.4"
+                                    />
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke="#e3c06d"
+                                        stroke-width="2.4"
+                                        stroke-linecap="round"
+                                        stroke-dasharray="295.3"
+                                        stroke-dashoffset="192"
+                                    />
+                                </svg>
+                                <div class="disc spin"></div>
+                            </div>
+                            <div class="side">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                                <div class="show">公子會</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>28/11（六）
+                                </div>
+                            </div>
+                        </div>
+                        <figcaption>
+                            <b>B 唱片 + 時間</b
+                            ><span>延續播放卡嘅唱片同進度圈，一睇就知播緊乜；時間細啲</span>
+                        </figcaption>
+                    </figure>
+                    <figure>
+                        <div class="frame c">
+                            <div class="center">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                            </div>
+                            <div class="foot">
+                                <div class="show">公子會</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>28/11（六）· 3:31 / 10:00
+                                </div>
+                                <div class="bar"><i></i></div>
+                            </div>
+                        </div>
+                        <figcaption>
+                            <b>C 封面做背景</b
+                            ><span>節目橫額模糊做底，每個節目顏色唔同；時間置中</span>
+                        </figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
+                <h2>暫停 / 開咗睡眠 timer</h2>
+                <p class="note">
+                    暫停：掣變暫停符號，唱片停轉、變暗。開咗 timer：同 9d 一樣，頂邊細條 +
+                    右上月亮同剩餘時間。
+                </p>
+                <div class="grid">
+                    <figure>
+                        <div class="frame a paused">
+                            <div class="center">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                            </div>
+                            <div class="now">
+                                <div class="disc"></div>
+                                <div class="show">公子會</div>
+                                <div class="ep">
+                                    <svg><use href="#i-pause" /></svg>已暫停 · 28/11（六）· 3:31
+                                </div>
+                                <div class="bar"><i></i></div>
+                            </div>
+                        </div>
+                        <figcaption><b>A 暫停</b></figcaption>
+                    </figure>
+                    <figure>
+                        <div class="frame a">
+                            <div class="timer-bar"><i></i></div>
+                            <div class="timer">
+                                <svg><use href="#i-moon" /></svg>18:36
+                            </div>
+                            <div class="center">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                            </div>
+                            <div class="now">
+                                <div class="disc spin"></div>
+                                <div class="show">公子會</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>28/11（六）· 3:31 / 10:00
+                                </div>
+                                <div class="bar"><i></i></div>
+                            </div>
+                        </div>
+                        <figcaption><b>A 開咗 timer</b></figcaption>
+                    </figure>
+                    <figure>
+                        <div class="frame b">
+                            <div class="timer-bar"><i></i></div>
+                            <div class="timer">
+                                <svg><use href="#i-moon" /></svg>18:36
+                            </div>
+                            <div class="ring">
+                                <svg viewBox="0 0 100 100">
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke="rgb(255 255 255 / 14%)"
+                                        stroke-width="2.4"
+                                    />
+                                    <circle
+                                        cx="50"
+                                        cy="50"
+                                        r="47"
+                                        fill="none"
+                                        stroke="#e3c06d"
+                                        stroke-width="2.4"
+                                        stroke-linecap="round"
+                                        stroke-dasharray="295.3"
+                                        stroke-dashoffset="192"
+                                    />
+                                </svg>
+                                <div class="disc spin"></div>
+                            </div>
+                            <div class="side">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                                <div class="show">公子會</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>28/11（六）
+                                </div>
+                            </div>
+                        </div>
+                        <figcaption><b>B 開咗 timer</b></figcaption>
+                    </figure>
+                    <figure>
+                        <div class="frame c">
+                            <div class="timer-bar"><i></i></div>
+                            <div class="timer">
+                                <svg><use href="#i-moon" /></svg>18:36
+                            </div>
+                            <div class="center">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                            </div>
+                            <div class="foot">
+                                <div class="show">公子會</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>28/11（六）· 3:31 / 10:00
+                                </div>
+                                <div class="bar"><i></i></div>
+                            </div>
+                        </div>
+                        <figcaption><b>C 開咗 timer</b></figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
+                <h2>冇播嘢（未決定）</h2>
+                <p class="note">一打開 app 未揀節目、或者今日冇嘢聽過。三個做法：</p>
+                <div class="grid">
+                    <figure>
+                        <div class="frame none">
+                            <div class="clock">22:30</div>
+                            <div class="date">11月30日 星期一</div>
+                        </div>
+                        <figcaption><b>N1 淨係時鐘</b><span>最簡單，當床頭鐘用</span></figcaption>
+                    </figure>
+                    <figure>
+                        <div class="frame none">
+                            <div class="clock">22:30</div>
+                            <div class="date">11月30日 星期一</div>
+                            <div class="hint">
+                                <div class="tile">
+                                    <div class="disc"></div>
+                                    <div>公子會<small>上次聽到 28/11 · 3:31</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <figcaption>
+                            <b>N2 時鐘 + 上次聽緊</b
+                            ><span>掂一下返主頁，再撳先播（第一下只叫醒）</span>
+                        </figcaption>
+                    </figure>
+                    <figure>
+                        <div class="frame">
+                            <img class="fill" src="now-home.webp" alt="" />
+                        </div>
+                        <figcaption>
+                            <b>N3 唔轉</b><span>冇播嘢就保持主頁，同而家一樣</span>
+                        </figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
+                <h2>叫醒（建議）</h2>
+                <p class="note">
+                    第一下掂只叫醒、唔當撳掣（黑燈瞎火唔會誤撳）；返原本頁之後再閒置 30
+                    秒又轉返閒置畫面。
+                </p>
+                <div class="grid">
+                    <figure>
+                        <div class="frame a">
+                            <div class="center">
+                                <div class="clock">22:30</div>
+                                <div class="date">11月30日 星期一</div>
+                            </div>
+                            <div class="now">
+                                <div class="disc spin"></div>
+                                <div class="show">公子會</div>
+                                <div class="ep">
+                                    <svg><use href="#i-play" /></svg>28/11（六）· 3:31 / 10:00
+                                </div>
+                                <div class="bar"><i></i></div>
+                            </div>
+                            <div class="tap"></div>
+                        </div>
+                        <figcaption>
+                            <b>① 掂任何位置</b><span>邊度都得，唔會觸發底下嘅掣</span>
+                        </figcaption>
+                    </figure>
+                    <figure>
+                        <div class="frame"><img class="fill" src="now-show.webp" alt="" /></div>
+                        <figcaption>
+                            <b>② 返原本頁</b
+                            ><span
+                                >閒置前喺邊頁就返邊頁（呢度係節目頁）；淡入，減少動態就直接切換</span
+                            >
+                        </figcaption>
+                    </figure>
+                </div>
+            </section>
+
+            <section>
+                <h2>要你決定</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>問題</th>
+                                <th>選項</th>
+                                <th>我建議</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>閒置畫面款式</td>
+                                <td>A 大時鐘 / B 唱片 + 時間 / C 封面做背景</td>
+                                <td>A：遠睇最清楚，9c 轉暗都最易做</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>冇播嘢時</td>
+                                <td>N1 淨係時鐘 / N2 時鐘 + 上次聽緊 / N3 唔轉</td>
+                                <td>N2</td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>邊啲頁會轉</td>
+                                <td>任何頁 / 只主頁</td>
+                                <td>任何頁（選單、休眠選單開緊就唔轉）</td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>第一下掂</td>
+                                <td>只叫醒 / 叫醒兼撳中底下嘅掣</td>
+                                <td>只叫醒</td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>時鐘格式</td>
+                                <td>24 小時（22:30）/ 12 小時（晚上 10:30）</td>
+                                <td>24 小時</td>
+                            </tr>
+                            <tr>
+                                <td>6</td>
+                                <td>底色</td>
+                                <td>跟節目色調 / 一律黑色</td>
+                                <td>跟節目色調（A / B）；C 本身用封面</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </body>
+</html>
