@@ -21,6 +21,7 @@
     - Lane 2 UI: `src/components/shared/player/Ambient/*`（`AmbientScreen` / `AmbientView` / `AmbientDisc` / `useAmbientPresence` / `useInertBackground` / `ambientRing` / `Ambient.module.css` / `AmbientScreen.test.tsx`）、`e2e/ambient.mjs`
     - 共用 mount / 入口（屬其他鏈）：`src/App.tsx`（pwa-shell 等）、`e2e/run.mjs`（repo-tooling、coming-soon）、`styles/tokens.css` `--ambient-*`（ui-foundation、coming-soon）
     - 共用但屬其他鏈：`config/constants.ts` / `i18n/zh-HK.ts`（ui-foundation、coming-soon）、`selectors/pageHandle.ts`（home）
+    - Design Origin（只凍結，S3 v2.2.0 補入）：`_mockups_/home-view-ambient/{index.html,*.webp}`（repo root path，L1 視覺基準，冇 test）
 - Commands:
     - npm test -- apps/player/src/hooks/useIdle apps/player/src/hooks/useMinuteClock apps/player/src/hooks/useScreenWakeLock apps/player/src/selectors/ambient apps/player/src/utils/clock apps/player/src/utils/modalDialog apps/player/src/player/useNightWindow apps/player/src/selectors/pageHandle（加 `--coverage` 睇被改檔 ≥ 80%）
     - npm test -- apps/player/src/components/shared/player/Ambient（Lane 2；`--coverage`）

@@ -2,13 +2,13 @@
 
 ## 進度（2026-11-20）
 
-| 步驟    | 狀態                                  |
-| ------- | ------------------------------------- |
-| Preview | ✅ 第 3 版（用戶已揀款式）            |
-| Plan    | ✅ 用戶 2026-11-20 confirm            |
-| Lane 1  | 待開始：閒置偵測 + 畫面資料（純邏輯） |
-| Lane 2  | 待開始：閒置畫面 UI + 叫醒 + e2e      |
-| S3      | 待開始：QA S3 + player 2.1.0 → 2.2.0  |
+| 步驟    | 狀態                                                                              |
+| ------- | --------------------------------------------------------------------------------- |
+| Preview | ✅ 第 3 版（用戶已揀款式）                                                        |
+| Plan    | ✅ 用戶 2026-11-20 confirm                                                        |
+| Lane 1  | ✅ PR #292：閒置偵測 + 畫面資料（純邏輯）                                         |
+| Lane 2  | ✅ PR #293：閒置畫面 UI + 叫醒 + e2e                                              |
+| S3      | ✅ QA S3 pass（`.proj-docs/qa/2026-11-20_qa_s3_v2.2.0.md`）+ player 2.1.0 → 2.2.0 |
 
 - Preview：https://claude.ai/artifact/JDZSeM7TdcTY2wCY5kQmEc（`_mockups_/home-view-ambient/`，branch `docs/mockup/home-view-ambient`）
 - 需求來源：`.proj-docs/plans/2026-11-04_plan_requirements-priority.md` 9b
