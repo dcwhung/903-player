@@ -4,6 +4,7 @@ import { useSleepTimer } from '../../../../player/useSleepTimer';
 import type { AmbientView as AmbientData } from '../../../../selectors/ambient';
 import { formatClock, formatClockDate } from '../../../../utils/clock';
 import { PauseIcon, PlayIcon, MoonIcon } from '../../common/icons/icons';
+import { Marquee } from '../../common/Marquee/Marquee';
 import { VisuallyHidden } from '../../common/VisuallyHidden/VisuallyHidden';
 import { SleepTimerBar } from '../SleepTimer/SleepTimerBar';
 import { formatCountdown, spokenCountdown } from '../SleepTimer/sleepTimerFormat';
@@ -53,7 +54,7 @@ interface AmbientViewProps {
 
 /**
  * 閒置畫面 B 款（_mockups_/home-view-ambient 第 3 輪）：左唱片 + 進度圈；右時間（Poppins 600、24 小時）、
- * 日子、節目名（強調色）、播放 / 暫停 icon + 副題
+ * 日子、節目名（強調色）、播放 / 暫停 icon + 副題。成組左右置中（用戶 2026-11-20）
  */
 export const AmbientView = ({ view, isAudible }: AmbientViewProps) => {
     const now = useMinuteClock();
@@ -71,10 +72,11 @@ export const AmbientView = ({ view, isAudible }: AmbientViewProps) => {
             <div className={styles.side}>
                 <p className={styles.clock}>{formatClock(now)}</p>
                 <p className={styles.date}>{formatClockDate(now)}</p>
-                <p className={styles.name}>{view.name}</p>
+                {/* 節目名 / 副題唔換行、唔撐闊右格（闊度 = 時間）：放唔落就跑馬燈（同 mini player） */}
+                <Marquee className={styles.name} text={view.name} />
                 <p className={styles.status}>
                     <StatusIcon style={STATUS_ICON} />
-                    <span>{statusLine(view)}</span>
+                    <Marquee className={styles.statusText} text={statusLine(view)} />
                 </p>
             </div>
         </div>

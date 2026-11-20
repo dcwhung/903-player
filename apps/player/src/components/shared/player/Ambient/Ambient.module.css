@@ -52,14 +52,19 @@
     color: var(--color-text);
 }
 
-/* 左唱片、右時間；padding / gap 用 cqw（覆蓋層係 container，入面先跟佢） */
+/*
+ * 左唱片、右時間；padding / gap 用 cqw（覆蓋層係 container，入面先跟佢）。
+ * 用戶 2026-11-20：唱片格定闊、右格闊度 = 時間，成組置中，左右留白一樣（之前 1fr 1fr，時間闊過格、凸出右邊）。
+ * 時間嘅負字距最尾一個字都減，但「0」右邊本身有留白，字形邊已經喺框入面（e2e 量 pixel 左右差 ≤ 2px），唔使補
+ */
 .layout {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: var(--ambient-disc-col) max-content;
     align-items: center;
+    justify-content: center;
     gap: var(--ambient-gap);
     height: 100%;
-    padding: var(--ambient-pad);
+    padding-block: var(--ambient-pad);
     font-variant-numeric: tabular-nums;
 }
 
@@ -129,6 +134,12 @@
     color: var(--color-accent-text);
 }
 
+/* 節目名 / 副題唔計入右格闊度（contain）：格闊 = 時間，長過就跑馬燈 */
+.name,
+.status {
+    contain: inline-size;
+}
+
 .status {
     display: flex;
     align-items: center;
@@ -139,6 +150,11 @@
 
 .status svg {
     flex-shrink: 0;
+}
+
+.statusText {
+    flex: 1;
+    min-width: 0;
 }
 
 /* 睡眠 timer 剩餘時間：右上，月亮 + 分秒（淨係顯示） */
