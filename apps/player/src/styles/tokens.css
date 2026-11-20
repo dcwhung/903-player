@@ -479,6 +479,10 @@
     --ambient-clock-size: 18cqw;
     --ambient-clock-weight: 600;
     --ambient-clock-tracking: -0.03em;
+    /* 時間每個數字一格：Poppins 600 最闊數字（4，0.661em）減字距；冇等闊數字，靠呢格定總闊度 */
+    --ambient-clock-digit: 0.63em;
+    /* 數字字形同格邊之間大約嘅留白：右格收到字形邊，左右睇得見嘅留白先對稱 */
+    --ambient-clock-bearing: 0.04em;
     --ambient-date-size: 4.4cqw;
     --ambient-name-size: 5.4cqw;
     --ambient-status-size: 3.8cqw;

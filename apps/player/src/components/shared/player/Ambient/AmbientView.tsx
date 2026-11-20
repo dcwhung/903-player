@@ -37,6 +37,30 @@ const AmbientSleepTimer = () => {
     );
 };
 
+const DIGIT = /\d/;
+
+/**
+ * 時間（用戶 2026-11-20 B 方案）：Poppins 冇等闊數字，逐個數字放入定闊格（--ambient-clock-digit），
+ * 時間總闊度每分鐘都一樣，成組唔會跟住移。讀屏淨係讀一次成句（VisuallyHidden），逐格嗰份 aria-hidden
+ */
+const AmbientClock = ({ text }: { text: string }) => (
+    <p className={styles.clock}>
+        <VisuallyHidden>{text}</VisuallyHidden>
+        <span className={styles.clockFace} data-ambient-clock-face="" aria-hidden="true">
+            {[...text].map((char, index) =>
+                DIGIT.test(char) ? (
+                    // 位置固定（HH:MM），用 index 做 key
+                    <span key={index} className={styles.clockDigit} data-clock-digit="">
+                        {char}
+                    </span>
+                ) : (
+                    <span key={index}>{char}</span>
+                ),
+            )}
+        </span>
+    </p>
+);
+
 const statusLine = (view: AmbientData): string =>
     view.status === 'paused'
         ? t('ambient.paused', {
@@ -70,7 +94,7 @@ export const AmbientView = ({ view, isAudible }: AmbientViewProps) => {
                 upright={view.live}
             />
             <div className={styles.side}>
-                <p className={styles.clock}>{formatClock(now)}</p>
+                <AmbientClock text={formatClock(now)} />
                 <p className={styles.date}>{formatClockDate(now)}</p>
                 {/* 節目名 / 副題唔換行、唔撐闊右格（闊度 = 時間）：放唔落就跑馬燈（同 mini player） */}
                 <Marquee className={styles.name} text={view.name} />
