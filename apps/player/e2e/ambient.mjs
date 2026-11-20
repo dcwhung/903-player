@@ -2,14 +2,28 @@
 // 時鐘照常行（harness clock.install），用 p.clock.fastForward 跳過 30 秒。
 // 播緊：出閒置畫面（底下 #root inert）；第一下 tap 只叫醒，唔會撳中底下嘅暫停掣、唔轉頁；叫醒後再閒置 30 秒又轉。
 // 唔轉：冇嘢載住、有 sheet 開緊（集數清單、休眠選單）、唔係方形螢幕（390×844）。
-// 截圖（播緊 / 暫停 / 開咗 timer）輸出去 e2e/screenshots/ambient-*.png。每個情境用獨立 context
-import { SHOT, ensurePlaying, isShown, newE2EPage, succeeds } from './harness.mjs';
+// 版面（用戶 2026-11-20）：唱片 + 文字成組置中，左右留白（睇得見嘅 pixel）差 ≤ 4px；右格闊度 = 時間，
+// 節目名 / 副題一行、唔闊過時間（長就跑馬燈）。節目（公子會）同廣播劇短篇（芝See，名同副題都長）都驗。
+// 截圖（播緊 / 暫停 / 開咗 timer / 廣播劇）輸出去 e2e/screenshots/ambient-*.png。每個情境用獨立 context
+import {
+    DRAMA_AUDIO_BASE,
+    SHOT,
+    ensurePlaying,
+    isShown,
+    newE2EPage,
+    serveWav,
+    succeeds,
+    waitForPlaybackState,
+} from './harness.mjs';
 import { SAMPLE_RECORDINGS } from './sampleData.mjs';
 
 /** HomeView 假設尺寸；刻意寫死做獨立對照，唔 import src 常數 */
 const SQUARE = { width: 544, height: 544 };
 const PHONE = { width: 390, height: 844 };
 const SHOW_ROUTE = '#/show/gongzi';
+// 芝See 短篇（src/catalog/dramas/library/chisee/drama.json，刻意寫死做獨立對照；同 squareDrama.mjs）
+const SERIES_ROUTE = '#/drama/chisee';
+const LONG_ARC_ROW = /^你生日所以我生日，/;
 const LABEL = '閒置畫面';
 /** 同 src/config/constants.ts AMBIENT_IDLE_MS（30 秒）+ 少少餘量 */
 const IDLE_MS = 30_000;
@@ -102,6 +116,96 @@ const checkNoFocusRing = async (env, p) => {
     );
 };
 
+// 左右留白：量截圖中間一段（避開頂邊 timer 條同右上分秒），同底色差過呢個就當睇得見
+const BAND_TOP = 100;
+const BAND_HEIGHT = 344;
+const INK_THRESHOLD = 24;
+const MARGIN_TOLERANCE_PX = 4;
+// 一行：高度 < 2 × 字號（兩行起碼 2.4 ×）；闊度比較嘅 sub-pixel 餘量
+const ONE_LINE_FONT_SHARE = 2;
+const WIDTH_TOLERANCE_PX = 0.5;
+
+/** 截圖每一直行有冇唔係底色嘅 pixel：回傳最左 / 最右嗰行（喺瀏覽器 decode） */
+const inkColumns = (p, png, bg) =>
+    p.evaluate(
+        async ({ data, rgb, threshold }) => {
+            const bitmap = await createImageBitmap(
+                await (await fetch(`data:image/png;base64,${data}`)).blob(),
+            );
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            const g = canvas.getContext('2d');
+            g.drawImage(bitmap, 0, 0);
+            const px = g.getImageData(0, 0, bitmap.width, bitmap.height).data;
+            let left = bitmap.width;
+            let right = -1;
+            for (let i = 0; i < px.length; i += 4) {
+                const diff = Math.max(...[0, 1, 2].map((c) => Math.abs(px[i + c] - rgb[c])));
+                if (diff <= threshold) continue;
+                const x = (i / 4) % bitmap.width;
+                left = Math.min(left, x);
+                right = Math.max(right, x);
+            }
+            return { left, right, width: bitmap.width };
+        },
+        { data: png.toString('base64'), rgb: bg, threshold: INK_THRESHOLD },
+    );
+
+/** 右格（時間、日子、名、狀態行）尺寸 + 節目底色 */
+const lookSide = (p) =>
+    ambient(p).evaluate((dialog) => {
+        const scope = dialog.querySelector('[data-theme-scope]');
+        const side = dialog.querySelector('[data-ambient-status]').lastElementChild;
+        const [clock, , name, status] = side.children;
+        const box = (el) => {
+            const r = el.getBoundingClientRect();
+            return {
+                width: r.width,
+                height: r.height,
+                font: parseFloat(getComputedStyle(el).fontSize),
+                text: el.textContent,
+            };
+        };
+        return {
+            bg: (getComputedStyle(scope).backgroundColor.match(/\d+/g) ?? [])
+                .slice(0, 3)
+                .map(Number),
+            side: side.getBoundingClientRect().width,
+            clock: box(clock),
+            name: box(name),
+            status: box(status),
+        };
+    });
+
+const oneLineWithinClock = (s, line) =>
+    line.height < line.font * ONE_LINE_FONT_SHARE && line.width <= s.side + WIDTH_TOLERANCE_PX;
+
+/**
+ * 用戶 2026-11-20：成組置中（睇得見嘅左右留白差 ≤ 4px）；右格闊度 = 時間；名 / 副題一行、唔闊過時間
+ */
+const checkLayout = async (env, p, label, { margins = true } = {}) => {
+    const s = await lookSide(p);
+    if (margins) {
+        const band = await p.screenshot({
+            ...SHOT,
+            clip: { x: 0, y: BAND_TOP, width: SQUARE.width, height: BAND_HEIGHT },
+        });
+        const ink = await inkColumns(p, band, s.bg);
+        const leftPx = ink.left;
+        const rightPx = ink.width - 1 - ink.right;
+        env.log(
+            ink.right >= 0 && Math.abs(leftPx - rightPx) <= MARGIN_TOLERANCE_PX,
+            `閒置畫面（${label}）：唱片 + 文字置中，左右留白 ${leftPx} / ${rightPx}px`,
+        );
+    }
+    env.log(
+        Math.abs(s.side - s.clock.width) <= WIDTH_TOLERANCE_PX &&
+            oneLineWithinClock(s, s.name) &&
+            oneLineWithinClock(s, s.status),
+        `閒置畫面（${label}）：右格闊 = 時間（${s.side} / ${s.clock.width}），` +
+            `名「${s.name.text}」${s.name.width}×${s.name.height}、副題「${s.status.text}」${s.status.width}×${s.status.height} 一行唔闊過時間`,
+    );
+};
+
 /** 播緊：出閒置畫面、#root inert、時間 / 節目名；tap 暫停掣位置只叫醒，照播、同一頁 */
 const checkShowAndWake = async (env) => {
     const { ctx, p } = await openShow(env);
@@ -119,6 +223,7 @@ const checkShowAndWake = async (env) => {
         `閒置畫面：底下 #root inert、有時間同節目名（${state.text}）`,
     );
     await shoot(p, 'playing');
+    await checkLayout(env, p, '節目播緊');
     await checkNoFocusRing(env, p);
 
     // 第一下撳喺暫停掣嘅位置：只叫醒，唔會暫停
@@ -151,7 +256,10 @@ const checkPausedAndTimer = async (env) => {
             .getByText(/^已暫停/)
             .isVisible());
     env.log(paused, '閒置畫面：暫停咗顯示「已暫停」');
-    if (paused) await shoot(p, 'paused');
+    if (paused) {
+        await shoot(p, 'paused');
+        await checkLayout(env, p, '節目暫停');
+    }
     await p.keyboard.press('Escape');
     await ambient(p).waitFor({ state: 'detached', timeout: UI_WAIT_MS });
 
@@ -175,8 +283,37 @@ const checkPausedAndTimer = async (env) => {
         timer && bar !== null && bar.x === 0 && bar.width === SQUARE.width,
         `閒置畫面：開咗 timer 有頂邊全闊進度條同剩餘分秒（${JSON.stringify(bar)}）`,
     );
-    if (timer) await shoot(p, 'timer');
+    if (timer) {
+        await shoot(p, 'timer');
+        // 呢度時鐘已經行到 22:31：Poppins 冇等闊數字，「1」右邊留白大，字形留白差 ~5px（成組照置中，框計）
+        await checkLayout(env, p, '開咗 timer', { margins: false });
+    }
     return ctx.close();
+};
+
+/** 廣播劇短篇（名同副題都長過時間）：撳全集表「你生日所以我生日」、閂表、播放 → 閒置畫面置中、跑馬燈一行 */
+const checkSeriesDrama = async (env) => {
+    const { ctx, p } = await newE2EPage(env.browser, env.errors, { viewport: SQUARE });
+    await ctx.route(`${DRAMA_AUDIO_BASE}/**`, (route) => serveWav(route));
+    await p.goto(`${env.base}${SERIES_ROUTE}`);
+    const all = p.getByRole('dialog', { name: '全集' });
+    await all.waitFor({ timeout: UI_WAIT_MS });
+    await all.getByRole('button', { name: LONG_ARC_ROW }).click();
+    await p.getByRole('dialog', { name: '集數' }).waitFor({ timeout: UI_WAIT_MS });
+    await p.keyboard.press('Escape');
+    await p
+        .getByRole('dialog', { name: '集數' })
+        .waitFor({ state: 'detached', timeout: UI_WAIT_MS });
+    await p.getByRole('button', { name: '播放', exact: true }).click();
+    await waitForPlaybackState(p, 'playing');
+    await goIdle(p);
+    const shown = await appears(p);
+    env.log(shown, '閒置畫面：廣播劇短篇播緊，閒置 30 秒轉閒置畫面');
+    if (shown) {
+        await shoot(p, 'drama');
+        await checkLayout(env, p, '廣播劇短篇');
+    }
+    await ctx.close();
 };
 
 /** 集數清單 sheet 開緊：唔轉 */
@@ -211,6 +348,7 @@ const checkPhone = async (env) => {
 export const runAmbientChecks = async (env, section) => {
     await section('閒置畫面：播緊 + 叫醒', () => checkShowAndWake(env));
     await section('閒置畫面：暫停 + timer', () => checkPausedAndTimer(env));
+    await section('閒置畫面：廣播劇短篇', () => checkSeriesDrama(env));
     await section('閒置畫面：sheet 開緊', () => checkSheetOpen(env));
     await section('閒置畫面：冇嘢載住', () => checkNothingLoaded(env));
     await section('閒置畫面：手機', () => checkPhone(env));
