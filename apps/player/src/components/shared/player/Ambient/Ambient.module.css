@@ -65,7 +65,6 @@
     gap: var(--ambient-gap);
     height: 100%;
     padding-block: var(--ambient-pad);
-    font-variant-numeric: tabular-nums;
 }
 
 /* 唱片格：正方形，進度圈貼邊，唱片（Disc large）喺正中 */
@@ -113,7 +112,7 @@
     margin: 0;
 }
 
-/* 所有閒置畫面狀態用同一款時間：Poppins SemiBold 600、24 小時、等闊數字（用戶 2026-11-20） */
+/* 所有閒置畫面狀態用同一款時間：Poppins SemiBold 600、24 小時（用戶 2026-11-20）。Poppins 冇等闊數字：數字闊度唔同，每分鐘成組會重新置中移幾 px，用戶接受（方案 A，S-1340） */
 .clock {
     font-size: var(--ambient-clock-size);
     font-weight: var(--ambient-clock-weight);
