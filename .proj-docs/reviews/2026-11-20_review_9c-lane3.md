@@ -99,3 +99,41 @@ context: "PR #298 9c Lane 3 review: 1 Warning (W-856 long branding short name ov
 blockers:
   - "W-856 .appLabel no max-width/ellipsis: 24-char CJK shortName overlaps timer (503 > 433px), 40-char name fallback overflows 544px"
 ```
+
+## Re-review — W-856（HEAD `4cb4d87f`）
+
+- 範圍：淨係 `3259ea57..4cb4d87f`（`Ambient.module.css`、`AmbientAppLabel.tsx`、`tokens.css`、`e2e/ambient.mjs`）；冇搵新 🟢
+- Gates：改咗嘅檔 `eslint` 0、`prettier --check` 過；`Ambient/` unit 25 tests 全綠
+- 修正：`.appLabel` `max-width: calc(100% - 2 * var(--ambient-timer-right) - var(--ambient-label-timer-reserve))`（新 token 24cqw，有註解交代來源）、`.appName` `min-width: 0` + `overflow: hidden` + `text-overflow: ellipsis`、`.appIcon` `flex-shrink: 0`。同報告方案 A 一致
+- L2：Chromium 照抄修正後嘅 CSS 量，標籤右邊 < timer 左邊、有截斷、icon 唔縮：
+
+| 闊   | 名                  | 倒數      | 標籤右 / timer 左                 |
+| ---- | ------------------- | --------- | --------------------------------- |
+| 544  | 「903 Player」      | `23:14`   | 156 / 433（同修正前一樣，冇截斷） |
+| 544  | 24 字中文           | `1:58:30` | 389 / 413                         |
+| 544  | 40 字中文 / 40 個 W | `8:58:58` | 389 / 408                         |
+| 390  | 40 字中文           | `8:58:58` | 279 / 293                         |
+| 1024 | 40 字中文           | `8:58:58` | 733 / 769                         |
+
+- 留位：`formatCountdown` 超過 60 分鐘先出 `h:mm:ss`，`1:58:30` 同 `8:58:58` 字數一樣；`8:58:58`（較闊數字）都仲有 ≥ 14px 位。10 小時以上嘅集數唔現實，唔需要再留
+- e2e `checkLongAppName`：同一個 `evaluate` 入面換字、量、還原（避開 timer 每秒 re-render），斷言截斷、唔撞、唔出畫面 ✓。冇 unit test 合理（jsdom 冇 layout）
+- 預設名唔截斷、位置唔變，現有截圖 / visual 唔受影響
+
+**W-856：已修正，關閉。** 結果：✅ pass（100/100）
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: n/a
+  tests: pass
+  coverage: n/a
+next_action: merge_develop
+next_agent: null
+branch: "feature/layout/ambient-backdrop-label"
+context: "PR #298 re-review: W-856 fixed (label max-width + ellipsis, 24cqw timer reserve); verified 544/390/1024 with 24/40-char names and widest countdown, no overlap"
+```
