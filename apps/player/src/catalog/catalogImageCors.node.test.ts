@@ -16,6 +16,11 @@ const BANNER_COMPONENTS = [
     'components/pages/home/HomeLandscapeGrid/CoverBanner.tsx',
     'components/pages/home/HomeLandscapeGrid/FittedBanner.tsx',
 ];
+/**
+ * app 自己 public/ 嘅圖（同 origin，唔係 catalog 圖；branding icon 都係 build 時抄入 publicDir）：豁免。
+ * 閒置畫面左上 app 標籤（9c）嘅 apple-touch-icon.png
+ */
+const APP_ASSET_COMPONENTS = new Set(['components/shared/player/Ambient/AmbientAppLabel.tsx']);
 const IMG_TAG = /<img\b[^>]*?\/>/gs;
 
 const componentFiles = (): string[] =>
@@ -44,8 +49,14 @@ describe('catalog <img> CORS mode', () => {
 
     it('should load every catalog image with crossOrigin', () => {
         const missing = tags
+            .filter(({ file }) => !APP_ASSET_COMPONENTS.has(file))
             .filter(({ tag }) => !tag.includes('crossOrigin={CATALOG_IMAGE_CROSS_ORIGIN}'))
             .map(({ file }) => file);
         expect(missing).toEqual([]);
+    });
+
+    it('should only exempt app asset components that still render an <img>', () => {
+        const withImg = new Set(tags.map(({ file }) => file));
+        expect([...APP_ASSET_COMPONENTS].filter((file) => !withImg.has(file))).toEqual([]);
     });
 });

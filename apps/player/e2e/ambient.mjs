@@ -4,6 +4,8 @@
 // 唔轉：冇嘢載住、有 sheet 開緊（集數清單、休眠選單）、唔係方形螢幕（390×844）。
 // 版面（用戶 2026-11-20）：唱片 + 文字成組置中，左右留白（睇得見嘅 pixel）差 ≤ 4px；右格闊度 = 時間，
 // 節目名 / 副題一行、唔闊過時間（長就跑馬燈）。節目（公子會）同廣播劇短篇（芝See，名同副題都長）都驗。
+// 9c（_mockups_/home-view-night 第 4、6 輪）：模糊 app icon 底圖 + 左上 app 標籤（冇膠囊底、同右上 timer 同一條線、
+// 唔撞內容；branding 長名截斷「…」唔撞 timer，W-856）。量留白 / 焦點框嗰陣暫時收埋底圖，同節目底色比。
 // 截圖（播緊 / 暫停 / 開咗 timer / 廣播劇）輸出去 e2e/screenshots/ambient-*.png。每個情境用獨立 context
 import {
     DRAMA_AUDIO_BASE,
@@ -35,6 +37,11 @@ const EPISODES = SAMPLE_RECORDINGS.filter((r) => r.showId === 'gongzi').length;
 const LIST_BUTTON = `集數清單，共 ${EPISODES} 集`;
 const MOON = /^休眠/;
 const OUT = new URL('./screenshots', import.meta.url).pathname;
+/** 同 scripts/brandingConfig.ts DEFAULT_APP_NAME（e2e build 冇 branding；刻意寫死做獨立對照） */
+const APP_NAME = '903 Player';
+const BACKDROP_ICON = 'icon-maskable-512.png';
+/** 左上標籤同右上 timer：頂邊 / 中線差幾多都當同一條線；左右邊距鏡像 */
+const ROW_TOLERANCE_PX = 2;
 
 const ambient = (p) => p.getByRole('dialog', { name: LABEL });
 const pauseButton = (p) => p.getByRole('button', { name: '暫停', exact: true });
@@ -87,6 +94,21 @@ const maxDiffFrom = (p, png, bg) =>
         { data: png.toString('base64'), rgb: bg },
     );
 
+/** 暫時收埋底圖（visibility hidden）先做 run：留白 / 焦點框嘅 pixel 量法要同平色節目底色比 */
+const withoutBackdrop = async (p, run) => {
+    const toggle = (hidden) =>
+        p.evaluate((h) => {
+            const el = document.querySelector('[data-ambient-backdrop]');
+            if (el) el.style.visibility = h ? 'hidden' : '';
+        }, hidden);
+    await toggle(true);
+    try {
+        return await run();
+    } finally {
+        await toggle(false);
+    }
+};
+
 /**
  * W-850：出閒置畫面時焦點喺覆蓋層自己、冇焦點框；左右邊緣 pixel 都係節目底色（唔係全屏框）
  */
@@ -105,8 +127,10 @@ const checkNoFocusRing = async (env, p) => {
         p.screenshot({
             clip: { x, y: EDGE_STRIP_TOP, width: EDGE_STRIP_PX, height: EDGE_STRIP_HEIGHT },
         });
-    const left = await maxDiffFrom(p, await strip(0), focus.bg);
-    const right = await maxDiffFrom(p, await strip(SQUARE.width - EDGE_STRIP_PX), focus.bg);
+    const { left, right } = await withoutBackdrop(p, async () => ({
+        left: await maxDiffFrom(p, await strip(0), focus.bg),
+        right: await maxDiffFrom(p, await strip(SQUARE.width - EDGE_STRIP_PX), focus.bg),
+    }));
     env.log(
         focus.dialog &&
             focus.outline === 'none' &&
@@ -185,10 +209,12 @@ const oneLineWithinClock = (s, line) =>
 const checkLayout = async (env, p, label, { margins = true } = {}) => {
     const s = await lookSide(p);
     if (margins) {
-        const band = await p.screenshot({
-            ...SHOT,
-            clip: { x: 0, y: BAND_TOP, width: SQUARE.width, height: BAND_HEIGHT },
-        });
+        const band = await withoutBackdrop(p, () =>
+            p.screenshot({
+                ...SHOT,
+                clip: { x: 0, y: BAND_TOP, width: SQUARE.width, height: BAND_HEIGHT },
+            }),
+        );
         const ink = await inkColumns(p, band, s.bg);
         const leftPx = ink.left;
         const rightPx = ink.width - 1 - ink.right;
@@ -204,6 +230,163 @@ const checkLayout = async (env, p, label, { margins = true } = {}) => {
         `閒置畫面（${label}）：右格闊 = 時間（${s.side} / ${s.clock.width}），` +
             `名「${s.name.text}」${s.name.width}×${s.name.height}、副題「${s.status.text}」${s.status.width}×${s.status.height} 一行唔闊過時間`,
     );
+};
+
+/** 底圖兩層（模糊 app icon、節目底色）、左上標籤（icon + 短名、冇底色）、唱片 / 右格 / timer 嘅位置 */
+const lookChrome = (p) =>
+    ambient(p).evaluate((dialog) => {
+        const rect = (el) => {
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+        };
+        const backdrop = dialog.querySelector('[data-ambient-backdrop]');
+        const label = dialog.querySelector('[data-ambient-label]');
+        const layout = dialog.querySelector('[data-ambient-status]');
+        const before = backdrop ? getComputedStyle(backdrop, '::before') : null;
+        const after = backdrop ? getComputedStyle(backdrop, '::after') : null;
+        const labelStyle = label ? getComputedStyle(label) : null;
+        const icon = label?.querySelector('img');
+        return {
+            backdrop: backdrop
+                ? {
+                      image: before.backgroundImage,
+                      filter: before.filter,
+                      tint: after.backgroundColor,
+                      covers: (() => {
+                          const r = backdrop.getBoundingClientRect();
+                          return r.width >= innerWidth && r.height >= innerHeight;
+                      })(),
+                  }
+                : null,
+            label: label
+                ? {
+                      text: label.textContent,
+                      hidden: label.getAttribute('aria-hidden'),
+                      bg: labelStyle.backgroundColor,
+                      bgImage: labelStyle.backgroundImage,
+                      border: labelStyle.borderStyle,
+                      iconLoaded: Boolean(icon?.complete && icon.naturalWidth > 0),
+                      box: rect(label),
+                  }
+                : null,
+            timer: rect(dialog.querySelector('[data-ambient-timer]')),
+            // 右格前面嗰格係唱片（開咗 timer 時最前仲有 timer 條同分秒）
+            disc: rect(layout?.lastElementChild?.previousElementSibling ?? null),
+            side: rect(layout?.lastElementChild ?? null),
+            width: innerWidth,
+        };
+    });
+
+const overlaps = (a, b) =>
+    a !== null &&
+    b !== null &&
+    a.left < b.right &&
+    b.left < a.right &&
+    a.top < b.bottom &&
+    b.top < a.bottom;
+
+/**
+ * 9c：底圖存在（模糊 app icon + 節目底色）、左上 app 標籤冇膠囊底、唔撞唱片 / 右格；
+ * 開咗 timer 就同 timer 同一條線（頂邊、中線差 ≤ 2px），左邊距 = timer 右邊距
+ */
+const checkBackdropAndLabel = async (env, p, label) => {
+    const c = await lookChrome(p);
+    const b = c.backdrop;
+    env.log(
+        b !== null &&
+            b.image.includes(BACKDROP_ICON) &&
+            b.filter.includes('blur') &&
+            b.tint !== 'rgba(0, 0, 0, 0)' &&
+            b.covers,
+        `閒置畫面（${label}）：模糊 app icon 底圖 + 節目底色（${JSON.stringify(b)}）`,
+    );
+    const l = c.label;
+    env.log(
+        l !== null &&
+            l.text === APP_NAME &&
+            l.hidden === 'true' &&
+            l.iconLoaded &&
+            l.bg === 'rgba(0, 0, 0, 0)' &&
+            l.bgImage === 'none' &&
+            l.border === 'none',
+        `閒置畫面（${label}）：左上 app 標籤 icon +「${l?.text}」、冇膠囊底（${l?.bg} / ${l?.bgImage} / ${l?.border}）、aria-hidden`,
+    );
+    env.log(
+        l !== null &&
+            l.box.left >= 0 &&
+            l.box.top >= 0 &&
+            !overlaps(l.box, c.disc) &&
+            !overlaps(l.box, c.side) &&
+            !overlaps(c.timer, c.disc) &&
+            !overlaps(c.timer, c.side) &&
+            !overlaps(l.box, c.timer),
+        `閒置畫面（${label}）：標籤 / timer 唔撞唱片同文字（標籤 ${JSON.stringify(l?.box)}）`,
+    );
+    if (!c.timer || !l) return;
+    const mid = (r) => (r.top + r.bottom) / 2;
+    const leftGap = l.box.left;
+    const rightGap = c.width - c.timer.right;
+    env.log(
+        Math.abs(l.box.top - c.timer.top) <= ROW_TOLERANCE_PX &&
+            Math.abs(mid(l.box) - mid(c.timer)) <= ROW_TOLERANCE_PX &&
+            Math.abs(leftGap - rightGap) <= ROW_TOLERANCE_PX,
+        `閒置畫面（${label}）：左上標籤同右上 timer 同一條線（頂 ${l.box.top} / ${c.timer.top}，` +
+            `中 ${mid(l.box)} / ${mid(c.timer)}），左右邊距 ${leftGap} / ${rightGap}`,
+    );
+};
+
+// W-856：branding 長名（catalog shortName 上限 24 字；冇設 shortName 就用 name，上限 40 字）
+// 同最闊嘅倒數（播完呢集長集「1:58:30」）。e2e build 冇 branding，喺頁面直接換字再量
+const LONG_NAMES = [
+    { label: '24 字短名', text: '叱咤'.repeat(12) },
+    { label: '40 字 name', text: '叱咤'.repeat(20) },
+];
+const WIDEST_COUNTDOWN = '1:58:30';
+
+/** 換標籤名同 timer 分秒，同一個 evaluate 入面量（timer 每秒 re-render 會換返），量完還原 */
+const measureLongName = (p, text) =>
+    ambient(p).evaluate(
+        (dialog, { name, countdown }) => {
+            const span = dialog.querySelector('[data-ambient-label] span');
+            const label = dialog.querySelector('[data-ambient-label]');
+            const timer = dialog.querySelector('[data-ambient-timer]');
+            const digits = timer.querySelector('[aria-hidden="true"]');
+            const was = { name: span.textContent, countdown: digits.textContent };
+            span.textContent = name;
+            digits.textContent = countdown;
+            const box = (el) => {
+                const r = el.getBoundingClientRect();
+                return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+            };
+            const out = {
+                label: box(label),
+                timer: box(timer),
+                truncated: span.scrollWidth > span.clientWidth,
+                ellipsis: getComputedStyle(span).textOverflow,
+                width: innerWidth,
+            };
+            span.textContent = was.name;
+            digits.textContent = was.countdown;
+            return out;
+        },
+        { name: text, countdown: WIDEST_COUNTDOWN },
+    );
+
+/** W-856：長名截斷（…），唔撞右上 timer（最闊倒數）、唔出畫面 */
+const checkLongAppName = async (env, p) => {
+    for (const { label, text } of LONG_NAMES) {
+        const m = await measureLongName(p, text);
+        env.log(
+            !overlaps(m.label, m.timer) &&
+                m.label.left >= 0 &&
+                m.label.right <= m.width &&
+                m.truncated &&
+                m.ellipsis === 'ellipsis',
+            `閒置畫面：app 標籤 ${label} 截斷（…）、唔撞 timer「${WIDEST_COUNTDOWN}」、唔出畫面` +
+                `（標籤右 ${m.label.right} / timer 左 ${m.timer.left} / 闊 ${m.width}）`,
+        );
+    }
 };
 
 /** 播緊：出閒置畫面、#root inert、時間 / 節目名；tap 暫停掣位置只叫醒，照播、同一頁 */
@@ -224,6 +407,7 @@ const checkShowAndWake = async (env) => {
     );
     await shoot(p, 'playing');
     await checkLayout(env, p, '節目播緊');
+    await checkBackdropAndLabel(env, p, '節目播緊');
     await checkNoFocusRing(env, p);
 
     // 第一下撳喺暫停掣嘅位置：只叫醒，唔會暫停
@@ -287,6 +471,8 @@ const checkPausedAndTimer = async (env) => {
         await shoot(p, 'timer');
         // 呢度時鐘已經行到 22:31：Poppins 冇等闊數字，「1」右邊留白大，字形留白差 ~5px（成組照置中，框計）
         await checkLayout(env, p, '開咗 timer', { margins: false });
+        await checkBackdropAndLabel(env, p, '開咗 timer');
+        await checkLongAppName(env, p);
     }
     return ctx.close();
 };
@@ -312,6 +498,7 @@ const checkSeriesDrama = async (env) => {
     if (shown) {
         await shoot(p, 'drama');
         await checkLayout(env, p, '廣播劇短篇');
+        await checkBackdropAndLabel(env, p, '廣播劇短篇');
     }
     await ctx.close();
 };

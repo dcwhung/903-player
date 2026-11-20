@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { SQUARE_QUERY } from '../../../../config/layout';
 import { useMiniPlayerDismissed } from '../../../../hooks/miniPlayerDismissed';
@@ -10,6 +10,7 @@ import { ambientView, type AmbientView as AmbientData } from '../../../../select
 import { ThemeScope } from '../../common/ThemeScope/ThemeScope';
 import { useLeaveFallback } from '../PlayerHandle/useLeaveFallback';
 import styles from './Ambient.module.css';
+import { AmbientAppLabel } from './AmbientAppLabel';
 import { AmbientView } from './AmbientView';
 import { useAmbientPresence, type AmbientPresence } from './useAmbientPresence';
 import { useInertBackground } from './useInertBackground';
@@ -17,10 +18,25 @@ import { useInertBackground } from './useInertBackground';
 /** 淡出時長 token（Ambient.module.css 嘅淡出動畫用同一個） */
 const FADE_DURATION_VAR = '--view-transition-fade';
 
-/** 覆蓋層入面：節目色調嘅畫面 + 蓋住成個畫面嘅透明叫醒掣（掂任何位置返原本嗰頁；讀屏名「返回」） */
+/** 底圖：app icon（public/，跟 Vite BASE_URL）；CSS module 唔處理 public 路徑，經 CSS 變數傳入 */
+const BACKDROP_STYLE = {
+    '--ambient-backdrop-image': `url("${import.meta.env.BASE_URL}icon-maskable-512.png")`,
+} as CSSProperties;
+
+/**
+ * 覆蓋層入面：節目色調嘅畫面（模糊 app icon 底圖 + 節目底色、左上 app 標籤、內容）
+ * + 蓋住成個畫面嘅透明叫醒掣（掂任何位置返原本嗰頁；讀屏名「返回」）
+ */
 const AmbientContent = ({ view, isAudible }: { view: AmbientData; isAudible: boolean }) => (
     <>
         <ThemeScope theme={view.theme} fullPage={false} className={styles.scope}>
+            <div
+                className={styles.backdrop}
+                data-ambient-backdrop=""
+                aria-hidden="true"
+                style={BACKDROP_STYLE}
+            />
+            <AmbientAppLabel />
             <AmbientView view={view} isAudible={isAudible} />
         </ThemeScope>
         <button type="button" className={styles.wake} aria-label={t('ambient.wake')} />
