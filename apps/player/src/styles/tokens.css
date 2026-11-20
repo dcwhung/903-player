@@ -464,6 +464,81 @@
     /* mini player 播放掣外圈（播放進度，M7）粗幼；同 MiniPlayerProgress 嘅 SVG（44 單位入面 3）一致 */
     --mini-progress-ring: calc(3px * var(--ui-scale));
     /*
+     * HomeView 閒置畫面（9b，_mockups_/home-view-ambient 第 3 輪 B 款）：疊喺短提示（--toast-z）上面。
+     * 大細用 cqw（覆蓋層係 inline-size container，544 闊時同 mockup 一樣）：外邊、兩欄間距、唱片佔格幾多
+     *（Disc large 外圈 10px 都要喺進度圈入面）、右欄行距、時間（Poppins 600，用戶 2026-11-20 揀）、日子、名、
+     * 狀態行同 icon、右上 timer；暫停時唱片變暗
+     */
+    --ambient-z: 50;
+    --ambient-pad: 6cqw;
+    /* 唱片格闊度；右格闊度跟時間，成組置中（用戶 2026-11-20） */
+    --ambient-disc-col: 39cqw;
+    --ambient-gap: 4.4cqw;
+    --ambient-disc-share: 0.78;
+    --ambient-side-gap: 2.4cqw;
+    --ambient-clock-size: 18cqw;
+    --ambient-clock-weight: 600;
+    --ambient-clock-tracking: -0.03em;
+    --ambient-date-size: 4.4cqw;
+    --ambient-name-size: 5.4cqw;
+    --ambient-status-size: 3.8cqw;
+    --ambient-status-icon: 3.6cqw;
+    --ambient-status-gap: 1.4cqw;
+    --ambient-timer-top: 4cqw;
+    --ambient-timer-right: 4.4cqw;
+    --ambient-timer-size: 4cqw;
+    --ambient-timer-icon: 4.4cqw;
+    --ambient-timer-gap: 1.2cqw;
+    --ambient-paused-filter: grayscale(0.4) brightness(0.7);
+    /*
+     * 9c（_mockups_/home-view-night 第 4 輪）：所有閒置畫面嘅底圖 = app icon 放大（四邊多出 bleed，
+     * 模糊後邊位唔透出底色）+ 模糊 + 少少加飽和，上面蓋一層節目底色（tint-mix = 底色佔幾多；夜間 Lane 4 改）
+     */
+    --ambient-backdrop-bleed: -12%;
+    --ambient-backdrop-blur: 7cqw;
+    --ambient-backdrop-saturate: 1.1;
+    --ambient-backdrop-tint-mix: 62%;
+    /*
+     * 9c 第 6 輪：左上 app 標籤（icon + 短名，冇膠囊底）。同右上 timer 同一行：top 用 --ambient-timer-top，
+     * 兩邊行高都係 --ambient-top-row（置中對齊）；左邊距 = timer 右邊距
+     */
+    --ambient-top-row: 6cqw;
+    --ambient-label-icon: 5cqw;
+    --ambient-label-icon-radius: 1.2cqw;
+    --ambient-label-size: 3.4cqw;
+    --ambient-label-weight: 600;
+    --ambient-label-gap: 1.6cqw;
+    /*
+     * W-856：標籤最闊去到邊，右邊留俾 timer：最闊嘅倒數「月亮 + 1:58:30」（播完呢集長集）≈ 20cqw，
+     * 再加約 4cqw 間距；長短名截斷（…），唔撞 timer
+     */
+    --ambient-label-timer-reserve: 24cqw;
+    /*
+     * 9c 夜間低光（_mockups_/home-view-night 第 3、6 輪 nightApp）：跟 app 主色（HOME_THEME，由
+     * ambientNightPalette.ts 經 --ambient-home-* 傳入）同黑色 color-mix 壓暗，mix = 主色佔幾多：
+     * 底深藍近黑 16%、時間暗奶油 42%、節目名 / 月亮 / 剩餘時間暗金 46%、日子 / 副題暗灰藍 30%、進度圈軌道 14%；
+     * 底圖蓋 84% 夜間底色；唱片灰淡；左上 app icon 壓暗
+     */
+    --ambient-night-shade: #000000;
+    --ambient-night-bg-mix: 16%;
+    --ambient-night-text-mix: 42%;
+    --ambient-night-gold-mix: 46%;
+    --ambient-night-muted-mix: 30%;
+    --ambient-night-track-mix: 14%;
+    --ambient-night-tint-mix: 84%;
+    --ambient-night-disc-filter: grayscale(1);
+    --ambient-night-disc-opacity: 0.28;
+    --ambient-night-icon-filter: grayscale(0.6) brightness(0.45);
+    /*
+     * 轉暗 / 轉返光 60 秒（用戶 2026-11-20；比 --view-transition-* 慢好多，所以另開 token）。
+     * 長過場揀線性，唔跟 --ease-view-transition（嗰條快出慢收，60 秒會頭幾秒就暗晒）；S-1390。
+     * 叫醒遮罩 3 秒淡出；疊喺頁面上面、閒置畫面下面
+     */
+    --ambient-night-fade: 60s;
+    --ambient-night-ease: linear;
+    --ambient-wake-fade: 3s;
+    --ambient-veil-z: calc(var(--ambient-z) - 1);
+    /*
      * mini player 長按 → 左滑關閉（useDismissGesture）：撳住縮少少、浮起大少少；
      * 時間同 src/components/pages/home/MiniPlayer/miniPlayerDismiss.ts LONG_PRESS_MS / DISMISS_SLIDE_MS 一致
      */

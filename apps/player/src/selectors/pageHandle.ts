@@ -45,7 +45,8 @@ export const belongsTo = (item: PlayerItem, page: InnerPage): boolean => {
     return item.kind === 'drama' && item.id === page.dramaId;
 };
 
-const trackView = (track: Track, isPlaying: boolean): PageHandleView => {
+/** 載入咗嘅嘢叫咩名、咩色調、播緊定暫停：內頁把手同閒置畫面（selectors/ambient）共用 */
+export const trackView = (track: Track, isPlaying: boolean): PageHandleView => {
     const status = isPlaying ? 'playing' : 'paused';
     if (isDramaEpisode(track)) {
         const name = findDrama(track.dramaId)?.name ?? '';

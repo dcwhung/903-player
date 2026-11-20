@@ -1,6 +1,7 @@
 import { useContext, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { SLEEP_TIMER_CHECK_MS } from '../config/constants';
 import type { SleepTimerOption, SleepTimerState } from './sleepTimer';
+import type { SleepTimerExpiry } from './SleepTimerController';
 import { SleepTimerContext } from './sleepTimerContext';
 
 export interface UseSleepTimerOptions {
@@ -11,6 +12,8 @@ export interface UseSleepTimerOptions {
 export interface SleepTimerApi {
     /** null = 冇開 */
     timer: SleepTimerState | null;
+    /** 9c：上一個 timer 時間到、用戶未撳播 / 未再開 / 未取消；冇就 null */
+    expiry: SleepTimerExpiry | null;
     /** 每秒更新嘅 Date.now()：用嚟計 remainingMs(now) / fraction(now) */
     now: number;
     /** 剩餘 ms；冇 timer = 0 */
@@ -92,7 +95,7 @@ export const useSleepTimer = ({
     if (!controller) {
         throw new Error('useSleepTimer must be used inside <PlayerProvider>');
     }
-    const { timer } = useSyncExternalStore(
+    const { timer, expiry = null } = useSyncExternalStore(
         controller.subscribe,
         controller.getSnapshot,
         controller.getSnapshot,
@@ -100,6 +103,7 @@ export const useSleepTimer = ({
     const now = useClock(timer !== null || tickWhileIdle, timer);
     return {
         timer,
+        expiry,
         now,
         remainingMs: controller.remainingMs,
         fraction: controller.fraction,

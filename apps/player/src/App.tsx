@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toast } from './components/shared/common/Toast/Toast';
+import { AmbientScreen } from './components/shared/player/Ambient/AmbientScreen';
 import { useSleepTimerAutoToast } from './components/shared/player/SleepTimer/useSleepTimerAutoToast';
 import { RecordingsProvider } from './data/RecordingsProvider';
 import { useReopenHomePlayerCardOnPlay } from './hooks/homePlayerCardClosed';
@@ -54,6 +55,8 @@ export const App = ({ playerController }: AppProps) => {
                 </HashRouter>
                 {/* 全 app 一個短提示（例如「已加入收藏」） */}
                 <Toast />
+                {/* HomeView 閒置畫面（9b）：方形螢幕 30 秒冇操作，任何一頁都轉；其他裝置乜都唔 render */}
+                <AmbientScreen />
             </PlayerProvider>
         </RecordingsProvider>
     );

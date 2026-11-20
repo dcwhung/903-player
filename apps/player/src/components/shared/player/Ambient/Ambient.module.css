@@ -1,0 +1,383 @@
+/*
+ * HomeView 閒置畫面（9b，_mockups_/home-view-ambient 第 3 輪 B 款）：成個 viewport 嘅覆蓋層。
+ * 覆蓋層係 inline-size container：入面嘅大細（--ambient-* token，cqw）跟畫面闊度，同 mockup 一樣按 544 比例
+ */
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--ambient-z);
+    container-type: inline-size;
+    /* 撳落去唔好捲 / 拖：第一下淨係叫醒 */
+    touch-action: none;
+}
+
+/* 出嘅時候焦點喺覆蓋層自己（程式設定，唔係用戶 Tab 過嚟）：唔畫焦點框（C-025 淨係鍵盤操作先出框） */
+.overlay:focus {
+    outline: none;
+}
+
+/* 淡出緊：唔再接 tap（第二下已經係底下嗰頁） */
+.overlay[data-state='leaving'] {
+    pointer-events: none;
+}
+
+/* 淡入淡出用 View Transition token；減少動態直接切換（收起嗰下 JS 唔等淡出，見 useAmbientPresence） */
+@media (prefers-reduced-motion: no-preference) {
+    .overlay {
+        animation: ambient-fade-in var(--view-transition-fade) var(--ease-view-transition) both;
+    }
+
+    .overlay[data-state='leaving'] {
+        animation: ambient-fade-out var(--view-transition-fade) var(--ease-view-transition) both;
+    }
+}
+
+@keyframes ambient-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes ambient-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+/*
+ * 節目色調（ThemeScope fullPage={false}）：填滿覆蓋層。
+ * isolation：自成一層，底圖（z-index -1）畫喺節目底色上面、內容下面
+ */
+.scope {
+    position: absolute;
+    inset: 0;
+    isolation: isolate;
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+/*
+ * 9c 底圖（_mockups_/home-view-night 第 4 輪）：所有閒置畫面都有。
+ * ::before = app icon（--ambient-backdrop-image，由 AmbientScreen 經 BASE_URL 傳入）放大 + 模糊；
+ * ::after = 節目底色（--ambient-backdrop-tint-mix）蓋住，字同唱片照樣睇得清
+ */
+.backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.backdrop::before,
+.backdrop::after {
+    position: absolute;
+    content: '';
+}
+
+.backdrop::before {
+    inset: var(--ambient-backdrop-bleed);
+    background: var(--ambient-backdrop-image) center / cover no-repeat;
+    filter: blur(var(--ambient-backdrop-blur)) saturate(var(--ambient-backdrop-saturate));
+}
+
+.backdrop::after {
+    inset: 0;
+    background: color-mix(in srgb, var(--color-bg) var(--ambient-backdrop-tint-mix), transparent);
+}
+
+/* 9c 左上 app 標籤（第 6 輪）：icon + 短名，冇底色；同右上 timer 同一行（.timer 同一個 top / 行高） */
+.appLabel {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + var(--ambient-timer-top));
+    left: var(--ambient-timer-right);
+    display: flex;
+    align-items: center;
+    gap: var(--ambient-label-gap);
+    /*
+     * W-856：branding 短名可以好長（catalog shortName ≤ 24 字、冇設就用 name ≤ 40 字）：
+     * 闊度封頂（左右邊距 + 右上 timer 最闊嘅留位），長過就「…」，唔撞 timer、唔出畫面
+     */
+    max-width: calc(100% - 2 * var(--ambient-timer-right) - var(--ambient-label-timer-reserve));
+    height: var(--ambient-top-row);
+    margin: 0;
+    font-family: var(--font-family);
+    font-size: var(--ambient-label-size);
+    font-weight: var(--ambient-label-weight);
+    color: var(--color-text);
+    white-space: nowrap;
+}
+
+.appIcon {
+    flex-shrink: 0;
+    width: var(--ambient-label-icon);
+    height: var(--ambient-label-icon);
+    border-radius: var(--ambient-label-icon-radius);
+}
+
+/* 靜態截斷（唔跑馬燈：掛牆畫面左上角唔使郁） */
+.appName {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/*
+ * 左唱片、右時間；padding / gap 用 cqw（覆蓋層係 container，入面先跟佢）。
+ * 用戶 2026-11-20：唱片格定闊、右格闊度 = 時間，成組置中，左右留白一樣（之前 1fr 1fr，時間闊過格、凸出右邊）。
+ * 時間嘅負字距最尾一個字都減，但「0」右邊本身有留白，字形邊已經喺框入面（e2e 量 pixel 左右差 ≤ 2px），唔使補
+ */
+.layout {
+    display: grid;
+    grid-template-columns: var(--ambient-disc-col) max-content;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ambient-gap);
+    height: 100%;
+    padding-block: var(--ambient-pad);
+}
+
+/* 唱片格：正方形，進度圈貼邊，唱片（Disc large）喺正中 */
+.discBox {
+    --disc-large-share: var(--ambient-disc-share);
+
+    position: relative;
+    display: grid;
+    width: 100%;
+    aspect-ratio: 1;
+    place-items: center;
+}
+
+/* 暫停：唱片停轉、變暗（轉唔轉由 Disc spinning 管） */
+[data-ambient-status='paused'] .discBox > :last-child {
+    filter: var(--ambient-paused-filter);
+}
+
+.ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.ringTrack {
+    stroke: var(--color-track);
+}
+
+.ringFill {
+    stroke: var(--color-accent);
+}
+
+[data-ambient-status='paused'] .ringFill {
+    stroke: var(--color-text-muted);
+}
+
+.side {
+    display: grid;
+    gap: var(--ambient-side-gap);
+    min-width: 0;
+}
+
+.side p {
+    margin: 0;
+}
+
+/* 所有閒置畫面狀態用同一款時間：Poppins SemiBold 600、24 小時（用戶 2026-11-20）。Poppins 冇等闊數字：數字闊度唔同，每分鐘成組會重新置中移幾 px，用戶接受（方案 A，S-1340） */
+.clock {
+    font-size: var(--ambient-clock-size);
+    font-weight: var(--ambient-clock-weight);
+    letter-spacing: var(--ambient-clock-tracking);
+    line-height: 1;
+}
+
+.date {
+    font-size: var(--ambient-date-size);
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+.name {
+    font-family: var(--theme-title-font);
+    font-size: var(--ambient-name-size);
+    font-weight: 700;
+    color: var(--color-accent-text);
+}
+
+/* 節目名 / 副題唔計入右格闊度（contain）：格闊 = 時間，長過就跑馬燈 */
+.name,
+.status {
+    contain: inline-size;
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    gap: var(--ambient-status-gap);
+    font-size: var(--ambient-status-size);
+    color: var(--color-text-muted);
+}
+
+.status svg {
+    flex-shrink: 0;
+}
+
+.statusText {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 睡眠 timer 剩餘時間：右上，月亮 + 分秒（淨係顯示） */
+.timer {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + var(--ambient-timer-top));
+    right: var(--ambient-timer-right);
+    display: flex;
+    align-items: center;
+    gap: var(--ambient-timer-gap);
+    /* 同左上 app 標籤一樣行高：兩邊置中喺同一條線（9c 第 6 輪） */
+    height: var(--ambient-top-row);
+    margin: 0;
+    font-size: var(--ambient-timer-size);
+    font-weight: 500;
+    color: var(--color-accent-text);
+}
+
+/*
+ * 9c 夜間顏色（_mockups_/home-view-night 第 3、6 輪）：HOME_THEME（--ambient-home-*，inline）同黑色壓暗。
+ * 覆蓋層同叫醒遮罩都用；喺呢度解析（:root 冇 --ambient-home-*）
+ */
+.nightPalette {
+    --ambient-night-bg: color-mix(
+        in srgb,
+        var(--ambient-home-bg) var(--ambient-night-bg-mix),
+        var(--ambient-night-shade)
+    );
+    --ambient-night-text: color-mix(
+        in srgb,
+        var(--ambient-home-text) var(--ambient-night-text-mix),
+        var(--ambient-night-shade)
+    );
+    --ambient-night-gold: color-mix(
+        in srgb,
+        var(--ambient-home-accent) var(--ambient-night-gold-mix),
+        var(--ambient-night-shade)
+    );
+    --ambient-night-muted: color-mix(
+        in srgb,
+        var(--ambient-home-muted) var(--ambient-night-muted-mix),
+        var(--ambient-night-shade)
+    );
+    --ambient-night-track: color-mix(
+        in srgb,
+        var(--ambient-home-muted) var(--ambient-night-track-mix),
+        var(--ambient-night-shade)
+    );
+}
+
+/*
+ * 夜間（data-ambient-night）：節目色調換做 app 主色壓暗版（所有節目一樣）。換語意 token，底色、字、
+ * 進度圈、timer 細條全部跟住轉；底圖 ::after 顏色同百分比一齊換（S-1371：84% 夜間底色）
+ */
+.overlay[data-ambient-night] .scope {
+    --color-bg: var(--ambient-night-bg);
+    --color-text: var(--ambient-night-text);
+    --color-text-muted: var(--ambient-night-muted);
+    --color-accent: var(--ambient-night-gold);
+    --color-accent-text: var(--ambient-night-gold);
+    --color-track: var(--ambient-night-track);
+    --ambient-backdrop-tint-mix: var(--ambient-night-tint-mix);
+}
+
+/* 唱片灰淡（蓋過暫停嘅變暗）、左上 app icon 壓暗 */
+.overlay[data-ambient-night] .discBox > :last-child {
+    filter: var(--ambient-night-disc-filter);
+    opacity: var(--ambient-night-disc-opacity);
+}
+
+.overlay[data-ambient-night] .appIcon {
+    filter: var(--ambient-night-icon-filter);
+}
+
+/* 夜間程度（0 → 1）：同顏色一齊過場，叫醒時 JS 讀佢嘅 opacity 做遮罩起點；冇大細、睇唔到 */
+.nightLevel {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.overlay[data-ambient-night] .nightLevel {
+    opacity: 1;
+}
+
+/*
+ * 轉暗 / 轉返光 60 秒（--ambient-night-fade）：淨係夜間切換緊（data-ambient-night-fading，useNightFade 切換前設、
+ * token 時長後拆）先過場；日間暫停（唱片變暗、進度圈轉灰）、換節目色調照舊即時（W-857）。
+ * 減少動態唔過場，直接切換（CLAUDE.md Motion）。只過場顏色 / filter / opacity：唱片轉、跑馬燈、timer 細條長度照舊。
+ * 時間（.clock）承繼 .scope 嘅字色
+ */
+@media (prefers-reduced-motion: no-preference) {
+    .overlay[data-ambient-night-fading] .scope,
+    .overlay[data-ambient-night-fading] .backdrop::after,
+    .overlay[data-ambient-night-fading] .appLabel,
+    .overlay[data-ambient-night-fading] .appIcon,
+    .overlay[data-ambient-night-fading] .date,
+    .overlay[data-ambient-night-fading] .name,
+    .overlay[data-ambient-night-fading] .status,
+    .overlay[data-ambient-night-fading] .timer,
+    .overlay[data-ambient-night-fading] .ringTrack,
+    .overlay[data-ambient-night-fading] .ringFill,
+    .overlay[data-ambient-night-fading] .discBox > :last-child,
+    .overlay[data-ambient-night-fading] .scope [data-sleep-timer-bar],
+    .overlay[data-ambient-night-fading] .scope [data-sleep-timer-bar] > *,
+    .overlay[data-ambient-night-fading] .nightLevel {
+        transition-duration: var(--ambient-night-fade);
+        transition-property: color, background-color, stroke, filter, opacity;
+        transition-timing-function: var(--ambient-night-ease);
+    }
+}
+
+/*
+ * 9c 叫醒遮罩：暗咗嘅閒置畫面收起後，頁面上面一層夜間底色由叫醒嗰刻嘅暗度（--ambient-veil-from）
+ * 3 秒淡出；唔接 tap，頁面即刻用得。減少動態唔會出（JS 唔 render），萬一設定中途改咗就唔顯示
+ */
+.veil {
+    position: fixed;
+    inset: 0;
+    z-index: var(--ambient-veil-z);
+    background: var(--ambient-night-bg);
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .veil {
+        animation: ambient-veil-out var(--ambient-wake-fade) var(--ambient-night-ease) both;
+    }
+}
+
+@keyframes ambient-veil-out {
+    from {
+        opacity: var(--ambient-veil-from);
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+/* 叫醒掣：透明、蓋住成個畫面；鍵盤焦點用內框 */
+.wake {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.wake:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-accent);
+    outline-offset: calc(var(--focus-ring-width) * -1);
+}

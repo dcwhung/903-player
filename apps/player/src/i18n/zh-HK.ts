@@ -180,6 +180,19 @@ export const zhHK = {
         // HomeView 主頁冇卡、淨係把手（照播緊；撳就入播放頁，HomeWide）
         reopenPlaying: '播放中：{name}，打開播放器',
     },
+    // HomeView 閒置畫面（9b，_mockups_/home-view-ambient）：時間 / 日子用裝置本地時間
+    ambient: {
+        // 覆蓋層讀屏名（role="dialog"）
+        label: '閒置畫面',
+        // 叫醒掣讀屏名：掂任何位置返閒置前嗰頁
+        wake: '返回',
+        // 時間下面嘅日子：「11月30日 星期一」（{weekday} = dates.weekday）
+        date: '{month}月{day}日 {weekday}',
+        // 直播（冇長度）嘅副題，唔出進度圈
+        live: '直播',
+        // 暫停緊嘅副題：「已暫停 · 28/11（六）」（{status} = common.status.paused、{sep} = common.separator）
+        paused: '{status}{sep}{subtitle}',
+    },
     // 闊橫版內頁右邊把手（InnerPageHandle）：播緊 / 暫停緊其他節目 / 劇集，撳 = 返主頁
     pageHandle: {
         playing: '播放中：{name}，返回主頁',
