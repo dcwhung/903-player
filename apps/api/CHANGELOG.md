@@ -2,6 +2,19 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.14.0 — 2026-11-22
+
+確認發佈版本守衛（2026-11-22 codebase audit AU-021）。舊 client 照用得：`fingerprint` 可以唔傳。
+
+### Added
+
+- `GET /api/changes` 回 `fingerprint`（`<最新 ok publish id 或 0>.<將會發佈嘅 catalog.json 嘅 sha256，唔計 generatedAt>`）；驗證唔過時冇呢個欄位
+- `POST /api/publish` 可以帶 `fingerprint`：server 用準備寫入嗰份 document 重新計，對唔上回 412 `stale publish confirmation`，唔寫 `publishes`、唔寫 R2、唔 purge、唔觸發部署；唔係字串回 400；`?force=1` 遇到過時 fingerprint 照回 412。冇帶就同以前一樣
+
+### Changed
+
+- 「內容唔計 `generatedAt`」嘅比較抽成 `contentWithoutGeneratedAt`，`sameContent` 同 fingerprint 共用
+
 ## 0.13.2 — 2026-11-22
 
 Import catalog 預設唔再蓋過 D1（2026-11-22 codebase audit AU-017）。Worker 行為冇變，只改 `scripts/importLibrary.mjs`。
