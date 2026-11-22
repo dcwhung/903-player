@@ -2,6 +2,14 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.14.2 — 2026-11-22
+
+Admin 一個 request 讀晒全部 entry（2026-11-22 codebase audit AU-024）。舊 client 照用得：冇帶 `detail=1` 嘅回應完全冇變。
+
+### Added
+
+- `GET /api/entries?detail=1`：每個 entry 除咗列表欄位（`kind`、`id`、`name`、`enabled`、`draft`、`updatedAt`、`published`、`publishedArcs`），再加 `definition`、`images`、`etag`（同 `GET /api/entries/:kind/:id` 嘅 ETag header 一樣，PUT 嘅 `If-Match` 用）同 `publishedVersion`（最新 ok publish 嘅版本，即單一 entry GET 嘅 `published`；從未發佈係 `null`）。`entries` 表只讀一次，最新 document 都係讀一次，query 數量同 entry 數量無關；`detail` 係其他值當冇帶
+
 ## 0.14.0 — 2026-11-22
 
 確認發佈版本守衛（2026-11-22 codebase audit AU-021）。舊 client 照用得：`fingerprint` 可以唔傳。
