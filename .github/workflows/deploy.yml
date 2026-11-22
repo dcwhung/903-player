@@ -8,10 +8,10 @@ on:
     repository_dispatch:
         types: [catalog-branding]
 
+# AU-019：workflow 層只有 contents: read；可以出 Pages 嘅權限（pages: write + id-token: write）只畀 deploy job，
+# build job（npm ci lifecycle script、lint、vitest、vite build）嘅 GITHUB_TOKEN 攞唔到
 permissions:
     contents: read
-    pages: write
-    id-token: write
 
 concurrency:
     group: pages
@@ -20,6 +20,10 @@ concurrency:
 jobs:
     build:
         runs-on: ubuntu-latest
+        # job 層 permissions 會取代 workflow 層成份；pages: read 係畀 configure-pages 讀 Pages 設定（只讀，出唔到嘢）
+        permissions:
+            contents: read
+            pages: read
         steps:
             - uses: actions/checkout@v7
 
@@ -49,6 +53,10 @@ jobs:
     deploy:
         needs: build
         runs-on: ubuntu-latest
+        # 呢個 job 冇 checkout，亦唔跑 repo 入面任何 code：只有 deploy-pages action
+        permissions:
+            pages: write
+            id-token: write
         environment:
             name: github-pages
             url: ${{ steps.deployment.outputs.page_url }}
