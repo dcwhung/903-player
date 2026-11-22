@@ -22,6 +22,9 @@ const remoteDocument = async () => {
     };
 };
 
+/** 一次過 import 成個 App module graph（冷 cache 約 4–5 秒），預設 5 秒喺負載下會 timeout（S-1424） */
+const APP_IMPORT_TIMEOUT_MS = 30_000;
+
 describe('catalog registries and app module imports', () => {
     beforeEach(() => vi.resetModules());
 
@@ -36,5 +39,5 @@ describe('catalog registries and app module imports', () => {
         const fetchImpl = vi.fn(() => Promise.resolve(new Response(body)));
 
         await expect(initCatalog({ url: '/catalog.json', fetchImpl })).resolves.toBe('remote');
-    });
+    }, APP_IMPORT_TIMEOUT_MS);
 });
