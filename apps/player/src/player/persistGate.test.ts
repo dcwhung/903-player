@@ -1,5 +1,5 @@
 import { FakeAudio } from '../../tests/fakeAudio';
-import { PROGRESS_STORAGE_KEY } from '../config/constants';
+import { PROGRESS_STORAGE_KEY, STALL_MAX_WAIT_MS } from '../config/constants';
 import { getProgress, saveProgress } from '../services/progressStore';
 import type { Recording } from '../types/recording';
 import { AudioController } from './AudioController';
@@ -273,5 +273,106 @@ describe('AudioController progress when no playing timeupdate fired (locked scre
         audio.emitMetadata(DURATION);
         audio.end();
         expect(getProgress(A.id)).toMatchObject({ watched: true });
+    });
+});
+
+/*
+ * S-1423：長度已經知、但 loadedmetadata 未處理（續播位置未套用，element 仲喺 0）嗰一刻，
+ * 位置唔可信：唔可以當播過，亦唔可以存
+ */
+describe('AudioController progress while the resume position is not applied yet', () => {
+    const MEDIA_ERR_NETWORK_CODE = 2;
+    /** 長度到咗但 loadedmetadata 未發 */
+    const exposeDurationOnly = (audio: FakeAudio): void => {
+        audio.duration = DURATION;
+    };
+
+    it('should keep the stored record when the page hides before the resume position is applied', async () => {
+        const before = storeEarlierProgress();
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        exposeDurationOnly(audio);
+        hidePage();
+        expect(storedRaw()).toBe(before);
+    });
+
+    it('should save the advanced position once the resume position is applied (control)', async () => {
+        storeEarlierProgress();
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.emitTime(STORED_POSITION + LISTENED_TO);
+        hidePage();
+        expect(getProgress(A.id)).toMatchObject({
+            position: STORED_POSITION + LISTENED_TO,
+            updatedAt: NOW,
+        });
+    });
+
+    it('should save a lock-screen listen with no timeupdate once the resume position is applied', async () => {
+        storeEarlierProgress();
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        exposeDurationOnly(audio);
+        hidePage();
+        audio.emitMetadata(DURATION);
+        audio.currentTime = STORED_POSITION + LISTENED_TO;
+        hidePage();
+        expect(getProgress(A.id)).toMatchObject({ position: STORED_POSITION + LISTENED_TO });
+    });
+
+    it('should keep the stored record when a timeupdate at 0 slips in before the resume position and nothing is played', async () => {
+        const before = storeEarlierProgress();
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        exposeDurationOnly(audio);
+        audio.emitTime(0);
+        audio.emitMetadata(DURATION);
+        audio.emitTime(STORED_POSITION);
+        controller.pause();
+        hidePage();
+        expect(storedRaw()).toBe(before);
+    });
+
+    it('should keep the listened position when the page hides while a failed source is reloading', async () => {
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.emitTime(STORED_POSITION);
+        hidePage();
+        audio.fail(MEDIA_ERR_NETWORK_CODE);
+        await controller.play();
+        expect(audio.load).toHaveBeenCalledTimes(1);
+        exposeDurationOnly(audio);
+        hidePage();
+        expect(getProgress(A.id)).toMatchObject({ position: STORED_POSITION });
+
+        audio.emitMetadata(DURATION);
+        audio.emitTime(STORED_POSITION + LISTENED_TO);
+        hidePage();
+        expect(getProgress(A.id)).toMatchObject({ position: STORED_POSITION + LISTENED_TO });
+    });
+
+    it('should keep the listened position when the page hides while the stall watchdog reloads', async () => {
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.emitTime(STORED_POSITION);
+        controller.pause();
+        await controller.play();
+        await vi.advanceTimersByTimeAsync(STALL_MAX_WAIT_MS);
+        expect(audio.load).toHaveBeenCalled();
+        exposeDurationOnly(audio);
+        hidePage();
+        expect(getProgress(A.id)).toMatchObject({ position: STORED_POSITION });
+    });
+
+    it('should save a first listen of an episode with no stored progress', async () => {
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        exposeDurationOnly(audio);
+        audio.currentTime = LISTENED_TO;
+        hidePage();
+        expect(getProgress(A.id)).toMatchObject({ position: LISTENED_TO });
     });
 });

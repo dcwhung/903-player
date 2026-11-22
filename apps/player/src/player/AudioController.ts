@@ -353,6 +353,15 @@ export class AudioController {
         return !Number.isNaN(this.audio.duration);
     }
 
+    /**
+     * audio.currentTime 信唔信得過：metadata 到咗，而且續播位置已經套用（pendingStart 清咗）。
+     * 換集 / 重新載入之後長度可能早過 loadedmetadata 出現，嗰刻 element 仲喺 0，
+     * 存落去會洗走續播位置，亦唔可以當係播出嚟嘅位置（S-1423）
+     */
+    private hasTrustedPosition(): boolean {
+        return this.hasMetadata() && this.pendingStart === 0;
+    }
+
     /** 已聽過、已暫停而停喺尾段：再入嚟就由頭播 */
     private isParkedAtEnd(): boolean {
         return (
@@ -379,9 +388,9 @@ export class AudioController {
         // 播緊但未有 timeupdate（鎖屏）就 pagehide / 入背景：而家嘅位置都係播出嚟嘅（W-859）
         this.notePlayedIfPlaying();
         const { recording } = this.state;
-        // 未 loadedmetadata 前 currentTime 已被 reset 做 0，存落去會洗走續播位置；
+        // 續播位置未套用前 currentTime 係 0，存落去會洗走續播位置；
         // 載入之後冇播過、冇 seek 過就冇嘢要存（AU-026）
-        if (!recording || !this.hasMetadata() || !this.hasProgressToSave) {
+        if (!recording || !this.hasTrustedPosition() || !this.hasProgressToSave) {
             return;
         }
         const progress = saveProgress(recording.id, this.audio.currentTime, this.audio.duration);
@@ -412,8 +421,8 @@ export class AudioController {
     };
 
     private onTimeUpdate = (): void => {
-        // 換 src 時瀏覽器會發一次 currentTime = 0 嘅 timeupdate；metadata 未到嘅位置唔可信
-        if (!this.hasMetadata()) {
+        // 換 src 時瀏覽器會發一次 currentTime = 0 嘅 timeupdate；metadata 未到 / 續播位置未套用嘅位置唔可信
+        if (!this.hasTrustedPosition()) {
             return;
         }
         this.notePlayedIfPlaying();
@@ -438,7 +447,7 @@ export class AudioController {
      * 撳咗播但位置凍結唔算。鎖屏時 timeupdate 可能冇發，所以停低嗰下都要睇（AU-026）
      */
     private notePlayed(): void {
-        if (this.hasMetadata() && this.audio.currentTime !== this.state.currentTime) {
+        if (this.hasTrustedPosition() && this.audio.currentTime !== this.state.currentTime) {
             this.hasProgressToSave = true;
         }
     }
