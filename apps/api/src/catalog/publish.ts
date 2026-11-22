@@ -209,12 +209,16 @@ export const missingEpisodeIds = (
     return previous.filter((id) => !current.has(id));
 };
 
-/** 除 generatedAt 外完全一樣（document 都係由同一個 builder JSON.stringify，key 次序穩定） */
-export const sameContent = (previous: string, next: string): boolean => {
-    const strip = (json: string) =>
-        JSON.stringify({ ...(JSON.parse(json) as Record<string, unknown>), generatedAt: null });
-    return strip(previous) === strip(next);
-};
+/**
+ * catalog.json 除 generatedAt 外嘅內容（每次砌 document 都唔同，比較 / fingerprint 都唔計）；
+ * document 都係由同一個 builder JSON.stringify，key 次序穩定
+ */
+export const contentWithoutGeneratedAt = (json: string): string =>
+    JSON.stringify({ ...(JSON.parse(json) as Record<string, unknown>), generatedAt: null });
+
+/** 除 generatedAt 外完全一樣 */
+export const sameContent = (previous: string, next: string): boolean =>
+    contentWithoutGeneratedAt(previous) === contentWithoutGeneratedAt(next);
 
 /** 部署 secret 選填（App 外觀：改咗 branding 先觸發重新部署 player） */
 export type PublishEnv = DeployEnv & { CATALOG: R2Bucket; WORKER_ORIGIN: string };

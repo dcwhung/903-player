@@ -104,6 +104,69 @@ describe('useEntryEditor', () => {
             expect(result.current.status.problem).toBeUndefined();
         });
 
+        describe('rebasing the draft after a 412 retry (AU-020)', () => {
+            /** 另一邊（例如第二個 tab 拖排序）改咗 order；本機淨係改過 summary */
+            const retried = () => {
+                let gets = 0;
+                let puts = 0;
+                return mockApi({
+                    [`GET ${PATH}`]: () => {
+                        gets += 1;
+                        return gets === 1
+                            ? { body: detail('v1', { name: '早晨', order: 1 }), etag: '"v1"' }
+                            : { body: detail('v2', { name: '早晨', order: 5 }), etag: '"v2"' };
+                    },
+                    [`PUT ${PATH}`]: () => {
+                        puts += 1;
+                        return puts === 1
+                            ? { status: 412, body: { error: 'stale' } }
+                            : saved(`v${puts + 1}`);
+                    },
+                });
+            };
+
+            const patchAfterEdit = async () => {
+                const api = retried();
+                const view = await loadEditor();
+                act(() => view.result.current.setDefinition((d) => ({ ...d, summary: '本機' })));
+                await act(async () => {
+                    await view.result.current.patchSaved(setDisc);
+                });
+                return { api, result: view.result };
+            };
+
+            it('should list only the fields the user really edited as dirty', async () => {
+                const { result } = await patchAfterEdit();
+
+                expect(result.current.dirtyKeys).toEqual(['summary']);
+            });
+
+            it("should carry the other party's change and the patch into the draft", async () => {
+                const { result } = await patchAfterEdit();
+
+                expect(result.current.draft).toEqual({
+                    definition: { name: '早晨', order: 5, summary: '本機' },
+                    images: { disc: 'd.webp' },
+                });
+            });
+
+            it("should not write the other party's change back on the next save", async () => {
+                const { api, result } = await patchAfterEdit();
+
+                await act(async () => {
+                    await result.current.run(result.current.draft as Draft);
+                });
+
+                const last = putCalls(api).at(-1);
+                expect(headerOf(last?.[1], 'if-match')).toBe('"v3"');
+                expect(bodyOf(last?.[1]).definition).toEqual({
+                    name: '早晨',
+                    order: 5,
+                    summary: '本機',
+                });
+            });
+        });
+
         it('should return false and report a conflict when the retry also gets 412', async () => {
             const api = mockApi({
                 [`GET ${PATH}`]: () => ({ body: detail('v1', { name: '早晨' }), etag: '"v1"' }),

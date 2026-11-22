@@ -53,6 +53,8 @@ export function ArcSchedule({ state, arc, arcId, saved, actions }: ArcSchedulePr
     );
     if (countOf(arc) === 0) return <p className="note warn">{t('schedule.noCount')}</p>;
     const { plan, error } = planOf(rule, ctx);
+    // 儲存 / 刪除排程之後會重讀劇集：其他分頁有未儲存改動就唔畀做（草稿會冇咗，AU-022）
+    const draftClean = state.editor.dirtyKeys.length === 0;
     const change = (next: ScheduleForm) => {
         actions.clear();
         setForm(next);
@@ -62,7 +64,6 @@ export function ArcSchedule({ state, arc, arcId, saved, actions }: ArcSchedulePr
         if (problem) actions.reject(problem);
         else void actions.save(arcId, rule);
     };
-    const unreleased = isUnreleased(arc, saved !== null);
     return (
         <div className="card" id="schedule-panel" role="tabpanel" aria-labelledby={`tab-${arcId}`}>
             {!published && <p className="note info">{t('schedule.unpublishedNote')}</p>}
@@ -71,15 +72,16 @@ export function ArcSchedule({ state, arc, arcId, saved, actions }: ArcSchedulePr
                 form={form}
                 plan={plan}
                 error={error}
-                unreleased={unreleased}
+                unreleased={isUnreleased(arc, saved !== null)}
                 draft={listingDirty}
                 onChange={change}
             />
             <ScheduleNotes state={state} arc={arc} actions={actions} />
             <ScheduleSaveBar
                 canDelete={saved !== null}
+                deleteBlocked={!draftClean}
                 canRevert={changed}
-                canSave={dirty && state.editor.dirtyKeys.length === 0}
+                canSave={dirty && draftClean}
                 fromTodos={state.origin.fromTodos}
                 saving={actions.saving}
                 onDelete={() => void actions.remove(arcId)}

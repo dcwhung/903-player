@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAdminData } from '../../data/AdminData';
 import { t } from '../../i18n/t';
 import { changeFlagsOf } from '../../model/listModel';
+import { changedKeys, type Draft } from '../editor/entryDraft';
 import { idProblem } from '../editor/IdField';
+import { ownNavigation } from '../editor/leaveRules';
 import { useEditorOrigin } from '../editor/useEditorOrigin';
-import { useEntryEditor } from '../editor/useEntryEditor';
+import { useEntryEditor, type EntryEditor } from '../editor/useEntryEditor';
 import { useImageSave } from '../editor/useImageSave';
 import { useRenameEntry } from '../editor/useRenameEntry';
 import { useToast } from '../../ui/Toast';
@@ -18,7 +20,7 @@ const useBackToList = () => {
     const toast = useToast();
     return (id: string) => {
         toast(t('editor.created', { id }));
-        void navigate('/shows', { replace: true });
+        void navigate('/shows', ownNavigation({ replace: true }));
     };
 };
 
@@ -37,6 +39,15 @@ const usePublishFlags = (isNew: boolean, id: string | undefined) => {
     };
 };
 
+/**
+ * 離開會冇咗嘅嘢（LeaveGuard，AU-023）：已有節目 = 草稿改動；
+ * 新節目（initial = 空白表格）= 填過嘢（同空白表格唔同 / 打咗 ID），未掂過就唔問
+ */
+const unsavedOf = (editor: EntryEditor, initial: Draft | undefined, newId: string): boolean => {
+    if (!initial) return editor.dirtyKeys.length > 0;
+    return newId !== '' || (editor.draft !== null && changedKeys(initial, editor.draft).length > 0);
+};
+
 export const useShowEditor = (id: string | undefined) => {
     const isNew = id === undefined;
     const [initial] = useState(() =>
@@ -50,7 +61,7 @@ export const useShowEditor = (id: string | undefined) => {
         if (!editor.draft || (isNew && idProblem(newId))) return;
         const saved = await editor.run(editor.draft, isNew ? newId : undefined);
         if (!saved) return;
-        await origin.afterSave();
+        await origin.afterSave({ draftSaved: true });
         if (isNew && !origin.fromTodos) backToList(saved.id);
     };
     return {
@@ -61,6 +72,7 @@ export const useShowEditor = (id: string | undefined) => {
         setNewId,
         origin,
         save,
+        unsaved: unsavedOf(editor, initial, newId),
         ...usePublishFlags(isNew, id),
         saveImage: useImageSave(editor),
         rename: useRenameEntry(editor, origin.afterSave),

@@ -5,6 +5,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdminData } from '../../data/AdminData';
 import { FROM_TODOS, missingOf, splitName, todoKey } from '../update/todoModel';
+import { ownNavigation } from './leaveRules';
 
 export const useEditorOrigin = () => {
     const [params] = useSearchParams();
@@ -20,10 +21,14 @@ export const useEditorOrigin = () => {
                   missing: missingOf(row),
               }
             : null;
-    /** 儲存成功之後：刷新共用資料；由待辦入嚟就返待辦 */
-    const afterSave = async () => {
+    /**
+     * 儲存成功之後：刷新共用資料；由待辦入嚟就返待辦。
+     * draftSaved = 成份草稿啱啱存晒（撳「儲存」）：返待辦唔使問未儲存（AU-023）；
+     * 淨係存咗一部分（改名、排程、配對資料夾）就照問，草稿仲有其他改動會冇咗
+     */
+    const afterSave = async ({ draftSaved = false } = {}) => {
         await refresh();
-        if (fromTodos) navigate('/');
+        if (fromTodos) await navigate('/', draftSaved ? ownNavigation() : {});
     };
     return { fromTodos, flow, afterSave };
 };

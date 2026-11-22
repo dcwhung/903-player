@@ -4,8 +4,8 @@
  */
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Link, MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { fakeData, mockApi } from '../../../tests/renderApp';
+import { Link, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { fakeData, memoryRouter, mockApi } from '../../../tests/renderApp';
 import { AdminDataContext } from '../../data/AdminData';
 import { ToastProvider } from '../../ui/Toast';
 import { DramaEditorPage } from './DramaEditor';
@@ -70,22 +70,33 @@ const renderEditor = (url: string) =>
     render(
         <AdminDataContext.Provider value={fakeData()}>
             <ToastProvider>
-                <MemoryRouter initialEntries={['/start', url]} initialIndex={1}>
-                    <Back />
-                    <Link to="/dramas/other/schedule">去另一套</Link>
-                    <Link to="/dramas/lancy/schedule">返蘭茜</Link>
-                    <Link to="/dramas/lancy/schedule#fantasy">深連結森美幻想劇</Link>
-                    <Routes>
-                        <Route path="/start" element={<p>start page</p>} />
-                        <Route path="/dramas/:id" element={<DramaEditorPage tab="basic" />} />
-                        <Route path="/dramas/:id/arcs" element={<DramaEditorPage tab="arcs" />} />
-                        <Route
-                            path="/dramas/:id/schedule"
-                            element={<DramaEditorPage tab="schedule" />}
-                        />
-                    </Routes>
-                    <Where />
-                </MemoryRouter>
+                {
+                    memoryRouter(
+                        <>
+                            <Back />
+                            <Link to="/dramas/other/schedule">去另一套</Link>
+                            <Link to="/dramas/lancy/schedule">返蘭茜</Link>
+                            <Link to="/dramas/lancy/schedule#fantasy">深連結森美幻想劇</Link>
+                            <Routes>
+                                <Route path="/start" element={<p>start page</p>} />
+                                <Route
+                                    path="/dramas/:id"
+                                    element={<DramaEditorPage tab="basic" />}
+                                />
+                                <Route
+                                    path="/dramas/:id/arcs"
+                                    element={<DramaEditorPage tab="arcs" />}
+                                />
+                                <Route
+                                    path="/dramas/:id/schedule"
+                                    element={<DramaEditorPage tab="schedule" />}
+                                />
+                            </Routes>
+                            <Where />
+                        </>,
+                        ['/start', url],
+                    ).element
+                }
             </ToastProvider>
         </AdminDataContext.Provider>,
     );

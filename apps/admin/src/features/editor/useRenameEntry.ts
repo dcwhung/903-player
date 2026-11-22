@@ -2,7 +2,7 @@
 import type { EntryEditor } from './useEntryEditor';
 
 export const useRenameEntry =
-    (editor: EntryEditor, afterSave: () => Promise<void>) => async (name: string) => {
+    (editor: EntryEditor, afterSave: () => Promise<unknown>) => async (name: string) => {
         const { entry, run, setDefinition } = editor;
         if (!entry) return setDefinition((d) => ({ ...d, name }));
         const saved = await run({

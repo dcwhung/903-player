@@ -8,18 +8,20 @@
 import type { ScheduleRule } from '@903-player/catalog';
 import { useState } from 'react';
 import { deleteSchedule, putSchedule } from '../../api/endpoints';
+import { useAdminData } from '../../data/AdminData';
 import { problemOf, type Problem } from '../editor/entryDraft';
 import type { DramaEditorState } from './useDramaEditor';
 
-export const useScheduleSave = (state: DramaEditorState, reloadSchedules: () => Promise<void>) => {
+/** 做一個寫入 → 成功就做 reload（重讀劇集 + 排程）；失敗記低問題。回成功與否 */
+const useAttempt = (reload: () => Promise<unknown>) => {
     const [saving, setSaving] = useState(false);
     const [problem, setProblem] = useState<Problem>();
-    const attempt = async (work: () => Promise<void>) => {
+    const attempt = async (work: () => Promise<unknown>) => {
         setSaving(true);
         setProblem(undefined);
         try {
             await work();
-            await Promise.all([state.editor.reload(), reloadSchedules()]);
+            await reload();
             return true;
         } catch (error) {
             setProblem(problemOf(error));
@@ -28,13 +30,23 @@ export const useScheduleSave = (state: DramaEditorState, reloadSchedules: () => 
             setSaving(false);
         }
     };
+    return { saving, problem, setProblem, attempt };
+};
+
+export const useScheduleSave = (state: DramaEditorState, reloadSchedules: () => Promise<void>) => {
+    const { refresh } = useAdminData();
+    const { saving, problem, setProblem, attempt } = useAttempt(() =>
+        Promise.all([state.editor.reload(), reloadSchedules()]),
+    );
     const save = async (arcId: string, rule: ScheduleRule) => {
         const etag = state.editor.entry?.etag ?? null;
         const put = () => putSchedule(state.id, arcId, rule, etag, { enable: true });
-        if (await attempt(() => put().then(() => undefined))) await state.origin.afterSave();
+        if (await attempt(put)) await state.origin.afterSave();
     };
-    const remove = (arcId: string) =>
-        attempt(() => deleteSchedule(state.id, arcId).then(() => undefined));
+    /** 刪完同儲存一樣刷新共用資料（待辦 / nav 數字）；唔返待辦（冇嘢儲存） */
+    const remove = async (arcId: string) => {
+        if (await attempt(() => deleteSchedule(state.id, arcId))) await refresh();
+    };
     const reject = (detail: string) => setProblem({ type: 'invalid', detail });
     const clear = () => setProblem(undefined);
     return { saving, problem, save, remove, reject, clear };
