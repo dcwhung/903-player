@@ -114,6 +114,40 @@ describe('detect-code-changes', () => {
         expect(result.output).toBe('code=false\n');
     });
 
+    // S-1401：git 預設用引號包住非 ASCII path（core.quotePath），中文檔名嘅 docs 會 match 唔到 pattern
+    it('should report code=false when docs-only files have non-ASCII names and spaces', () => {
+        const repo = createRepo();
+        commitFile(repo, 'docs/筆記 a.md', '# 筆記\n', 'docs with a non-ASCII name and a space');
+        commitFile(repo, '.proj-docs/審查 報告/第 1 版.txt', 'report\n', 'non-ASCII docs folder');
+        const head = commitFile(repo, 'apps/player/說明 文件.md', '# 說明\n', 'non-ASCII .md');
+
+        const result = detect(repo, head);
+
+        expect(result.status).toBe(0);
+        expect(result.output).toBe('code=false\n');
+    });
+
+    it('should report code=true when a source file has a non-ASCII name', () => {
+        const repo = createRepo();
+        commitFile(repo, 'docs/筆記 a.md', '# 筆記\n', 'docs');
+        const head = commitFile(repo, 'src/工具 a.ts', 'export const a = 1;\n', 'non-ASCII source');
+
+        const result = detect(repo, head);
+
+        expect(result.status).toBe(0);
+        expect(result.output).toBe('code=true\n');
+    });
+
+    it('should report code=true when a path still needs quoting (tab in a docs file name)', () => {
+        const repo = createRepo();
+        const head = commitFile(repo, 'docs/a\tb.md', '# tab\n', 'docs file with a tab');
+
+        const result = detect(repo, head);
+
+        expect(result.status).toBe(0);
+        expect(result.output).toBe('code=true\n');
+    });
+
     it('should report code=true when a source file is renamed into a docs path', () => {
         const repo = createRepo();
         git(repo, 'mv', 'src/a.ts', 'docs/a.md');
