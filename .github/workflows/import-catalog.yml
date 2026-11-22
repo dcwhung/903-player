@@ -71,7 +71,7 @@ jobs:
                   npm run import -w apps/api -- "${args[@]}" | tee "$RUNNER_TEMP/import.log"
 
             # script 第一行：「N entries, M images (K to upload)」；跟住「entries: …」（insert / 保留 / 覆蓋幾多行），
-            # overwrite 先有「WARNING: …」；之後每行「wrangler …」= 一個 step
+            # overwrite 先有「WARNING: …」；之後每行「wrangler …」= 一個寫入 step（冇嘢要加就一行都冇）
             - name: Summary
               env:
                   DRY_RUN: ${{ inputs.dry_run }}
@@ -92,11 +92,16 @@ jobs:
                       if [ -n "$entries" ]; then sed 's/^/- /' <<<"$entries"; fi
                       if [ -n "$warnings" ]; then sed 's/^/- **/; s/$/**/' <<<"$warnings"; fi
                       echo "- wrangler steps (image uploads + SQL): $commands"
-                      if [ "$DRY_RUN" = 'true' ]; then
-                          echo
+                      echo
+                      # S-1404：冇 wrangler 寫入 step（D1 / R2 已經齊）= 冇嘢可以發佈，唔好叫人去撳「發佈」。
+                      # $commands 讀唔到數字（唔應該發生）就當有寫入，照出原本嗰句
+                      if [ "$commands" = '0' ] && [ "$DRY_RUN" = 'true' ]; then
+                          echo 'Nothing was written, and a real run would not change anything: D1 and R2 already have everything this run would add.'
+                      elif [ "$commands" = '0' ]; then
+                          echo 'Nothing was changed: D1 and R2 already have everything this run would add. There is nothing new to publish.'
+                      elif [ "$DRY_RUN" = 'true' ]; then
                           echo 'Nothing was written. Run again with **dry run** unticked to import, then Publish on the ops page.'
                       else
-                          echo
                           echo 'Next: open the ops page and **Publish**.'
                       fi
                   } >> "$GITHUB_STEP_SUMMARY"
