@@ -2,6 +2,7 @@
  * scripts/qa/ledger-merge.mjs（AU-014）：喺臨時 git repo 入面真係跑個 script。
  * - ledger 過咗 Node execFileSync 預設 maxBuffer（1 MiB）都要合併到，唔可以 ENOBUFS
  * - cwd 唔係 repo root 就即刻停（exit 2），唔好寫錯位置
+ * - git / 用法出錯（冇 MERGE_HEAD、ref 唔存在）都係 exit 2；exit 1 只留畀「有行要重新驗收」
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
@@ -17,13 +18,11 @@ const NODE_DEFAULT_MAX_BUFFER_BYTES = 1024 * 1024;
 // 每行約 150 bytes，12,000 行約 1.8 MiB：穩陣過 1 MiB
 const BIG_LEDGER_ROWS = 12_000;
 const SHA_HEX_LENGTH = 64;
-const EXIT_NOT_REPO_ROOT = 2;
+const EXIT_USAGE_ERROR = 2;
 const OURS_ROW = 10;
 const THEIRS_ROW = 20;
 const SMALL_LEDGER_ROWS = THEIRS_ROW + 1;
-// 臨時 repo 唔食用戶 / 系統 git 設定（簽署、hook、template）
-const GIT_ENV = {
-    ...process.env,
+const TEST_GIT_ENV = {
     GIT_CONFIG_GLOBAL: '/dev/null',
     GIT_CONFIG_SYSTEM: '/dev/null',
     GIT_AUTHOR_NAME: 'ledger-test',
@@ -31,6 +30,18 @@ const GIT_ENV = {
     GIT_COMMITTER_NAME: 'ledger-test',
     GIT_COMMITTER_EMAIL: 'ledger-test@example.invalid',
 };
+
+/**
+ * 臨時 repo 用嘅 env：唔食用戶 / 系統 git 設定（簽署、hook、template），亦唔承繼任何 `GIT_*`。
+ * S-1391：喺 `git rebase --exec` / `git bisect run` / hook 入面跑，git 會 export GIT_DIR / GIT_WORK_TREE /
+ * GIT_INDEX_FILE；漏咗入嚟，「臨時 repo」嘅 commit / checkout 就會寫入真 repo
+ */
+function isolatedGitEnv(inherited) {
+    const withoutGit = Object.entries(inherited).filter(([name]) => !name.startsWith('GIT_'));
+    return { ...Object.fromEntries(withoutGit), ...TEST_GIT_ENV };
+}
+
+const GIT_ENV = isolatedGitEnv(process.env);
 
 const tempDirs = [];
 
@@ -81,6 +92,18 @@ afterEach(() => {
 });
 
 describe('ledger-merge', () => {
+    it('should not pass inherited GIT_* variables to the temp-repo git calls', () => {
+        const env = isolatedGitEnv({
+            PATH: '/usr/bin',
+            GIT_DIR: '/real/repo/.git',
+            GIT_WORK_TREE: '/real/repo',
+            GIT_INDEX_FILE: '/real/repo/.git/index',
+            GIT_AUTHOR_NAME: 'someone else',
+        });
+
+        expect(env).toEqual({ PATH: '/usr/bin', ...TEST_GIT_ENV });
+    });
+
     it('should merge both sides when the ledger is larger than the default 1 MiB maxBuffer', () => {
         const repo = createRepo(BIG_LEDGER_ROWS);
         const ledgerBytes = readFileSync(join(repo, LEDGER)).length;
@@ -121,9 +144,29 @@ describe('ledger-merge', () => {
 
         const result = runScript(subdir, 'ours', 'theirs');
 
-        expect(result.status).toBe(EXIT_NOT_REPO_ROOT);
+        expect(result.status).toBe(EXIT_USAGE_ERROR);
         expect(result.stderr).toContain('must be run from the repo root');
         expect(result.stderr).toContain(repo);
+        expect(git(repo, 'status', '--porcelain')).toBe('');
+    });
+
+    it('should exit 2 with a one-line message and leave the ledger alone when there is no MERGE_HEAD', () => {
+        const repo = createRepo(SMALL_LEDGER_ROWS);
+
+        const result = runScript(repo);
+
+        expect(result.status).toBe(EXIT_USAGE_ERROR);
+        expect(result.stderr).toMatch(/^ledger-merge: .*MERGE_HEAD.*\n$/);
+        expect(git(repo, 'status', '--porcelain')).toBe('');
+    });
+
+    it('should exit 2 with a one-line message when a ref does not exist', () => {
+        const repo = createRepo(SMALL_LEDGER_ROWS);
+
+        const result = runScript(repo, 'ours', 'no-such-ref');
+
+        expect(result.status).toBe(EXIT_USAGE_ERROR);
+        expect(result.stderr).toMatch(/^ledger-merge: .*no-such-ref.*\n$/);
         expect(git(repo, 'status', '--porcelain')).toBe('');
     });
 
@@ -133,7 +176,7 @@ describe('ledger-merge', () => {
 
         const result = runScript(outside);
 
-        expect(result.status).toBe(EXIT_NOT_REPO_ROOT);
+        expect(result.status).toBe(EXIT_USAGE_ERROR);
         expect(result.stderr).toContain('must be run from the repo root');
     });
 });
