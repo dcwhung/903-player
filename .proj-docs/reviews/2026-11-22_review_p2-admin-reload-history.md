@@ -61,3 +61,14 @@ next_action: proceed_to_qa
 context: Only 🟢. Per CLAUDE.md "Parallel lane backlog", S-1467 / S-1468 should be cleared in this session (lane fix in PR or cleanup lane); admin version 0.10.1 collision handled by main agent at merge.
 report: .proj-docs/reviews/2026-11-22_review_p2-admin-reload-history.md
 ```
+
+## Round 2（main agent 覆核，head `2262bb46`）
+
+**結果：✅ pass，100/100，冇新 item。** 上輪 2 條 🟢 已關：
+
+| ID     | 處理                                                                                                                                                                                                                   | 結果 |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| S-1467 | 刪走舊 API fallback 同佢嘅 test；`EntryListItem` 嘅 `definition` / `images` / `etag` 改 required，`publishedVersion` 仍 optional；`loadAllEntries` = `listEntriesDetail().map(loadedOf)`，欄位同之前逐個合併嘅結果一樣 | 已關 |
+| S-1468 | `entries.ts` 先判斷 `detailed`，`loadPublishedLookup` 同 rows / facts 放埋同一個 `Promise.all`；冇 `detail=1` 時第三項係 `undefined`，走返原本 `summaryOf` 路徑（`.text()` test 照過）                                 | 已關 |
+
+Developer gate（exit code 直接睇）：lint 0、`tsc -b` 0、api typecheck 0、`npm test` 539 檔 / 5736、api workerd 29 檔 / 468 + scripts 40、`e2e:admin` 65 / 0。
