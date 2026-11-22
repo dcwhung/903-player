@@ -124,7 +124,7 @@ npm run coverage   # 覆蓋率（root vitest：player + catalog）
 npm run lint       # ESLint + Prettier
 npm run e2e        # Playwright 端對端測試（假錄音寫入 localStorage + 模擬 audio server）
 npm run build      # 輸出 apps/player/dist/
-npm test -- src/utils   # 只跑部分 test（path 子字串，player 同 catalog 都會 match；要準就寫 apps/player/src/utils）
+npm test -- src/utils   # 只跑部分 test（path 子字串，player 同 admin 都會 match；要準就寫 apps/player/src/utils）
 npm test -- --project @903-player/catalog   # 只跑一個 workspace
 ```
 
