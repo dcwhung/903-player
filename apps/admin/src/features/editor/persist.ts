@@ -1,7 +1,14 @@
-/* 編輯頁儲存：（劇集改 ID 先 rename）→ PUT entry（If-Match / 新增 If-None-Match） */
+/*
+ * 編輯頁儲存：（劇集改 ID 先 rename）→ PUT entry（If-Match / 新增 If-None-Match）。
+ * rename 時 server 會將自動編號嘅短篇 ID（<舊 ID>-NN）改做 <新 ID>-NN；草稿用同一條規則
+ *（@903-player/catalog withRenamedArcIds）跟住改先 PUT，否則 PUT 會寫返舊短篇 ID（AU-013）。
+ * rename 成功但 PUT 失敗 → RenamedSaveError：server 已經喺新 ID，editor 要跟過去。
+ * 淨係改 ID（跟住改咗短篇 ID 嘅草稿同 rename 後嘅已儲存版本一樣）：rename 已經存晒，唔再 PUT（S-1396）
+ */
+import { withRenamedArcIds } from '@903-player/catalog';
 import { putEntry, renameDrama } from '../../api/endpoints';
 import type { EntryKind, LoadedEntry } from '../../api/types';
-import { etagOf, savedEntry, type Draft } from './entryDraft';
+import { changedKeys, etagOf, savedEntry, type Draft } from './entryDraft';
 
 export interface PersistTarget {
     kind: EntryKind;
@@ -15,22 +22,36 @@ export interface Persisted {
     warnings: string[];
 }
 
+/** rename 已經成功、之後嘅 PUT 失敗：entry = server 而家儲存嘅版本（新 ID / ETag），draft = 跟住改咗短篇 ID 嘅草稿 */
+export class RenamedSaveError extends Error {
+    override readonly name = 'RenamedSaveError';
+
+    constructor(
+        readonly entry: LoadedEntry,
+        readonly draft: Draft,
+        cause: unknown,
+    ) {
+        super(`saving ${entry.id} failed after the rename`, { cause });
+    }
+}
+
+/** 劇集改 ID：回 server 而家儲存嘅版本（新 ID / ETag，已儲存 definition 嘅短篇 ID 跟住改） */
 const renamed = async (entry: LoadedEntry, newId: string): Promise<LoadedEntry> => {
     const { data } = await renameDrama(entry.id, newId, entry.etag);
-    return { ...entry, id: data.id, updatedAt: data.updatedAt, etag: etagOf(data.updatedAt) };
+    return {
+        ...entry,
+        id: data.id,
+        definition: withRenamedArcIds(entry.definition, entry.id, data.id),
+        updatedAt: data.updatedAt,
+        etag: etagOf(data.updatedAt),
+    };
 };
 
-export const persist = async (
-    target: PersistTarget,
-    draft: Draft,
-    renameTo?: string,
-): Promise<Persisted> => {
-    let entry = target.entry;
-    if (entry && renameTo && renameTo !== entry.id) entry = await renamed(entry, renameTo);
-    const id = entry?.id ?? renameTo ?? target.id;
-    const { data } = await putEntry(target.kind, id, draft, entry?.etag ?? null);
+const put = async (target: PersistTarget, draft: Draft): Promise<Persisted> => {
+    const { kind, id, entry } = target;
+    const { data } = await putEntry(kind, id, draft, entry?.etag ?? null);
     const base: LoadedEntry = entry ?? {
-        kind: target.kind,
+        kind,
         id,
         ...draft,
         draft: false,
@@ -38,4 +59,26 @@ export const persist = async (
         etag: null,
     };
     return { entry: savedEntry(base, draft, data), warnings: data.warnings.missingEpisodeIds };
+};
+
+const renameThenPut = async (entry: LoadedEntry, draft: Draft, newId: string) => {
+    const moved = await renamed(entry, newId);
+    const next = { ...draft, definition: withRenamedArcIds(draft.definition, entry.id, moved.id) };
+    // 冇其他改動：冇嘢要 PUT（亦冇嘢會失敗）；改得 ID 即係從未發佈，冇會消失嘅集數要警告
+    if (changedKeys(moved, next).length === 0) return { entry: moved, warnings: [] };
+    try {
+        return await put({ kind: entry.kind, id: moved.id, entry: moved }, next);
+    } catch (error) {
+        throw new RenamedSaveError(moved, next, error);
+    }
+};
+
+export const persist = (
+    target: PersistTarget,
+    draft: Draft,
+    renameTo?: string,
+): Promise<Persisted> => {
+    const { entry } = target;
+    if (entry && renameTo && renameTo !== entry.id) return renameThenPut(entry, draft, renameTo);
+    return put({ ...target, id: entry?.id ?? renameTo ?? target.id }, draft);
 };
