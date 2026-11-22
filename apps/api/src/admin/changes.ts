@@ -1,13 +1,15 @@
 /*
  * GET /api/changes：而家 D1（唔包 draft）vs 最新 ok publish → 時間線 + 驗證結果（admin 確認發佈頁一次 call）。
  * 選擇發佈（0.10.0）：appearance（App 外觀三項各自有冇改）、others（唔計新內容 / App 外觀嘅其他改動）；
- * ?selection=<JSON> 就 changes / validation / warnings / unchanged 跟 selection 計（同 POST /api/publish 一樣）
+ * ?selection=<JSON> 就 changes / validation / warnings / unchanged 跟 selection 計（同 POST /api/publish 一樣）；
+ * fingerprint = 照而家 D1（同 selection）會發佈嘅內容，POST /api/publish 帶返佢做版本守衛（AU-021）
  */
 import { hkToday, summarizeChanges, type ChangeDocument } from '@903-player/catalog';
 import { Hono } from 'hono';
 import type { AppEnv } from '../app';
 import { getBanner } from '../banner/store';
 import { getBranding } from '../branding/store';
+import { publishFingerprint } from '../catalog/fingerprint';
 import {
     PublishValidationError,
     sameContent,
@@ -36,6 +38,8 @@ interface Checked {
     warnings: PublishWarning[];
     /** 照呢個 selection 發佈會回 unchanged（除 generatedAt 外同最新一次一樣） */
     unchanged: boolean;
+    /** 會發佈嘅 catalog.json（驗證唔過 = undefined） */
+    json?: string;
 }
 
 /** 驗證結果 + 警告（驗證唔過就冇警告） */
@@ -55,6 +59,7 @@ const validationOf = (
             validation: { ok: true, episodeCount: listedEpisodeIds.length },
             warnings,
             unchanged,
+            json,
         };
     } catch (error) {
         if (!(error instanceof PublishValidationError)) throw error;
@@ -88,6 +93,12 @@ const loadState = async (db: D1Database) => {
     return { rows, latest, assets, banner, branding, todos };
 };
 
+/** 驗證結果 + fingerprint（撳發佈時帶返，AU-021）；驗證唔過發佈唔到，冇 fingerprint */
+const withFingerprint = async ({ json, ...checked }: Checked, base: number | null) => ({
+    ...checked,
+    ...(json === undefined ? {} : { fingerprint: await publishFingerprint(base, json) }),
+});
+
 const changesOf = async (env: AppEnv['Bindings'], query: string | undefined) => {
     const selection = selectionFromQuery(query);
     const { rows, latest, assets, banner, branding, todos } = await loadState(env.DB);
@@ -100,17 +111,13 @@ const changesOf = async (env: AppEnv['Bindings'], query: string | undefined) => 
     const appearance = appearanceChanges({ branding, banner }, latest?.document, origin);
     // 有 selection：只計揀咗嘅部分
     const picked = plan?.appearance ?? { icon: true, text: true, banner: true };
+    const base = latest?.row.id ?? null;
+    const latestJson = latest?.document;
+    const checked = validationOf(rows, { origin, assets, banner, branding }, { plan, latestJson });
     return {
-        base: latest?.row.id ?? null,
+        base,
         changes: summarize(plan),
-        ...validationOf(
-            rows,
-            { origin, assets, banner, branding },
-            {
-                plan,
-                latestJson: latest?.document,
-            },
-        ),
+        ...(await withFingerprint(checked, base)),
         bannerChanged: appearance.banner && picked.banner,
         brandingChanged: (appearance.icon && picked.icon) || (appearance.text && picked.text),
         appearance,

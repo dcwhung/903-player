@@ -156,6 +156,7 @@ export const zhHK = {
         brandingOnly: '本次只更改 App 外觀。',
         stale: '待辦內容已更新，此頁資料已過時。請重新載入並重新選擇發佈項目。',
         reload: '重新載入',
+        changed: '內容已於其他視窗或裝置變更，以下已更新為最新的變更，請檢查後再次發佈。',
         publishedSkipped: '已發佈 #{id}；{count} 項尚未完成，沒有發佈',
         /** 排序改動（#6）：list = list.shows / list.dramas */
         reordered: '{list}排序已更改',

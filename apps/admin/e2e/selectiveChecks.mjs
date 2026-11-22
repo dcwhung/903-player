@@ -1,6 +1,8 @@
 // Admin e2e section：選擇發佈（admin 0.3.0，mockup _mockups_/admin-selective-publish/index.html Q1–Q4）
 // 由 run.mjs 傳入共用 helper（check / newPage / shoot / loggedIn / BASE），回返 check function 清單
 
+import { saveElsewhere } from './mockFingerprint.mjs';
+
 const NEXT = '下一步：確認發佈';
 const LOVE_AFTER = '發佈戀愛後二分一';
 const APP_TEXT = '發佈名稱與簡介';
@@ -184,5 +186,37 @@ export const selectiveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
             await page.close();
         });
 
-    return [selectivePublishCheck, selectiveAppearanceCheck, selectiveStaleCheck];
+    /**
+     * 確認頁版本守衛（AU-021）：停喺確認頁時另一邊儲存咗 → 撳「發佈」冇發佈（412），
+     * 提示內容已變、摘要重讀；再撳先發佈
+     */
+    const publishGuardCheck = (browser) =>
+        check('publish guard: a save elsewhere stops the publish until re-checked', async () => {
+            const state = loggedIn({ selective: true });
+            const page = await newPage(browser, state);
+            await page.goto(BASE);
+            await page.getByRole('button', { name: NEXT }).click();
+            const publish = page.getByRole('button', { name: '發佈', exact: true });
+            await page.getByRole('region', { name: '上線時間' }).waitFor();
+            saveElsewhere(state, 'shows', 'waves');
+            await publish.click();
+            await page
+                .getByRole('alert')
+                .filter({ hasText: '內容已於其他視窗或裝置變更' })
+                .waitFor();
+            if (state.publishedSelections.length > 0 || state.publishes.length > 0)
+                throw new Error('a stale confirmation was published');
+            await shoot(page, 'publish-guard-changed');
+            await publish.click();
+            await page.getByRole('heading', { name: '發佈 / 部署' }).waitFor();
+            if (state.publishes.length !== 1) throw new Error('re-checked publish did not go out');
+            await page.close();
+        });
+
+    return [
+        selectivePublishCheck,
+        selectiveAppearanceCheck,
+        selectiveStaleCheck,
+        publishGuardCheck,
+    ];
 };

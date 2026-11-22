@@ -4,7 +4,8 @@
  * mockup: _mockups_/admin-selective-publish/index.html#b（選擇發佈）+
  * mockup: _mockups_/admin-publish-summary/index.html（B v2 方案 1：四格數字 → 時間線 → 發佈；
  * App 外觀卡寫重新部署說明，未完成項目排時間線最尾「不會在本次發佈」）。
- * 409 → 擋住清單（#s9）；驗證錯誤 / 配色警告（admin-phase4 #f）；422 未知 key → 頁面過時（重新載入）
+ * 409 → 擋住清單（#s9）；驗證錯誤 / 配色警告（admin-phase4 #f）；422 未知 key → 頁面過時（重新載入）；
+ * 412 → 內容喺呢頁之後變咗、冇發佈：重讀摘要 + 提示（AU-021）
  */
 import { useCallback, useEffect, useState } from 'react';
 import type { ChangesResponse, LoadedEntry, PublishSelection, TodoRow } from '../../api/types';
@@ -14,7 +15,7 @@ import { PublishActions } from './PublishActions';
 import { PublishHead } from './PublishHead';
 import { publishedAppearance } from './selectionModel';
 import { skippedRows } from './skipModel';
-import { StaleNotice } from './StaleNotice';
+import { ChangedNotice, StaleNotice } from './StaleNotice';
 import { Stepper } from './Stepper';
 import { Timeline } from './Timeline';
 import { usePublish } from './usePublish';
@@ -76,15 +77,18 @@ function ChangesCard({ data, selection, entries, skipped, loading, onReverted }:
     );
 }
 
-/** 還原咗未發佈改動：admin 資料（待辦、entry、變更）+ 呢頁照選擇計嘅變更都重讀 */
-const useRevertRefresh = () => {
+/**
+ * 還原咗未發佈改動 / 撳發佈時內容已經變咗（412，AU-021）：
+ * admin 資料（待辦、entry、變更）+ 呢頁照選擇計嘅變更都重讀
+ */
+const useResync = () => {
     const { refresh } = useAdminData();
     const [revision, setRevision] = useState(0);
-    const onReverted = useCallback(async () => {
+    const resync = useCallback(async () => {
         await refresh();
         setRevision((r) => r + 1);
     }, [refresh]);
-    return { revision, onReverted };
+    return { revision, resync };
 };
 
 export function PublishPage() {
@@ -92,10 +96,13 @@ export function PublishPage() {
     const { reload } = changes;
     useEffect(() => void reload(), [reload]);
     const selection = usePublishTarget();
-    const { revision, onReverted } = useRevertRefresh();
+    const { revision, resync } = useResync();
     const selected = useSelectedChanges(selection, revision);
-    const { state, run } = usePublish(selection);
     const data = selected.data;
+    const { state, run } = usePublish(selection, {
+        fingerprint: data?.fingerprint,
+        onChanged: resync,
+    });
     const stale = selected.stale || state.status === 'stale';
     const loadError = selected.error && !selected.stale ? selected.error : undefined;
     return (
@@ -105,6 +112,7 @@ export function PublishPage() {
             </div>
             <Stepper current={3} />
             {stale && <StaleNotice />}
+            {state.status === 'changed' && <ChangedNotice />}
             {loadError && (
                 <p className="note bad">{t('app.loadFailed', { error: loadError.message })}</p>
             )}
@@ -117,7 +125,7 @@ export function PublishPage() {
                     entries={entries.data ?? []}
                     skipped={skippedRows(todos.data?.rows ?? [], data)}
                     loading={selected.loading}
-                    onReverted={onReverted}
+                    onReverted={resync}
                 />
             )}
             <PublishActions

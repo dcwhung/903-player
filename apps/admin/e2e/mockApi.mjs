@@ -11,6 +11,7 @@ import {
 import { orderRevertRoute, reorderHistoryRow, reorderItems, reorderState } from './mockReorder.mjs';
 import { revertItems, revertRoute, withPublished } from './mockRevert.mjs';
 import { changesFor, selectionFromUrl, selectiveTodos } from './mockSelection.mjs';
+import { fingerprintOf, isStaleFingerprint } from './mockFingerprint.mjs';
 
 /*
  * 真圖（createState({ realImages: true })）：player catalog 嘅 cover 複製咗去 e2e/fixtures/（只係 e2e 用，唔入 admin bundle）
@@ -586,6 +587,7 @@ const handlers = {
         if (status) return json(route, body, { status });
         return json(route, {
             base: null,
+            fingerprint: fingerprintOf(state, body),
             ...body,
             validation: { ok: true, episodeCount: 102 },
             warnings: state.warnings ? WARNINGS : [],
@@ -608,9 +610,11 @@ const handlers = {
         return route.fulfill({ path: `${FIXTURES}${fixture}`, contentType: 'image/webp' });
     },
     'POST /api/publish': (state, route, request) => {
-        const selection = request.postDataJSON()?.selection;
+        const { selection, fingerprint } = request.postDataJSON() ?? {};
         const { status, body } = selectedChanges(state, selection);
         if (status) return json(route, body, { status });
+        if (isStaleFingerprint(state, body, fingerprint))
+            return json(route, { error: 'stale publish confirmation' }, { status: 412 });
         state.publishedSelections.push(selection ?? null);
         const changed = body.brandingChanged;
         const row = {

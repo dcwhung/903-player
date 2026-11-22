@@ -126,6 +126,11 @@ export type PublishWarning =
 
 export interface ChangesResponse {
     base: number | null;
+    /**
+     * 照而家 D1（同 selection）會發佈嘅內容嘅 fingerprint，POST /api/publish 帶返佢做版本守衛（AU-021）；
+     * 舊 API / 驗證唔過 = 冇
+     */
+    fingerprint?: string;
     changes: ChangeSummary;
     validation: Validation;
     /** api 0.8.0：舊 API 冇 = 冇警告 */

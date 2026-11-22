@@ -1,4 +1,8 @@
-/* 422 未知 selection key：待辦喺其他視窗 / 裝置變咗 → 重新載入（重讀資料 + 返更新頁重新選擇） */
+/*
+ * 確認發佈頁過時：
+ * 422 未知 selection key：待辦喺其他視窗 / 裝置變咗 → 重新載入（重讀資料 + 返更新頁重新選擇）；
+ * 412（ChangedNotice，AU-021）：撳發佈時內容已經同呢頁顯示嘅唔同、冇發佈 → 摘要已經重讀，睇過再撳
+ */
 import { RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminData } from '../../data/AdminData';
@@ -19,5 +23,13 @@ export function StaleNotice() {
                 {t('publish.reload')}
             </button>
         </div>
+    );
+}
+
+export function ChangedNotice() {
+    return (
+        <p className="note warn" role="alert">
+            {t('publish.changed')}
+        </p>
     );
 }
