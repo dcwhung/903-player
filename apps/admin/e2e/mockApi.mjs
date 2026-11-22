@@ -565,8 +565,10 @@ const handlers = {
         json(route, { scannedAt: new Date(E2E_NOW).toISOString(), findings: [], skipped: [] }),
     'GET /api/todos': (state, route) => json(route, todosOf(state)),
     'GET /api/folders/unmapped': (state, route) => json(route, { folders: UNMAPPED_FOLDERS }),
-    'GET /api/entries': (state, route) =>
-        json(route, {
+    // ?detail=1（api 0.14.2，AU-024）：每個 entry 連全文 + etag + publishedVersion，admin 一個 request 讀晒
+    'GET /api/entries': (state, route, request) => {
+        const detailed = new URL(request.url()).searchParams.get('detail') === '1';
+        return json(route, {
             entries: state.entries.map((entry) => ({
                 kind: entry.kind,
                 id: entry.id,
@@ -579,8 +581,17 @@ const handlers = {
                 ...(Array.isArray(entry.definition.arcs)
                     ? { publishedArcs: entry.publishedArcs ?? [] }
                     : {}),
+                ...(detailed
+                    ? {
+                          definition: entry.definition,
+                          images: entry.images,
+                          etag: `"${entry.updatedAt}"`,
+                          publishedVersion: entry.publishedVersion ?? null,
+                      }
+                    : {}),
             })),
-        }),
+        });
+    },
     'GET /api/changes': (state, route, request) => {
         const selection = selectionFromUrl(new URL(request.url()));
         const { status, body } = selectedChanges(state, selection);

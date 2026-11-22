@@ -4,7 +4,6 @@
  * 使用中綠邊、失敗紅邊 + 原因
  * Design Origin: mockup: _mockups_/admin/index.html#s8（.hist-row）
  */
-import { Undo2 } from 'lucide-react';
 import type { ChangeItem } from '@903-player/catalog';
 import type { LoadedEntry, PublishSummary } from '../../api/types';
 import { t } from '../../i18n/t';
@@ -21,12 +20,15 @@ import {
     itemStatusOf,
 } from './historyModel';
 import { DeployCell } from './DeployCell';
+import { RollbackButton } from './RollbackButton';
 
 interface HistoryRowProps {
     row: PublishSummary;
     /** 失敗時播放器仍然用緊嘅版本 */
     servingId: number | undefined;
     entries: readonly LoadedEntry[];
+    /** 有還原 / 重新部署進行中：動作掣停用（AU-025） */
+    busy?: boolean;
     onRollback: (id: number) => void;
     onRedeploy: (id: number) => void;
 }
@@ -46,22 +48,6 @@ function VersionPill({ row }: { row: PublishSummary }) {
             </Pill>
         );
     return null;
-}
-
-/** 版本欄最底：「還原」（使用中 / 失敗嘅冇） */
-function Action({ row, onRollback }: Pick<HistoryRowProps, 'row' | 'onRollback'>) {
-    if (row.current || row.status !== 'ok') return null;
-    return (
-        <button
-            type="button"
-            className="revert-btn"
-            onClick={() => onRollback(row.id)}
-            aria-label={t('history.rollbackTo', { id: row.id })}
-        >
-            <Undo2 aria-hidden="true" />
-            {t('history.rollback')}
-        </button>
-    );
 }
 
 /** 還原 / 排序（#6）冇 entry：冇縮圖 */
@@ -113,7 +99,14 @@ function RowMeta({ row, servingId }: Pick<HistoryRowProps, 'row' | 'servingId'>)
     return <span className="meta">{t('history.stats', counts)}</span>;
 }
 
-export function HistoryRow({ row, servingId, entries, onRollback, onRedeploy }: HistoryRowProps) {
+export function HistoryRow({
+    row,
+    servingId,
+    entries,
+    busy = false,
+    onRollback,
+    onRedeploy,
+}: HistoryRowProps) {
     const failed = row.status !== 'ok';
     const items = row.changes?.items ?? [];
     const bannerChanged = bannerChangedOf(row.changes);
@@ -130,8 +123,8 @@ export function HistoryRow({ row, servingId, entries, onRollback, onRedeploy }: 
                 </span>
                 <span className="meta when">{stampOf(row.createdAt)}</span>
                 <span className="meta who">{row.createdBy.split('@')[0] ?? ''}</span>
-                <Action row={row} onRollback={onRollback} />
-                <DeployCell row={row} onRedeploy={onRedeploy} />
+                <RollbackButton row={row} busy={busy} onRollback={onRollback} />
+                <DeployCell row={row} busy={busy} onRedeploy={onRedeploy} />
             </span>
             <span className="changes" role="cell">
                 {items.map((item, i) => (
