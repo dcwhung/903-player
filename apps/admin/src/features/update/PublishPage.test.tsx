@@ -388,6 +388,65 @@ describe('PublishPage', () => {
             });
         });
 
+        describe('re-reading the summary after a 412 fails (S-1433)', () => {
+            const failReRead = async () => {
+                vi.mocked(publish).mockRejectedValue(
+                    new VersionConflictError(412, 'stale publish confirmation'),
+                );
+                open({ fingerprint: 'fp1' });
+                await screen.findByRole('region', { name: '上線時間' });
+                await waitForLoaded();
+                vi.mocked(getChanges).mockRejectedValue(new Error('network down'));
+                await userEvent.click(screen.getByRole('button', { name: '發佈' }));
+                return screen.findByText(/內容已於其他視窗或裝置變更/);
+            };
+
+            it('should not claim the summary is up to date and keep 發佈 unavailable', async () => {
+                const notice = await failReRead();
+
+                expect(notice).toHaveTextContent(
+                    '內容已於其他視窗或裝置變更，本次沒有發佈。未能載入最新的變更，請重新載入後再檢查。',
+                );
+                expect(notice).not.toHaveTextContent('以下已更新');
+                expect(await screen.findByText('載入失敗：network down')).toBeInTheDocument();
+                expect(screen.getByRole('button', { name: '發佈' })).toBeDisabled();
+            });
+
+            it('should show the fresh summary and allow publishing after a successful 重新載入', async () => {
+                await failReRead();
+                vi.mocked(getChanges).mockResolvedValue({ ...SELECTED, fingerprint: 'fp2' });
+                await userEvent.click(screen.getByRole('button', { name: '重新載入' }));
+
+                expect(
+                    await screen.findByText(/以下已更新為最新的變更，請檢查後再次發佈。/),
+                ).toBeInTheDocument();
+                await waitFor(() =>
+                    expect(screen.getByRole('button', { name: '發佈' })).toBeEnabled(),
+                );
+            });
+
+            it('should still re-read the summary when refreshing the shared data fails', async () => {
+                vi.mocked(publish).mockRejectedValue(
+                    new VersionConflictError(412, 'stale publish confirmation'),
+                );
+                const fake = data();
+                vi.mocked(fake.refresh).mockRejectedValue(new Error('todos down'));
+                vi.mocked(getChanges).mockResolvedValue({ ...SELECTED, fingerprint: 'fp1' });
+                renderAt(
+                    `/publish?${new URLSearchParams({ selection: JSON.stringify(SELECTION) }).toString()}`,
+                    '/publish',
+                    <PublishPage />,
+                    fake,
+                );
+                await screen.findByRole('region', { name: '上線時間' });
+                await waitForLoaded();
+                await userEvent.click(screen.getByRole('button', { name: '發佈' }));
+
+                expect(await screen.findByText(/以下已更新為最新的變更/)).toBeInTheDocument();
+                expect(vi.mocked(getChanges).mock.calls.length).toBe(2);
+            });
+        });
+
         it('should ask to reload when publish answers 422 unknown keys', async () => {
             vi.mocked(publish).mockRejectedValue(
                 new ValidationError(422, 'unknown selection keys'),

@@ -10,6 +10,8 @@ export const zhHK = {
         loading: '載入中…',
         loadFailed: '載入失敗：{error}',
         retry: '重試',
+        crashed: '頁面發生錯誤：{error}',
+        reload: '重新載入',
         rotateTitle: '請轉為橫向或使用電腦',
         rotateBody: '管理介面需要較闊的畫面。',
     },
@@ -157,6 +159,9 @@ export const zhHK = {
         stale: '待辦內容已更新，此頁資料已過時。請重新載入並重新選擇發佈項目。',
         reload: '重新載入',
         changed: '內容已於其他視窗或裝置變更，以下已更新為最新的變更，請檢查後再次發佈。',
+        changedLoading: '內容已於其他視窗或裝置變更，本次沒有發佈。正在載入最新的變更…',
+        changedFailed:
+            '內容已於其他視窗或裝置變更，本次沒有發佈。未能載入最新的變更，請重新載入後再檢查。',
         publishedSkipped: '已發佈 #{id}；{count} 項尚未完成，沒有發佈',
         /** 排序改動（#6）：list = list.shows / list.dramas */
         reordered: '{list}排序已更改',

@@ -15,11 +15,11 @@ import { PublishActions } from './PublishActions';
 import { PublishHead } from './PublishHead';
 import { publishedAppearance } from './selectionModel';
 import { skippedRows } from './skipModel';
-import { ChangedNotice, StaleNotice } from './StaleNotice';
+import { ChangedNotice, StaleNotice, type SummaryState } from './StaleNotice';
 import { Stepper } from './Stepper';
 import { Timeline } from './Timeline';
 import { usePublish } from './usePublish';
-import { usePublishTarget, useSelectedChanges } from './useSelectedChanges';
+import { usePublishTarget, useSelectedChanges, type SelectedChanges } from './useSelectedChanges';
 
 const emptyText = (loading: boolean, bannerChanged: boolean, brandingChanged: boolean) => {
     if (loading) return t('app.loading');
@@ -85,10 +85,20 @@ const useResync = () => {
     const { refresh } = useAdminData();
     const [revision, setRevision] = useState(0);
     const resync = useCallback(async () => {
-        await refresh();
-        setRevision((r) => r + 1);
+        try {
+            await refresh();
+        } finally {
+            // 共用資料讀唔到都要重讀摘要：舊摘要（舊 fingerprint）唔可以留喺度畀人再撳發佈（S-1433）
+            setRevision((r) => r + 1);
+        }
     }, [refresh]);
     return { revision, resync };
+};
+
+/** 412 之後重讀摘要嘅結果（ChangedNotice 講唔講「以下已更新」） */
+const summaryStateOf = ({ loading, error }: SelectedChanges): SummaryState => {
+    if (loading) return 'loading';
+    return error ? 'failed' : 'fresh';
 };
 
 export function PublishPage() {
@@ -112,7 +122,9 @@ export function PublishPage() {
             </div>
             <Stepper current={3} />
             {stale && <StaleNotice />}
-            {state.status === 'changed' && <ChangedNotice />}
+            {state.status === 'changed' && (
+                <ChangedNotice summary={summaryStateOf(selected)} onReload={() => void resync()} />
+            )}
             {loadError && (
                 <p className="note bad">{t('app.loadFailed', { error: loadError.message })}</p>
             )}

@@ -5,7 +5,12 @@
  * 冇帶 fingerprint = 舊行為（舊 admin、還原、其他 caller 唔受影響）
  */
 import { sha256Hex } from '../lib/crypto';
-import { SelectionError } from './selection';
+import { contentWithoutGeneratedAt } from './publish';
+
+/** body.fingerprint 格式唔啱（caller 回 400） */
+export class FingerprintError extends Error {
+    override readonly name = 'FingerprintError';
+}
 
 export class StaleFingerprintError extends Error {
     override readonly name = 'StaleFingerprintError';
@@ -18,18 +23,14 @@ export class StaleFingerprintError extends Error {
 /** 未發佈過（冇 base） */
 const NO_BASE = 0;
 
-/** 除 generatedAt 外嘅內容（每次砌 document 都唔同，唔計；同 publish.ts sameContent 一樣） */
-const contentOf = (json: string): string =>
-    JSON.stringify({ ...(JSON.parse(json) as Record<string, unknown>), generatedAt: null });
-
 /** `<最新 ok publish id；冇 = 0>.<sha256(會發佈嘅 catalog.json，唔計 generatedAt)>` */
 export const publishFingerprint = async (base: number | null, json: string): Promise<string> =>
-    `${base ?? NO_BASE}.${await sha256Hex(contentOf(json))}`;
+    `${base ?? NO_BASE}.${await sha256Hex(contentWithoutGeneratedAt(json))}`;
 
 /** body.fingerprint：冇 = undefined（唔檢查）；有就要係字串 */
 export const parseFingerprint = (value: unknown): string | undefined => {
     if (value === undefined) return undefined;
-    if (typeof value !== 'string') throw new SelectionError('fingerprint must be a string');
+    if (typeof value !== 'string') throw new FingerprintError('fingerprint must be a string');
     return value;
 };
 

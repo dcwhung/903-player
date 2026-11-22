@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Link } from 'react-router-dom';
 import { fakeData, mockApi, renderAt, resource } from '../../../tests/renderApp';
 import type { ChangesResponse } from '../../api/types';
 import { TextCard } from './TextCard';
@@ -104,5 +105,45 @@ describe('TextCard', () => {
             'tabindex',
             '-1',
         );
+    });
+
+    describe('leave guard (S-1435)', () => {
+        const api = () =>
+            mockApi({
+                'GET /api/branding': () => ({ body: { icon: null, text: null, updatedAt: null } }),
+            });
+        const showWithLink = () =>
+            renderAt(
+                '/appearance',
+                '/appearance',
+                <>
+                    <Link to="/shows">節目</Link>
+                    <TextCard />
+                </>,
+                fakeData({ changes: resource(changesRes) }),
+            );
+        const leave = () => userEvent.click(screen.getByRole('link', { name: '節目' }));
+
+        it('should ask before leaving with unsaved text and keep it on 留下', async () => {
+            api();
+            showWithLink();
+            await userEvent.type(await screen.findByLabelText('簡介'), '未儲存');
+            await leave();
+
+            const dialog = await screen.findByRole('dialog', { name: '放棄未儲存的變更？' });
+            await userEvent.click(within(dialog).getByRole('button', { name: '留下' }));
+            expect((screen.getByLabelText('簡介') as HTMLTextAreaElement).value).toContain(
+                '未儲存',
+            );
+        });
+
+        it('should not ask when the text was not changed', async () => {
+            api();
+            showWithLink();
+            await screen.findByLabelText('簡介');
+            await leave();
+
+            expect(await screen.findByText('other page')).toBeInTheDocument();
+        });
     });
 });

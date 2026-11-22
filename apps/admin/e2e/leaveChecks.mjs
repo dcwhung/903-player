@@ -90,5 +90,23 @@ export const leaveChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
             await page.close();
         });
 
-    return [leaveDialogCheck, beforeUnloadCheck];
+    /** App 外觀「名稱與簡介」草稿（S-1435）：未儲存就離開都要問 */
+    const appearanceTextCheck = (browser) =>
+        check('leave guard: unsaved 名稱與簡介 on App 外觀 asks before leaving', async () => {
+            const page = await newPage(browser, loggedIn());
+            await page.goto(`${BASE}/appearance`);
+            const description = page.getByRole('textbox', { name: '簡介' });
+            await description.click();
+            await page.keyboard.type(SUMMARY);
+            await navLink(page, '節目').click();
+            await leaveDialog(page).getByRole('button', { name: '留下' }).click();
+            if (!(await description.inputValue()).includes(SUMMARY))
+                throw new Error('the unsaved text was lost');
+            await navLink(page, '節目').click();
+            await leaveDialog(page).getByRole('button', { name: '離開' }).click();
+            await page.waitForURL(`${BASE}/shows`);
+            await page.close();
+        });
+
+    return [leaveDialogCheck, beforeUnloadCheck, appearanceTextCheck];
 };

@@ -317,3 +317,72 @@ describe('GET /api/changes selection data', () => {
         expect(await flags({ banner: true })).toEqual([false, true, false]);
     });
 });
+
+describe('publish fingerprint with a selection (AU-021, S-1432)', () => {
+    beforeEach(async () => {
+        expect((await publish()).status).toBe(200);
+    });
+
+    const fingerprintOf = async (selection: unknown) =>
+        (
+            await json(
+                await adminGet(
+                    `/api/changes?selection=${encodeURIComponent(JSON.stringify(selection))}`,
+                ),
+            )
+        ).fingerprint as string;
+
+    /** GET /api/changes 兩次同一個 fingerprint，帶住佢發佈 → 200 */
+    const roundTrip = async (selection: unknown) => {
+        const fingerprint = await fingerprintOf(selection);
+        expect(fingerprint).toMatch(/^\d+\.[0-9a-f]{64}$/);
+        expect(await fingerprintOf(selection)).toBe(fingerprint);
+        const response = await publish({ selection, fingerprint });
+        expect(response.status).toBe(200);
+        return json(response);
+    };
+
+    it('should round-trip a selection of content keys, the banner and 名稱與簡介', async () => {
+        await addReadyArc();
+        await putBanner();
+        await putText('903 Player');
+        const selection = {
+            content: [READY_KEY],
+            branding: { icon: false, text: true },
+            banner: true,
+        };
+
+        const body = await roundTrip(selection);
+
+        expect(body.unchanged).toBeUndefined();
+        expect(await arcNames()).toEqual(['Season 1', 'Season 2']);
+        const doc = await catalog();
+        expect((doc.branding as Json).text).toMatchObject({ name: '903 Player' });
+        expect(Object.keys(doc.banner as Json)).toEqual(['standard', 'long']);
+    });
+
+    it('should round-trip a banner-only selection, leaving the rest out', async () => {
+        await addReadyArc();
+        await putBanner();
+        await putText('903 Player');
+
+        await roundTrip({ content: [], branding: { icon: false, text: false }, banner: true });
+
+        expect(await arcNames()).toEqual(['Season 1']);
+        const doc = await catalog();
+        expect(doc.branding).toBeUndefined();
+        expect(Object.keys(doc.banner as Json)).toEqual(['standard', 'long']);
+    });
+
+    it('should give different selections different fingerprints, and refuse a mismatched one', async () => {
+        await addReadyArc();
+        await putBanner();
+        const bannerOnly = { content: [], banner: true };
+        const withArc = { content: [READY_KEY], banner: true };
+        const fingerprint = await fingerprintOf(bannerOnly);
+        expect(await fingerprintOf(withArc)).not.toBe(fingerprint);
+
+        expect((await publish({ selection: withArc, fingerprint })).status).toBe(412);
+        expect(await arcNames()).toEqual(['Season 1']);
+    });
+});

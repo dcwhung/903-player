@@ -64,8 +64,8 @@ export const usePublish = (
             navigate('/history');
         } catch (error) {
             const failure = failureOf(error);
-            // 重讀完先當 changed：期間仲係 publishing，掣照灰
-            if (failure.status === 'changed') await onChanged();
+            // 重讀完先當 changed：期間仲係 publishing，掣照灰；重讀失敗由頁面顯示（S-1433）
+            if (failure.status === 'changed') await onChanged().catch(() => undefined);
             setState(failure);
         }
     };

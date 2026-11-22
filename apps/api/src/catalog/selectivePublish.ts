@@ -9,7 +9,7 @@ import { getBanner } from '../banner/store';
 import { getBranding } from '../branding/store';
 import { HTTP_STATUS } from '../config';
 import { isRecord } from '../content/http';
-import { parseFingerprint, StaleFingerprintError } from './fingerprint';
+import { FingerprintError, parseFingerprint, StaleFingerprintError } from './fingerprint';
 import { documentFromEntries, type DocumentContext } from './publish';
 import { selectedDocument } from './selectDocument';
 import {
@@ -113,13 +113,13 @@ export const preparePublish = async (
 };
 
 /**
- * selection 錯誤 → 400 / 422（未知 key 最多送返頭 20 個）、fingerprint 過時 → 412；
+ * selection / fingerprint 格式錯誤 → 400、未知 key → 422（最多送返頭 20 個）、fingerprint 過時 → 412；
  * 其他錯誤回 undefined（caller 照 throw）
  */
 export const selectionErrorResponse = (c: Context<AppEnv>, error: unknown) => {
     if (error instanceof StaleFingerprintError)
         return c.json({ error: error.message }, HTTP_STATUS.preconditionFailed);
-    if (error instanceof SelectionError)
+    if (error instanceof SelectionError || error instanceof FingerprintError)
         return c.json({ error: error.message }, HTTP_STATUS.badRequest);
     if (error instanceof UnknownSelectionError)
         return c.json(

@@ -26,10 +26,31 @@ export function StaleNotice() {
     );
 }
 
-export function ChangedNotice() {
+/** 412 之後重讀摘要：讀緊 / 讀到（下面係最新）/ 讀唔到（下面唔係最新，唔可以話「已更新」，S-1433） */
+export type SummaryState = 'loading' | 'fresh' | 'failed';
+
+const CHANGED_TEXT = {
+    loading: 'publish.changedLoading',
+    fresh: 'publish.changed',
+    failed: 'publish.changedFailed',
+} as const;
+
+export function ChangedNotice({
+    summary,
+    onReload,
+}: {
+    summary: SummaryState;
+    onReload: () => void;
+}) {
     return (
-        <p className="note warn" role="alert">
-            {t('publish.changed')}
-        </p>
+        <div className="note warn stale-note" role="alert">
+            <span>{t(CHANGED_TEXT[summary])}</span>
+            {summary === 'failed' && (
+                <button type="button" onClick={onReload}>
+                    <RefreshCw aria-hidden="true" />
+                    {t('publish.reload')}
+                </button>
+            )}
+        </div>
     );
 }
