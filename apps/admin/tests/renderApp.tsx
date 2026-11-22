@@ -1,8 +1,11 @@
-/* 測試用：包 AdminData（假資料）+ MemoryRouter + Toast，喺指定路徑 render */
+/*
+ * 測試用：包 AdminData（假資料）+ memory data router + Toast，喺指定路徑 render。
+ * 同 main.tsx 一樣：data router 一條 splat route，入面用 <Routes>（編輯頁嘅 useBlocker 要 data router）
+ */
 import { render } from '@testing-library/react';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import type { ChangesResponse } from '../src/api/types';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { createMemoryRouter, Route, RouterProvider, Routes, useLocation } from 'react-router-dom';
 import { AdminDataContext, type AdminData } from '../src/data/AdminData';
 import { PublishSelectionProvider } from '../src/features/update/PublishSelection';
 import type { Resource } from '../src/data/useResource';
@@ -37,6 +40,22 @@ function OtherPage() {
     );
 }
 
+/**
+ * Memory data router：children（通常係 <Routes>，可以連埋 <Link> / useNavigate 嘅測試掣）掛喺 splat route。
+ * 每次叫都開一個新 router，所以要喺 render() 之前叫（唔好放入會 re-render 嘅 component）
+ */
+export const memoryRouter = (
+    children: ReactNode,
+    initialEntries: string[],
+    initialIndex = initialEntries.length - 1,
+) => {
+    const router = createMemoryRouter([{ path: '*', element: <>{children}</> }], {
+        initialEntries,
+        initialIndex,
+    });
+    return { router, element: <RouterProvider router={router} /> };
+};
+
 export const renderAt = (
     url: string,
     path: string,
@@ -47,12 +66,15 @@ export const renderAt = (
         <AdminDataContext.Provider value={data}>
             <PublishSelectionProvider>
                 <ToastProvider>
-                    <MemoryRouter initialEntries={[url]}>
-                        <Routes>
-                            <Route path={path} element={element} />
-                            <Route path="*" element={<OtherPage />} />
-                        </Routes>
-                    </MemoryRouter>
+                    {
+                        memoryRouter(
+                            <Routes>
+                                <Route path={path} element={element} />
+                                <Route path="*" element={<OtherPage />} />
+                            </Routes>,
+                            [url],
+                        ).element
+                    }
                 </ToastProvider>
             </PublishSelectionProvider>
         </AdminDataContext.Provider>,

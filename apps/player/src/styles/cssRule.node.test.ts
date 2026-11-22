@@ -1,5 +1,93 @@
 // @vitest-environment node
-import { declarationsOutside } from '../../tests/cssRule';
+import { declarationsOutside, motionLeftOnWhenReduced } from '../../tests/cssRule';
+
+const reduce = (rules: string): string => `@media (prefers-reduced-motion: reduce) { ${rules} }`;
+
+describe('motionLeftOnWhenReduced', () => {
+    it('should report nothing when the reduce block switches off every selector', () => {
+        const css = `.a, .b[data-x='1'] { transition: opacity 1s; }
+            ${reduce(".a,\n .b[data-x='1'] { transition: none; }")}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual([]);
+    });
+
+    it('should report a more specific selector when the reduce block does not repeat it', () => {
+        const css = `.a { transition: opacity 1s; }
+            .a[data-x='1'] { transition: transform 1s; }
+            ${reduce('.a { transition: none; }')}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual([".a[data-x='1'] { transition }"]);
+    });
+
+    it('should tell transition and animation apart when only one is switched off', () => {
+        const css = `.a { animation: spin 1s; } ${reduce('.a { transition: none; }')}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual(['.a { animation }']);
+    });
+
+    it('should skip motion when it only exists without a reduced motion preference', () => {
+        const css = `@media (prefers-reduced-motion: no-preference) { .a { animation: spin 1s; } }
+            .b { transition: none; }`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual([]);
+    });
+
+    it('should count motion when it sits inside another media query', () => {
+        const css = `@media (max-width: 339px) { .a { transition: opacity 1s; } }`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual(['.a { transition }']);
+    });
+
+    it('should report the motion when the reduce block is written before the motion rule', () => {
+        // S-1447：specificity 一樣，後寫先贏；reduce block 寫喺前面熄唔到
+        const css = `${reduce('.a { transition: none; }')} .a { transition: opacity 1s; }`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual(['.a { transition }']);
+    });
+
+    it('should report a longhand when nothing switches it off', () => {
+        // S-1448
+        const css = `.a { transition-duration: 1s; } .b { animation-name: spin; }
+            ${reduce('.a { animation: none; }')}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual([
+            '.a { transition-duration }',
+            '.b { animation-name }',
+        ]);
+    });
+
+    it('should accept a shorthand or longhand that switches the same kind of motion off', () => {
+        const css = `.a { transition-property: opacity; transition-duration: 1s; }
+            .b { animation-duration: 1s; }
+            .c { transition: opacity 1s; }
+            .d { animation-name: spin; }
+            ${reduce(`.a { transition: none 0s; } .b { animation: none; }
+                .c { transition-duration: 0s; } .d { animation-name: none; }`)}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual([]);
+    });
+
+    it('should report a list that only starts with none, and a keyframe named none-*', () => {
+        // S-1450
+        const css = `.a { animation: spin 1s; } .b { animation: none-fade 1s; }
+            ${reduce('.a { animation: none, spin 1s; }')}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual(['.a { animation }', '.b { animation }']);
+    });
+    it('should report !important motion that the reduce block switches off without !important', () => {
+        // S-1451
+        const css = `.a { transition: opacity 1s !important; } .b { transition: opacity 1s; }
+            ${reduce('.a { transition: none; } .b { transition: none !important; }')}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual(['.a { transition }']);
+    });
+    it('should not count longhands that cannot start motion on their own', () => {
+        const css = `.a { animation-play-state: running; animation-timing-function: linear;
+            transition-delay: 1s; transition-duration: 0s; }`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual([]);
+    });
+});
 
 const CSS = `
 :root { --a: 1px; }

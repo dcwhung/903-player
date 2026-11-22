@@ -10,6 +10,14 @@ export default defineConfig({
             'packages/catalog',
             'apps/api/vitest.config.ts',
             'apps/api/vitest.scripts.config.ts',
+            // repo root scripts/（qa/ledger-merge.mjs）：喺 Node spawn 個 script 對臨時 git repo 跑
+            {
+                test: {
+                    name: '@903-player/repo-scripts',
+                    environment: 'node',
+                    include: ['scripts/**/*.test.mjs'],
+                },
+            },
         ],
         // root `npm run coverage`（S-761）：只揀 player + catalog project（root package.json script 用 --project 揀）。
         // projects 模式下 coverage 只認 root 設定；有 --project 時 include / exclude 係相對「各 project root」match

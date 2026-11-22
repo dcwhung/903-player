@@ -36,6 +36,20 @@ import {
     type PublishRow,
 } from './store';
 
+/**
+ * 另一個 publish / 還原喺中間落地咗（AU-018）：409，今次冇發佈（publishes 冇多行、R2 冇被蓋）。
+ * reason 係 API 合約（admin 靠佢顯示訊息）
+ */
+export class PublishConflictError extends Error {
+    static readonly reason = 'publishConflict';
+
+    override readonly name = 'PublishConflictError';
+
+    constructor() {
+        super('another publish finished or is in progress; reload and try again');
+    }
+}
+
 /** 驗證失敗（definition / 圖）：422，乜都唔寫 */
 export class PublishValidationError extends Error {
     override readonly name = 'PublishValidationError';
@@ -209,12 +223,16 @@ export const missingEpisodeIds = (
     return previous.filter((id) => !current.has(id));
 };
 
-/** 除 generatedAt 外完全一樣（document 都係由同一個 builder JSON.stringify，key 次序穩定） */
-export const sameContent = (previous: string, next: string): boolean => {
-    const strip = (json: string) =>
-        JSON.stringify({ ...(JSON.parse(json) as Record<string, unknown>), generatedAt: null });
-    return strip(previous) === strip(next);
-};
+/**
+ * catalog.json 除 generatedAt 外嘅內容（每次砌 document 都唔同，比較 / fingerprint 都唔計）；
+ * document 都係由同一個 builder JSON.stringify，key 次序穩定
+ */
+export const contentWithoutGeneratedAt = (json: string): string =>
+    JSON.stringify({ ...(JSON.parse(json) as Record<string, unknown>), generatedAt: null });
+
+/** 除 generatedAt 外完全一樣 */
+export const sameContent = (previous: string, next: string): boolean =>
+    contentWithoutGeneratedAt(previous) === contentWithoutGeneratedAt(next);
 
 /** 部署 secret 選填（App 外觀：改咗 branding 先觸發重新部署 player） */
 export type PublishEnv = DeployEnv & { CATALOG: R2Bucket; WORKER_ORIGIN: string };
@@ -237,32 +255,51 @@ const discardPublish = async (db: D1Database, id: number, reason: string): Promi
 const messageOf = (error: unknown): string =>
     error instanceof Error ? error.message : String(error);
 
-/** 寫 R2 catalog.json；失敗就收拾返啱啱記嗰行再 throw */
+/**
+ * R2 條件寫入（AU-018）：commit 開頭讀到嘅 catalog.json（etag）要仲喺度先寫；當時未有 object 就要而家都未有。
+ * 讀 etag 一定喺 insert publishes 之前，所以遲 insert（id 較大）嘅 publish 唔會被早 insert 嗰個之後蓋過
+ */
+const unchangedSince = (live: R2Object | null): R2Conditional | Headers =>
+    live ? { etagMatches: live.etag } : new Headers({ 'If-None-Match': '*' });
+
+/**
+ * 寫 R2 catalog.json；失敗（throw，或者條件唔啱 = 期間有另一個 publish 寫咗）就收拾返啱啱記嗰行再 throw
+ */
 const putCatalogJson = async (
     env: PublishEnv,
     publishId: number,
-    { json, hash }: { json: string; hash: string },
+    { json, hash, live }: { json: string; hash: string; live: R2Object | null },
 ): Promise<void> => {
     try {
-        await env.CATALOG.put(CATALOG_JSON_KEY, json, {
+        const written = await env.CATALOG.put(CATALOG_JSON_KEY, json, {
             httpMetadata: { contentType: 'application/json; charset=utf-8' },
             customMetadata: { hash },
+            onlyIf: unchangedSince(live),
         });
+        // 條件唔啱：put 回 null、冇寫（R2 binding 合約）
+        if (written === null) throw new PublishConflictError();
     } catch (error) {
         await discardPublish(env.DB, publishId, messageOf(error));
         throw error;
     }
 };
 
-/** 先記 publishes 後寫 R2：R2 寫失敗就收拾返嗰行，ID 守衛唔會漏咗今次嘅 ID（S-767） */
+interface WriteOptions {
+    createdBy: string;
+    rollbackOf: number | null;
+    locked: string[];
+    base: number | null;
+    live: R2Object | null;
+}
+
+/**
+ * 先記 publishes 後寫 R2：R2 寫失敗就收拾返嗰行，ID 守衛唔會漏咗今次嘅 ID（S-767）。
+ * insert 帶條件（最新 ok publish 仲係 base），輸咗 → PublishConflictError，乜都冇寫（AU-018）
+ */
 const writePublish = async (
     env: PublishEnv,
     { doc, json, listedEpisodeIds }: ValidatedDocument,
-    {
-        createdBy,
-        rollbackOf,
-        locked,
-    }: { createdBy: string; rollbackOf: number | null; locked: string[] },
+    { createdBy, rollbackOf, locked, base, live }: WriteOptions,
 ): Promise<PublishRow> => {
     const hash = await sha256Hex(json);
     const publish = await insertPublish(env.DB, {
@@ -275,20 +312,26 @@ const writePublish = async (
         dramaCount: doc.dramas.length,
         episodeCount: listedEpisodeIds.length,
         rollbackOf,
+        base,
     });
-    await putCatalogJson(env, publish.id, { json, hash });
+    if (!publish) throw new PublishConflictError();
+    await putCatalogJson(env, publish.id, { json, hash, live });
     return publish;
 };
 
+/** R2 而家嗰份係咪就係 latest（比 customMetadata.hash）：R2 寫失敗 / 中途死咗嘅 publish 唔算已上線 */
+const isLive = (latest: LatestPublish, live: R2Object | null): boolean =>
+    live?.customMetadata?.hash === latest.row.hash;
+
 const guard = (
-    latest: LatestPublish | null,
+    { latest, live }: { latest: LatestPublish | null; live: R2Object | null },
     { json, episodeIds }: ValidatedDocument,
     force: boolean,
 ): PublishOutcome | undefined => {
     if (force || !latest) return undefined;
     const missing = missingEpisodeIds(latest.episodeIds, episodeIds);
     if (missing.length > 0) return { kind: 'rejected', missing };
-    return sameContent(latest.document, json)
+    return sameContent(latest.document, json) && isLive(latest, live)
         ? { kind: 'unchanged', publish: latest.row }
         : undefined;
 };
@@ -305,24 +348,40 @@ const purgeAfterWrite = async (origin: string, publishId: number): Promise<void>
     }
 };
 
+export interface CommitOptions {
+    createdBy: string;
+    force: boolean;
+    rollbackOf: number | null;
+    /** validated 係照邊次 publish 砌嘅（最新 ok publish id；null = 未發佈過）：caller 讀到乜就傳乜（S-1430） */
+    base: number | null;
+}
+
 /**
  * 驗過嘅 document 寫 R2 + 記 publishes。冇 force 時：ID 守衛唔過就乜都唔寫；
- * 內容同最新一次一樣就回 unchanged（唔開新行、唔寫 R2）。branding 有改就觸發重新部署（唔會 throw）
+ * 內容同最新一次一樣、而 R2 真係嗰份，就回 unchanged（唔開新行、唔寫 R2）。branding 有改就觸發重新部署（唔會 throw）。
+ * 序列化（AU-018，force 都照守）：最新 ok publish 唔係 base、或者期間有另一個 publish 寫咗 → PublishConflictError
  */
 export const commitPublish = async (
     env: PublishEnv,
     validated: ValidatedDocument,
-    {
-        createdBy,
-        force,
-        rollbackOf,
-    }: { createdBy: string; force: boolean; rollbackOf: number | null },
+    { createdBy, force, rollbackOf, base }: CommitOptions,
 ): Promise<PublishOutcome> => {
-    const latest = await latestPublish(env.DB);
-    const skipped = guard(latest, validated, force);
+    // R2 head 一定要喺 insert 之前讀（見 unchangedSince）
+    const [latest, live] = await Promise.all([
+        latestPublish(env.DB),
+        env.CATALOG.head(CATALOG_JSON_KEY),
+    ]);
+    if ((latest?.row.id ?? null) !== base) throw new PublishConflictError();
+    const skipped = guard({ latest, live }, validated, force);
     if (skipped) return skipped;
     const locked = lockedEpisodeIds(latest, validated);
-    const publish = await writePublish(env, validated, { createdBy, rollbackOf, locked });
+    const publish = await writePublish(env, validated, {
+        createdBy,
+        rollbackOf,
+        locked,
+        base,
+        live,
+    });
     await purgeAfterWrite(env.WORKER_ORIGIN, publish.id);
     const deployed = await deployAfterPublish(env, publish, {
         before: latest?.document,

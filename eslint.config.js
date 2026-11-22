@@ -30,6 +30,32 @@ export default tseslint.config(
         },
     },
     {
+        // .mjs（e2e runner、build / import / QA / CI script）：淨係 js recommended，冇 type check。
+        // 全部喺 Node 跑；e2e 同 generateIcons 會將 callback 交畀 Playwright page.evaluate 喺瀏覽器執行，下一個 block 幫佢哋加埋 browser globals
+        files: ['**/*.mjs'],
+        extends: [js.configs.recommended],
+        languageOptions: {
+            ecmaVersion: 2024,
+            sourceType: 'module',
+            globals: globals.node,
+        },
+        rules: {
+            // 同 .ts 一樣：底線開頭係刻意唔用
+            'no-unused-vars': [
+                'error',
+                {
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_',
+                    caughtErrorsIgnorePattern: '^_',
+                },
+            ],
+        },
+    },
+    {
+        files: ['apps/*/e2e/**/*.mjs', 'apps/player/scripts/generateIcons.mjs'],
+        languageOptions: { globals: { ...globals.node, ...globals.browser } },
+    },
+    {
         // .ts（含 hook / service）：函數 ≤ 30 行，冇檔案上限
         files: [
             'apps/player/src/**/*.ts',

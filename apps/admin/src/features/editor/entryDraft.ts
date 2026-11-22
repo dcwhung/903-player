@@ -52,6 +52,22 @@ export const problemOf = (error: unknown, now: Date = new Date()): Problem => {
 };
 
 /**
+ * 三方合併（一層 key）：本機改過嘅 key（同舊已儲存版本唔同，包括刪咗）保留本機值，其餘用新版本
+ */
+const mergeRecords = <V>(
+    saved: Record<string, V>,
+    local: Record<string, V>,
+    next: Record<string, V>,
+): Record<string, V> => {
+    const keys = new Set([...Object.keys(saved), ...Object.keys(local)]);
+    const edited = [...keys].filter((key) => !same(saved[key], local[key]));
+    const kept = Object.fromEntries(edited.filter((key) => key in local).map((k) => [k, local[k]]));
+    const merged = { ...next, ...kept } as Record<string, V>;
+    for (const key of edited) if (!(key in local)) delete merged[key];
+    return merged;
+};
+
+/**
  * 重新掃描結果（server 用已儲存 definition 做 existing）+ 本機未儲存嘅改動：
  * 本機改過嘅欄位保留本機值，其餘用掃描結果
  */
@@ -59,7 +75,13 @@ export const mergeRescan = (
     saved: RawDefinition,
     local: RawDefinition,
     scanned: RawDefinition,
-): RawDefinition => {
-    const edited = Object.keys(local).filter((key) => !same(saved[key], local[key]));
-    return { ...scanned, ...Object.fromEntries(edited.map((key) => [key, local[key]])) };
-};
+): RawDefinition => mergeRecords(saved, local, scanned);
+
+/**
+ * 已儲存版本由 saved 變咗 next（例如 patchSaved 撞 412 重讀，入面有另一邊嘅改動，AU-020）：
+ * 草稿跟住搬去 next 上面 —— 用戶冇掂過嘅欄位 / 圖片用 next 嘅值，掂過嘅保留
+ */
+export const rebaseDraft = (saved: Draft, draft: Draft, next: Draft): Draft => ({
+    definition: mergeRecords(saved.definition, draft.definition, next.definition),
+    images: mergeRecords(saved.images, draft.images, next.images),
+});

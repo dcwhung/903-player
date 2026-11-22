@@ -2,6 +2,56 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.14.1 — 2026-11-22
+
+Publish 序列化（2026-11-22 codebase audit AU-018、review S-1430）。冇 D1 migration；冇獨立嘅鎖，所以冇「鎖放唔返」嘅情況。
+
+### Fixed
+
+- 兩個重疊嘅 publish（或者 publish 撞還原）只有一個會落地，R2 嘅 `catalog.json` 同 D1「最新 ok publish」唔會再唔夾：
+    - `commitPublish` 要傳 `base`（砌 document 時讀到嘅最新 ok publish id）；最新 ok publish 已經唔係 `base` 就唔寫
+    - `publishes` 嘅 insert 改成條件 insert（同一句 SQL 對返最新 ok publish 仲係 `base`），輸咗嗰個乜都冇寫
+    - R2 寫入帶條件（commit 開頭讀到嘅 etag 要未變；當時未有 object 就要而家都未有），條件唔啱就刪返啱啱記嗰行
+- 輸咗嗰個 request 回 `409 { error: 'another publish finished or is in progress; reload and try again', reason: 'publishConflict' }`（冇 `missing`，同 ID 守衛嘅 409 分得開）；`POST /api/publish`（`?force=1` 都一樣）同 `POST /api/publishes/:id/rollback` 都係
+- 還原輸咗（409）時 D1 跟線上：贏咗嗰次 publish 冇帶上線嘅 entry 寫返舊 definition；已經帶埋還原嘅上架狀態上線嘅 entry 保持（唔會出現線上上架、D1 下架）。即係還原冇記錄成 `rollback_of` 行，但佢嘅上架狀態可能已經由贏咗嗰次 publish 發佈
+    - 判斷「已經帶上線」只比較還原會改嘅欄位（entry 同兩邊都有嘅短篇嘅 `enabled`），唔比較成個 definition：贏咗嗰次係選擇發佈、剔走咗同一套劇嘅未完成短篇時，都唔會誤判做未上線而寫返舊值（W-871）
+- `unchanged` 要 R2 `catalog.json` 嘅 `customMetadata.hash` 等於最新 ok publish 嘅 hash 先成立：publish 記咗行但 R2 冇寫到（Worker 中途死咗）之後，同一份內容再發佈會真係寫 R2，唔再回 `unchanged`
+
+## 0.14.0 — 2026-11-22
+
+確認發佈版本守衛（2026-11-22 codebase audit AU-021）。舊 client 照用得：`fingerprint` 可以唔傳。
+
+### Added
+
+- `GET /api/changes` 回 `fingerprint`（`<最新 ok publish id 或 0>.<將會發佈嘅 catalog.json 嘅 sha256，唔計 generatedAt>`）；驗證唔過時冇呢個欄位
+- `POST /api/publish` 可以帶 `fingerprint`：server 用準備寫入嗰份 document 重新計，對唔上回 412 `stale publish confirmation`，唔寫 `publishes`、唔寫 R2、唔 purge、唔觸發部署；唔係字串回 400；`?force=1` 遇到過時 fingerprint 照回 412。冇帶就同以前一樣
+
+### Changed
+
+- 「內容唔計 `generatedAt`」嘅比較抽成 `contentWithoutGeneratedAt`，`sameContent` 同 fingerprint 共用
+
+## 0.13.2 — 2026-11-22
+
+Import catalog 預設唔再蓋過 D1（2026-11-22 codebase audit AU-017）。Worker 行為冇變，只改 `scripts/importLibrary.mjs`。
+
+### Changed
+
+- `npm run import`：預設只加 D1 未有嘅 entry（`ON CONFLICT DO NOTHING`），已有嘅行（admin 改過嘅 definition / images / `updated_at`）完全唔郁；只上載同記錄要加嗰啲 entry 引用嘅圖，冇嘢要加就唔寫任何嘢
+- 新 flag `--overwrite`：還原返之前嘅 upsert（用 repo library 取代已有 entry，`schedules` 唔郁），災難復原先用
+- Dry run 同真跑都會印行數：預設 `entries: X to insert, Y existing kept (Z differ from the repo library)`；`--overwrite` 印 `entries: X to insert, Y to overwrite, Z unchanged` 同一行 `WARNING:`
+
+### Fixed
+
+- 讀 D1 嘅回應形狀唔啱（唔係 JSON、空 array、`success: false`、`results` 唔係 array）會喺任何上載 / 寫入之前 exit 1，唔再當成 D1 冇行（W-858）
+
+## 0.13.1 — 2026-11-22
+
+改劇集 ID 嘅短篇改名規則搬去 `@903-player/catalog`（2026-11-22 codebase audit AU-013）；API 行為冇變。
+
+### Changed
+
+- `POST /api/entries/dramas/:id/rename`：`<舊 ID>-NN` → `<新 ID>-NN` 規則改用 catalog 嘅 `withRenamedArcIds`（admin 共用同一份）；SQL `GLOB` 嘅位數跟 `PLACEHOLDER_ARC_WIDTH`，唔再寫死兩位
+
 ## 0.13.0 — 2026-11-16
 
 App 圖示重新裁切（用戶 2026-11-16 決定：存原圖 + 裁切框，重新裁切唔會越裁越差）。舊 client 照用得：`source` 可以唔傳，冇原圖嘅圖示照舊有效。

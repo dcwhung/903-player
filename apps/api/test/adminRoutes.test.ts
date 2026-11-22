@@ -1,7 +1,9 @@
 /* Phase 3a admin API：待辦、改 ID、資料夾配對、排序、變更摘要、上下架記錄 */
+import { PLACEHOLDER_ARC_WIDTH, renamedArcId, withRenamedArcIds } from '@903-player/catalog';
 import { env } from 'cloudflare:test';
 import { ORIGIN, adminGet, adminPost, adminRequest, call, loginCookie } from './helpers';
 import { SHOW, TILE, drama, markDraft, putEntry, seed } from './fixtures';
+import { arcIdGlob } from '../src/admin/rename';
 
 type Json = Record<string, unknown>;
 
@@ -278,6 +280,58 @@ describe('POST /api/entries/dramas/:id/rename', () => {
             (await env.DB.prepare(`SELECT drama_id, arc_id FROM ${table}`).all()).results;
         expect(await pairs('schedules')).toEqual([{ drama_id: 'lancy', arc_id: 'lancy-01' }]);
         expect(await pairs('scan_findings')).toEqual([{ drama_id: 'lancy', arc_id: 'lancy-01' }]);
+    });
+
+    it('should accept a PUT of the definition with the renamed arc ids after a rename with a scheduled arc (AU-013)', async () => {
+        const arcs = [
+            { id: 'drama-01-01', name: 'Season 1', episodes: 3 },
+            { id: 'drama-01-extra', name: 'Extra', episodes: 1 },
+        ];
+        const definition = { ...scannable(3), enabled: false, arcs };
+        await putEntry('dramas', 'drama-01', definition);
+        await env.DB.prepare(
+            "INSERT INTO schedules (drama_id, arc_id, rule, updated_at) VALUES ('drama-01', 'drama-01-01', '{}', 'x')",
+        ).run();
+        const renamed = await rename('drama-01', 'lancy');
+        expect(renamed.status).toBe(200);
+        const put = (body: Json) =>
+            adminRequest('PUT', '/api/entries/dramas/lancy', {
+                body: { definition: body, images: {} },
+                headers: { 'if-match': renamed.headers.get('etag') ?? '' },
+            });
+        // admin 草稿仲係舊短篇 ID：server 當 lancy-01 被刪 → 409（改名前嘅 bug）
+        const stale = await put(definition);
+        expect(stale.status).toBe(409);
+        expect(await json(stale)).toMatchObject({ arcId: 'lancy-01', reason: 'arcScheduled' });
+        // 用同一條規則（catalog withRenamedArcIds）改咗先 PUT → 200，排程照跟
+        expect((await put(withRenamedArcIds(definition, 'drama-01', 'lancy'))).status).toBe(200);
+        expect(((await definitionOf('dramas', 'lancy'))?.arcs as Json[]).map((a) => a.id)).toEqual([
+            'lancy-01',
+            'drama-01-extra',
+        ]);
+        expect(
+            (await env.DB.prepare('SELECT drama_id, arc_id FROM schedules').all()).results,
+        ).toEqual([{ drama_id: 'lancy', arc_id: 'lancy-01' }]);
+    });
+
+    it('should match auto-numbered arc ids in SQL with the same width as the catalog rule (S-1393)', async () => {
+        expect(arcIdGlob('drama-01')).toBe(`drama-01-${'[0-9]'.repeat(PLACEHOLDER_ARC_WIDTH)}`);
+        const digits = (width: number) => '7'.repeat(width);
+        const candidates = [-1, 0, 1].map(
+            (delta) => `drama-01-${digits(PLACEHOLDER_ARC_WIDTH + delta)}`,
+        );
+        const matched = await Promise.all(
+            candidates.map(async (arcId) => {
+                const row = await env.DB.prepare('SELECT ? GLOB ? AS hit')
+                    .bind(arcId, arcIdGlob('drama-01'))
+                    .first<{ hit: number }>();
+                return row?.hit === 1;
+            }),
+        );
+        expect(matched).toEqual(
+            candidates.map((arcId) => renamedArcId(arcId, 'drama-01', 'lancy') !== arcId),
+        );
+        expect(matched).toEqual([false, true, false]);
     });
 
     const collidingArcs = [

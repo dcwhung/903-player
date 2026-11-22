@@ -38,6 +38,7 @@ function R2Fields({ state }: { state: DramaEditorState }) {
                 dramaId={state.id}
                 folder={folder}
                 etag={editor.entry?.etag ?? null}
+                blocked={editor.dirtyKeys.length > 0}
                 onPaired={async () => {
                     await editor.reload();
                     await state.origin.afterSave();

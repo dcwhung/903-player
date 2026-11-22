@@ -6,7 +6,9 @@
  * 只改 `enabled`（節目、劇、短篇三層）；內容欄位（名、簡介、圖、集數、排程日期）保持而家嘅：
  * 還原集數會令鎖咗嘅 ID 消失，排程日期由 schedules 表計，淨改 definition 會唔夾。draft 唔郁。
  * 驗證 + ID 守衛喺寫 D1 之前先試；D1 一個 batch（樂觀鎖 + bump updated_at）；
- * 發佈 throw / 被拒就用另一個 batch 寫返舊 definition
+ * 發佈 throw / 被拒就用另一個 batch 寫返舊 definition；輸咗畀另一個 publish（409）時，
+ * 贏咗嗰次已經帶上線嘅上架狀態保持（W-870；只比較 enabled，選擇發佈剔走短篇都唔影響，W-871），
+ * D1 一定跟線上
  */
 import { getBanner } from '../banner/store';
 import { getBranding } from '../branding/store';
@@ -15,6 +17,7 @@ import { isRecord, type Json } from '../content/http';
 import {
     commitPublish,
     documentFromEntries,
+    PublishConflictError,
     missingEpisodeIds,
     validateDocument,
     type PublishEnv,
@@ -163,6 +166,59 @@ const apply = async (db: D1Database, changes: readonly Change[]): Promise<boolea
     throw new RollbackConflictError('entries changed during rollback, try again');
 };
 
+/** 還原會改嘅欄位：entry 同每個短篇（用 id 對）嘅 enabled（同 restoredDefinition 嘅範圍一樣） */
+const enabledOf = (definition: Json) => ({
+    enabled: definition.enabled,
+    arcs: new Map(
+        arcsOf(definition)
+            .filter(isRecord)
+            .map((arc) => [arc.id, arc.enabled]),
+    ),
+});
+
+/**
+ * 線上已經係我哋寫嘅上架狀態（W-871）：只比較 enabled，唔比較成個 definition ——
+ * 選擇發佈會剔走未完成短篇，線上冇嘅短篇同還原無關，只睇兩邊都有嘅
+ */
+const shippedOurs = (live: Json | undefined, ours: Json): boolean => {
+    if (!live) return false;
+    const [shipped, wrote] = [enabledOf(live), enabledOf(ours)];
+    return (
+        shipped.enabled === wrote.enabled &&
+        [...shipped.arcs].every(([id, on]) => !wrote.arcs.has(id) || wrote.arcs.get(id) === on)
+    );
+};
+
+/**
+ * 還原輸咗畀另一個 publish（W-870）：贏咗嗰次由 D1 砌 document，可能已經帶埋我哋寫入嘅上架狀態上線。
+ * 回每個 change 係咪仲要寫返舊值：線上嘅上架狀態已經係我哋寫嗰個 → false（保持，D1 = 線上）
+ */
+const notShipped = async (db: D1Database, changes: readonly Change[]): Promise<boolean[]> => {
+    const winner = await latestPublish(db);
+    const live = winner ? snapshotDefinitions(winner.document) : new Map<string, Json>();
+    return changes.map(
+        ({ entry, definition }) =>
+            !shippedOurs(live.get(keyOf(entry.kind, entry.id)), JSON.parse(definition) as Json),
+    );
+};
+
+/** 發佈 throw 之後收拾 D1；讀唔到贏咗嗰次就當全部未上線（全部寫返舊值，同以前一樣） */
+const revertAfterFailure = async (
+    db: D1Database,
+    error: unknown,
+    { changes, applied }: { changes: readonly Change[]; applied: readonly boolean[] },
+): Promise<void> => {
+    const pending =
+        error instanceof PublishConflictError
+            ? await notShipped(db, changes).catch(() => changes.map(() => true))
+            : changes.map(() => true);
+    await revert(
+        db,
+        changes,
+        applied.map((ok, i) => ok && pending[i] === true),
+    );
+};
+
 /** 改完之後嘅 document（驗證）+ ID 守衛：寫 D1 之前先試，唔過就乜都唔寫 */
 const preflight = async (env: RollbackEnv, rows: ReturnType<typeof rowsAfter>, force: boolean) => {
     const validated = validateDocument(
@@ -177,12 +233,14 @@ const preflight = async (env: RollbackEnv, rows: ReturnType<typeof rowsAfter>, f
     );
     const latest = await latestPublish(env.DB);
     const missing = latest ? missingEpisodeIds(latest.episodeIds, validated.episodeIds) : [];
-    return { validated, missing: force ? [] : missing };
+    return { validated, missing: force ? [] : missing, base: latest?.row.id ?? null };
 };
 
 /**
  * 還原 #id：null = 冇呢次 publish。#id 唔係 ok throw RollbackNotRestorableError（409）；
  * 驗證唔過 throw PublishValidationError（422）；ID 守衛唔過回 rejected（409）；全部都喺寫 D1 之前。
+ * 期間有另一個 publish 落地 → commitPublish throw PublishConflictError（409，AU-018）：
+ * 贏咗嗰次冇帶上線嘅 entry 寫返舊值，已經帶上線嘅保持（W-870）。
  * R2 寫咗之後 purge cache 失敗唔會 throw（commitPublish 只 log，S-814），所以 revert 只會喺
  * R2 未寫 / 被拒時發生，D1 同已上線 catalog 唔會唔夾
  */
@@ -197,15 +255,16 @@ export const rollbackToPublish = async (
         throw new RollbackNotRestorableError(`publish ${id} is not ok (${snapshot.status})`);
     const entries = await listStoredEntries(env.DB);
     const changes = planChanges(entries, snapshotDefinitions(snapshot.document));
-    const { validated, missing } = await preflight(env, rowsAfter(entries, changes), force);
+    const { validated, missing, base } = await preflight(env, rowsAfter(entries, changes), force);
     if (missing.length > 0) return { kind: 'rejected', missing };
     const applied = await apply(env.DB, changes);
     try {
-        const outcome = await commitPublish(env, validated, { createdBy, force, rollbackOf: id });
+        const options = { createdBy, force, rollbackOf: id, base };
+        const outcome = await commitPublish(env, validated, options);
         if (outcome.kind === 'rejected') await revert(env.DB, changes, applied);
         return outcome;
     } catch (error) {
-        await revert(env.DB, changes, applied);
+        await revertAfterFailure(env.DB, error, { changes, applied });
         throw error;
     }
 };

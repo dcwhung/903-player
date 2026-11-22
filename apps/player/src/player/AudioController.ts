@@ -54,6 +54,11 @@ export class AudioController {
     private pendingStart = 0;
     private lastSavedAt = 0;
     private watched = false;
+    /**
+     * 而家呢集載入之後有冇嘢值得存：真係播過（播緊而位置有行）或者用戶 seek 過。
+     * 淨係載入（preload = metadata 自己嚟）就離開唔寫進度，亦唔推後舊記錄嘅 updatedAt（AU-026）
+     */
+    private hasProgressToSave = false;
     /** 聽過嘅錄音由頭重播：計夠時間就清走「已收聽」 */
     private readonly replay = new ReplayTracker();
     /** 開始播 / 緩衝完 / seek 嗰下嘅位置：位置由呢度行過 AUDIBLE_ADVANCE_SECONDS 先當真正出聲 */
@@ -289,6 +294,7 @@ export class AudioController {
         // metadata 未到時記低目標，等 loadedmetadata 先套用（否則會由 0 起計）
         this.pendingStart = this.hasMetadata() ? 0 : target;
         this.audio.currentTime = target;
+        this.hasProgressToSave = true;
         // seek 唔算收聽時間：由新位置重新起計
         this.moveTo(target);
         this.update({ currentTime: target });
@@ -316,6 +322,7 @@ export class AudioController {
         // 用戶自己揀咗另一集：唔好再重試自動接住播嗰集
         this.stopWatchingStall();
         this.persist();
+        this.hasProgressToSave = false;
         this.watched = isWatched(recording.id);
         this.pendingStart = getResumePosition(recording.id);
         this.moveTo(this.pendingStart);
@@ -346,6 +353,15 @@ export class AudioController {
         return !Number.isNaN(this.audio.duration);
     }
 
+    /**
+     * audio.currentTime 信唔信得過：metadata 到咗，而且續播位置已經套用（pendingStart 清咗）。
+     * 換集 / 重新載入之後長度可能早過 loadedmetadata 出現，嗰刻 element 仲喺 0，
+     * 存落去會洗走續播位置，亦唔可以當係播出嚟嘅位置（S-1423）
+     */
+    private hasTrustedPosition(): boolean {
+        return this.hasMetadata() && this.pendingStart === 0;
+    }
+
     /** 已聽過、已暫停而停喺尾段：再入嚟就由頭播 */
     private isParkedAtEnd(): boolean {
         return (
@@ -369,9 +385,12 @@ export class AudioController {
 
     private persist = (): void => {
         this.lastSavedAt = Date.now();
+        // 播緊但未有 timeupdate（鎖屏）就 pagehide / 入背景：而家嘅位置都係播出嚟嘅（W-859）
+        this.notePlayedIfPlaying();
         const { recording } = this.state;
-        // 未 loadedmetadata 前 currentTime 已被 reset 做 0，存落去會洗走續播位置
-        if (!recording || !this.hasMetadata()) {
+        // 續播位置未套用前 currentTime 係 0，存落去會洗走續播位置；
+        // 載入之後冇播過、冇 seek 過就冇嘢要存（AU-026）
+        if (!recording || !this.hasTrustedPosition() || !this.hasProgressToSave) {
             return;
         }
         const progress = saveProgress(recording.id, this.audio.currentTime, this.audio.duration);
@@ -402,10 +421,11 @@ export class AudioController {
     };
 
     private onTimeUpdate = (): void => {
-        // 換 src 時瀏覽器會發一次 currentTime = 0 嘅 timeupdate；metadata 未到嘅位置唔可信
-        if (!this.hasMetadata()) {
+        // 換 src 時瀏覽器會發一次 currentTime = 0 嘅 timeupdate；metadata 未到 / 續播位置未套用嘅位置唔可信
+        if (!this.hasTrustedPosition()) {
             return;
         }
+        this.notePlayedIfPlaying();
         this.update({ currentTime: this.audio.currentTime });
         this.checkAudible();
         if (this.replay.track(this.audio.currentTime, this.audio.paused)) {
@@ -421,6 +441,26 @@ export class AudioController {
             this.advance('early');
         }
     };
+
+    /**
+     * 播緊（timeupdate）或者啱啱由播緊停低（pause / ended）時叫：位置同上次見到嘅唔同先算真係播過，
+     * 撳咗播但位置凍結唔算。鎖屏時 timeupdate 可能冇發，所以停低嗰下都要睇（AU-026）
+     */
+    private notePlayed(): void {
+        if (this.hasTrustedPosition() && this.audio.currentTime !== this.state.currentTime) {
+            this.hasProgressToSave = true;
+        }
+    }
+
+    /**
+     * timeupdate / 存進度時叫：播緊先睇位置。暫停步驟係 paused 先變 true 再發 timeupdate，嗰陣
+     * state.isPlaying 仲係 true，照計（W-859）；冇播緊嘅 timeupdate（載入後套用續播位置）唔算播過
+     */
+    private notePlayedIfPlaying(): void {
+        if (this.state.isPlaying || !this.audio.paused) {
+            this.notePlayed();
+        }
+    }
 
     /** 播緊、就快播完（未到 ended）：串流長度係 Infinity，永遠唔會成立 */
     private isAboutToEnd(): boolean {
@@ -545,6 +585,7 @@ export class AudioController {
         }
         const requested = this.pauseRequested;
         this.pauseRequested = false;
+        this.notePlayed();
         this.onStopped();
         if (!requested && this.canAutoResume()) {
             this.autoResumesLeft -= 1;
@@ -576,6 +617,7 @@ export class AudioController {
 
     /** 播完：有下一集就接住播（通常 advance 已經喺 timeupdate 換咗，呢度係後備）；冇就停 */
     private onEnded = (): void => {
+        this.notePlayed();
         if (this.advance('ended')) {
             return;
         }

@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
 import { iconRecropChecks } from './iconRecropChecks.mjs';
+import { leaveChecks } from './leaveChecks.mjs';
+import { renameChecks } from './renameChecks.mjs';
 import { reorderChecks } from './reorderChecks.mjs';
 import { revertChecks } from './revertChecks.mjs';
 import { selectiveChecks } from './selectiveChecks.mjs';
@@ -62,6 +64,7 @@ const assertFetchablePort = async () => {
             throw new Error(
                 `port ${PORT} is blocked by Node fetch ("bad port", WHATWG port blocking). ` +
                     'Set E2E_PORT to another port, e.g. 4185.',
+                { cause: error },
             );
     }
 };
@@ -1473,7 +1476,8 @@ const newShowCheck = (browser) =>
             await page.getByRole('button', { name: '儲存' }).click();
             await page.waitForURL(`${BASE}/shows`);
             await page.getByText('已新增「abc」').waitFor();
-            await page.getByText('新節目測試').waitFor();
+            // 列表嗰行（link）：URL 換咗之後編輯頁可能仲未 unmount（data router 嘅跳轉行 transition），淨搵文字會撞編輯頁
+            await page.getByRole('link', { name: '新節目測試', exact: true }).waitFor();
             await page.goto(`${BASE}/shows/night`);
             await page.getByRole('textbox', { name: '簡介' }).fill('x');
             await page.getByRole('button', { name: '儲存' }).click();
@@ -2087,6 +2091,8 @@ try {
         ...selectiveChecks({ check, newPage, shoot, loggedIn, BASE }),
         ...revertChecks({ check, newPage, shoot, loggedIn, BASE }),
         ...reorderChecks({ check, newPage, shoot, loggedIn, BASE }),
+        ...renameChecks({ check, newPage, shoot, loggedIn, BASE }),
+        ...leaveChecks({ check, newPage, shoot, loggedIn, BASE }),
         missingFolderCheck,
         actionIconsCheck,
         showEditorCheck,

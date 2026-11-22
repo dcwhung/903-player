@@ -35,7 +35,8 @@ const HAND_WRITTEN_ARC_KEYS = [
 ];
 /** 新短篇嘅 placeholder id：arc-01、arc-02…（要人手改做有意思嘅 slug） */
 const PLACEHOLDER_ARC_PREFIX = 'arc-';
-const PLACEHOLDER_ARC_WIDTH = 2;
+/** 自動編號嘅闊度（arc-NN、<劇 ID>-NN）；arcIdRename.ts 認 <劇 ID>-NN 都用呢個 */
+export const PLACEHOLDER_ARC_WIDTH = 2;
 const PLACEHOLDER_ARC_ID = new RegExp(`^${PLACEHOLDER_ARC_PREFIX}\\d+$`);
 
 /**

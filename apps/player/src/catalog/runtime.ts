@@ -72,6 +72,13 @@ export const activeBanner = (): CatalogBanner | undefined => {
 
 const currentOrigin = (): CatalogOrigin => (remote ? 'remote' : 'bundled');
 
+/**
+ * 今次用緊嘅 catalog 係咪齊全：用緊 remote catalog.json，或者根本冇叫過 initCatalog（功能關住，內建資料就係全部）。
+ * false = 攞緊 / 攞唔到 catalog.json、退咗去內建資料：admin 喺 build 之後加嘅節目 / 劇今次唔識，
+ * 唔可以當佢哋已經刪除而清走 storage 入面嘅資料（AU-027）。唔計「讀過 registry」
+ */
+export const isCatalogComplete = (): boolean => remote !== undefined || !initStarted;
+
 /** 夠鐘就 reject（就算 fetch 唔理 abort signal、或者 body 未下載完都計） */
 const withTimeout = <T>(work: Promise<T>, ms: number, onTimeout: () => void): Promise<T> => {
     let timer: ReturnType<typeof setTimeout> | undefined;

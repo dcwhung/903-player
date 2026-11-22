@@ -22,19 +22,26 @@ const remoteDocument = async () => {
     };
 };
 
+/** 一次過 import 成個 App module graph（冷 cache 約 4–5 秒），預設 5 秒喺負載下會 timeout（S-1424） */
+const APP_IMPORT_TIMEOUT_MS = 30_000;
+
 describe('catalog registries and app module imports', () => {
     beforeEach(() => vi.resetModules());
 
-    it('should not read any registry while the app modules are imported', async () => {
-        await import('../App');
-        await import('../player/AudioController');
-        await import('../player/playbackLog');
-        await import('../pwa/updateManager');
-        await import('../services/storageMigration');
-        const { initCatalog } = await import('./runtime');
-        const body = JSON.stringify(await remoteDocument());
-        const fetchImpl = vi.fn(() => Promise.resolve(new Response(body)));
+    it(
+        'should not read any registry while the app modules are imported',
+        async () => {
+            await import('../App');
+            await import('../player/AudioController');
+            await import('../player/playbackLog');
+            await import('../pwa/updateManager');
+            await import('../services/storageMigration');
+            const { initCatalog } = await import('./runtime');
+            const body = JSON.stringify(await remoteDocument());
+            const fetchImpl = vi.fn(() => Promise.resolve(new Response(body)));
 
-        await expect(initCatalog({ url: '/catalog.json', fetchImpl })).resolves.toBe('remote');
-    });
+            await expect(initCatalog({ url: '/catalog.json', fetchImpl })).resolves.toBe('remote');
+        },
+        APP_IMPORT_TIMEOUT_MS,
+    );
 });

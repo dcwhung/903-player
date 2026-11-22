@@ -67,15 +67,39 @@ npx tsc -b apps/api             # type check
 `scripts/importLibrary.mjs` 掃 `apps/player/src/catalog/{shows,dramas}/library/`（同 `buildCatalogJson.mjs` 共用 `scanLibrary`）：
 
 1. 每張圖 SHA-256 → R2 key `catalog/v1/img/<前 16 hex>.<ext>`
-2. 寫 `apps/api/.import/import.sql`（`INSERT … ON CONFLICT DO UPDATE`；內容冇變嘅行連 `updated_at` 都唔郁）
-3. 問 D1 `assets` 已經有邊啲圖，淨係上載未有嘅（`wrangler r2 object put`）
-4. 圖上載完先跑 SQL
+2. 讀 D1 `assets`（已經有邊啲圖）同 `entries`（已經有邊啲行），印出會加幾多行、保留 / 蓋過幾多行；D1 讀唔到或者回應唔啱就 exit 1，乜都唔寫
+3. 寫 `apps/api/.import/import.sql`（預設 `INSERT … ON CONFLICT DO NOTHING`：只有 D1 未有嘅 entries 同佢哋用到嘅圖；`--overwrite` 就係全部 entries，用 `DO UPDATE`）
+4. 淨係上載 D1 未有嘅圖（`wrangler r2 object put`；預設 mode 只上載要加嗰啲 entries 嘅圖），圖上載完先跑 SQL；冇嘢要加就唔跑 SQL
+
+**D1 = SSoT**：admin（`apps/admin`）一開始用，D1 就係唯一真相，repo `library/` 只係 player 內建 fallback，通常舊過 D1（冇 admin 改過嘅次序、展開咗嘅排期日子、新短篇、新圖）。所以 import 有兩個 mode：
+
+| Mode                  | D1 已有嘅 entries                                                                                                       | 幾時用                                                                                                    |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| 預設（只加未有嘅）    | 唔郁（`definition`、`images`、`updated_at` 都唔改）                                                                     | 初始化空嘅 D1；repo 加咗新節目 / 劇集想補入 D1；唔肯定就用呢個                                            |
+| `--overwrite`（蓋過） | 內容同 repo 唔同嘅行會換成 repo 版本，**admin 改過嘅嘢冇得救返**；`schedules`（排期規則）唔郁，會同 `definition` 對唔上 | 災難復原（D1 壞咗 / 要成個退返去 repo 版本），或者未開始用 admin。跑之前一定要 dry run 睇清楚會蓋過幾多行 |
+
+兩個 mode 都唔會刪 D1 有、repo 冇嘅行，圖（`assets`）亦都只加唔改；重跑幾多次都係 no-op。第一行嘅 `K to upload` 喺預設 mode 只計要加嗰啲 entries 嘅圖。
+
+輸出頭幾行（dry run 同真跑都有）：
+
+```text
+13 entries, 58 images (0 to upload)
+entries: 1 to insert, 12 existing kept (3 differ from the repo library)
+existing entries are never modified (pass --overwrite to replace them with the repo library)
+```
+
+`--overwrite` 就係：
+
+```text
+entries: 1 to insert, 3 to overwrite, 9 unchanged
+WARNING: --overwrite replaces 3 existing entries with the repo library version; admin edits to them cannot be recovered and schedules are not touched
+```
 
 **Production（主要做法，唔使 local clone）**：GitHub → **Actions** → **Import catalog** → **Run workflow**（`.github/workflows/import-catalog.yml`）
 
 0. 先等 Actions → **Deploy API** 喺 `main` 最新嗰次 run 綠咗先 import（migrations 要 apply 咗先，否則 SQL 寫入新欄 / 新表會 fail）
-1. Branch 揀 `main`（其他 branch 會即刻 fail），**dry run** 保持剔住 → Run：淨係讀 D1、印出要跑嘅 wrangler 指令，唔上載、唔寫 D1
-2. 睇 run 嘅 Summary（幾多 entries、幾多張圖要上載、幾多個 wrangler step）冇問題 → 再 Run 一次，**剔走 dry run** = 真 import
+1. Branch 揀 `main`（其他 branch 會即刻 fail），**dry run** 保持剔住 → Run：淨係讀 D1、印出要跑嘅 wrangler 指令，唔上載、唔寫 D1。**overwrite** 預設唔剔 = 只加未有嘅 entries；剔咗 = `--overwrite`（用 repo 版本蓋過 D1 已有嘅 entries，admin 嘅改動冇得救返，見上面個表），災難復原先好剔
+2. 睇 run 嘅 Summary：幾多 entries、幾多張圖要上載、幾多個 wrangler step，同埋 `entries: …` 嗰行（加幾多、保留 / 蓋過幾多；剔咗 overwrite 會多一行 `WARNING: …`）冇問題 → 再 Run 一次，**剔走 dry run**（overwrite 同頭先一樣）= 真 import
 3. Import 完去 admin「更新內容 → 確認發佈」撳 **發佈**，player 先會讀到
 
 用同 `deploy-api.yml` 一樣嘅 GitHub secret `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`（D1 + Workers R2 Storage：Edit 已經夠），只交畀 import 嗰一步；兩次 import 唔會同時跑（排隊）。
@@ -86,10 +110,12 @@ npx tsc -b apps/api             # type check
 cd apps/api
 npm run import -- --local                # 本機
 npm run import -- --remote --dry-run     # production：淨係印指令（會讀 D1）
-npm run import -- --remote               # production（要 `npx wrangler login` 或者 CLOUDFLARE_API_TOKEN）
+npm run import -- --remote               # production：只加未有嘅 entries（要 `npx wrangler login` 或者 CLOUDFLARE_API_TOKEN）
+npm run import -- --remote --overwrite --dry-run   # 睇會蓋過幾多行 admin 改過嘅 entries
+npm run import -- --remote --overwrite   # production：用 repo 版本蓋過 D1（admin 嘅改動冇得救返）
 ```
 
-Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `library/` 只係 player 內建 fallback；日常改內容用 admin（`apps/admin`）；repo JSON → import 只係初始化 / 災難復原用。
+日常改內容用 admin（`apps/admin`）；repo JSON → import 只係初始化（預設 mode）/ 災難復原（`--overwrite`）用。`--overwrite` 完咗之後，有排期規則嘅短篇要喺 admin 再儲存一次排期，`definition` 入面嘅日子先會同 `schedules` 對返。
 
 ## 第一次 deploy（merge 之後）
 
@@ -135,7 +161,8 @@ Idempotent：重跑幾多次都得。**Import 完之後 D1 = SSoT**，repo `libr
     - #N 係 `status = 'failed'`（從未上過 R2）→ 409，乜都唔寫（S-797）
     - 次序：先喺記憶體砌 document → 驗證（422）+ ID 守衛（409）→ 唔過就乜都唔寫；過咗先一個 D1 batch 寫（樂觀鎖，`updated_at` / ETag bump；中途有人改 → 寫返舊值 + 412）→ publish；publish throw（例如 R2 寫唔到）或者被拒 → 另一個 batch 寫返舊 definition（`updated_at` 再 bump）
     - 冇嘢要改又同最新一次一樣 → `{ unchanged: true }`（唔開新行）
-- 內容（除 `generatedAt` 外）同最新一次一樣 → `{ unchanged: true, publish }`，唔開新行、唔寫 R2（admin 顯示「內容與目前版本相同」）；`?force=1` 照寫
+- 內容（除 `generatedAt` 外）同最新一次一樣，而且 R2 `catalog.json` 嘅 `customMetadata.hash` 就係嗰次嘅 hash（0.14.1：真係已上線）→ `{ unchanged: true, publish }`，唔開新行、唔寫 R2（admin 顯示「內容與目前版本相同」）；`?force=1` 照寫
+- **序列化**（0.14.1，AU-018）：冇獨立嘅鎖（所以冇鎖會放唔返），靠三個條件令重疊嘅 publish / 還原只有一個落地：commit 開頭最新 ok publish 要仲係砌 document 時嗰個（`base`）；`publishes` 用條件 insert（同一句 SQL 再對 `base`）；R2 用條件寫入（commit 開頭讀到嘅 etag 未變，未有 object 就 `If-None-Match: *`；呢條「第一次發佈」嘅路只喺 miniflare 驗過、未喺真 R2 驗過，production bucket 已經有 `catalog.json` 所以行 etag 嗰條，新 bucket 第一次 publish 如果誤出 409 就睇呢度），唔啱就刪返啱啱記嗰行。輸咗嗰個回 409 `{ error, reason: "publishConflict" }`（冇 `missing`），`?force=1` 都一樣。還原輸咗時 D1 跟線上：贏咗嗰次 publish 冇帶上線嘅 entry 寫返舊 definition，已經帶埋還原嘅上架狀態上線嘅 entry 保持（還原冇記成 `rollback_of` 行，但上架狀態可能已經由嗰次 publish 發佈）。Worker 喺記咗行之後、寫 R2 之前死咗：嗰行留低但唔擋之後嘅 publish，下次 publish 因為 R2 hash 對唔上唔會當 `unchanged`，會重新寫 R2
 - 次序：先記 `publishes` 一行，再寫 R2；R2 寫失敗就刪返嗰行（ID 守衛唔會漏咗已上線嘅 ID）；R2 寫咗之後 purge edge cache 失敗只 log、唔當 publish 失敗（S-814：唔係還原會 revert D1，同已上線 catalog 唔夾）；連刪都失敗就標 `status = 'failed'`（migration `0003`）。「而家 publish 緊」、ID 守衛、「內容冇變」比較都只睇最新一行 `status = 'ok'`，記錄照列出 failed 行（`status` 欄）
 - 圖 manifest 嘅圖檔名要合 `<sha256 前 16 hex>.<webp|jpg>` 兼已經喺 `assets`
 - D1 有 banner（`PUT /api/banner`）就寫入 `catalog.json` 嘅 `banner: { standard, long }`（Worker 圖 URL，同樣要已上載）；冇 = 唔寫（player 用內建圖）。還原 #N 照用而家 D1 嘅 banner（同圖一樣唔還原）

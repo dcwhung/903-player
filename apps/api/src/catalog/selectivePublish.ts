@@ -9,6 +9,7 @@ import { getBanner } from '../banner/store';
 import { getBranding } from '../branding/store';
 import { HTTP_STATUS } from '../config';
 import { isRecord } from '../content/http';
+import { FingerprintError, parseFingerprint, StaleFingerprintError } from './fingerprint';
 import { documentFromEntries, type DocumentContext } from './publish';
 import { selectedDocument } from './selectDocument';
 import {
@@ -36,15 +37,24 @@ const parseJsonText = (text: string, where: string): unknown => {
     }
 };
 
-/** POST /api/publish body：冇 body = 冇 selection（舊 admin 唔傳 body）；有就要係 JSON object */
-export const selectionFromBody = async (
-    request: Request,
-): Promise<PublishSelection | undefined> => {
+export interface PublishRequest {
+    selection: PublishSelection | undefined;
+    /** 確認頁睇到嗰份摘要嘅 fingerprint（AU-021，見 fingerprint.ts）；冇 = 唔檢查 */
+    fingerprint: string | undefined;
+}
+
+/**
+ * POST /api/publish body：冇 body = 冇 selection / fingerprint（舊 admin 唔傳 body）；有就要係 JSON object
+ */
+export const publishRequestFromBody = async (request: Request): Promise<PublishRequest> => {
     const text = await request.text();
-    if (text.trim() === '') return undefined;
+    if (text.trim() === '') return { selection: undefined, fingerprint: undefined };
     const body = parseJsonText(text, 'body');
     if (!isRecord(body)) throw new SelectionError('body must be a JSON object');
-    return parseSelection(body.selection);
+    return {
+        selection: parseSelection(body.selection),
+        fingerprint: parseFingerprint(body.fingerprint),
+    };
 };
 
 /** GET /api/changes?selection=<URL-encoded JSON>（同 body 嘅 selection 一樣 shape） */
@@ -74,6 +84,8 @@ export const documentFor = (
 export interface PreparedPublish {
     value: unknown;
     plan: SelectionPlan | undefined;
+    /** 砌 document 時嘅最新 ok publish id（null = 未發佈過） */
+    base: number | null;
 }
 
 /** D1 → 今次 publish 嘅 document（未驗證）+ plan */
@@ -97,12 +109,17 @@ export const preparePublish = async (
         branding,
     };
     const selected = plan && { plan, latestJson: latest?.document };
-    return { value: documentFor(rows, context, selected), plan };
+    return { value: documentFor(rows, context, selected), plan, base: latest?.row.id ?? null };
 };
 
-/** selection 錯誤 → 400 / 422（未知 key 最多送返頭 20 個）；其他錯誤回 undefined（caller 照 throw） */
+/**
+ * selection / fingerprint 格式錯誤 → 400、未知 key → 422（最多送返頭 20 個）、fingerprint 過時 → 412；
+ * 其他錯誤回 undefined（caller 照 throw）
+ */
 export const selectionErrorResponse = (c: Context<AppEnv>, error: unknown) => {
-    if (error instanceof SelectionError)
+    if (error instanceof StaleFingerprintError)
+        return c.json({ error: error.message }, HTTP_STATUS.preconditionFailed);
+    if (error instanceof SelectionError || error instanceof FingerprintError)
         return c.json({ error: error.message }, HTTP_STATUS.badRequest);
     if (error instanceof UnknownSelectionError)
         return c.json(

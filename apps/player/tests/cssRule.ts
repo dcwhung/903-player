@@ -177,3 +177,131 @@ export const declarationsOutside = (css: string, prelude: string): CssDeclaratio
     });
     return found;
 };
+
+const REDUCED_MOTION_CONTEXT = '@media (prefers-reduced-motion: reduce)';
+const NO_PREFERENCE = 'prefers-reduced-motion: no-preference';
+const MOTION_FAMILIES = ['transition', 'animation'] as const;
+type MotionFamily = (typeof MOTION_FAMILIES)[number];
+
+/** 自己開唔到動畫嘅 longhand（要有 name / property + duration 先郁）：唔當動態 */
+const NOT_MOTION_SUFFIXES: readonly string[] = [
+    '-play-state',
+    '-timing-function',
+    '-delay',
+    '-fill-mode',
+    '-direction',
+    '-iteration-count',
+    '-composition',
+    '-behavior',
+];
+
+/** 屬性係邊類動態（transition* / animation*）；唔係、或者自己開唔到動畫嘅 longhand 就 undefined */
+const motionFamilyOf = (prop: string): MotionFamily | undefined => {
+    const family = MOTION_FAMILIES.find((name) => prop === name || prop.startsWith(`${name}-`));
+    if (family === undefined) return undefined;
+    return NOT_MOTION_SUFFIXES.some((suffix) => prop === `${family}${suffix}`) ? undefined : family;
+};
+
+const isZeroTime = (value: string): boolean => /^0(s|ms)?$/.test(value.trim());
+
+/** list 每一項嘅第一個 token 都要完全係 none（`none-fade` 係 keyframe 名，唔算） */
+const isNoneItem = (value: string): boolean => /^none(\s|$)/.test(value.trim());
+
+/**
+ * 呢個值係咪熄咗動態：shorthand / -property / -name 逐項都係 none（`none`、`none 0s`），
+ * 或者 -duration 逐項都係 0
+ */
+const isMotionOff = (prop: string, value: string): boolean =>
+    value.split(',').every(prop.endsWith('-duration') ? isZeroTime : isNoneItem);
+
+interface MotionDeclaration {
+    selector: string;
+    prop: string;
+    family: MotionFamily;
+    off: boolean;
+    important: boolean;
+}
+
+/** 規則入面嘅動態宣告，每個 selector 一條 */
+const motionDeclarations = (rule: Rule): MotionDeclaration[] => {
+    const found: MotionDeclaration[] = [];
+    rule.each((node) => {
+        if (node.type !== 'decl') return;
+        const family = motionFamilyOf(node.prop);
+        if (family === undefined) return;
+        const off = isMotionOff(node.prop, squash(node.value));
+        for (const selector of rule.selectors) {
+            found.push({
+                selector: squash(selector),
+                prop: node.prop,
+                family,
+                off,
+                important: node.important,
+            });
+        }
+    });
+    return found;
+};
+
+const offKey = ({ selector, family }: MotionDeclaration): string => `${selector} { ${family} }`;
+
+/** reduce block 最後一次熄咗某條 selector + 動態類別嘅位置（文件次序）同係咪 !important */
+interface SwitchOff {
+    index: number;
+    important: boolean;
+}
+
+/** !important 贏晒冇 !important 嘅；兩邊一樣就後寫先贏 */
+const isSwitchedOff = (motion: MotionDeclaration, index: number, off?: SwitchOff): boolean => {
+    if (off === undefined) return false;
+    if (off.important !== motion.important) return off.important;
+    return off.index > index;
+};
+
+/**
+ * 減少動態時仲會郁嘅規則，寫成 `selector { prop }`（prop = 開動畫嗰個屬性，例如 transition / animation-name）。
+ *
+ * 呢個係逐個檔自己揀用嘅檢查（冇全 repo 測試），唔係通用 cascade matcher。當熄咗嘅條件：
+ * 頂層 `@media (prefers-reduced-motion: reduce)` 入面，有 selector **完全一樣**、**寫喺動畫規則後面**嘅規則，
+ * 將同一類動態（transition* 或者 animation*）熄咗：shorthand / -property / -name 逐項都係 none，或者 -duration 逐項係 0。
+ * 動畫宣告有 `!important` 而 reduce 嗰條冇，就當熄唔到；reduce 嗰條有 `!important` 就唔理先後。
+ * selector 一樣 specificity 就一樣，後寫先一定贏；只寫 `.player` 熄唔到 `.player[data-pressing='true']`
+ *（0,2,0 贏 0,1,0），jsdom 又睇唔到 cascade，所以直接讀原文。
+ * 寫喺 `prefers-reduced-motion: no-preference` 入面嘅本身已經唔會出現，唔計；
+ * 自己開唔到動畫嘅 longhand（-play-state、-timing-function、-delay 等）亦唔計。
+ *
+ * 已知會誤報（實際熄到、但呢度照樣列出）嘅寫法，用呢個 helper 嘅檔要避開：
+ * - reduce block 用 specificity 一樣或者更高、但寫法唔同嘅 selector，例如 ShowCardStack 用
+ *   `.stack[data-phase] .card` 熄 `.stack[data-phase='settling'] .card`
+ * - reduce block 包喺另一個 @media 入面，或者同其他條件寫埋一齊（`… and (prefers-reduced-motion: reduce)`）
+ * - 布林寫法 `@media (prefers-reduced-motion)`
+ * - 喺其他位將 duration token 設做 0 嚟熄
+ */
+export const motionLeftOnWhenReduced = (css: string): string[] => {
+    const rules: Rule[] = [];
+    parse(css).walkRules((rule) => {
+        rules.push(rule);
+    });
+    const switchedOff = new Map<string, SwitchOff>();
+    rules.forEach((rule, index) => {
+        if (contextOf(rule) !== REDUCED_MOTION_CONTEXT) return;
+        for (const declaration of motionDeclarations(rule)) {
+            if (!declaration.off) continue;
+            const key = offKey(declaration);
+            // 已經有 !important 熄咗，後面冇 !important 嗰條蓋唔到佢
+            if (switchedOff.get(key)?.important && !declaration.important) continue;
+            switchedOff.set(key, { index, important: declaration.important });
+        }
+    });
+    const left: string[] = [];
+    rules.forEach((rule, index) => {
+        const context = contextOf(rule);
+        if (context === REDUCED_MOTION_CONTEXT || context?.includes(NO_PREFERENCE)) return;
+        for (const declaration of motionDeclarations(rule)) {
+            if (declaration.off) continue;
+            if (isSwitchedOff(declaration, index, switchedOff.get(offKey(declaration)))) continue;
+            left.push(`${declaration.selector} { ${declaration.prop} }`);
+        }
+    });
+    return left;
+};

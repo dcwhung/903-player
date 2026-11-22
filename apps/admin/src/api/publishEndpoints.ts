@@ -17,13 +17,20 @@ export const changesPath = (selection?: PublishSelection): string =>
 export const getChanges = async (selection?: PublishSelection) =>
     (await request<ChangesResponse>(changesPath(selection))).data;
 
-export const publish = async (selection?: PublishSelection) =>
-    (
+/**
+ * fingerprint（AU-021）：確認頁顯示緊嗰份摘要（GET /api/changes）嘅 fingerprint；server 而家會發佈嘅內容
+ * 對唔上（中間有人儲存 / 發佈過）→ 412 VersionConflictError、乜都冇寫。舊 API 冇 = 唔送、唔檢查
+ */
+export const publish = async (selection?: PublishSelection, fingerprint?: string) => {
+    const body = { ...(selection && { selection }), ...(fingerprint && { fingerprint }) };
+    const hasBody = Object.keys(body).length > 0;
+    return (
         await request<PublishResult>('/api/publish', {
             method: 'POST',
-            ...(selection ? { body: { selection } } : {}),
+            ...(hasBody ? { body } : {}),
         })
     ).data;
+};
 
 /** 422 'unknown selection keys'（api 0.10.0）：selection 有待辦冇嘅 key = 頁面過時，要重新載入 */
 const UNKNOWN_SELECTION_KEYS = 'unknown selection keys';

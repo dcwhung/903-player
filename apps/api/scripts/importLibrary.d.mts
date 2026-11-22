@@ -28,7 +28,32 @@ export interface ImportPlan {
 
 export function planImport(library: ScannedLibrary): ImportPlan;
 
-export function importSql(plan: ImportPlan, options?: { now?: string }): string;
+/** overwrite：D1 已有嘅 entries 行畀 repo 版本蓋過（預設 false = 只加未有嘅行） */
+export function importSql(
+    plan: ImportPlan,
+    options?: { now?: string; overwrite?: boolean },
+): string;
+
+/** D1 entries 行（只用到比較嗰幾欄） */
+export interface ExistingEntryRow {
+    kind: string;
+    id: string;
+    definition: string;
+    images: string;
+}
+
+export interface EntryCounts {
+    /** D1 冇，會 insert */
+    missing: number;
+    /** D1 有但同 repo 唔同：預設保留，--overwrite 先蓋過 */
+    changed: number;
+    unchanged: number;
+}
+
+export function countEntries(
+    entries: readonly ImportEntry[],
+    existingRows: readonly ExistingEntryRow[],
+): EntryCounts;
 
 export function uploadCommands(
     assets: readonly ImportAsset[],

@@ -24,13 +24,13 @@ export const hasAllowedAudioOrigin = (url: string): boolean => {
 /** localStorage 存低嘅錄音：v1.29 之前冇 id（讀嗰陣由 showId + date 補，見 probeStore） */
 export type StoredRecording = Omit<Recording, 'id'>;
 
-/** 驗證外部資料（localStorage 讀返嘅 JSON）係咪合法錄音（唔睇 id：一律由 showId + date 重新計） */
-export const isRecording = (value: unknown): value is StoredRecording => {
+/** 節目 id 以外嘅欄位（日期、時間、原站網址）都合格；節目 id 只睇係咪字串 */
+const hasRecordingShape = (value: unknown): value is StoredRecording => {
     const r = value as StoredRecording;
     return (
         typeof r === 'object' &&
         r !== null &&
-        isKnownShowId(r.showId) &&
+        typeof r.showId === 'string' &&
         typeof r.date === 'string' &&
         isCalendarDate(r.date) &&
         typeof r.time === 'string' &&
@@ -39,6 +39,17 @@ export const isRecording = (value: unknown): value is StoredRecording => {
         hasAllowedAudioOrigin(r.url)
     );
 };
+
+/** 驗證外部資料（localStorage 讀返嘅 JSON）係咪合法錄音（唔睇 id：一律由 showId + date 重新計） */
+export const isRecording = (value: unknown): value is StoredRecording =>
+    hasRecordingShape(value) && isKnownShowId(value.showId);
+
+/**
+ * 格式合格、但今次 catalog 唔識個節目嘅錄音：唔可以畀 app 用（isRecording 唔收），
+ * 只係 catalog 唔齊嗰陣由 probeStore 原封不動留喺 storage（AU-027）
+ */
+export const isUnknownShowRecording = (value: unknown): value is StoredRecording =>
+    hasRecordingShape(value) && !isKnownShowId(value.showId);
 
 /** 同一個 URL 只保留第一個（原站偶然會重複列出） */
 export const uniqueByUrl = (recordings: Recording[]): Recording[] => {

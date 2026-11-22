@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { mockApi } from '../../../tests/renderApp';
 import type { Draft } from './entryDraft';
 import { useEntryEditor } from './useEntryEditor';
@@ -103,6 +104,69 @@ describe('useEntryEditor', () => {
             expect(result.current.status.problem).toBeUndefined();
         });
 
+        describe('rebasing the draft after a 412 retry (AU-020)', () => {
+            /** 另一邊（例如第二個 tab 拖排序）改咗 order；本機淨係改過 summary */
+            const retried = () => {
+                let gets = 0;
+                let puts = 0;
+                return mockApi({
+                    [`GET ${PATH}`]: () => {
+                        gets += 1;
+                        return gets === 1
+                            ? { body: detail('v1', { name: '早晨', order: 1 }), etag: '"v1"' }
+                            : { body: detail('v2', { name: '早晨', order: 5 }), etag: '"v2"' };
+                    },
+                    [`PUT ${PATH}`]: () => {
+                        puts += 1;
+                        return puts === 1
+                            ? { status: 412, body: { error: 'stale' } }
+                            : saved(`v${puts + 1}`);
+                    },
+                });
+            };
+
+            const patchAfterEdit = async () => {
+                const api = retried();
+                const view = await loadEditor();
+                act(() => view.result.current.setDefinition((d) => ({ ...d, summary: '本機' })));
+                await act(async () => {
+                    await view.result.current.patchSaved(setDisc);
+                });
+                return { api, result: view.result };
+            };
+
+            it('should list only the fields the user really edited as dirty', async () => {
+                const { result } = await patchAfterEdit();
+
+                expect(result.current.dirtyKeys).toEqual(['summary']);
+            });
+
+            it("should carry the other party's change and the patch into the draft", async () => {
+                const { result } = await patchAfterEdit();
+
+                expect(result.current.draft).toEqual({
+                    definition: { name: '早晨', order: 5, summary: '本機' },
+                    images: { disc: 'd.webp' },
+                });
+            });
+
+            it("should not write the other party's change back on the next save", async () => {
+                const { api, result } = await patchAfterEdit();
+
+                await act(async () => {
+                    await result.current.run(result.current.draft as Draft);
+                });
+
+                const last = putCalls(api).at(-1);
+                expect(headerOf(last?.[1], 'if-match')).toBe('"v3"');
+                expect(bodyOf(last?.[1]).definition).toEqual({
+                    name: '早晨',
+                    order: 5,
+                    summary: '本機',
+                });
+            });
+        });
+
         it('should return false and report a conflict when the retry also gets 412', async () => {
             const api = mockApi({
                 [`GET ${PATH}`]: () => ({ body: detail('v1', { name: '早晨' }), etag: '"v1"' }),
@@ -157,6 +221,92 @@ describe('useEntryEditor', () => {
             expect(ok).toBe(true);
             expect(api).not.toHaveBeenCalled();
             expect(result.current.draft?.images).toEqual({ disc: 'd.webp' });
+        });
+    });
+
+    describe('rename succeeded but the PUT failed (AU-013)', () => {
+        const ARCS = [{ id: 'drama-01-01', name: 'Season 1', episodes: 3 }];
+        const RENAMED_ARCS = [{ ...ARCS[0], id: 'lancy-01' }];
+        const routes = (put: () => { status?: number; body?: unknown }) => ({
+            'GET /api/entries/dramas/drama-01': () => ({
+                body: detail('v1', { name: '新劇', arcs: ARCS }),
+                etag: '"v1"',
+            }),
+            'POST /api/entries/dramas/drama-01/rename': () => ({
+                body: { id: 'lancy', updatedAt: 'v2' },
+                etag: '"v2"',
+            }),
+            'PUT /api/entries/dramas/lancy': put,
+        });
+
+        const failRenameSave = async () => {
+            const api = mockApi(routes(() => ({ status: 500, body: { error: 'boom' } })));
+            const view = renderHook(() => useEntryEditor('dramas', 'drama-01'));
+            await waitFor(() => expect(view.result.current.entry).not.toBeNull());
+            act(() => view.result.current.setDefinition((d) => ({ ...d, name: '蘭茜' })));
+            let saved: unknown;
+            await act(async () => {
+                saved = await view.result.current.run(view.result.current.draft as Draft, 'lancy');
+            });
+            expect(saved).toBeNull();
+            return { api, view };
+        };
+
+        it('should move the saved version and the draft to the renamed entry and show the error', async () => {
+            const { view } = await failRenameSave();
+            const { entry, draft, status, savedId } = view.result.current;
+            expect(entry).toMatchObject({ id: 'lancy', etag: '"v2"' });
+            expect(entry?.definition).toEqual({ name: '新劇', arcs: RENAMED_ARCS });
+            expect(draft?.definition).toEqual({ name: '蘭茜', arcs: RENAMED_ARCS });
+            expect(status.problem).toEqual({ type: 'failed', message: 'boom' });
+            expect(savedId()).toBe('lancy');
+        });
+
+        it('should hand the renamed entry, draft and error to the editor mounted on the new ID, once', async () => {
+            const { api } = await failRenameSave();
+            const moved = renderHook(() => useEntryEditor('dramas', 'lancy'));
+            expect(moved.result.current.entry).toMatchObject({ id: 'lancy', etag: '"v2"' });
+            expect(moved.result.current.draft?.definition).toEqual({
+                name: '蘭茜',
+                arcs: RENAMED_ARCS,
+            });
+            expect(moved.result.current.status.problem).toMatchObject({ type: 'failed' });
+            // 冇重新載入（對 lancy 只有之前嗰個 PUT）
+            const methods = api.mock.calls
+                .filter(([path]) => path === '/api/entries/dramas/lancy')
+                .map(([, init]) => init?.method);
+            expect(methods).toEqual(['PUT']);
+
+            // 暫存只用一次：之後再入嗰頁就照常由 server 載入
+            const later = renderHook(() => useEntryEditor('dramas', 'lancy'));
+            expect(later.result.current.entry).toBeNull();
+        });
+
+        it('should hand over once under StrictMode double-mounting too (S-1397)', async () => {
+            const { api } = await failRenameSave();
+            const getsOf = () =>
+                api.mock.calls.filter(
+                    ([path, init]) =>
+                        path === '/api/entries/dramas/lancy' && (init?.method ?? 'GET') === 'GET',
+                );
+            const strict = { wrapper: StrictMode };
+            const moved = renderHook(() => useEntryEditor('dramas', 'lancy'), strict);
+            // StrictMode：state initialiser 行兩次、effect mount → cleanup → mount，接手嘅嘢唔可以唔見
+            expect(moved.result.current.entry).toMatchObject({ id: 'lancy', etag: '"v2"' });
+            expect(moved.result.current.draft?.definition).toEqual({
+                name: '蘭茜',
+                arcs: RENAMED_ARCS,
+            });
+            expect(moved.result.current.status.problem).toEqual({
+                type: 'failed',
+                message: 'boom',
+            });
+            expect(moved.result.current.dirtyKeys).toEqual(['name']);
+            expect(getsOf()).toHaveLength(0);
+
+            const later = renderHook(() => useEntryEditor('dramas', 'lancy'), strict);
+            expect(later.result.current.entry).toBeNull();
+            await waitFor(() => expect(getsOf().length).toBeGreaterThan(0));
         });
     });
 });

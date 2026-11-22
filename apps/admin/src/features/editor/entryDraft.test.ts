@@ -1,5 +1,5 @@
 import { UnauthorizedError, ValidationError, VersionConflictError } from '../../api/client';
-import { changedKeys, dirtyLabels, mergeRescan, problemOf } from './entryDraft';
+import { changedKeys, dirtyLabels, mergeRescan, problemOf, rebaseDraft } from './entryDraft';
 
 describe('entryDraft', () => {
     it('should list changed definition keys and images', () => {
@@ -37,6 +37,38 @@ describe('entryDraft', () => {
             name: 'a',
             summary: 'mine',
             arcs: [1, 2],
+        });
+    });
+
+    it('should keep a locally removed field removed over a rescan result', () => {
+        const saved = { name: 'a', summary: 'x' };
+        const local = { name: 'a' };
+        const scanned = { name: 'b', summary: 'x' };
+        expect(mergeRescan(saved, local, scanned)).toEqual({ name: 'b' });
+    });
+
+    describe('rebaseDraft (AU-020)', () => {
+        const base = { definition: { name: 'a', order: 1 }, images: { disc: 'old.webp' } };
+
+        it('should take the new saved value for fields and images the user did not change', () => {
+            const draft = { definition: { name: 'mine', order: 1 }, images: { disc: 'old.webp' } };
+            const next = {
+                definition: { name: 'a', order: 5 },
+                images: { disc: 'old.webp', tile: 't.webp' },
+            };
+            expect(rebaseDraft(base, draft, next)).toEqual({
+                definition: { name: 'mine', order: 5 },
+                images: { disc: 'old.webp', tile: 't.webp' },
+            });
+        });
+
+        it('should keep the values the user changed, per image file too', () => {
+            const draft = { definition: { name: 'a', order: 2 }, images: { disc: 'mine.webp' } };
+            const next = { definition: { name: 'b', order: 5 }, images: { disc: 'theirs.webp' } };
+            expect(rebaseDraft(base, draft, next)).toEqual({
+                definition: { name: 'b', order: 2 },
+                images: { disc: 'mine.webp' },
+            });
         });
     });
 });
