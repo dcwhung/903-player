@@ -6,6 +6,7 @@ import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
+import { historyChecks } from './historyChecks.mjs';
 import { iconRecropChecks } from './iconRecropChecks.mjs';
 import { leaveChecks } from './leaveChecks.mjs';
 import { renameChecks } from './renameChecks.mjs';
@@ -2092,6 +2093,7 @@ try {
         ...reorderChecks({ check, newPage, shoot, loggedIn, BASE }),
         ...renameChecks({ check, newPage, shoot, loggedIn, BASE }),
         ...leaveChecks({ check, newPage, shoot, loggedIn, BASE }),
+        ...historyChecks({ check, newPage, shoot, loggedIn, BASE }),
         missingFolderCheck,
         actionIconsCheck,
         showEditorCheck,

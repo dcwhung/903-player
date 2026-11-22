@@ -12,10 +12,12 @@ import { useDeployStatus } from './useDeployStatus';
 
 interface DeployCellProps {
     row: PublishSummary;
+    /** 有還原 / 重新部署進行中：「重新部署」停用（AU-025） */
+    busy?: boolean;
     onRedeploy: (id: number) => void;
 }
 
-export function DeployCell({ row, onRedeploy }: DeployCellProps) {
+export function DeployCell({ row, busy = false, onRedeploy }: DeployCellProps) {
     const status = useDeployStatus(row.id, isTriggered(row), row.deployRequestedAt ?? null);
     const view = deployView(row.deploy, status);
     if (!view) return null;
@@ -41,6 +43,7 @@ export function DeployCell({ row, onRedeploy }: DeployCellProps) {
                 <button
                     type="button"
                     className="link-btn"
+                    disabled={busy}
                     aria-label={t('history.redeployLabel', { id: row.id })}
                     onClick={() => onRedeploy(row.id)}
                 >
