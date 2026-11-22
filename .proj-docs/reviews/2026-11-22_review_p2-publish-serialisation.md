@@ -193,3 +193,68 @@ next_agent: backend-developer
 branch: "fix/api/au-018_publish-serialisation"
 context: "W-870, S-1457, S-1458, S-1460 closed; S-1459 accepted. New W-871: when the winner is a selective publish that drops an incomplete arc of the restored drama, notShipped compares whole definitions, mismatches, and reverts everything (reproduced: R2 golden enabled=true, D1 false). Fix: compare only enabled fields (entry + arcs on both sides) + add the selective-publish test, then re-review. Observation (winner inherits the losing restore's unshipped row as previous publish) is pre-existing; main agent to decide whether to ticket."
 ```
+
+# Round 3 — 2026-11-22（re-review `059127d3..95cb5dbf`）
+
+- 目標：`95cb5dbf` fix(api): compare only enabled fields when a restore loses to a publish (W-871)
+- 範圍：只驗 W-871 嘅修正（`rollback.ts` `enabledOf` / `shippedOurs`、新 test、CHANGELOG）；冇新 ID
+- 總評：✅ pass（100/100）。W-871 已關，冇新 🔴 / 🟡
+
+## Hard Gates（Round 3）
+
+all pass：`npm run lint` exit 0；`npx tsc -b` exit 0；`npm run typecheck -w apps/api` exit 0；api `publishSerialisation` + `publish` + `revert` + `revertEdgeCases` + `selectivePublish` 5 files / 102 tests 全綠（exit 0，`apps/api` 入面 `npx vitest run <5 個檔>`，冇跑 full suite）。RED 驗證：將 `rollback.ts` 暫時換返 `059127d3` 版本，新 test「winner is a selective publish that dropped an arc (W-871)」失敗（`expected false to be true`），其餘 13 個過；換返之後 working tree 乾淨。
+
+## 評分結果（Round 3）
+
+| 維度     | 得分    | 滿分    | 備注                                                  |
+| -------- | ------- | ------- | ----------------------------------------------------- |
+| 正確性   | 25      | 25      | W-871 關；raw 比較喺兩個 interleaving 都判斷正確      |
+| 安全性   | 20      | 20      | 冇新輸入面                                            |
+| 可維護性 | 20      | 20      | `enabledOf` 範圍同 `restoredDefinition` 一致          |
+| 測試覆蓋 | 15      | 15      | 選擇發佈 case（apply 後落地）RED 已驗；W-870 次序保留 |
+| 性能     | 10      | 10      | 只喺 409 路徑                                         |
+| 代碼風格 | 10      | 10      | lint / prettier 過                                    |
+| **總分** | **100** | **100** |                                                       |
+
+**結果：✅ pass**
+
+## 上一輪項目
+
+- W-871 ✅ 關：`notShipped` 改為 `shippedOurs` —— entry `enabled` + 兩邊都有嘅短篇（用 id 對）嘅 `enabled`；線上冇 entry → revert；線上冇嘅短篇唔計。新 test 斷言 R2 golden `enabled: true`、只有 `season-1`，D1 `enabled` = 線上、未完成短篇（下架）留喺 D1，publishes 行 = [1, 2, 3]，`expectInStep` 過
+- Raw 值比較（冇 key 唔當預設）唔會令「D1 跟線上」出錯：
+    - 贏咗嗰次用一個 `SELECT`（`store.ts:63`）讀 D1，而 apply 係一個 D1 batch（transaction），所以佢見到嘅係**全部舊值或者全部新值**；冇被剔走嘅 entry / 短篇，definition 係 D1 字串原樣 `JSON.parse` 入 document（`publish.ts:156`）
+    - 讀到新值 → 線上同我哋寫嘅 raw 值完全一樣 → 保持（D1 = 線上）
+    - 讀到舊值 → `restoredDefinition` 只改 `enabled`（改值、刪 key、或新短篇設 `false`），`planChanges` 只收有變嘅 entry，所以至少一個 `enabled` 欄位（包括「有 key ↔ 冇 key」）raw 值唔同 → revert，寫返嘅正正係贏咗嗰次讀到嘅舊 definition（D1 = 線上）
+    - 「一邊冇 key、一邊明寫 `true`」只會喺線上值唔係由 D1 抄過嚟時出現（選擇發佈換返上次發佈版本），見下面 Observation；正常路徑唔會
+- Fallback 冇變：`revertAfterFailure` 仍然 `notShipped(...).catch(() => 全部 true)`；非 `PublishConflictError` 全部 revert；`rejected` 照舊全部 revert
+- 樂觀鎖冇變：`revert` 仍然 `expected: change.updatedAt`、`nextUpdatedAt` bump，期間有人儲存就唔寫
+- 文字：CHANGELOG `:17`「只比較還原會改嘅欄位（entry 同兩邊都有嘅短篇嘅 `enabled`）」同 code 一致；`rollback.ts:10`「只比較 enabled，選擇發佈剔走短篇都唔影響」屬實（剔走 = 線上冇嗰個短篇 → 唔計）
+
+## 🟢 Observation（唔扣分、唔落 backlog）
+
+- 選擇發佈將**已發佈過**嘅短篇 / 劇換返上次發佈版本（`selectArcs` 用 name 對、`excludedDramas`）時，線上嗰部分唔係由 D1 抄，`shippedOurs` 可能判做未上線而成個 entry revert。要觸發，被剔走嘅短篇要同時喺還原目標 snapshot 同最新 publish 都出現過，但仲有未處理嘅 `newArc` / `newDrama` finding（正常發佈之後 finding 已經 resolve），喺正常流程達唔到；而且被剔走嘅部分本身就係選擇發佈刻意留住「D1 ≠ 線上」，唔屬今次合約範圍。L3 推論，冇重現，唔使改
+- 贏咗嗰次喺 apply **之前**讀 D1、又剔走咗一個未發佈過嘅短篇，而我哋淨係改咗嗰個短篇（設 `enabled: false`）時，會判做「已上線」而保持：D1 嗰個短篇變下架，但佢本身唔喺線上，D1 同線上冇唔夾。要 admin 手動上架一個未完成短篇先會出現，影響只係未發佈短篇保持下架。唔使改
+
+## ✅ 做得好嘅地方（Round 3）
+
+- 比較範圍同 `restoredDefinition` 改動範圍完全對齊，註解寫明理由。
+- `aroundApply('before' | 'after')` 一個 helper 覆蓋兩個 interleaving，W-870 / W-871 test 共用。
+- 新 test 連未完成短篇留喺 D1 都斷言埋，唔只係睇 `enabled`。
+
+```handoff-receipt
+protocol: 1
+status: pass
+score: 100/100
+stage: T2
+round: 3
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "n/a (diff-related api 5 files / 102 tests green; W-871 test RED-verified against 059127d3)"
+next_action: proceed_to_qa
+next_agent: quality-assurance
+branch: "fix/api/au-018_publish-serialisation"
+context: "W-871 closed: shippedOurs compares entry enabled + enabled of arcs present on both sides; raw-value comparison is sound because the winner reads D1 in one SELECT and the apply is one batch, so it sees all-old or all-new verbatim values. Fallback (.catch -> full revert) and updated_at optimistic lock intact; CHANGELOG / rollback.ts:10 wording accurate. Two L3 observations (selective publish swapping in previously published arcs; pre-apply read with only a dropped arc changed) not reachable in normal flow and do not break the D1-follows-live contract; no backlog. No new IDs."
+```
