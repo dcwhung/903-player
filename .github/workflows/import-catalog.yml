@@ -1,9 +1,14 @@
 name: Import catalog
 
-# 手動跑 apps/api/scripts/importLibrary.mjs --remote：repo library → production D1 + R2（idempotent，可以重跑）。
+# 手動跑 apps/api/scripts/importLibrary.mjs --remote：repo library → production D1 + R2。
+# 預設只 insert D1 未有嘅 entry：已有嘅一行都唔改（D1 先係 SSoT，admin 嘅改動唔會被冚），所以可以重跑。
+# 剔 overwrite = 加 `--overwrite`：D1 已有而同 repo library 唔同嘅 entry 會變返 repo 版本，admin 對佢哋嘅改動冇得還原，
+# schedules 唔郁（AU-017）；一定要先 dry run 睇 Summary 嘅 `entries:` / `WARNING:` 行。
 # 用戶冇 local clone 都可以 import：Actions → Import catalog → Run workflow（先 dry run，睇清楚再剔走 dry run 跑真嘅）。
 # 只准喺 main 跑；import 完要去 admin 撳「發佈」，player 先會讀到（見 apps/api/README.md）。
-# Secrets 只畀 import 嗰一步（npm ci 嘅 lifecycle script 攞唔到 token）。
+# Secrets 只畀 import 嗰一步。AU-019：呢個 job 冇任何一步要跑第三方 build / test code（script 只用 Node 內置 module，
+# 經 npx 叫 lockfile 鎖住嘅 wrangler），所以唔使拆 job；`npm ci --ignore-scripts` = 冇 lifecycle script 可以喺
+# 帶 token 嗰步之前改 node_modules/.bin/wrangler。
 on:
     workflow_dispatch:
         inputs:
@@ -11,6 +16,10 @@ on:
                 description: 'Dry run: only read D1 and print the wrangler commands (no R2 uploads, no D1 writes)'
                 type: boolean
                 default: true
+            overwrite:
+                description: 'Overwrite: DANGER - replaces entries that already exist in D1 with the repo library version. Admin edits to them are lost and cannot be recovered. Dry run first.'
+                type: boolean
+                default: false
 
 permissions:
     contents: read
@@ -39,12 +48,14 @@ jobs:
 
             - uses: actions/checkout@v7
 
+            # 冇 `cache: npm`：帶 secret 嘅 job 唔食其他 workflow（行過第三方 code 嘅 job）寫入嘅 npm cache
             - uses: actions/setup-node@v7
               with:
                   node-version: 22
-                  cache: npm
 
-            - run: npm ci
+            # AU-019：唔跑任何 package 嘅 lifecycle script（lockfile 入面有 install script 嘅只有 esbuild / workerd / fsevents；
+            # wrangler d1 execute / r2 object put --remote 唔靠佢哋嘅 postinstall）
+            - run: npm ci --ignore-scripts
 
             # stdout 同時寫入 import.log 畀下一步做 summary；job defaults 嘅 shell: bash 有 pipefail，script 失敗成個 step fail（Summary 唔會跑）
             - name: Import
@@ -52,25 +63,34 @@ jobs:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   DRY_RUN: ${{ inputs.dry_run }}
+                  OVERWRITE: ${{ inputs.overwrite }}
               run: |
                   args=(--remote)
                   if [ "$DRY_RUN" = 'true' ]; then args+=(--dry-run); fi
+                  if [ "$OVERWRITE" = 'true' ]; then args+=(--overwrite); fi
                   npm run import -w apps/api -- "${args[@]}" | tee "$RUNNER_TEMP/import.log"
 
-            # script 第一行：「N entries, M images (K to upload)」；之後每行「wrangler …」= 一個 step
+            # script 第一行：「N entries, M images (K to upload)」；跟住「entries: …」（insert / 保留 / 覆蓋幾多行），
+            # overwrite 先有「WARNING: …」；之後每行「wrangler …」= 一個 step
             - name: Summary
               env:
                   DRY_RUN: ${{ inputs.dry_run }}
+                  OVERWRITE: ${{ inputs.overwrite }}
               run: |
                   log="$RUNNER_TEMP/import.log"
                   counts="$(grep -E '^[0-9]+ entries, ' "$log" || echo 'counts not found')"
+                  entries="$(grep -E '^entries: ' "$log" || true)"
+                  warnings="$(grep -E '^WARNING: ' "$log" || true)"
                   commands="$(grep -c '^wrangler ' "$log" || true)"
                   title='Import catalog'
-                  if [ "$DRY_RUN" = 'true' ]; then title='Import catalog (dry run)'; fi
+                  if [ "$OVERWRITE" = 'true' ]; then title="$title - OVERWRITE"; fi
+                  if [ "$DRY_RUN" = 'true' ]; then title="$title (dry run)"; fi
                   {
                       echo "### $title"
                       echo
                       echo "- $counts"
+                      if [ -n "$entries" ]; then sed 's/^/- /' <<<"$entries"; fi
+                      if [ -n "$warnings" ]; then sed 's/^/- **/; s/$/**/' <<<"$warnings"; fi
                       echo "- wrangler steps (image uploads + SQL): $commands"
                       if [ "$DRY_RUN" = 'true' ]; then
                           echo
