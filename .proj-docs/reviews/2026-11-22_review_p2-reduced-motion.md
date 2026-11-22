@@ -83,6 +83,23 @@ Developer 報嘅 full suite / e2e / `e2e:visual` 冇重跑（Hard Rule #7，留�
     - 修：值用逗號拆開，每一項第一個 token 要完全係 `none`（例如 `/^none(\s|$)/`）先算熄；加呢兩個 test
 - **S-1451** `apps/player/tests/cssRule.ts:256-280` — 動畫規則用 `!important`（例如 `transition: opacity 1s !important`），reduce block 冇 `!important` 係熄唔到，但 helper 返 `[]`。而家 repo 冇 transition / animation 用 `!important`。修：動畫宣告 `node.important` 而 reduce 嗰條唔係就照報；或者 docstring 寫明呢個盲點
 
+## Round 3（`e4f934e6`）
+
+- **範圍**：只驗 S-1450、S-1451（`apps/player/tests/cssRule.ts`、`apps/player/src/styles/cssRule.node.test.ts`）
+- **Hard Gates**：`npm test -- apps/player/src/styles apps/player/src/components/pages/home/MiniPlayer apps/player/tests` exit 0，28 files / 268 tests；lint / tsc 用 main agent 結果（exit 0），本輪冇重跑
+- **總評**：✅ pass，100/100。兩條都修好，冇新 item
+
+### 驗證（臨時 probe）
+
+- **S-1450** ✅：`animation: none, spin 1s`、`animation-name: none, spin` 會報；動畫規則 `animation: none-fade 1s` 會報；`animation: none, none` 同 `animation-duration: 0s, 0ms` 當熄咗
+- **S-1451** ✅：
+    - 動畫 `!important`、reduce 冇 → 報
+    - 兩邊都 `!important`：reduce 寫喺後面 → 熄；寫喺前面 → 報
+    - reduce `!important` 寫喺前面、動畫冇 → 熄
+    - 先有 `!important` 熄、後面再有普通熄：保留 `!important` 嗰條，結果熄
+    - 冇 `!important` 時照舊後寫先贏（reduce 夾喺兩條動畫規則中間，只報後面嗰條）
+- 回歸：helper 讀 `204cbfde` 原檔照報返 3 條；全 player CSS 掃描同之前一樣，只有 ShowCardStack 4 條已知誤報
+
 ## Handoff
 
 ```handoff-receipt
@@ -101,5 +118,5 @@ hard_gates:
 next_action: invoke_qa
 next_agent: quality-assurance
 branch: "fix/player/reduced-motion-css"
-context: "Round 2 pass at 7300aa08: S-1447, S-1448, S-1449 closed. New non-blocking (clear this session): S-1450 (none-prefix check: animation lists and none-* keyframe names), S-1451 (motion !important not considered). Round 1: pass at c7c05de3: MiniPlayer long-press and view-transition :only-child fades now switched off under reduced motion; helper verified to flag the bug on 204cbfde. ShowCardStack confirmed fine (helper false positive only). Report committed, not pushed. Next QA S1 (mini-player, ui-foundation)."
+context: "Round 3 pass at e4f934e6: S-1450, S-1451 closed; no open items. Round 2 at 7300aa08 closed S-1447, S-1448, S-1449. Round 1: pass at c7c05de3: MiniPlayer long-press and view-transition :only-child fades now switched off under reduced motion; helper verified to flag the bug on 204cbfde. ShowCardStack confirmed fine (helper false positive only). Report committed, not pushed. Next QA S1 (mini-player, ui-foundation)."
 ```
