@@ -80,6 +80,11 @@ export const historyChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
             await alert.waitFor();
             if ((await page.getByText('尚未有發佈記錄。').count()) > 0)
                 throw new Error('a failed load still shows the empty state');
+            if (
+                (await table(page).count()) > 0 ||
+                (await page.getByText(/^共 \d+ 次$/).count()) > 0
+            )
+                throw new Error('a failed load still shows the empty table or the count');
             await shoot(page, 'history-load-failed');
             failing = false;
             await alert.getByRole('button', { name: '重試' }).click();

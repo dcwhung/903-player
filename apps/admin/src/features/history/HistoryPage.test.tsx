@@ -231,4 +231,44 @@ describe('HistoryPage load errors', () => {
         expect(await screen.findByRole('alert')).toHaveTextContent(/^載入失敗：/);
         expect(screen.queryByText('尚未有發佈記錄。')).not.toBeInTheDocument();
     });
+
+    /** 冇 data 又讀唔到：唔出空表頭 /「共 0 次」（睇落似「讀到、零記錄」） */
+    it('should hide the table and the count when nothing could be loaded', async () => {
+        let failing = true;
+        mockApi({
+            'GET /api/publishes': () =>
+                failing
+                    ? { status: 500, body: { error: 'boom' } }
+                    : { body: { publishes: [row(1, true)] } },
+        });
+        renderAt('/history', '/history', <HistoryPage />);
+        await screen.findByRole('alert');
+        expect(screen.queryByRole('table')).not.toBeInTheDocument();
+        expect(screen.queryByText(/^共 \d+ 次$/)).not.toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: '發佈 / 部署' })).toBeInTheDocument();
+        failing = false;
+        await userEvent.click(screen.getByRole('button', { name: '重試' }));
+        expect(await screen.findByRole('table')).toBeInTheDocument();
+        expect(screen.getByText('共 1 次')).toBeInTheDocument();
+    });
+
+    it('should keep the loaded table and count when a later reload fails', async () => {
+        let failing = false;
+        mockApi({
+            'GET /api/publishes': () =>
+                failing
+                    ? { status: 500, body: { error: 'boom' } }
+                    : { body: { publishes: [failedDeploy(2)] } },
+            [`POST ${DEPLOY_2}`]: () => ({
+                body: { deploy: 'triggered', deployRequestedAt: null },
+            }),
+        });
+        renderAt('/history', '/history', <HistoryPage />);
+        const redeployButton = await screen.findByRole('button', { name: '重新部署 #2' });
+        failing = true;
+        await userEvent.click(redeployButton);
+        expect(await screen.findByRole('alert')).toHaveTextContent(/^載入失敗：/);
+        expect(screen.getByRole('table')).toBeInTheDocument();
+        expect(screen.getByText('共 1 次')).toBeInTheDocument();
+    });
 });

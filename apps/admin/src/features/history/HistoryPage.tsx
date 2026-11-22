@@ -4,14 +4,14 @@
  * 還原 / 重新部署進行中：全部動作掣停用（AU-025）；記錄載入失敗顯示原因 + 重試，唔當係「未有記錄」
  */
 import { useState } from 'react';
-import { RefreshCw, Undo2 } from 'lucide-react';
+import { Undo2 } from 'lucide-react';
 import { listPublishes } from '../../api/endpoints';
-import { errorMessage } from '../../api/errorMessage';
 import type { LoadedEntry, PublishSummary } from '../../api/types';
 import { useAdminData } from '../../data/AdminData';
 import { useResource } from '../../data/useResource';
 import { t } from '../../i18n/t';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
+import { HistoryHeader } from './HistoryHeader';
 import { HistoryRow } from './HistoryRow';
 import { useHistoryActions } from './useHistoryActions';
 
@@ -53,19 +53,6 @@ function HistoryTable({
     );
 }
 
-/** 記錄讀唔到（包括 session 過期）：原因 + 重試 */
-function LoadError({ error, onRetry }: { error: Error; onRetry: () => void }) {
-    return (
-        <div className="note bad stale-note" role="alert">
-            <span>{t('app.loadFailed', { error: errorMessage(error) })}</span>
-            <button type="button" onClick={onRetry}>
-                <RefreshCw aria-hidden="true" />
-                {t('app.retry')}
-            </button>
-        </div>
-    );
-}
-
 export function HistoryPage() {
     const publishes = useResource(listPublishes);
     const { entries, refresh } = useAdminData();
@@ -75,31 +62,29 @@ export function HistoryPage() {
         refresh,
     });
     const rows = publishes.data ?? [];
+    // 讀唔到又冇舊 data：唔出空表 /「共 0 次」（睇落似「讀到、零記錄」），淨係原因 + 重試
+    const nothingLoaded = publishes.error !== undefined && publishes.data === undefined;
     const onConfirm = (id: number) => {
         setConfirming(null);
         void rollbackTo(id);
     };
     return (
         <>
-            <div className="title-row">
-                <h1>{t('history.title')}</h1>
-                <span className="muted small">{t('history.total', { count: rows.length })}</span>
-            </div>
-            {rollbackError && (
-                <p className="note bad" role="alert">
-                    {rollbackError}
-                </p>
-            )}
-            {publishes.error && (
-                <LoadError error={publishes.error} onRetry={() => void publishes.reload()} />
-            )}
-            <HistoryTable
-                rows={rows}
-                entries={entries.data ?? []}
-                busy={busy}
-                onRollback={setConfirming}
-                onRedeploy={(id) => void redeployTo(id)}
+            <HistoryHeader
+                count={nothingLoaded ? undefined : rows.length}
+                rollbackError={rollbackError}
+                loadError={publishes.error}
+                onRetry={() => void publishes.reload()}
             />
+            {!nothingLoaded && (
+                <HistoryTable
+                    rows={rows}
+                    entries={entries.data ?? []}
+                    busy={busy}
+                    onRollback={setConfirming}
+                    onRedeploy={(id) => void redeployTo(id)}
+                />
+            )}
             {!publishes.loading && !publishes.error && rows.length === 0 && (
                 <p className="muted">{t('history.empty')}</p>
             )}
