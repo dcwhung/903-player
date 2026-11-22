@@ -28,16 +28,20 @@ const APP_IMPORT_TIMEOUT_MS = 30_000;
 describe('catalog registries and app module imports', () => {
     beforeEach(() => vi.resetModules());
 
-    it('should not read any registry while the app modules are imported', async () => {
-        await import('../App');
-        await import('../player/AudioController');
-        await import('../player/playbackLog');
-        await import('../pwa/updateManager');
-        await import('../services/storageMigration');
-        const { initCatalog } = await import('./runtime');
-        const body = JSON.stringify(await remoteDocument());
-        const fetchImpl = vi.fn(() => Promise.resolve(new Response(body)));
+    it(
+        'should not read any registry while the app modules are imported',
+        async () => {
+            await import('../App');
+            await import('../player/AudioController');
+            await import('../player/playbackLog');
+            await import('../pwa/updateManager');
+            await import('../services/storageMigration');
+            const { initCatalog } = await import('./runtime');
+            const body = JSON.stringify(await remoteDocument());
+            const fetchImpl = vi.fn(() => Promise.resolve(new Response(body)));
 
-        await expect(initCatalog({ url: '/catalog.json', fetchImpl })).resolves.toBe('remote');
-    }, APP_IMPORT_TIMEOUT_MS);
+            await expect(initCatalog({ url: '/catalog.json', fetchImpl })).resolves.toBe('remote');
+        },
+        APP_IMPORT_TIMEOUT_MS,
+    );
 });
