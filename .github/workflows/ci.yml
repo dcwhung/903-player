@@ -2,8 +2,9 @@ name: CI
 
 # main 以外嘅 push：lint + type check + unit + build，之後 e2e。main 嘅部署照舊由 deploy.yml（player）同 deploy-api.yml（Worker）負責。
 # 只用 push trigger：check run 掛喺 commit 上面，PR 頁照樣見到；同時用 pull_request 會令同一個 SHA 跑兩次。
-# 今次 push 淨係改 docs → check / e2e 兩個 job 被 `if` 跳過。GitHub 當跳過嘅 job 係 Success，
+# 成條 branch（對 main 嘅 merge-base）淨係改 docs → check / e2e 兩個 job 被 `if` 跳過。GitHub 當跳過嘅 job 係 Success，
 # 所以 branch protection 嘅 required check 唔會卡住（workflow 層 paths-ignore 會令佢永遠 pending）。
+# Branch 一有 code 改動，之後淨改 docs 嘅 push 都照跑全套（AU-015：唔可以靠跳過令 head 變綠）。
 on:
     push:
         branches-ignore: [main]
@@ -26,26 +27,11 @@ jobs:
               with:
                   fetch-depth: 0
 
-            # 比較今次 push 之前同之後；新 branch / force push 搵唔到 before 就用同 main 嘅 merge-base。
-            # 判斷唔到（冇 base、diff 係空）一律當有 code 改動，照跑全套。
+            # AU-015：一律比較成條 branch（同 origin/main 嘅 merge-base → 呢個 SHA，--no-renames），唔係今次 push 嘅 delta。
+            # 判斷唔到（冇 base、diff 係空）一律當有 code 改動，照跑全套。邏輯同 docs pattern 喺 script 入面
+            #（scripts/ci/detect-code-changes.test.mjs 鎖住）
             - id: diff
-              env:
-                  BEFORE: ${{ github.event.before }}
-                  DOCS_ONLY_PATTERN: '^(\.proj-docs/|\.tickets/|\.claude/|docs/|LICENSE)|\.md$'
-              run: |
-                  base="$BEFORE"
-                  if [[ "$base" =~ ^0+$ ]] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
-                      base="$(git merge-base origin/main "$GITHUB_SHA" 2>/dev/null || true)"
-                  fi
-                  code=true
-                  if [[ -n "$base" ]]; then
-                      changed="$(git diff --name-only "$base" "$GITHUB_SHA")"
-                      if [[ -n "$changed" ]] && ! grep -qvE "$DOCS_ONLY_PATTERN" <<<"$changed"; then
-                          code=false
-                      fi
-                  fi
-                  echo "base=${base:-none} code=$code"
-                  echo "code=$code" >> "$GITHUB_OUTPUT"
+              run: bash scripts/ci/detect-code-changes.sh
 
     check:
         name: Lint, unit & build
