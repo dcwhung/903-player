@@ -85,6 +85,24 @@ describe('persist', () => {
         });
     });
 
+    it('should not PUT at all when the rename is the only change (S-1396)', async () => {
+        const api = mockApi({ [RENAME]: renamed });
+        const unchanged: Draft = { definition: ENTRY.definition, images: ENTRY.images };
+        const result = await persist(target, unchanged, 'lancy');
+        expect(callsOf(api)).toEqual([RENAME]);
+        // rename 已經將所有嘢存好：版本 / ETag 用 rename 嘅回應，冇 warnings
+        expect(result).toEqual({
+            entry: {
+                ...ENTRY,
+                id: 'lancy',
+                updatedAt: 'v2',
+                etag: '"v2"',
+                definition: { name: '新劇', arcs: RENAMED_ARCS },
+            },
+            warnings: [],
+        });
+    });
+
     it('should surface the renamed entry and the remapped draft when the PUT fails (AU-013)', async () => {
         const error = await failAfterRename({ status: 409, body: { error: 'arc scheduled' } });
         // server 而家儲存嘅版本：新 ID / ETag，已儲存 definition 嘅短篇 ID 跟住改

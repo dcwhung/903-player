@@ -3,14 +3,12 @@
  * 改 ID：server 連自動編號嘅短篇 ID（<舊 ID>-NN）一齊改，URL（包括記住嘅 #短篇）同要確認嘅短篇 ID 跟住改；
  * rename 成功但 PUT 失敗都要搬去新 ID（草稿 + 錯誤由 editor/renamedHandoff 帶過去，AU-013）
  */
-import { renamedArcId } from '@903-player/catalog';
 import { useState } from 'react';
 import { errorMessage } from '../../api/errorMessage';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAdminData } from '../../data/AdminData';
 import { useToast } from '../../ui/Toast';
 import { changeFlagsOf } from '../../model/listModel';
-import { renamedDramaPath } from '../../model/paths';
 import { arcPublishedIn } from '../../model/raw';
 import { idProblem } from '../editor/IdField';
 import { useEditorOrigin } from '../editor/useEditorOrigin';
@@ -18,6 +16,7 @@ import { useEntryEditor, type EntryEditor } from '../editor/useEntryEditor';
 import { useImageSave } from '../editor/useImageSave';
 import { useRenameEntry } from '../editor/useRenameEntry';
 import { PLACEHOLDER_ID } from './dramaModel';
+import { renamedDramaUrl } from './renamedUrl';
 import { useR2AutoCrop } from './useR2AutoCrop';
 import { useRescan } from './useRescan';
 import { confirmAll, renamedConfirm, useUnconfirmedIds, type IdConfirm } from './idConfirm';
@@ -67,20 +66,12 @@ const useFieldErrors = (newId: string) => {
     return { errorCount: total + (idProblem(newId) ? 1 : 0), setFieldError };
 };
 
-/** #<短篇 ID>：自動編號嘅跟劇 ID 改；其他 hash（#folder / #images / 自訂短篇 ID）原樣 */
-const renamedHash = (hash: string, from: string, to: string): string =>
-    hash === ''
-        ? ''
-        : `#${encodeURIComponent(renamedArcId(decodeURIComponent(hash.slice(1)), from, to))}`;
-
-/** 改咗 ID：同一個 tab 換去新 ID 嘅 URL（S-857），記住嘅短篇跟住改 */
+/** 改咗 ID：同一個 tab 換去新 ID 嘅 URL（S-857），記住嘅短篇同待辦 ?todo= 跟住改（renamedUrl） */
 const useFollowRename = (id: string) => {
-    const { pathname, search, hash } = useLocation();
+    const location = useLocation();
     const navigate = useNavigate();
-    return (to: string) =>
-        navigate(`${renamedDramaPath(pathname, id, to)}${search}${renamedHash(hash, id, to)}`, {
-            replace: true,
-        });
+    const rows = useAdminData().todos.data?.rows ?? [];
+    return (to: string) => navigate(renamedDramaUrl(location, rows, id, to), { replace: true });
 };
 
 interface DramaSaveInput {

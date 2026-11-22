@@ -2,12 +2,13 @@
  * 編輯頁儲存：（劇集改 ID 先 rename）→ PUT entry（If-Match / 新增 If-None-Match）。
  * rename 時 server 會將自動編號嘅短篇 ID（<舊 ID>-NN）改做 <新 ID>-NN；草稿用同一條規則
  *（@903-player/catalog withRenamedArcIds）跟住改先 PUT，否則 PUT 會寫返舊短篇 ID（AU-013）。
- * rename 成功但 PUT 失敗 → RenamedSaveError：server 已經喺新 ID，editor 要跟過去
+ * rename 成功但 PUT 失敗 → RenamedSaveError：server 已經喺新 ID，editor 要跟過去。
+ * 淨係改 ID（跟住改咗短篇 ID 嘅草稿同 rename 後嘅已儲存版本一樣）：rename 已經存晒，唔再 PUT（S-1396）
  */
 import { withRenamedArcIds } from '@903-player/catalog';
 import { putEntry, renameDrama } from '../../api/endpoints';
 import type { EntryKind, LoadedEntry } from '../../api/types';
-import { etagOf, savedEntry, type Draft } from './entryDraft';
+import { changedKeys, etagOf, savedEntry, type Draft } from './entryDraft';
 
 export interface PersistTarget {
     kind: EntryKind;
@@ -63,6 +64,8 @@ const put = async (target: PersistTarget, draft: Draft): Promise<Persisted> => {
 const renameThenPut = async (entry: LoadedEntry, draft: Draft, newId: string) => {
     const moved = await renamed(entry, newId);
     const next = { ...draft, definition: withRenamedArcIds(draft.definition, entry.id, moved.id) };
+    // 冇其他改動：冇嘢要 PUT（亦冇嘢會失敗）；改得 ID 即係從未發佈，冇會消失嘅集數要警告
+    if (changedKeys(moved, next).length === 0) return { entry: moved, warnings: [] };
     try {
         return await put({ kind: entry.kind, id: moved.id, entry: moved }, next);
     } catch (error) {

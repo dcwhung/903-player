@@ -134,6 +134,7 @@ export {
     isPlaceholderArcId,
     parseEpisodeFileName,
     parseEpisodeNumeral,
+    PLACEHOLDER_ARC_WIDTH,
     renamedArcId,
     scanListing,
     SERIES_TEMPLATES,

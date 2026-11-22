@@ -42,8 +42,11 @@ export const renameSchedules = () => ({
 /** renames = 收到嘅改 ID 要求；failPuts = 之後幾多個 PUT 回 422（試「rename 成功、PUT 失敗」） */
 export const renameState = () => ({ rename: true, renames: [], failPuts: 0 });
 
-/** 同 packages/catalog renamedArcId 一樣：<from>-NN → <to>-NN，其他唔郁 */
-const renamedArcId = (arcId, from, to) =>
+/**
+ * 同 packages/catalog renamedArcId 一樣：<from>-NN → <to>-NN，其他唔郁
+ *（.mjs import 唔到 TS source；src/features/dramas/mockRenameParity.test.ts 鎖住兩份一樣，S-1394）
+ */
+export const renamedArcId = (arcId, from, to) =>
     arcId.startsWith(from) && /^-\d{2}$/.test(arcId.slice(from.length))
         ? `${to}${arcId.slice(from.length)}`
         : arcId;

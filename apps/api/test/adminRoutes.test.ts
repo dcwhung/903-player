@@ -1,8 +1,9 @@
 /* Phase 3a admin API：待辦、改 ID、資料夾配對、排序、變更摘要、上下架記錄 */
-import { withRenamedArcIds } from '@903-player/catalog';
+import { PLACEHOLDER_ARC_WIDTH, renamedArcId, withRenamedArcIds } from '@903-player/catalog';
 import { env } from 'cloudflare:test';
 import { ORIGIN, adminGet, adminPost, adminRequest, call, loginCookie } from './helpers';
 import { SHOW, TILE, drama, markDraft, putEntry, seed } from './fixtures';
+import { arcIdGlob } from '../src/admin/rename';
 
 type Json = Record<string, unknown>;
 
@@ -311,6 +312,26 @@ describe('POST /api/entries/dramas/:id/rename', () => {
         expect(
             (await env.DB.prepare('SELECT drama_id, arc_id FROM schedules').all()).results,
         ).toEqual([{ drama_id: 'lancy', arc_id: 'lancy-01' }]);
+    });
+
+    it('should match auto-numbered arc ids in SQL with the same width as the catalog rule (S-1393)', async () => {
+        expect(arcIdGlob('drama-01')).toBe(`drama-01-${'[0-9]'.repeat(PLACEHOLDER_ARC_WIDTH)}`);
+        const digits = (width: number) => '7'.repeat(width);
+        const candidates = [-1, 0, 1].map(
+            (delta) => `drama-01-${digits(PLACEHOLDER_ARC_WIDTH + delta)}`,
+        );
+        const matched = await Promise.all(
+            candidates.map(async (arcId) => {
+                const row = await env.DB.prepare('SELECT ? GLOB ? AS hit')
+                    .bind(arcId, arcIdGlob('drama-01'))
+                    .first<{ hit: number }>();
+                return row?.hit === 1;
+            }),
+        );
+        expect(matched).toEqual(
+            candidates.map((arcId) => renamedArcId(arcId, 'drama-01', 'lancy') !== arcId),
+        );
+        expect(matched).toEqual([false, true, false]);
     });
 
     const collidingArcs = [

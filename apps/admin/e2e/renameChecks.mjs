@@ -29,6 +29,7 @@ export const renameChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
         check('rename drama ID: the save keeps the arc IDs the server renamed', async () => {
             const state = loggedIn({ rename: true });
             const page = await openScanned(browser, state);
+            await page.getByRole('textbox', { name: '簡介' }).fill(SUMMARY);
             await saveButton(page).click();
             await page.waitForURL(`${BASE}/dramas/${NEW_ID}`);
             await page.getByText(/有未儲存的變更/).waitFor({ state: 'detached' });
@@ -43,6 +44,24 @@ export const renameChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
                 'PUT after the rename',
             );
             assertEqual(Object.keys(state.schedules).at(-1), `${NEW_ID}/${NEW_ID}-01`, 'schedule');
+            await page.close();
+        });
+
+    // S-1396：淨係改 ID → rename 已經存晒，唔送 PUT（failPuts 留低冇用過 = 冇 PUT 去到 server）
+    const renameOnlyCheck = (browser) =>
+        check('rename drama ID: a rename-only save sends no PUT and shows no error', async () => {
+            const state = loggedIn({ rename: true });
+            state.failPuts = 1;
+            const page = await openScanned(browser, state);
+            await saveButton(page).click();
+            await page.waitForURL(`${BASE}/dramas/${NEW_ID}`);
+            await page.getByText(/有未儲存的變更/).waitFor({ state: 'detached' });
+            assertEqual(await idBox(page).inputValue(), NEW_ID, 'ID field');
+            assertEqual(await page.getByRole('alert').count(), 0, 'alerts');
+            assertEqual(state.renames, [{ from: SCANNED_ID, to: NEW_ID }], 'rename requests');
+            assertEqual([state.puts.length, state.failPuts], [0, 1], 'PUTs sent / refusals left');
+            const renamed = state.entries.find((entry) => entry.id === NEW_ID);
+            assertEqual(arcIdsOf(renamed.definition), RENAMED_ARC_IDS, 'stored arc IDs');
             await page.close();
         });
 
@@ -82,5 +101,5 @@ export const renameChecks = ({ check, newPage, shoot, loggedIn, BASE }) => {
             },
         );
 
-    return [renameSaveCheck, renameFailedPutCheck];
+    return [renameSaveCheck, renameOnlyCheck, renameFailedPutCheck];
 };
