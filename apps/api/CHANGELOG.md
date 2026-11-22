@@ -2,6 +2,14 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.13.1 — 2026-11-22
+
+改劇集 ID 嘅短篇改名規則搬去 `@903-player/catalog`（2026-11-22 codebase audit AU-013）；API 行為冇變。
+
+### Changed
+
+- `POST /api/entries/dramas/:id/rename`：`<舊 ID>-NN` → `<新 ID>-NN` 規則改用 catalog 嘅 `withRenamedArcIds`（admin 共用同一份）；SQL `GLOB` 嘅位數跟 `PLACEHOLDER_ARC_WIDTH`，唔再寫死兩位
+
 ## 0.13.0 — 2026-11-16
 
 App 圖示重新裁切（用戶 2026-11-16 決定：存原圖 + 裁切框，重新裁切唔會越裁越差）。舊 client 照用得：`source` 可以唔傳，冇原圖嘅圖示照舊有效。
