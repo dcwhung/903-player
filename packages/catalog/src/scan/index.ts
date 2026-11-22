@@ -9,6 +9,7 @@ export {
     type ParsedEpisodeFile,
 } from './names';
 export { exampleFileName } from './example';
+export { renamedArcId, withRenamedArcIds } from './arcIdRename';
 export { isPlaceholderArcId } from './merge';
 export { DAILY_TEMPLATE, SERIES_TEMPLATES } from './shared';
 export type {

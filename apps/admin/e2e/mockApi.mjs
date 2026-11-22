@@ -1,6 +1,13 @@
 // Admin e2e 嘅假 API（page.route）：in-memory 狀態，夠行 login → 掃描 → 待辦 → 設 ID → 發佈 → 記錄、拖曳排序
 import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import {
+    refusePut,
+    renameRoute,
+    renameSchedules,
+    renameState,
+    scannedDrama,
+} from './mockRename.mjs';
 import { orderRevertRoute, reorderHistoryRow, reorderItems, reorderState } from './mockReorder.mjs';
 import { revertItems, revertRoute, withPublished } from './mockRevert.mjs';
 import { changesFor, selectionFromUrl, selectiveTodos } from './mockSelection.mjs';
@@ -292,6 +299,7 @@ export const createState = ({
     revert = false,
     reorder = false,
     liveArcs = false,
+    rename = false,
 } = {}) => ({
     loggedIn: false,
     liveArcs,
@@ -299,6 +307,8 @@ export const createState = ({
     ...(revert ? { others: revertItems, reverts: [] } : {}),
     // reorder（api 0.12.0，#6）：節目排序改咗未發佈 + 上下架記錄有一次廣播劇排序
     ...(reorder ? { ...reorderState(), others: reorderItems } : {}),
+    // rename（AU-013）：掃描建嘅 drama-01（自動編號短篇有排程）+ 改 ID route
+    ...(rename ? renameState() : {}),
     missingFolder,
     r2Covers,
     warnings,
@@ -319,6 +329,7 @@ export const createState = ({
         liveArcs ? withLiveArc(lancy()) : lancy(),
         golden(),
         ...(statusMix ? [sammy(), freshDrama()] : selective ? [sammy()] : []),
+        ...(rename ? [scannedDrama()] : []),
     ]
         .map((entry) => (realImages ? withRealImages(entry) : entry))
         .map((entry) => (revert ? withPublished(entry) : entry))
@@ -346,7 +357,7 @@ export const createState = ({
         },
     ],
     orders: [],
-    schedules: schedulesOf(),
+    schedules: { ...schedulesOf(), ...(rename ? renameSchedules() : {}) },
     puts: [],
     confirms: [],
     assets: [],
@@ -458,6 +469,7 @@ const entryRoute = (state, route, request, [kind, id]) => {
     if (request.headers()['if-match'] !== `"${entry.updatedAt}"`)
         return json(route, { error: 'entry changed' }, { status: 412 });
     const body = request.postDataJSON();
+    if (refusePut(state, route, entry, body)) return undefined;
     Object.assign(entry, body, { updatedAt: `${id}-v${state.puts.length + 2}` });
     state.puts.push({ kind, id, body });
     return json(
@@ -687,6 +699,8 @@ export const installMockApi = async (page, state) => {
         if (revert) return revertRoute(state, route, request, revert.slice(1));
         const order = key.match(/^POST \/api\/order\/(shows|dramas)\/revert$/);
         if (order) return orderRevertRoute(state, route, order[1]);
+        const rename = key.match(/^POST \/api\/entries\/dramas\/([^/]+)\/rename$/);
+        if (rename) return renameRoute(state, route, request, rename[1]);
         const entry = url.pathname.match(/^\/api\/entries\/(shows|dramas)\/([^/]+)$/);
         if (entry) return entryRoute(state, route, request, entry.slice(1));
         if (/^PUT \/api\/order\//.test(key)) {
