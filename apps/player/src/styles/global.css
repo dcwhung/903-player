@@ -336,11 +336,16 @@ html:is(
     }
 }
 
-/* 減少動畫：utils/viewTransition 已經唔開過場；保險起見連 CSS 動畫都熄 */
+/*
+ * 減少動畫：utils/viewTransition 已經唔開過場；保險起見連 CSS 動畫都熄。
+ * :only-child 嗰兩條（淡入淡出）specificity 高過 (*)，要逐條 selector 熄
+ */
 @media (prefers-reduced-motion: reduce) {
     ::view-transition-group(*),
     ::view-transition-old(*),
-    ::view-transition-new(*) {
+    ::view-transition-old(*):only-child,
+    ::view-transition-new(*),
+    ::view-transition-new(*):only-child {
         animation: none;
     }
 }
