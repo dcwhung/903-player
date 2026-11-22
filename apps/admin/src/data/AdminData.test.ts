@@ -69,34 +69,4 @@ describe('loadAllEntries', () => {
         ]);
         expect(urlsOf(api)).toEqual([DETAIL_URL]);
     });
-
-    it('should fall back to one GET per entry when the API predates detail=1', async () => {
-        const api = mockApi({
-            [`GET ${DETAIL_URL}`]: () => ({ body: { entries: [summary('shows', 'badgirl')] } }),
-            'GET /api/entries/shows/badgirl': () => ({
-                body: {
-                    definition: { name: '節目' },
-                    images: IMAGES,
-                    draft: false,
-                    updatedAt: UPDATED_AT,
-                    published: null,
-                },
-                etag: ETAG,
-            }),
-        });
-        expect(await loadAllEntries()).toEqual([
-            {
-                kind: 'shows',
-                id: 'badgirl',
-                definition: { name: '節目' },
-                images: IMAGES,
-                draft: false,
-                updatedAt: UPDATED_AT,
-                etag: ETAG,
-                published: true,
-                publishedArcs: undefined,
-            },
-        ]);
-        expect(urlsOf(api)).toEqual([DETAIL_URL, '/api/entries/shows/badgirl']);
-    });
 });

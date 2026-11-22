@@ -89,15 +89,15 @@ const detailOf = (
 });
 
 entryRoutes.get('/entries', async (c) => {
-    const [rows, facts] = await Promise.all([
+    const detailed = c.req.query(DETAIL_QUERY.name) === DETAIL_QUERY.on;
+    // entries 只讀一次；detail 先讀最新 document（都係一次，同 entry 數量無關），三樣一齊讀（S-1468）
+    const [rows, facts, publishedOf] = await Promise.all([
         listStoredEntries(c.env.DB),
         publishedFacts(c.env.DB),
+        detailed ? loadPublishedLookup(c.env.DB) : undefined,
     ]);
     const index = indexOfFacts(facts);
-    if (c.req.query(DETAIL_QUERY.name) !== DETAIL_QUERY.on)
-        return c.json({ entries: rows.map((row) => summaryOf(row, index)) });
-    // entries 只讀一次（上面嗰條）；最新 document 都係一次，同 entry 數量無關
-    const publishedOf = await loadPublishedLookup(c.env.DB);
+    if (!publishedOf) return c.json({ entries: rows.map((row) => summaryOf(row, index)) });
     return c.json({ entries: rows.map((row) => detailOf(row, index, publishedOf)) });
 });
 

@@ -8,7 +8,7 @@
 
 ### Changed
 
-- 全部節目 / 劇集一個 request 讀晒（`GET /api/entries?detail=1`，要 api 0.14.2），唔再每個 entry 另外 GET 一次；API 未升級（回應冇全文）就自動用返逐個 GET（AU-024）
+- 全部節目 / 劇集一個 request 讀晒（`GET /api/entries?detail=1`，要 api 0.14.2），唔再每個 entry 另外 GET 一次（AU-024）
 
 ### Fixed
 

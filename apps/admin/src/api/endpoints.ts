@@ -35,7 +35,7 @@ export const scanAll = async () =>
 
 export const getTodos = async () => (await request<TodosResponse>('/api/todos')).data;
 
-/** 全部 entry 連全文，一個 request（AU-024；舊 API 唔識 detail=1，只回列表欄位） */
+/** 全部 entry 連全文，一個 request（AU-024） */
 export const listEntriesDetail = async () =>
     (await request<{ entries: EntryListItem[] }>('/api/entries?detail=1')).data.entries;
 
