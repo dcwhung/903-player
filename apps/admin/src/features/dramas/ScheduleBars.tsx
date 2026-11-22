@@ -1,10 +1,11 @@
 /*
  * 排程 tab 嘅兩條掣列（_mockups_/admin-schedule-unlist ⑧ ⑨）：
- * 頂「編輯｜預覽」tabs；底「↶ 復原」（最左，同儲存掣分開）+ 刪除 + 儲存；掣全部有 outline icon
+ * 頂「編輯｜預覽」tabs；底「↶ 復原」（最左，同儲存掣分開）+ 刪除（要確認）+ 儲存；掣全部有 outline icon
  */
-import { Eye, Pencil, Save, Trash2, Undo2 } from 'lucide-react';
+import { Eye, Pencil, Save, Undo2 } from 'lucide-react';
 import { t } from '../../i18n/t';
 import { SegmentedTabs, type SegmentedOption } from '../../ui/SegmentedTabs';
+import { DeleteSchedule } from './DeleteSchedule';
 
 export type ScheduleView = 'edit' | 'preview';
 /** 掣左邊 outline icon（同 SaveBar 一樣，aria-hidden） */
@@ -41,6 +42,8 @@ export function ViewTabs({
 
 interface ScheduleSaveBarProps {
     canDelete: boolean;
+    /** 其他分頁有未儲存改動：刪除會重讀劇集、草稿會冇咗，唔畀刪（AU-022） */
+    deleteBlocked: boolean;
     canRevert: boolean;
     canSave: boolean;
     fromTodos: boolean;
@@ -62,16 +65,10 @@ export function ScheduleSaveBar(props: ScheduleSaveBarProps) {
                     </button>
                 )}
                 {props.canDelete && (
-                    <button
-                        type="button"
-                        className="ghost-danger"
-                        aria-label={t('schedule.deleteScheduleLabel')}
-                        disabled={props.saving}
-                        onClick={props.onDelete}
-                    >
-                        <Trash2 aria-hidden="true" />
-                        {t('schedule.deleteSchedule')}
-                    </button>
+                    <DeleteSchedule
+                        disabled={props.saving || props.deleteBlocked}
+                        onConfirm={props.onDelete}
+                    />
                 )}
             </div>
             <button

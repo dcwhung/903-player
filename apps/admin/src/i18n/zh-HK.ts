@@ -596,6 +596,7 @@ export const zhHK = {
         missingFolder: '在 R2 找不到 {folder}，請選擇對應的資料夾：',
         pickFolder: '選擇未配對的資料夾…',
         pair: '配對',
+        pairUnsaved: '有未儲存的變更，請先儲存，然後才可配對資料夾。',
         paired: '已配對資料夾',
         arcName: '名稱',
         arcNameTip: '播放器顯示的名稱；R2 資料夾名稱不會更改',
@@ -697,12 +698,14 @@ export const zhHK = {
         deleteSchedule: '刪除',
         /** 讀屏用：掣面淨係「刪除」，名要講埋係刪排程 */
         deleteScheduleLabel: '刪除排程',
+        deleteTitle: '刪除排程？',
+        deleteBody: '只會刪除排程規則，各集已設定的上架及下架日期維持不變。',
         noCount: '此短篇的集數未知，請先於 R2 上載音檔並重新掃描。',
         notSeries: '每日播劇集沒有短篇排程。',
         planFailed: '無法排程：{error}',
         customSentence: '自訂批次（{count} 批）：選擇上面的快速套用可重新排程',
         enableNote: '此短篇目前為「下架」，儲存排程後會同時轉為「上架」。',
-        unsavedNote: '其他分頁有未儲存的變更，儲存排程前請先儲存。',
+        unsavedNote: '其他分頁有未儲存的變更，請先儲存，然後才可儲存或刪除排程。',
     },
     history: {
         title: '發佈 / 部署',
