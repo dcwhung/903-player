@@ -132,7 +132,7 @@ describe('usePlayer', () => {
 
     it('tracks current time and marks watched at 95%', async () => {
         const { audio, result } = setup();
-        await act(async () => result.current.load(RECORDING));
+        await act(async () => result.current.load(RECORDING, { autoplay: true }));
         act(() => audio.emitMetadata(DURATION));
 
         act(() => audio.emitTime(500));
@@ -269,7 +269,7 @@ describe('usePlayer', () => {
 
     it('keeps tracking time when the browser reports an infinite duration', async () => {
         const { audio, result } = setup();
-        await act(async () => result.current.load(RECORDING));
+        await act(async () => result.current.load(RECORDING, { autoplay: true }));
         act(() => audio.emitMetadata(Number.POSITIVE_INFINITY));
 
         act(() => audio.emitTime(60));
@@ -292,9 +292,10 @@ describe('usePlayer', () => {
 
     it('restarts a watched episode that is reloaded while parked at the end', async () => {
         const { audio, result } = setup();
-        await act(async () => result.current.load(RECORDING));
+        await act(async () => result.current.load(RECORDING, { autoplay: true }));
         act(() => audio.emitMetadata(DURATION));
         act(() => audio.emitTime(990));
+        act(() => result.current.pause());
 
         await act(async () => result.current.load(RECORDING, { autoplay: true }));
 
