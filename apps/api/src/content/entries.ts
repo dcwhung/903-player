@@ -29,7 +29,7 @@ import {
     isInIndex,
     type PublishedIndex,
 } from './published';
-import { loadPublishedSource } from './publishedVersion';
+import { loadPublishedLookup, loadPublishedSource } from './publishedVersion';
 import {
     badTarget,
     errorResponse,
@@ -68,13 +68,37 @@ const summaryOf = (row: StoredEntry, index: PublishedIndex) => {
     };
 };
 
+/** `?detail=1`：列表每個 entry 連埋全文（其他值 / 冇帶 = 原本嘅列表） */
+const DETAIL_QUERY = { name: 'detail', on: '1' } as const;
+
+/**
+ * 列表欄位 + 單一 entry GET 嘅全文（AU-024：admin 一個 request 讀晒，唔使逐個 GET）。
+ * published 喺列表已經係「有冇上過架」，所以最新 ok publish 嘅版本叫 publishedVersion；
+ * etag 同單一 entry GET 嘅 ETag header 一樣（PUT 嘅 If-Match 用）
+ */
+const detailOf = (
+    row: StoredEntry,
+    index: PublishedIndex,
+    publishedOf: Awaited<ReturnType<typeof loadPublishedLookup>>,
+) => ({
+    ...summaryOf(row, index),
+    definition: JSON.parse(row.definition) as Json,
+    images: JSON.parse(row.images) as Json,
+    etag: etagOf(row.updated_at),
+    publishedVersion: publishedOf(row.kind, row.id)?.entry ?? null,
+});
+
 entryRoutes.get('/entries', async (c) => {
     const [rows, facts] = await Promise.all([
         listStoredEntries(c.env.DB),
         publishedFacts(c.env.DB),
     ]);
     const index = indexOfFacts(facts);
-    return c.json({ entries: rows.map((row) => summaryOf(row, index)) });
+    if (c.req.query(DETAIL_QUERY.name) !== DETAIL_QUERY.on)
+        return c.json({ entries: rows.map((row) => summaryOf(row, index)) });
+    // entries 只讀一次（上面嗰條）；最新 document 都係一次，同 entry 數量無關
+    const publishedOf = await loadPublishedLookup(c.env.DB);
+    return c.json({ entries: rows.map((row) => detailOf(row, index, publishedOf)) });
 });
 
 entryRoutes.get('/entries/:kind/:id', async (c) => {
