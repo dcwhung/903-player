@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { createState, E2E_NOW, E2E_TIMEZONE, installMockApi } from './mockApi.mjs';
 import { iconRecropChecks } from './iconRecropChecks.mjs';
+import { renameChecks } from './renameChecks.mjs';
 import { reorderChecks } from './reorderChecks.mjs';
 import { revertChecks } from './revertChecks.mjs';
 import { selectiveChecks } from './selectiveChecks.mjs';
@@ -2087,6 +2088,7 @@ try {
         ...selectiveChecks({ check, newPage, shoot, loggedIn, BASE }),
         ...revertChecks({ check, newPage, shoot, loggedIn, BASE }),
         ...reorderChecks({ check, newPage, shoot, loggedIn, BASE }),
+        ...renameChecks({ check, newPage, shoot, loggedIn, BASE }),
         missingFolderCheck,
         actionIconsCheck,
         showEditorCheck,

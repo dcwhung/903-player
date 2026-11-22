@@ -38,6 +38,7 @@
     - AC-33 圖示裁切 dialog 修正（admin 0.9.1；review `.proj-docs/reviews/2026-11-17_review_icon-crop-dialog.md`；Design Origin `_mockups_/admin-appearance/index.html` full-bleed，S-1100）：框外暗位只喺原圖入面（`.dim` 層 `overflow: hidden` 同原圖一樣大、`.box` 冇陰影、拉柄唔俾裁走），唔再成個 dialog 變暗、Android 圓框冇大弧；locked = 冇 `.dim`（S-1101）；maskable 512 PNG + Android 圓 / 方預覽畫滿成個 canvas（用戶揀 option b，冇 82% 縮細、冇 `safeRect`），iPhone / 分頁輸出不變
     - AC-34 內建 maskable 滿版（admin 0.9.2；review `.proj-docs/reviews/2026-11-17_review_builtin-maskable.md`）：「內建預設」圖示嘅 Android 圓 / 方預覽（`src/assets/icon/icon-maskable-192.png`，由 player `generateIcons.mjs` 生成，repo-tooling AC-9）滿版、同 0.9.1 自訂 maskable / 調整 dialog 預設框一致
     - AC-35 SegmentedTabs refactor（admin 0.9.3；review `.proj-docs/reviews/2026-11-17_review_segmented-tabs.md`）：`ui/SegmentedTabs.tsx`（tabs / toggle mode、方向鍵 / Home / End 由 focus 嗰粒起計、滑動 pill、reduced motion 唔播、`disabled` 保留揀選、`value null` = 冇揀）取代排程「編輯｜預覽」、圖示 dialog 裝置掣、廣播劇「類型」（刪 `ui/Switch.tsx`）；行為 / aria / 文字不變，淨加鍵盤導航（用戶批准）
+    - AC-36 改劇集 ID 之後儲存（AU-013，admin 0.9.4；review `.proj-docs/reviews/2026-11-22_review_p0-audit-fixes_batch.md` Section B）：rename 之後草稿嘅自動編號短篇 ID（`<舊 ID>-NN`）跟 `@903-player/catalog` `withRenamedArcIds` 改做 `<新 ID>-NN` 先 PUT（自訂短篇 ID 唔郁；有排程嘅短篇唔再 409）；淨係改 ID 唔送 PUT（S-1396）；rename 成功、PUT 失敗 → editor 去新 ID（path、`#arc` hash、`?todo=` 跟住改，S-1395）、草稿同錯誤保留、交接一次（StrictMode 都係，S-1397）、再儲存係普通 PUT；`confirmAll` 用改咗嘅短篇 ID；e2e mock 規則同 catalog 一樣（S-1394）
 - Scope files（freeze 用 `git ls-files apps/admin`）:
     - `apps/admin/{package.json,index.html,vite.config.ts,tsconfig.json,tsconfig.app.json,tsconfig.node.json}` `apps/admin/src/**`（app / api / data / features / i18n / model / styles / ui / utils + tests）`apps/admin/tests/*` `apps/admin/e2e/{run,mockApi,iconRecropChecks}.mjs`
     - 3c Design Origin（只凍結）：`_mockups_/admin-style/{index.html,banner.webp}`；排程下架 Design Origin（只凍結）：`_mockups_/admin-schedule-unlist/{index.html,titles.html}`；Phase 4 Design Origin（只凍結）：`_mockups_/admin-phase4/{index.html,*.webp}`
@@ -45,6 +46,7 @@
     - 選擇發佈 Design Origin（只凍結）：`_mockups_/admin-selective-publish/index.html`；e2e：`apps/admin/e2e/{mockSelection,selectiveChecks}.mjs`
     - 發佈摘要方案 1 Design Origin（只凍結）：`_mockups_/admin-publish-summary/index.html`（0.6.0 刪 `SelectionCard.tsx`）
     - 還原 Design Origin（只凍結）：`_mockups_/admin-revert/index.html`；e2e：`apps/admin/e2e/{mockRevert,revertChecks}.mjs`；e2e：`apps/admin/e2e/{mockReorder,reorderChecks}.mjs`
+    - 改劇集 ID（AU-013）：`apps/admin/src/features/editor/{persist,renamedHandoff}.ts` `apps/admin/src/features/dramas/{renamedUrl,idConfirm}.ts` + test（已喺 `src/**` 範圍內，列明方便對 ledger）；e2e：`apps/admin/e2e/{mockRename.mjs,mockRename.d.mts,renameChecks.mjs}`
     - 1-hop（屬其他鏈，唔重複 freeze）：`apps/api/wrangler.toml` / `apps/api/package.json`（api）、root `vitest.config.ts` / `tsconfig.json` / `eslint.config.js` / `ci.yml`（repo-tooling）、`packages/catalog`（`expandSchedule` 等，catalog-data / api）
 - Commands:
     - `npm test -- apps/admin`（coverage：`npx vitest run --project @903-player/admin --coverage.enabled --coverage.provider=v8`）
@@ -72,5 +74,6 @@
     - Worker 出 SPA：`apps/api` 臨時 `.dev.vars`（假 secret）→ `wrangler dev --persist-to <scratchpad>` → curl `/`、深連結、`/api/health`、`/api/*`、`/auth/*`、`/catalog/*`、asset；完咗刪 `.dev.vars`
     - AC-34：`npm test`（`apps/player/scripts/generateIcons.test.ts` 驗 admin 副本；`brandingModel` / `IconPreviews` unit 照綠）；`e2e:admin` 由 CI 同 code 嘅 run 引用（唔重跑）
     - AC-35：`npm test`（`SegmentedTabs` `IconDialogParts` `ScheduleTab` `stateStyles.node` `writtenChinese`）+ changed-file coverage（`SegmentedTabs.tsx` `segmentedTabsModel.ts` `IconDialogParts.tsx` `BasicFields.tsx` `ScheduleBars.tsx` `ScheduleViews.tsx`）；`e2e:admin` 由 CI 同 code 嘅 run 引用（唔重跑）
+    - AC-36：`npm test`（`persist` `useEntryEditor` `dramaIdRename` `renamedUrl` `idConfirm` `mockRenameParity`）+ changed-file coverage（`persist.ts` `renamedHandoff.ts` `useEntryEditor.ts` `useDramaEditor.ts` `renamedUrl.ts` `idConfirm.ts`）；`e2e:admin` 3 個「rename drama ID」check（`renameChecks.mjs`：有排程嘅自動編號短篇 + 自訂短篇、淨改 ID 冇 PUT、PUT 失敗再儲存）；API 行為屬 api AC-32
 - PWA gate: no（admin 冇 service worker / manifest；唔掂 player）
 - Out of scope: 真 Google OAuth、真 D1 / R2（deploy 後用戶手動清單）；Worker API 行為（api 鏈）；player 讀 catalog（catalog-data 鏈）

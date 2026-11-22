@@ -2,6 +2,28 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.13.2 — 2026-11-22
+
+Import catalog 預設唔再蓋過 D1（2026-11-22 codebase audit AU-017）。Worker 行為冇變，只改 `scripts/importLibrary.mjs`。
+
+### Changed
+
+- `npm run import`：預設只加 D1 未有嘅 entry（`ON CONFLICT DO NOTHING`），已有嘅行（admin 改過嘅 definition / images / `updated_at`）完全唔郁；只上載同記錄要加嗰啲 entry 引用嘅圖，冇嘢要加就唔寫任何嘢
+- 新 flag `--overwrite`：還原返之前嘅 upsert（用 repo library 取代已有 entry，`schedules` 唔郁），災難復原先用
+- Dry run 同真跑都會印行數：預設 `entries: X to insert, Y existing kept (Z differ from the repo library)`；`--overwrite` 印 `entries: X to insert, Y to overwrite, Z unchanged` 同一行 `WARNING:`
+
+### Fixed
+
+- 讀 D1 嘅回應形狀唔啱（唔係 JSON、空 array、`success: false`、`results` 唔係 array）會喺任何上載 / 寫入之前 exit 1，唔再當成 D1 冇行（W-858）
+
+## 0.13.1 — 2026-11-22
+
+改劇集 ID 嘅短篇改名規則搬去 `@903-player/catalog`（2026-11-22 codebase audit AU-013）；API 行為冇變。
+
+### Changed
+
+- `POST /api/entries/dramas/:id/rename`：`<舊 ID>-NN` → `<新 ID>-NN` 規則改用 catalog 嘅 `withRenamedArcIds`（admin 共用同一份）；SQL `GLOB` 嘅位數跟 `PLACEHOLDER_ARC_WIDTH`，唔再寫死兩位
+
 ## 0.13.0 — 2026-11-16
 
 App 圖示重新裁切（用戶 2026-11-16 決定：存原圖 + 裁切框，重新裁切唔會越裁越差）。舊 client 照用得：`source` 可以唔傳，冇原圖嘅圖示照舊有效。

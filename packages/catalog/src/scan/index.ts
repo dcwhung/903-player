@@ -9,7 +9,8 @@ export {
     type ParsedEpisodeFile,
 } from './names';
 export { exampleFileName } from './example';
-export { isPlaceholderArcId } from './merge';
+export { renamedArcId, withRenamedArcIds } from './arcIdRename';
+export { isPlaceholderArcId, PLACEHOLDER_ARC_WIDTH } from './merge';
 export { DAILY_TEMPLATE, SERIES_TEMPLATES } from './shared';
 export type {
     ArcScan,

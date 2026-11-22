@@ -2,6 +2,7 @@
  * 掃描自動派嘅 ID（新劇 drama-NN、新短篇 <劇 ID>-NN）要 admin 確認（3c）：
  * 待辦 ID 格仲係「必須」= 未確認；儲存時（就算冇改）POST /api/todos/confirm-id
  */
+import { renamedArcId } from '@903-player/catalog';
 import { confirmId } from '../../api/endpoints';
 import type { TodoRow } from '../../api/types';
 import { useAdminData } from '../../data/AdminData';
@@ -29,3 +30,9 @@ export const confirmAll = async (dramaId: string, { drama = false, arcIds = [] }
     if (drama) await confirmId(dramaId);
     for (const arcId of arcIds) await confirmId(dramaId, arcId);
 };
+
+/** 儲存時連劇 ID 一齊改：server 將自動編號嘅短篇 ID 跟住改咗（<舊 ID>-NN → <新 ID>-NN），確認要用新嗰個（AU-013） */
+export const renamedConfirm = (confirm: IdConfirm, from: string, to: string): IdConfirm =>
+    confirm.arcIds === undefined
+        ? confirm
+        : { ...confirm, arcIds: confirm.arcIds.map((arcId) => renamedArcId(arcId, from, to)) };
