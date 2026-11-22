@@ -95,7 +95,7 @@ const useResync = () => {
     return { revision, resync };
 };
 
-/** 412 之後重讀摘要嘅結果（ChangedNotice 講唔講「以下已更新」） */
+/** 412 之後重讀摘要嘅結果（ChangedNotice 講唔講「以下已更新」；selection 過時就淨係出 StaleNotice，S-1436） */
 const summaryStateOf = ({ loading, error }: SelectedChanges): SummaryState => {
     if (loading) return 'loading';
     return error ? 'failed' : 'fresh';
@@ -122,7 +122,7 @@ export function PublishPage() {
             </div>
             <Stepper current={3} />
             {stale && <StaleNotice />}
-            {state.status === 'changed' && (
+            {state.status === 'changed' && !stale && (
                 <ChangedNotice summary={summaryStateOf(selected)} onReload={() => void resync()} />
             )}
             {loadError && (

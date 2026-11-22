@@ -425,6 +425,25 @@ describe('PublishPage', () => {
                 );
             });
 
+            it('should show only the stale notice when the re-read says the selection is stale (S-1436)', async () => {
+                vi.mocked(publish).mockRejectedValue(
+                    new VersionConflictError(412, 'stale publish confirmation'),
+                );
+                open({ fingerprint: 'fp1' });
+                await screen.findByRole('region', { name: '上線時間' });
+                await waitForLoaded();
+                vi.mocked(getChanges).mockRejectedValue(
+                    new ValidationError(422, 'unknown selection keys'),
+                );
+                await userEvent.click(screen.getByRole('button', { name: '發佈' }));
+
+                expect(await screen.findByText(/此頁資料已過時/)).toBeInTheDocument();
+                await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(1));
+                expect(screen.getAllByRole('button', { name: '重新載入' })).toHaveLength(1);
+                expect(screen.queryByText(/內容已於其他視窗或裝置變更/)).not.toBeInTheDocument();
+                expect(screen.getByRole('button', { name: '發佈' })).toBeDisabled();
+            });
+
             it('should still re-read the summary when refreshing the shared data fails', async () => {
                 vi.mocked(publish).mockRejectedValue(
                     new VersionConflictError(412, 'stale publish confirmation'),
