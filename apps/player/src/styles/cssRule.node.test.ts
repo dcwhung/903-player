@@ -67,6 +67,20 @@ describe('motionLeftOnWhenReduced', () => {
         expect(motionLeftOnWhenReduced(css)).toEqual([]);
     });
 
+    it('should report a list that only starts with none, and a keyframe named none-*', () => {
+        // S-1450
+        const css = `.a { animation: spin 1s; } .b { animation: none-fade 1s; }
+            ${reduce('.a { animation: none, spin 1s; }')}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual(['.a { animation }', '.b { animation }']);
+    });
+    it('should report !important motion that the reduce block switches off without !important', () => {
+        // S-1451
+        const css = `.a { transition: opacity 1s !important; } .b { transition: opacity 1s; }
+            ${reduce('.a { transition: none; } .b { transition: none !important; }')}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual(['.a { transition }']);
+    });
     it('should not count longhands that cannot start motion on their own', () => {
         const css = `.a { animation-play-state: running; animation-timing-function: linear;
             transition-delay: 1s; transition-duration: 0s; }`;
