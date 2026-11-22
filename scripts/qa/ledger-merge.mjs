@@ -12,7 +12,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 
 const LEDGER = '.proj-docs/qa/verification-ledger.tsv';
 const COL_CHAIN = 0;
@@ -20,10 +20,40 @@ const COL_STAGE = 1;
 const COL_PATH = 2;
 const COL_SHA = 3;
 
-const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+// AU-014：execFileSync 預設 maxBuffer 得 1 MiB，ledger 過咗就 ENOBUFS；64 MiB 夠用好耐，又唔會無上限食記憶體
+const GIT_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
+const GIT_EXEC_OPTIONS = { encoding: 'utf8', maxBuffer: GIT_MAX_BUFFER_BYTES };
+// exit 1 留返畀「有行要重新驗收」；用法錯（cwd 唔啱）用另一個 code 分開
+const EXIT_NOT_REPO_ROOT = 2;
+
+const git = (...args) => execFileSync('git', args, GIT_EXEC_OPTIONS).trim();
+
+/** repo root（worktree 就係 worktree root）；cwd 唔喺 git repo 入面就 null */
+function repoRoot() {
+    try {
+        const top = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+            ...GIT_EXEC_OPTIONS,
+            stdio: ['ignore', 'pipe', 'ignore'],
+        });
+        return realpathSync(top.trim());
+    } catch {
+        return null;
+    }
+}
+
+// LEDGER 同 fileSha() 嘅 path 都係相對 cwd：喺第二度跑會寫錯位置 / 全部 sha 對唔上，所以一開始就停
+function assertRepoRoot() {
+    const root = repoRoot();
+    const cwd = realpathSync(process.cwd());
+    if (root === cwd) return;
+    console.error(
+        `ledger-merge: must be run from the repo root (${root ?? 'not inside a git repo'}); cwd is ${cwd}`,
+    );
+    process.exit(EXIT_NOT_REPO_ROOT);
+}
 
 function loadLedger(ref) {
-    const text = execFileSync('git', ['show', `${ref}:${LEDGER}`], { encoding: 'utf8' });
+    const text = execFileSync('git', ['show', `${ref}:${LEDGER}`], GIT_EXEC_OPTIONS);
     const [header, ...lines] = text.split('\n').filter((line) => line.length > 0);
     const rows = new Map();
     for (const line of lines) {
@@ -49,6 +79,7 @@ function pick(key, base, ours, theirs, conflicts) {
 }
 
 function main() {
+    assertRepoRoot();
     const [oursRef = 'HEAD', theirsRef = 'MERGE_HEAD'] = process.argv.slice(2);
     const baseRef = git('merge-base', oursRef, theirsRef);
     const base = loadLedger(baseRef).rows;
