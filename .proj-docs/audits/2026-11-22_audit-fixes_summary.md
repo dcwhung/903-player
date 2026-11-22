@@ -17,8 +17,8 @@
 | P1   | AU-020 – 023 admin 草稿一致性       | [#309](https://github.com/dcwhung/903-player/pull/309) | admin 0.10.0 / api 0.14.0 | 多輪 pass                                | pass（e2e:admin 62）                       | 成功                     |
 | P2   | `.mjs` lint、文件 drift、audit fix  | [#310](https://github.com/dcwhung/903-player/pull/310) | —                         | 100 pass（S-1437 – S-1440）              | pass（prod `dist` 77/77 hash 同 base）     | 成功                     |
 | P2   | 減少動態 CSS                        | [#311](https://github.com/dcwhung/903-player/pull/311) | player 2.2.2              | 3 輪 pass（S-1447 – S-1451）             | pass（真瀏覽器量長按 transition）          | 成功                     |
-| P2   | AU-018 發佈 / 還原序列化 + S-1430   | [#312](https://github.com/dcwhung/903-player/pull/312) | api 0.14.1 / admin 0.10.1 | 3 輪：warn（W-870）→ warn（W-871）→ pass | pass（新 test 喺舊 code 9 + 2 個 fail）    | 見下面「部署」           |
-| P2   | AU-024 / 025 重讀次序、記錄頁       | [#313](https://github.com/dcwhung/903-player/pull/313) | admin 0.10.2 / api 0.14.2 | 2 輪 pass（S-1467、S-1468）              | pass（真瀏覽器 15/15，重現到 reload race） | 見下面「部署」           |
+| P2   | AU-018 發佈 / 還原序列化 + S-1430   | [#312](https://github.com/dcwhung/903-player/pull/312) | api 0.14.1 / admin 0.10.1 | 3 輪：warn（W-870）→ warn（W-871）→ pass | pass（新 test 喺舊 code 9 + 2 個 fail）    | 成功                     |
+| P2   | AU-024 / 025 重讀次序、記錄頁       | [#313](https://github.com/dcwhung/903-player/pull/313) | admin 0.10.2 / api 0.14.2 | 2 輪 pass（S-1467、S-1468）              | pass（真瀏覽器 15/15，重現到 reload race） | 成功                     |
 
 每條 lane 嘅流程：developer（TDD，新 test 先證明喺舊 code fail）→ 獨立 code reviewer → 同一條 lane 清晒 review item → re-review → QA S1（ledger freeze）→ merge 最新 `main` + `ledger-merge.mjs` → push → CI 綠 → merge → 睇 `main` 部署。
 
@@ -45,8 +45,7 @@
 
 ## 部署
 
-- #304 – #311：`main` 嘅 Deploy（Pages）同 Deploy API 全部成功。
-- #312、#313：見總結 chat 回覆嘅最後狀態（寫呢份報告時仲跑緊）。
+- #304 – #313：每次 merge 之後 `main` 嘅 Deploy（Pages）同 Deploy API 全部成功（最後一次：#313 → `d85b014`，Deploy API run 45058607625、Deploy run 45058607636）。
 
 ## 未驗證（要喺 production 做）
 
