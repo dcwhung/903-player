@@ -11,6 +11,7 @@ import { savedDiscOf } from '../../model/thumbs';
 import { EditorHeader } from '../editor/EditorHeader';
 import { EditorNotices } from '../editor/EditorNotices';
 import { idProblem } from '../editor/IdField';
+import { LeaveGuard } from '../editor/LeaveGuard';
 import { NameRevert } from '../revert/NameRevert';
 import { ShowEditorCard } from './ShowEditorCard';
 import { ShowTabs, type ShowTab } from './ShowTabs';
@@ -43,6 +44,7 @@ function ShowEditor({ id, tab }: { id: string | undefined; tab: ShowTab }) {
     const name = nameOf(draft.definition, isNew ? t('show.newTitle') : (id ?? ''));
     return (
         <>
+            <LeaveGuard dirty={show.unsaved} />
             <EditorHeader
                 listPath="/shows"
                 listLabel={t('list.shows')}

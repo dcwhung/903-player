@@ -4,6 +4,7 @@ import { publishChanges } from '../admin/publishChanges';
 import { resolveDoneFindings } from '../admin/todos';
 import type { AppEnv } from '../app';
 import { HTTP_STATUS } from '../config';
+import { assertFreshFingerprint } from './fingerprint';
 import {
     commitPublish,
     PublishValidationError,
@@ -16,8 +17,8 @@ import { publishedRows, type SelectionPlan } from './selection';
 import {
     preparePublish,
     publishBodyLimit,
+    publishRequestFromBody,
     selectionErrorResponse,
-    selectionFromBody,
 } from './selectivePublish';
 import { listPublishes, publishDocuments, type PublishRow } from './store';
 
@@ -72,13 +73,16 @@ const resolveAfterPublish = async (db: D1Database, publishId: number, plan?: Sel
 };
 
 /**
- * 普通 publish（body 選填 selection，見 selection.ts）：驗證 / commit；
- * selection 唔啱 → 400 / 422，validator 拒絕 → 422 連原因（還原見 rollback.ts）
+ * 普通 publish（body 選填 selection，見 selection.ts；選填 fingerprint，見 fingerprint.ts）：驗證 / commit；
+ * selection 唔啱 → 400 / 422，fingerprint 過時 → 412，validator 拒絕 → 422 連原因（還原見 rollback.ts）
  */
 const publishSelected = async (c: Context<AppEnv>) => {
     try {
-        const { value, plan } = await preparePublish(c.env, await selectionFromBody(c.req.raw));
+        const { selection, fingerprint } = await publishRequestFromBody(c.req.raw);
+        const { value, plan, base } = await preparePublish(c.env, selection);
         const validated = validateDocument(value);
+        // 確認頁睇到嘅內容同而家會出嘅唔同（AU-021）→ 412，未寫任何嘢
+        await assertFreshFingerprint(fingerprint, { base, json: validated.json });
         const options = {
             createdBy: c.get('email'),
             force: c.req.query('force') === '1',

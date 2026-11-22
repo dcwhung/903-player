@@ -47,7 +47,7 @@ GitHub Actions 只負責 build 同 deploy。
 ## 資料檔（節目 / 廣播劇）
 
 節目同廣播劇都唔寫喺 TypeScript，而係**一個 folder 一套**，build time 由 `import.meta.glob` 自動發現（純邏輯：JSON reader、theme schema、folder source、schema validator、registry，喺 repo 根嘅 `packages/catalog/`，package 名 `@903-player/catalog`）。
-加一套 = 新開 folder，放 JSON + 圖，**唔使改 code**；JSON 唔合格 `npm test` 會指出邊個檔邊個欄位（`src/*/catalog.test.ts` / schema validator）。
+加一套 = 新開 folder，放 JSON + 圖，**唔使改 code**；JSON 唔合格 `npm test` 會指出邊個檔邊個欄位（`src/catalog/libraryJsonSchemas.node.test.ts` / schema validator）。
 
 | 路徑                                                                     | 內容                                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -124,19 +124,19 @@ npm run coverage   # 覆蓋率（root vitest：player + catalog）
 npm run lint       # ESLint + Prettier
 npm run e2e        # Playwright 端對端測試（假錄音寫入 localStorage + 模擬 audio server）
 npm run build      # 輸出 apps/player/dist/
-npm test -- src/utils   # 只跑部分 test（path 子字串，player 同 catalog 都會 match；要準就寫 apps/player/src/utils）
+npm test -- src/utils   # 只跑部分 test（path 子字串，player 同 admin 都會 match；要準就寫 apps/player/src/utils）
 npm test -- --project @903-player/catalog   # 只跑一個 workspace
 ```
 
 ### 端對端測試（e2e）
 
-Playwright 鎖咗 `~1.63.0`（`apps/player/package.json`），瀏覽器版本要同套件對得上。新機第一次跑之前裝一次 Chromium：
+Playwright 鎖咗 `~1.63.0`（`apps/player/package.json`、`apps/admin/package.json`），瀏覽器版本要同套件對得上。新機第一次跑之前裝一次 Chromium：
 
 ```bash
 npx playwright install chromium
 ```
 
-`npm run e2e` 會先 `npm run build`，再喺 `apps/player` 用 `node e2e/run.mjs` 起 preview server（預設 port 4173）跑晒所有檢查，
+`npm run e2e` 會先 `npm run build -- --mode e2e`，再喺 `apps/player` 用 `node e2e/run.mjs` 起 preview server（預設 port 4173）跑晒所有檢查，
 截圖輸出去 `apps/player/e2e/screenshots/`（唔入 git）。
 
 - 瀏覽器已經裝咗喺其他位置（例如 CI / 雲端容器預先裝好）：設 `PLAYWRIGHT_BROWSERS_PATH` 指去嗰個資料夾，

@@ -14,15 +14,16 @@ interface MissingFolderProps {
     dramaId: string;
     folder: string;
     etag: string | null;
+    /** 有未儲存改動：配對完會重讀劇集、草稿會冇咗，唔畀配對（AU-022） */
+    blocked?: boolean;
     onPaired: () => Promise<void>;
 }
 
-export function MissingFolder({ dramaId, folder, etag, onPaired }: MissingFolderProps) {
-    const folders = useResource(unmappedFolders);
+/** 配對（POST）→ onPaired；失敗 = error */
+const usePairing = ({ dramaId, etag, onPaired }: MissingFolderProps) => {
     const [error, setError] = useState<string>();
-    const [picked, setPicked] = useState('');
     const [busy, setBusy] = useState(false);
-    const onPair = async () => {
+    const pair = async (picked: string) => {
         setBusy(true);
         try {
             await pairFolder(dramaId, picked, etag);
@@ -33,6 +34,14 @@ export function MissingFolder({ dramaId, folder, etag, onPaired }: MissingFolder
             setBusy(false);
         }
     };
+    return { error, busy, pair };
+};
+
+export function MissingFolder(props: MissingFolderProps) {
+    const { folder, blocked = false } = props;
+    const folders = useResource(unmappedFolders);
+    const [picked, setPicked] = useState('');
+    const { error, busy, pair } = usePairing(props);
     return (
         <div className="field wide" id="folder">
             <span>{t('fields.audio')}</span>
@@ -51,13 +60,14 @@ export function MissingFolder({ dramaId, folder, etag, onPaired }: MissingFolder
                 <button
                     type="button"
                     className="primary"
-                    disabled={picked === '' || busy}
-                    onClick={() => void onPair()}
+                    disabled={picked === '' || busy || blocked}
+                    onClick={() => void pair(picked)}
                 >
                     <Link2 aria-hidden="true" />
                     {t('drama.pair')}
                 </button>
             </div>
+            {blocked && <p className="note warn">{t('drama.pairUnsaved')}</p>}
             {error && (
                 <span className="err" role="alert">
                     {error}
