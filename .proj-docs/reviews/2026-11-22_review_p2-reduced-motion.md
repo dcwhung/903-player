@@ -59,6 +59,30 @@ Developer 報嘅 full suite / e2e / `e2e:visual` 冇重跑（Hard Rule #7，留�
 - 改動最小：補 selector 而唔係加 `!important` 或者提高權重，註解講清原因
 - 新 test 喺 base 版本會 fail，真係鎖住今次嘅 bug；helper 單元 test 蓋埋 no-preference / 其他 media 兩個 context
 
+## Round 2（`7300aa08`）
+
+- **範圍**：只驗 S-1447 / S-1448 / S-1449 嘅修正（`apps/player/tests/cssRule.ts`、`apps/player/src/styles/cssRule.node.test.ts`），冇改 source CSS
+- **Hard Gates**：all pass。`npm run lint` exit 0；`npx tsc -b` exit 0；`npm test -- apps/player/src/styles apps/player/src/components/pages/home/MiniPlayer apps/player/tests` exit 0，28 files / 266 tests
+- **總評**：✅ pass，100/100。冇 🔴 / 🟡；多咗 2 條 🟢（S-1450、S-1451），係「熄咗」判斷新出嘅 false negative，而家 repo 冇實例
+
+### 上輪 item
+
+- **S-1447** ✅：規則按文件次序記低，reduce 規則要排喺動畫規則後面先算熄。臨時 probe：reduce 寫喺前面會報，寫喺中間只報後面嗰條
+- **S-1448** ✅：`transition*` / `animation*` longhand 都計，自己開唔到動畫嘅（`-play-state`、`-delay` 等）唔計；熄嘅判斷按 transition / animation 分類。臨時 probe 結果：
+    - `animation: none` 熄到 `animation-name: spin`；`transition-property: none` 熄到 `transition`
+    - `transition-duration: 0s` 熄到 `transition: opacity 1s 2s`：剩低嘅 delay 只係遲兩秒直接跳，唔係動畫，接受
+    - `animation-duration: 0s, 1s` 照報（`every` 啱）；`transition: none` 熄唔到 `animation`（分類啱）
+- **S-1449** ✅：docstring 寫明係逐檔 opt-in，列咗已知誤報寫法（包括 ShowCardStack）
+- 回歸：helper 讀 `204cbfde` 原檔照報返 3 條；HEAD 嘅 `global.css` 同 `MiniPlayer.module.css` 係 `[]`；全 player CSS 掃描同 Round 1 一樣，只有 ShowCardStack 嗰 4 條已知誤報
+
+### 🟢 新 item
+
+- **S-1450** `apps/player/tests/cssRule.ts:211` — `isMotionOff` 用 `/^none\b/` 睇成個值嘅開頭，有兩種 false negative（臨時 probe 都返 `[]`）：
+    - reduce 寫 `animation: none, spin 1s` 或者 `animation-name: none, spin`（list 入面第二項照郁）都當熄咗
+    - keyframe 叫 `none-fade`（`\b` 喺 `-` 前面都成立）：`animation: none-fade 1s` 喺動畫規則嗰邊亦會當熄咗，第 274 行直接跳過，連 reduce block 都唔使有都唔報
+    - 修：值用逗號拆開，每一項第一個 token 要完全係 `none`（例如 `/^none(\s|$)/`）先算熄；加呢兩個 test
+- **S-1451** `apps/player/tests/cssRule.ts:256-280` — 動畫規則用 `!important`（例如 `transition: opacity 1s !important`），reduce block 冇 `!important` 係熄唔到，但 helper 返 `[]`。而家 repo 冇 transition / animation 用 `!important`。修：動畫宣告 `node.important` 而 reduce 嗰條唔係就照報；或者 docstring 寫明呢個盲點
+
 ## Handoff
 
 ```handoff-receipt
@@ -77,5 +101,5 @@ hard_gates:
 next_action: invoke_qa
 next_agent: quality-assurance
 branch: "fix/player/reduced-motion-css"
-context: "Pass at c7c05de3: MiniPlayer long-press and view-transition :only-child fades now switched off under reduced motion; helper verified to flag the bug on 204cbfde. ShowCardStack confirmed fine (helper false positive only). Open non-blocking (clear this session): S-1447 (helper ignores source order), S-1448 (longhands not checked), S-1449 (exact-selector false positives block a repo-wide lock). Report committed, not pushed. Next QA S1 (mini-player, ui-foundation)."
+context: "Round 2 pass at 7300aa08: S-1447, S-1448, S-1449 closed. New non-blocking (clear this session): S-1450 (none-prefix check: animation lists and none-* keyframe names), S-1451 (motion !important not considered). Round 1: pass at c7c05de3: MiniPlayer long-press and view-transition :only-child fades now switched off under reduced motion; helper verified to flag the bug on 204cbfde. ShowCardStack confirmed fine (helper false positive only). Report committed, not pushed. Next QA S1 (mini-player, ui-foundation)."
 ```
