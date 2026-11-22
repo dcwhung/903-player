@@ -188,14 +188,83 @@ describe('AudioController progress of an episode that was listened to', () => {
     });
 });
 
-describe('AudioController progress when timeupdate never fired (locked screen)', () => {
-    it('should save when playback is paused by the system after the position moved', async () => {
+/*
+ * W-859：鎖屏時 timeupdate 可能冇發。真 element 嘅暫停步驟係 paused 變 true → timeupdate → pause，
+ * 嗰下 timeupdate 到嘅時候已經係暫停，但都係播緊行出嚟嘅位置
+ */
+describe('AudioController progress when no playing timeupdate fired (locked screen)', () => {
+    it('should save when the pause steps deliver the first timeupdate (P1)', async () => {
         const { audio, controller } = setup();
         await controller.load(A, { autoplay: true });
         audio.emitMetadata(DURATION);
         audio.currentTime = LISTENED_TO;
         audio.pause();
+        expect(getProgress(A.id)).toMatchObject({ position: LISTENED_TO, updatedAt: NOW });
+    });
+
+    it('should save when the page hides while playing before any timeupdate (P2)', async () => {
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.currentTime = LISTENED_TO;
+        hidePage();
+        expect(getProgress(A.id)).toMatchObject({ position: LISTENED_TO, updatedAt: NOW });
+    });
+
+    it('should save when the tab goes to the background while playing before any timeupdate', async () => {
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.currentTime = LISTENED_TO;
+        const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+        document.dispatchEvent(new Event('visibilitychange'));
+        visibility.mockRestore();
         expect(getProgress(A.id)).toMatchObject({ position: LISTENED_TO });
+    });
+
+    it('should update a resumed episode played from the lock screen and paused (P3)', async () => {
+        storeEarlierProgress();
+        const { audio, controller } = setup();
+        await controller.load(A);
+        audio.emitMetadata(DURATION);
+        audio.emitTime(STORED_POSITION);
+        await controller.resume();
+        audio.currentTime = STORED_POSITION + LISTENED_TO;
+        audio.pause();
+        expect(getProgress(A.id)).toMatchObject({
+            position: STORED_POSITION + LISTENED_TO,
+            updatedAt: NOW,
+        });
+    });
+
+    it('should save when a playing timeupdate came before the pause (P4 control)', async () => {
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.emitTime(LISTENED_TO);
+        audio.pause();
+        expect(getProgress(A.id)).toMatchObject({ position: LISTENED_TO, updatedAt: NOW });
+    });
+
+    it('should leave a resumed record untouched when play is pressed, never moves and is paused', async () => {
+        const before = storeEarlierProgress();
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        audio.emitTime(STORED_POSITION);
+        hidePage();
+        controller.pause();
+        hidePage();
+        expect(storedRaw()).toBe(before);
+    });
+
+    it('should write nothing when the page hides while a first play has not moved', async () => {
+        const { audio, controller } = setup();
+        await controller.load(A, { autoplay: true });
+        audio.emitMetadata(DURATION);
+        hidePage();
+        controller.stop();
+        expect(getProgress(A.id)).toBeUndefined();
     });
 
     it('should mark the episode watched when it plays to the end', async () => {

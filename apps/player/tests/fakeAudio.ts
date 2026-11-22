@@ -94,10 +94,14 @@ export class FakeAudio extends EventTarget {
         queueMicrotask(() => this.dispatchEvent(new Event('play')));
     });
 
-    /** 同 spec 一樣：本身已經暫停就唔再發 pause event（S-640） */
+    /**
+     * 同 spec 一樣：本身已經暫停就唔再發 pause event（S-640）；
+     * 暫停步驟係 paused 先變 true，再發 timeupdate，之後先發 pause（W-859）
+     */
     pause = vi.fn(() => {
         if (this.paused) return;
         this.paused = true;
+        this.dispatchEvent(new Event('timeupdate'));
         this.dispatchEvent(new Event('pause'));
     });
 

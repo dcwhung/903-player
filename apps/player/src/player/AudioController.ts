@@ -376,6 +376,8 @@ export class AudioController {
 
     private persist = (): void => {
         this.lastSavedAt = Date.now();
+        // 播緊但未有 timeupdate（鎖屏）就 pagehide / 入背景：而家嘅位置都係播出嚟嘅（W-859）
+        this.notePlayedIfPlaying();
         const { recording } = this.state;
         // 未 loadedmetadata 前 currentTime 已被 reset 做 0，存落去會洗走續播位置；
         // 載入之後冇播過、冇 seek 過就冇嘢要存（AU-026）
@@ -414,10 +416,7 @@ export class AudioController {
         if (!this.hasMetadata()) {
             return;
         }
-        // 暫停中嘅 timeupdate（套用續播位置）唔算播過
-        if (!this.audio.paused) {
-            this.notePlayed();
-        }
+        this.notePlayedIfPlaying();
         this.update({ currentTime: this.audio.currentTime });
         this.checkAudible();
         if (this.replay.track(this.audio.currentTime, this.audio.paused)) {
@@ -441,6 +440,16 @@ export class AudioController {
     private notePlayed(): void {
         if (this.hasMetadata() && this.audio.currentTime !== this.state.currentTime) {
             this.hasProgressToSave = true;
+        }
+    }
+
+    /**
+     * timeupdate / 存進度時叫：播緊先睇位置。暫停步驟係 paused 先變 true 再發 timeupdate，嗰陣
+     * state.isPlaying 仲係 true，照計（W-859）；冇播緊嘅 timeupdate（載入後套用續播位置）唔算播過
+     */
+    private notePlayedIfPlaying(): void {
+        if (this.state.isPlaying || !this.audio.paused) {
+            this.notePlayed();
         }
     }
 
