@@ -177,12 +177,13 @@ const preflight = async (env: RollbackEnv, rows: ReturnType<typeof rowsAfter>, f
     );
     const latest = await latestPublish(env.DB);
     const missing = latest ? missingEpisodeIds(latest.episodeIds, validated.episodeIds) : [];
-    return { validated, missing: force ? [] : missing };
+    return { validated, missing: force ? [] : missing, base: latest?.row.id ?? null };
 };
 
 /**
  * 還原 #id：null = 冇呢次 publish。#id 唔係 ok throw RollbackNotRestorableError（409）；
  * 驗證唔過 throw PublishValidationError（422）；ID 守衛唔過回 rejected（409）；全部都喺寫 D1 之前。
+ * 期間有另一個 publish 落地 → commitPublish throw PublishConflictError（409，AU-018），D1 寫返舊值。
  * R2 寫咗之後 purge cache 失敗唔會 throw（commitPublish 只 log，S-814），所以 revert 只會喺
  * R2 未寫 / 被拒時發生，D1 同已上線 catalog 唔會唔夾
  */
@@ -197,11 +198,12 @@ export const rollbackToPublish = async (
         throw new RollbackNotRestorableError(`publish ${id} is not ok (${snapshot.status})`);
     const entries = await listStoredEntries(env.DB);
     const changes = planChanges(entries, snapshotDefinitions(snapshot.document));
-    const { validated, missing } = await preflight(env, rowsAfter(entries, changes), force);
+    const { validated, missing, base } = await preflight(env, rowsAfter(entries, changes), force);
     if (missing.length > 0) return { kind: 'rejected', missing };
     const applied = await apply(env.DB, changes);
     try {
-        const outcome = await commitPublish(env, validated, { createdBy, force, rollbackOf: id });
+        const options = { createdBy, force, rollbackOf: id, base };
+        const outcome = await commitPublish(env, validated, options);
         if (outcome.kind === 'rejected') await revert(env.DB, changes, applied);
         return outcome;
     } catch (error) {

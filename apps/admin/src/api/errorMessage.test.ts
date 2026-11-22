@@ -29,4 +29,14 @@ describe('errorMessage', () => {
         });
         expect(errorMessage(error)).toBe('此短篇已有排程，請先移除排程再修改 ID。');
     });
+
+    it('should explain a publish or restore that lost to another publish (AU-018)', () => {
+        const error = new ApiError(409, 'another publish finished or is in progress', {
+            error: 'another publish finished or is in progress',
+            reason: 'publishConflict',
+        });
+        expect(errorMessage(error)).toBe(
+            '另一次發佈或還原剛剛完成或仍在進行，此操作未有執行。請重新載入後再試。',
+        );
+    });
 });

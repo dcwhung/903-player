@@ -141,6 +141,7 @@ export const zhHK = {
             '處理方法：請於劇集頁補回相關集數。如需下架，請使用「下架」或排程下架，切勿刪除集數。',
         failed: '發佈失敗：{error}',
         unchanged: '內容與目前版本相同，沒有發佈新版本。',
+        conflict: '另一次發佈或還原剛剛完成或仍在進行，此操作未有執行。請重新載入後再試。',
         warnContrast: '{name}：{fg} 與 {bg} 對比度 {ratio}:1（需 ≥ {min}:1）',
         warnUnreadable: '{name}：{fg} 與 {bg} 色值無法辨認（需 ≥ {min}:1）',
         warnNeutral: '{name}：未設定配色，現正使用中性灰',

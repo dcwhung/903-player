@@ -161,7 +161,8 @@ npm run import -- --remote --overwrite   # production：用 repo 版本蓋過 D1
     - #N 係 `status = 'failed'`（從未上過 R2）→ 409，乜都唔寫（S-797）
     - 次序：先喺記憶體砌 document → 驗證（422）+ ID 守衛（409）→ 唔過就乜都唔寫；過咗先一個 D1 batch 寫（樂觀鎖，`updated_at` / ETag bump；中途有人改 → 寫返舊值 + 412）→ publish；publish throw（例如 R2 寫唔到）或者被拒 → 另一個 batch 寫返舊 definition（`updated_at` 再 bump）
     - 冇嘢要改又同最新一次一樣 → `{ unchanged: true }`（唔開新行）
-- 內容（除 `generatedAt` 外）同最新一次一樣 → `{ unchanged: true, publish }`，唔開新行、唔寫 R2（admin 顯示「內容與目前版本相同」）；`?force=1` 照寫
+- 內容（除 `generatedAt` 外）同最新一次一樣，而且 R2 `catalog.json` 嘅 `customMetadata.hash` 就係嗰次嘅 hash（0.14.1：真係已上線）→ `{ unchanged: true, publish }`，唔開新行、唔寫 R2（admin 顯示「內容與目前版本相同」）；`?force=1` 照寫
+- **序列化**（0.14.1，AU-018）：冇獨立嘅鎖（所以冇鎖會放唔返），靠三個條件令重疊嘅 publish / 還原只有一個落地：commit 開頭最新 ok publish 要仲係砌 document 時嗰個（`base`）；`publishes` 用條件 insert（同一句 SQL 再對 `base`）；R2 用條件寫入（commit 開頭讀到嘅 etag 未變，未有 object 就 `If-None-Match: *`），唔啱就刪返啱啱記嗰行。輸咗嗰個回 409 `{ error, reason: "publishConflict" }`（冇 `missing`），`?force=1` 都一樣；還原會寫返舊 definition。Worker 喺記咗行之後、寫 R2 之前死咗：嗰行留低但唔擋之後嘅 publish，下次 publish 因為 R2 hash 對唔上唔會當 `unchanged`，會重新寫 R2
 - 次序：先記 `publishes` 一行，再寫 R2；R2 寫失敗就刪返嗰行（ID 守衛唔會漏咗已上線嘅 ID）；R2 寫咗之後 purge edge cache 失敗只 log、唔當 publish 失敗（S-814：唔係還原會 revert D1，同已上線 catalog 唔夾）；連刪都失敗就標 `status = 'failed'`（migration `0003`）。「而家 publish 緊」、ID 守衛、「內容冇變」比較都只睇最新一行 `status = 'ok'`，記錄照列出 failed 行（`status` 欄）
 - 圖 manifest 嘅圖檔名要合 `<sha256 前 16 hex>.<webp|jpg>` 兼已經喺 `assets`
 - D1 有 banner（`PUT /api/banner`）就寫入 `catalog.json` 嘅 `banner: { standard, long }`（Worker 圖 URL，同樣要已上載）；冇 = 唔寫（player 用內建圖）。還原 #N 照用而家 D1 嘅 banner（同圖一樣唔還原）
