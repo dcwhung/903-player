@@ -178,6 +178,59 @@ describe('probe store when the session falls back to the bundled catalog', () =>
     });
 });
 
+// S-1422：讀唔返舊 storage（壞 JSON / 讀取 throw）就冇得保留，但今次嘅結果照寫得入
+describe('probe store write when the stored state cannot be read back', () => {
+    let warn: ReturnType<typeof vi.spyOn>;
+    const KNOWN = { ...BADGIRL_RECORDING, id: `show:badgirl:${RECENT_DATE}` };
+    const MISSES = { [`badgirl:${OLD_DATE}`]: 1 };
+
+    beforeEach(() => {
+        localStorage.clear();
+        warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    });
+    afterEach(() => {
+        vi.restoreAllMocks();
+        warn.mockRestore();
+    });
+
+    it('should still write the new state over corrupt JSON, without any carry-over', async () => {
+        const { store } = await openFallbackSession();
+        localStorage.setItem(PROBE_STORAGE_KEY, '{not json');
+
+        store.writeProbeState({ found: [KNOWN], misses: MISSES });
+
+        expect(JSON.parse(localStorage.getItem(PROBE_STORAGE_KEY) ?? 'null')).toEqual({
+            found: [KNOWN],
+            misses: MISSES,
+        });
+    });
+
+    it('should still write the new state when reading storage throws', async () => {
+        const { store } = await openFallbackSession();
+        seed(REMOTE_ONLY_RECORDINGS);
+        const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new DOMException('denied', 'SecurityError');
+        });
+
+        store.writeProbeState({ found: [KNOWN], misses: MISSES });
+        getItem.mockRestore();
+
+        expect(JSON.parse(localStorage.getItem(PROBE_STORAGE_KEY) ?? 'null')).toEqual({
+            found: [KNOWN],
+            misses: MISSES,
+        });
+    });
+
+    it('should carry nothing over when the stored found list is not an array', async () => {
+        const { store } = await openFallbackSession();
+        localStorage.setItem(PROBE_STORAGE_KEY, JSON.stringify({ found: 'oops', misses: {} }));
+
+        store.writeProbeState({ found: [KNOWN], misses: {} });
+
+        expect(storedFound()).toEqual([KNOWN]);
+    });
+});
+
 describe('probe store when the session catalog is complete', () => {
     let warn: ReturnType<typeof vi.spyOn>;
 
