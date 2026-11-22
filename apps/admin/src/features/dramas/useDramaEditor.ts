@@ -1,7 +1,8 @@
 /*
  * 廣播劇編輯頁（三個 tab 共用）：載入、儲存（未發佈可改 ID；確認自動派嘅 ID）、改名、上載圖、重新掃描、欄位錯誤。
  * 改 ID：server 連自動編號嘅短篇 ID（<舊 ID>-NN）一齊改，URL（包括記住嘅 #短篇）同要確認嘅短篇 ID 跟住改；
- * rename 成功但 PUT 失敗都要搬去新 ID（草稿 + 錯誤由 editor/renamedHandoff 帶過去，AU-013）
+ * rename 成功但 PUT 失敗都要搬去新 ID（草稿 + 錯誤由 editor/renamedHandoff 帶過去，AU-013）；
+ * unsaved = 有未儲存嘅嘢，離開要問（editor/LeaveGuard，AU-023）
  */
 import { useState } from 'react';
 import { errorMessage } from '../../api/errorMessage';
@@ -11,6 +12,7 @@ import { useToast } from '../../ui/Toast';
 import { changeFlagsOf } from '../../model/listModel';
 import { arcPublishedIn } from '../../model/raw';
 import { idProblem } from '../editor/IdField';
+import { ownNavigation } from '../editor/leaveRules';
 import { useEditorOrigin } from '../editor/useEditorOrigin';
 import { useEntryEditor, type EntryEditor } from '../editor/useEntryEditor';
 import { useImageSave } from '../editor/useImageSave';
@@ -71,7 +73,9 @@ const useFollowRename = (id: string) => {
     const location = useLocation();
     const navigate = useNavigate();
     const rows = useAdminData().todos.data?.rows ?? [];
-    return (to: string) => navigate(renamedDramaUrl(location, rows, id, to), { replace: true });
+    // 編輯頁自己搬（ownNavigation）：就算草稿仲有未儲存改動（PUT 失敗）都唔問，草稿跟住去新 ID
+    return (to: string) =>
+        navigate(renamedDramaUrl(location, rows, id, to), ownNavigation({ replace: true }));
 };
 
 interface DramaSaveInput {
@@ -103,7 +107,7 @@ const useDramaSave = ({ id, editor, origin, newId, errorCount }: DramaSaveInput)
             toast(errorMessage(error)),
         );
         if (saved.id !== id && !origin.fromTodos) await followRename(saved.id);
-        await origin.afterSave();
+        await origin.afterSave({ draftSaved: true });
     };
 };
 
@@ -113,7 +117,9 @@ export const useDramaEditor = (id: string) => {
     const [newId, setNewId] = useState(id);
     const errors = useFieldErrors(newId);
     const save = useDramaSave({ id, editor, origin, newId, errorCount: errors.errorCount });
-    const parts = { id, editor, origin, newId, setNewId, save, ...errors };
+    /** 離開會冇咗嘅嘢：草稿改動 / 未儲存嘅改 ID（LeaveGuard，AU-023） */
+    const unsaved = editor.dirtyKeys.length > 0 || newId !== id;
+    const parts = { id, editor, origin, newId, setNewId, save, unsaved, ...errors };
     const autoCrop = useR2AutoCrop(id, editor);
     return {
         ...parts,

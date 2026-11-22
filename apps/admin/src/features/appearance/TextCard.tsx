@@ -11,6 +11,7 @@ import { useResource } from '../../data/useResource';
 import { t } from '../../i18n/t';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { useToast } from '../../ui/Toast';
+import { LeaveGuard } from '../editor/LeaveGuard';
 import { CardHead, RestoreDialog, StatusPill } from './AppearanceParts';
 import { TextFields, TextPreviews } from './TextParts';
 import { useRestore } from './useRestore';
@@ -94,6 +95,8 @@ export function TextCard() {
     const confirmSave = () => (setConfirming(false), save());
     return (
         <div className="card appearance-card">
+            {/* 草稿只喺呢頁：未儲存就離開要問（S-1435）；儲存後重讀 = 冇未儲存改動，唔使特別放行 */}
+            <LeaveGuard dirty={draft.dirty} />
             <CardHead
                 title={t('appearance.text.title')}
                 status={
