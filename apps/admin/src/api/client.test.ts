@@ -1,6 +1,7 @@
 import {
     ApiError,
     PublishBlockedError,
+    PublishConflictError,
     UnauthorizedError,
     ValidationError,
     VersionConflictError,
@@ -79,6 +80,18 @@ describe('request', () => {
         )) as PublishBlockedError;
         expect(error).toBeInstanceOf(PublishBlockedError);
         expect(error.missing).toEqual(['drama:a:b:1']);
+    });
+
+    it('should turn a 409 with reason publishConflict into PublishConflictError (AU-018)', async () => {
+        vi.stubGlobal(
+            'fetch',
+            respond(409, { error: 'another publish finished', reason: 'publishConflict' }),
+        );
+        const error: unknown = await request('/api/publish', { method: 'POST' }).catch(
+            (e: unknown) => e,
+        );
+        expect(error).toBeInstanceOf(PublishConflictError);
+        expect(error).not.toBeInstanceOf(PublishBlockedError);
     });
 
     it('should keep other 409s as a plain ApiError with the server message', async () => {

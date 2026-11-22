@@ -1,6 +1,6 @@
 // @vitest-environment node
 // 要用 node:fs 讀 CSS 原文：*.node.test.ts 行 tsconfig.node.json（有 Node 型別），唔會漏入 app 程式
-import { cssDeclarations, readCss } from '../../../../../tests/cssRule';
+import { cssDeclarations, motionLeftOnWhenReduced, readCss } from '../../../../../tests/cssRule';
 import { DISMISS_SLIDE_MS, LONG_PRESS_MS } from './miniPlayerDismiss';
 
 const mini = readCss(new URL('./MiniPlayer.module.css', import.meta.url));
@@ -36,5 +36,15 @@ describe('mini player swipe-to-close timing', () => {
 
     it('should slide the card away as long as the close waits', () => {
         expect(tokens['--mini-dismiss-slide-ms']).toBe(`${DISMISS_SLIDE_MS}ms`);
+    });
+});
+
+/*
+ * 減少動態：長按縮細嗰條 transition（.player[data-pressing='true']）specificity 高過 .player，
+ * reduce block 要逐條 selector 熄，否則撳住照樣慢慢縮（審計 2026-11-22）
+ */
+describe('mini player reduced motion', () => {
+    it('should switch off every transition when reduced motion is on, the long press included', () => {
+        expect(motionLeftOnWhenReduced(mini)).toEqual([]);
     });
 });

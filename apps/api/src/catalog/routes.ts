@@ -7,6 +7,7 @@ import { HTTP_STATUS } from '../config';
 import { assertFreshFingerprint } from './fingerprint';
 import {
     commitPublish,
+    PublishConflictError,
     PublishValidationError,
     validateDocument,
     type PublishOutcome,
@@ -62,6 +63,10 @@ const respond = (
     });
 };
 
+/** 另一個 publish / 還原喺中間落地（AU-018）：409 + reason（冇 missing，同 ID 守衛嘅 409 分得開） */
+const conflictResponse = (c: Context<AppEnv>, error: PublishConflictError) =>
+    c.json({ error: error.message, reason: PublishConflictError.reason }, HTTP_STATUS.conflict);
+
 /** publish 成功：今次真係發佈咗、搞掂咗嘅掃描 finding 標 resolved（還原唔算） */
 const resolveAfterPublish = async (db: D1Database, publishId: number, plan?: SelectionPlan) => {
     try {
@@ -74,7 +79,8 @@ const resolveAfterPublish = async (db: D1Database, publishId: number, plan?: Sel
 
 /**
  * 普通 publish（body 選填 selection，見 selection.ts；選填 fingerprint，見 fingerprint.ts）：驗證 / commit；
- * selection 唔啱 → 400 / 422，fingerprint 過時 → 412，validator 拒絕 → 422 連原因（還原見 rollback.ts）
+ * selection 唔啱 → 400 / 422，fingerprint 過時 → 412，validator 拒絕 → 422 連原因（還原見 rollback.ts），
+ * 撞正另一個 publish → 409 publishConflict（AU-018）
  */
 const publishSelected = async (c: Context<AppEnv>) => {
     try {
@@ -87,6 +93,7 @@ const publishSelected = async (c: Context<AppEnv>) => {
             createdBy: c.get('email'),
             force: c.req.query('force') === '1',
             rollbackOf: null,
+            base,
         };
         const outcome = await commitPublish(c.env, validated, options);
         if (outcome.kind === 'published')
@@ -96,6 +103,7 @@ const publishSelected = async (c: Context<AppEnv>) => {
     } catch (error) {
         const selectionError = selectionErrorResponse(c, error);
         if (selectionError) return selectionError;
+        if (error instanceof PublishConflictError) return conflictResponse(c, error);
         if (!(error instanceof PublishValidationError)) throw error;
         return c.json({ error: error.message }, HTTP_STATUS.unprocessable);
     }
@@ -125,7 +133,7 @@ publishRoutes.get('/publishes', async (c) => {
 /**
  * 還原 #N：snapshot #N 嘅上架狀態寫返 D1（之後新增嘅下架），再經正常 publish 發佈（rollbackOf = N），
  * 見 rollback.ts；驗證 / ID 守衛唔過乜都唔寫（422 / 409），#N 係 failed（從未上過 R2）→ 409（S-797），
- * 途中有人改 entry → 412
+ * 途中有人改 entry → 412，途中有另一個 publish 落地 → 409 publishConflict（AU-018）
  */
 publishRoutes.post('/publishes/:id/rollback', async (c) => {
     const id = c.req.param('id');
@@ -140,6 +148,7 @@ publishRoutes.post('/publishes/:id/rollback', async (c) => {
     } catch (error) {
         if (error instanceof PublishValidationError)
             return c.json({ error: error.message }, HTTP_STATUS.unprocessable);
+        if (error instanceof PublishConflictError) return conflictResponse(c, error);
         if (error instanceof RollbackNotRestorableError)
             return c.json({ error: error.message }, HTTP_STATUS.conflict);
         if (error instanceof RollbackConflictError)

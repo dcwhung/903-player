@@ -2,7 +2,7 @@
 
 - Tier: T1 | Commit: `584bdd2e`（code `2262bb46`）| Base: `82f25ed2` | Verdict: ✅ pass
 - Ledger: SKIP 11 / REVERIFY 4（admin、api、coming-soon、repo-tooling）/ UNCOVERED 7（全部歸 admin / api）/ IGNORED 2
-- Plan：`.proj-docs/qa/plans/admin.md` 新增 AC-38、`.proj-docs/qa/plans/api.md` 新增 AC-36；coming-soon / repo-tooling 沿用（淨係 `package-lock.json` 嘅 admin / api workspace version，由 lint / `tsc -b` / `npm test` 證）；Review：`.proj-docs/reviews/2026-11-22_review_p2-admin-reload-history.md`
+- Plan：`.proj-docs/qa/plans/admin.md` 新增 AC-39、`.proj-docs/qa/plans/api.md` 新增 AC-37；coming-soon / repo-tooling 沿用（淨係 `package-lock.json` 嘅 admin / api workspace version，由 lint / `tsc -b` / `npm test` 證）；Review：`.proj-docs/reviews/2026-11-22_review_p2-admin-reload-history.md`
 
 ## Runs（head `584bdd2e`，exit code 直接睇）
 
@@ -19,7 +19,7 @@
 
 Admin coverage（lines）：`useResource.ts` 100、`HistoryPage.tsx` 94.7、`HistoryRow.tsx` 100、`useHistoryActions.ts` 100、`HistoryHeader.tsx` / `RollbackButton.tsx` / `DeployCell.tsx` 100（skipFull 冇列）、`endpoints.ts` 86、`AdminData.tsx` 47.8（未行 = L50–64 `AdminDataProvider`，今次冇改；改咗嘅 `loadedOf` / `loadAllEntries` 有行到；provider 由 e2e 行）
 
-## Browser acceptance（AC-38 / AC-36）
+## Browser acceptance（AC-39 / AC-37）
 
 - (1) 還原：`還原至 #2` → dialog「還原」**連撳兩下** → request 扣住期間 3/3 個掣（2 個還原 + 1 個重新部署）disabled、表 `aria-busy=true`；放行後 toast「已還原至 #2」、掣恢復；rollback request = 1。500 → 「還原失敗：D1 busy」
 - (2) `GET /api/publishes` 500：淨出「載入失敗：D1 unavailable」+「重試」，table 0、「共 N 次」0、空狀態 0；撳重試 → 表同「共 3 次」返嚟、alert 消失
@@ -39,10 +39,12 @@ all pass（PWA gate n/a：admin 冇 SW / manifest）
 
 ## 建議補測
 
-- none（AC-38 / AC-36 已有 unit + e2e；no edge case gap）
+- none（AC-39 / AC-37 已有 unit + e2e；no edge case gap）
 
 ## Freeze
 
 - admin S1、api S1、coming-soon S1、repo-tooling S1：ledger 現有成條 chain + stage 檔案 + 今次新檔重新 freeze；同 base ledger 比對 chain + stage + path 冇少行
 - 行數（S1）：admin 483 → 489（+6 新檔）、api 160 → 161（+1）、coming-soon 163 → 163、repo-tooling 51 → 51；四條 S1 `status` 全 FROZEN（`impact` 仍列 REVERIFY 係因為 S3 行 STALE，屬 release S3）
 - SKIP：ambient、bookmark、card-zoom、catalog-data、drama、home、mini-player、player-core、pwa-shell、show-today-page、ui-foundation（frozen，冇改）
+
+> 2026-11-22 main agent：同 AU-018 lane 合併時，兩邊都用咗 admin AC-38 / api AC-36 同 admin 0.10.1；AU-018 先 merge 保留原號，呢條 lane 改做 admin AC-39、api AC-37、admin 0.10.2。合併後 tree 重跑 gate 再 freeze（見 ledger）。

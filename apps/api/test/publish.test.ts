@@ -216,6 +216,7 @@ describe('commitPublish (S-767)', () => {
         const failing = {
             ...env,
             CATALOG: {
+                head: () => Promise.resolve(null),
                 put: async () => {
                     const rows = await env.DB.prepare('SELECT COUNT(*) AS n FROM publishes').first(
                         'n',
@@ -225,7 +226,7 @@ describe('commitPublish (S-767)', () => {
                 },
             } as unknown as R2Bucket,
         };
-        const options = { createdBy: 'x', force: false, rollbackOf: null };
+        const options = { createdBy: 'x', force: false, rollbackOf: null, base: null };
         await expect(commitPublish(failing, await validated(), options)).rejects.toThrow('R2 down');
         expect(await history()).toHaveLength(0);
         expect(await env.CATALOG.head('catalog/v1/catalog.json')).toBeNull();
@@ -243,6 +244,7 @@ describe('commitPublish (S-767)', () => {
                     : (Reflect.get(target, key) as unknown),
         });
         const catalog = {
+            head: (key: string) => env.CATALOG.head(key),
             put: async () => {
                 throw new Error('R2 down');
             },
@@ -254,7 +256,7 @@ describe('commitPublish (S-767)', () => {
         (await env.DB.prepare('SELECT id, status FROM publishes ORDER BY id').all()).results;
 
     it('should mark the row failed when dropping it fails too, and ignore it afterwards (S-786)', async () => {
-        const options = { createdBy: 'x', force: false, rollbackOf: null };
+        const options = { createdBy: 'x', force: false, rollbackOf: null, base: null };
         await expect(commitPublish(doubleFailure(), await validated(), options)).rejects.toThrow(
             'R2 down',
         );
@@ -275,7 +277,7 @@ describe('commitPublish (S-767)', () => {
     it('should leave a failed row out of the ID guard and the current marker (S-786)', async () => {
         await adminPost('/api/publish');
         await putEntry('dramas', 'golden', drama(4));
-        const options = { createdBy: 'x', force: false, rollbackOf: null };
+        const options = { createdBy: 'x', force: false, rollbackOf: null, base: 1 };
         await expect(commitPublish(doubleFailure(), await validated(), options)).rejects.toThrow();
         // 3 集版本：同 failed 嗰行（4 集）比會少一集，但最新 ok 嗰行（3 集）冇少 → 唔擋
         await putEntry('dramas', 'golden', drama(3));
@@ -383,7 +385,13 @@ describe('GET /api/publishes + rollback (restore status into D1)', () => {
     it('should put D1 back when writing the catalog fails', async () => {
         await putEntry('dramas', 'golden', { ...drama(4), enabled: false });
         await adminPost('/api/publish');
-        const failing = { ...env, CATALOG: { put: () => Promise.reject(new Error('R2 down')) } };
+        const failing = {
+            ...env,
+            CATALOG: {
+                head: (key: string) => env.CATALOG.head(key),
+                put: () => Promise.reject(new Error('R2 down')),
+            },
+        };
         const { rollbackToPublish } = await import('../src/catalog/rollback');
         await expect(
             rollbackToPublish(failing as unknown as typeof env, 1, {

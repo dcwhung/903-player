@@ -66,6 +66,7 @@ const assertFetchablePort = async () => {
             throw new Error(
                 `port ${PORT} is blocked by Node fetch ("bad port", WHATWG port blocking). ` +
                     'Set E2E_PORT to another port, e.g. 4185.',
+                { cause: error },
             );
     }
 };

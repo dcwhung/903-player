@@ -1,6 +1,7 @@
 /*
  * Admin API fetch wrapper：同 origin cookie、ETag / If-Match 樂觀鎖、HTTP 錯誤 → 型別化 error，
- * UI 按型別顯示（401 → login、412 → 重新載入、422 → 欄位錯誤、409 publish → 擋住清單）
+ * UI 按型別顯示（401 → login、412 → 重新載入、422 → 欄位錯誤、409 publish → 擋住清單 /
+ * publishConflict → 重讀摘要）
  */
 
 const HTTP = {
@@ -53,6 +54,14 @@ export class PublishBlockedError extends ApiError {
     }
 }
 
+/** server 擋「撞正另一次發佈 / 還原」嘅 409 body.reason（api 0.14.1 合約，AU-018） */
+const PUBLISH_CONFLICT_REASON = 'publishConflict';
+
+/** 409 publishConflict：另一次發佈 / 還原喺中間落地，今次冇執行 */
+export class PublishConflictError extends ApiError {
+    override readonly name = 'PublishConflictError';
+}
+
 export interface RequestOptions {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
     body?: unknown;
@@ -94,6 +103,8 @@ export const errorOf = (status: number, body: Json): ApiError => {
     if (status === HTTP.unprocessable) return new ValidationError(status, message, body);
     if (status === HTTP.conflict && Array.isArray(body.missing))
         return new PublishBlockedError(status, message, body);
+    if (status === HTTP.conflict && body.reason === PUBLISH_CONFLICT_REASON)
+        return new PublishConflictError(status, message, body);
     return new ApiError(status, message, body);
 };
 
