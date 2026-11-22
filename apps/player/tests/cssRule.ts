@@ -180,40 +180,102 @@ export const declarationsOutside = (css: string, prelude: string): CssDeclaratio
 
 const REDUCED_MOTION_CONTEXT = '@media (prefers-reduced-motion: reduce)';
 const NO_PREFERENCE = 'prefers-reduced-motion: no-preference';
-const MOTION_PROPS: readonly string[] = ['transition', 'animation'];
+const MOTION_FAMILIES = ['transition', 'animation'] as const;
+type MotionFamily = (typeof MOTION_FAMILIES)[number];
 
-/** 規則入面符合條件嘅 transition / animation 宣告，每個 selector 一條 `selector { prop }` */
-const motionKeys = (rule: Rule, wanted: (value: string) => boolean): string[] => {
-    const keys: string[] = [];
-    rule.each((node) => {
-        if (node.type !== 'decl' || !MOTION_PROPS.includes(node.prop)) return;
-        if (!wanted(squash(node.value))) return;
-        for (const selector of rule.selectors) keys.push(`${squash(selector)} { ${node.prop} }`);
-    });
-    return keys;
+/** 自己開唔到動畫嘅 longhand（要有 name / property + duration 先郁）：唔當動態 */
+const NOT_MOTION_SUFFIXES: readonly string[] = [
+    '-play-state',
+    '-timing-function',
+    '-delay',
+    '-fill-mode',
+    '-direction',
+    '-iteration-count',
+    '-composition',
+    '-behavior',
+];
+
+/** 屬性係邊類動態（transition* / animation*）；唔係、或者自己開唔到動畫嘅 longhand 就 undefined */
+const motionFamilyOf = (prop: string): MotionFamily | undefined => {
+    const family = MOTION_FAMILIES.find((name) => prop === name || prop.startsWith(`${name}-`));
+    if (family === undefined) return undefined;
+    return NOT_MOTION_SUFFIXES.some((suffix) => prop === `${family}${suffix}`) ? undefined : family;
 };
 
+const isZeroTime = (value: string): boolean => /^0(s|ms)?$/.test(value.trim());
+
 /**
- * 減少動態時仲會郁嘅規則，寫成 `selector { prop }`（prop = transition / animation）。
- * `@media (prefers-reduced-motion: reduce)` 入面要有 selector 完全一樣嘅規則將嗰個屬性設做 none 先當熄咗：
- * selector 一樣 specificity 就一樣，後寫嘅 reduce block 先一定贏。只寫 `.player` 熄唔到
- * `.player[data-pressing='true']`（0,2,0 贏 0,1,0），jsdom 又睇唔到 cascade，所以直接讀原文。
- * 寫喺 `prefers-reduced-motion: no-preference` 入面嘅本身已經唔會出現，唔計。
+ * 呢個值係咪熄咗動態：shorthand / -property / -name 以 none 開頭（`none`、`none 0s`），
+ * 或者 -duration 全部係 0
+ */
+const isMotionOff = (prop: string, value: string): boolean =>
+    prop.endsWith('-duration') ? value.split(',').every(isZeroTime) : /^none\b/.test(value);
+
+interface MotionDeclaration {
+    selector: string;
+    prop: string;
+    family: MotionFamily;
+    off: boolean;
+}
+
+/** 規則入面嘅動態宣告，每個 selector 一條 */
+const motionDeclarations = (rule: Rule): MotionDeclaration[] => {
+    const found: MotionDeclaration[] = [];
+    rule.each((node) => {
+        if (node.type !== 'decl') return;
+        const family = motionFamilyOf(node.prop);
+        if (family === undefined) return;
+        const off = isMotionOff(node.prop, squash(node.value));
+        for (const selector of rule.selectors) {
+            found.push({ selector: squash(selector), prop: node.prop, family, off });
+        }
+    });
+    return found;
+};
+
+const offKey = ({ selector, family }: MotionDeclaration): string => `${selector} { ${family} }`;
+
+/**
+ * 減少動態時仲會郁嘅規則，寫成 `selector { prop }`（prop = 開動畫嗰個屬性，例如 transition / animation-name）。
+ *
+ * 呢個係逐個檔自己揀用嘅檢查（冇全 repo 測試），唔係通用 cascade matcher。當熄咗嘅條件：
+ * 頂層 `@media (prefers-reduced-motion: reduce)` 入面，有 selector **完全一樣**、**寫喺動畫規則後面**嘅規則，
+ * 將同一類動態（transition* 或者 animation*）熄咗：shorthand / -property / -name 以 none 開頭，或者 -duration 係 0。
+ * selector 一樣 specificity 就一樣，後寫先一定贏；只寫 `.player` 熄唔到 `.player[data-pressing='true']`
+ *（0,2,0 贏 0,1,0），jsdom 又睇唔到 cascade，所以直接讀原文。
+ * 寫喺 `prefers-reduced-motion: no-preference` 入面嘅本身已經唔會出現，唔計；
+ * 自己開唔到動畫嘅 longhand（-play-state、-timing-function、-delay 等）亦唔計。
+ *
+ * 已知會誤報（實際熄到、但呢度照樣列出）嘅寫法，用呢個 helper 嘅檔要避開：
+ * - reduce block 用 specificity 一樣或者更高、但寫法唔同嘅 selector，例如 ShowCardStack 用
+ *   `.stack[data-phase] .card` 熄 `.stack[data-phase='settling'] .card`
+ * - reduce block 包喺另一個 @media 入面，或者同其他條件寫埋一齊（`… and (prefers-reduced-motion: reduce)`）
+ * - 布林寫法 `@media (prefers-reduced-motion)`
+ * - 靠 `!important`、或者喺其他位將 duration token 設做 0 嚟熄
  */
 export const motionLeftOnWhenReduced = (css: string): string[] => {
-    const root = parse(css);
-    const switchedOff = new Set<string>();
-    root.walkRules((rule) => {
+    const rules: Rule[] = [];
+    parse(css).walkRules((rule) => {
+        rules.push(rule);
+    });
+    // 每條 selector + 動態類別最後一次喺 reduce block 熄咗嘅位置（文件次序）
+    const switchedOffAt = new Map<string, number>();
+    rules.forEach((rule, index) => {
         if (contextOf(rule) !== REDUCED_MOTION_CONTEXT) return;
-        for (const key of motionKeys(rule, (value) => value === 'none')) switchedOff.add(key);
+        for (const declaration of motionDeclarations(rule)) {
+            if (declaration.off) switchedOffAt.set(offKey(declaration), index);
+        }
     });
     const left: string[] = [];
-    root.walkRules((rule) => {
+    rules.forEach((rule, index) => {
         const context = contextOf(rule);
         if (context === REDUCED_MOTION_CONTEXT || context?.includes(NO_PREFERENCE)) return;
-        left.push(
-            ...motionKeys(rule, (value) => value !== 'none').filter((key) => !switchedOff.has(key)),
-        );
+        for (const declaration of motionDeclarations(rule)) {
+            if (declaration.off) continue;
+            // 後寫先贏：reduce block 寫喺前面就熄唔到
+            if ((switchedOffAt.get(offKey(declaration)) ?? -1) > index) continue;
+            left.push(`${declaration.selector} { ${declaration.prop} }`);
+        }
     });
     return left;
 };
