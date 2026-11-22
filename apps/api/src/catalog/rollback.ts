@@ -7,7 +7,8 @@
  * 還原集數會令鎖咗嘅 ID 消失，排程日期由 schedules 表計，淨改 definition 會唔夾。draft 唔郁。
  * 驗證 + ID 守衛喺寫 D1 之前先試；D1 一個 batch（樂觀鎖 + bump updated_at）；
  * 發佈 throw / 被拒就用另一個 batch 寫返舊 definition；輸咗畀另一個 publish（409）時，
- * 贏咗嗰次已經帶上線嘅值保持（W-870），D1 一定跟線上
+ * 贏咗嗰次已經帶上線嘅上架狀態保持（W-870；只比較 enabled，選擇發佈剔走短篇都唔影響，W-871），
+ * D1 一定跟線上
  */
 import { getBanner } from '../banner/store';
 import { getBranding } from '../branding/store';
@@ -165,16 +166,39 @@ const apply = async (db: D1Database, changes: readonly Change[]): Promise<boolea
     throw new RollbackConflictError('entries changed during rollback, try again');
 };
 
+/** 還原會改嘅欄位：entry 同每個短篇（用 id 對）嘅 enabled（同 restoredDefinition 嘅範圍一樣） */
+const enabledOf = (definition: Json) => ({
+    enabled: definition.enabled,
+    arcs: new Map(
+        arcsOf(definition)
+            .filter(isRecord)
+            .map((arc) => [arc.id, arc.enabled]),
+    ),
+});
+
+/**
+ * 線上已經係我哋寫嘅上架狀態（W-871）：只比較 enabled，唔比較成個 definition ——
+ * 選擇發佈會剔走未完成短篇，線上冇嘅短篇同還原無關，只睇兩邊都有嘅
+ */
+const shippedOurs = (live: Json | undefined, ours: Json): boolean => {
+    if (!live) return false;
+    const [shipped, wrote] = [enabledOf(live), enabledOf(ours)];
+    return (
+        shipped.enabled === wrote.enabled &&
+        [...shipped.arcs].every(([id, on]) => !wrote.arcs.has(id) || wrote.arcs.get(id) === on)
+    );
+};
+
 /**
  * 還原輸咗畀另一個 publish（W-870）：贏咗嗰次由 D1 砌 document，可能已經帶埋我哋寫入嘅上架狀態上線。
- * 回每個 change 係咪仲要寫返舊值：線上 definition 已經係我哋寫嗰個值 → false（保持，D1 = 線上）
+ * 回每個 change 係咪仲要寫返舊值：線上嘅上架狀態已經係我哋寫嗰個 → false（保持，D1 = 線上）
  */
 const notShipped = async (db: D1Database, changes: readonly Change[]): Promise<boolean[]> => {
     const winner = await latestPublish(db);
     const live = winner ? snapshotDefinitions(winner.document) : new Map<string, Json>();
     return changes.map(
         ({ entry, definition }) =>
-            JSON.stringify(live.get(keyOf(entry.kind, entry.id))) !== definition,
+            !shippedOurs(live.get(keyOf(entry.kind, entry.id)), JSON.parse(definition) as Json),
     );
 };
 

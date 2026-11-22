@@ -252,8 +252,8 @@ describe('POST /api/publishes/:id/rollback serialisation (AU-018)', () => {
         await adminPost('/api/publish');
     };
 
-    /** 還原寫 D1（第一個 batch）之前行 before 一次 */
-    const beforeApply = (before: () => Promise<unknown>) => {
+    /** 還原第一個 D1 batch（apply）之前（'before'）或者寫完之後（'after'）行 meanwhile 一次 */
+    const aroundApply = (when: 'before' | 'after', meanwhile: () => Promise<unknown>) => {
         let done = false;
         const db = new Proxy(env.DB, {
             get: (target, key) => {
@@ -262,16 +262,41 @@ describe('POST /api/publishes/:id/rollback serialisation (AU-018)', () => {
                     return typeof value === 'function' ? value.bind(target) : value;
                 }
                 return async (statements: D1PreparedStatement[]) => {
-                    if (!done) {
-                        done = true;
-                        await before();
-                    }
-                    return target.batch(statements);
+                    const first = !done;
+                    done = true;
+                    if (first && when === 'before') await meanwhile();
+                    const results = await target.batch(statements);
+                    if (first && when === 'after') await meanwhile();
+                    return results;
                 };
             },
         });
         return { ...env, DB: db };
     };
+
+    /** 掃描加嘅新短篇：自動 ID（未確認）→ 選擇發佈當 incomplete，一定剔走 */
+    const INCOMPLETE_ARC = {
+        id: 'golden-03',
+        name: 'Season 3',
+        addedAt: '2026-10-24',
+        episodes: 1,
+        enabled: false,
+    };
+
+    const addIncompleteArc = async () => {
+        const base: Json = { ...drama(3), enabled: false };
+        await putEntry('dramas', 'golden', {
+            ...base,
+            arcs: [...(base.arcs as Json[]), INCOMPLETE_ARC],
+        });
+        await env.DB.prepare(
+            `INSERT INTO scan_findings (kind, drama_id, arc_id, detail, created_at) VALUES (?, ?, ?, ?, ?)`,
+        )
+            .bind('newArc', 'golden', 'golden-03', '{"arc":"Season 3"}', '2026-11-10T00:00:00Z')
+            .run();
+    };
+
+    const arcIds = (definition: Json) => (definition.arcs as Json[]).map((arc) => arc.id);
 
     const publishMeanwhile = async () => {
         await rename('Meanwhile');
@@ -298,11 +323,51 @@ describe('POST /api/publishes/:id/rollback serialisation (AU-018)', () => {
     it('should answer 409 and put D1 back when the winning publish shipped the old state (W-870)', async () => {
         await unlistedAfterFirst();
         // publish 喺還原寫 D1 之前落地：線上仲係下架
-        const lost = await post('/api/publishes/1/rollback', beforeApply(publishMeanwhile));
+        const lost = await post(
+            '/api/publishes/1/rollback',
+            aroundApply('before', publishMeanwhile),
+        );
         expect(lost.status).toBe(409);
         expect(await lost.json()).toMatchObject(CONFLICT_BODY);
         expect((await liveGolden()).enabled).toBe(false);
         expect(await storedGolden()).toEqual(await liveGolden());
+        expect((await rows()).map((r) => r.id)).toEqual([1, 2, 3]);
+        await expectInStep();
+    });
+
+    it('should keep the restored state when the winner is a selective publish that dropped an arc (W-871)', async () => {
+        await unlistedAfterFirst();
+        await addIncompleteArc();
+        const selectiveMeanwhile = async () => {
+            const response = await call(
+                '/api/publish',
+                {
+                    method: 'POST',
+                    headers: {
+                        cookie: await loginCookie(),
+                        origin: ORIGIN,
+                        'content-type': 'application/json',
+                    },
+                    body: JSON.stringify({ selection: { content: [] } }),
+                },
+                env,
+            );
+            expect(response.status).toBe(200);
+        };
+        // 還原已經寫咗 D1，選擇發佈帶埋還原嘅上架狀態上線，但剔走咗未完成嘅短篇
+        const lost = await post(
+            '/api/publishes/1/rollback',
+            aroundApply('after', selectiveMeanwhile),
+        );
+        expect(lost.status).toBe(409);
+        expect(await lost.json()).toMatchObject(CONFLICT_BODY);
+        const live = await liveGolden();
+        expect(live.enabled).toBe(true);
+        expect(arcIds(live)).toEqual(['season-1']);
+        const stored = await storedGolden();
+        expect(stored.enabled).toBe(live.enabled);
+        // 未完成短篇留喺 D1（下架），等下次發佈
+        expect(stored.arcs).toEqual([...(live.arcs as Json[]), INCOMPLETE_ARC]);
         expect((await rows()).map((r) => r.id)).toEqual([1, 2, 3]);
         await expectInStep();
     });
