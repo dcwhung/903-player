@@ -76,6 +76,7 @@
 | 2026-11-07 | [reviews/2026-11-07_review_phase1-runtime-catalog.md](reviews/2026-11-07_review_phase1-runtime-catalog.md)（95 pass，W-702、S-763–S-765；runtime `catalog.json`，v1.30.0，production 關住）                                                                                                                                     |
 | 2026-11-09 | [reviews/2026-11-09_review_phase2a-backend.md](reviews/2026-11-09_review_phase2a-backend.md)（100 pass，S-767–S-778；Worker API + D1 + Google login + publish，player v1.31.0、api v0.1.0）                                                                                                                                     |
 | 2026-11-12 | [reviews/2026-11-12_review_phase4-l3-player-banner.md](reviews/2026-11-12_review_phase4-l3-player-banner.md)（100 pass，S-925–S-929；首頁 banner 讀 catalog（remote → snapshot → 內建圖），player v1.34.0）                                                                                                                     |
+| 2026-11-22 | [reviews/2026-11-22_review_p0-audit-fixes_batch.md](reviews/2026-11-22_review_p0-audit-fixes_batch.md)（Round 1 100 pass，S-1391–S-1397；Round 2 100 pass，全部關閉；audit AU-014 `ledger-merge.mjs` maxBuffer + AU-013 admin 改劇集 ID，admin 0.9.4、api 0.13.1）                                                              |
 
 ## QA
 

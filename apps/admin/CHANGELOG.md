@@ -2,6 +2,17 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.9.4 — 2026-11-22
+
+改劇集 ID 修正（2026-11-22 codebase audit AU-013）。
+
+### Fixed
+
+- 改劇集 ID 再儲存：server 已將自動編號短篇 ID（`<舊 ID>-NN`）改做 `<新 ID>-NN`，草稿而家跟住改先 PUT，唔再將短篇 ID 寫返舊嘅，亦唔再因為短篇有排程而撞 409
+- 改 ID 成功但儲存失敗：編輯頁會搬去新 ID（連 `#短篇` 同 `?todo=`），草稿同錯誤提示保留，再撳儲存係普通儲存，唔會再改一次 ID
+- 淨係改 ID、冇其他改動：唔再送多一個 PUT
+- 改 ID 後「確認 ID」會用新嘅短篇 ID
+
 ## 0.9.3 — 2026-11-17
 
 分段掣統一（用戶 2026-11-17 決定）：新共用元件 `ui/SegmentedTabs`。

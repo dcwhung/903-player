@@ -4,7 +4,7 @@
  * entries PK + schedules.drama_id + scan_findings 一個 batch 改。
  * 掃描跟劇 ID 自動編號嘅短篇 ID（<舊 ID>-NN，Phase 3c）一齊改做 <新 ID>-NN（definition、schedules、findings）
  */
-import { ID_PATTERN } from '@903-player/catalog';
+import { ID_PATTERN, PLACEHOLDER_ARC_WIDTH, withRenamedArcIds } from '@903-player/catalog';
 import { Hono, type Context } from 'hono';
 import type { AppEnv } from '../app';
 import { HTTP_STATUS } from '../config';
@@ -39,30 +39,15 @@ export const wasEverPublished = async (db: D1Database, id: string): Promise<bool
     return row !== null;
 };
 
-/** 自動編號短篇 ID：<劇 ID>-NN（兩位數） */
-const AUTO_ARC_SUFFIX = /^-\d{2}$/;
-
-/** <from>-NN → <to>-NN；其他 ID 唔郁 */
-export const renamedArcId = (arcId: string, from: string, to: string): string =>
-    arcId.startsWith(from) && AUTO_ARC_SUFFIX.test(arcId.slice(from.length))
-        ? `${to}${arcId.slice(from.length)}`
-        : arcId;
-
-export const withRenamedArcIds = (definition: Json, from: string, to: string): Json =>
-    Array.isArray(definition.arcs)
-        ? {
-              ...definition,
-              arcs: (definition.arcs as unknown[]).map((arc) =>
-                  isRecord(arc) && typeof arc.id === 'string'
-                      ? { ...arc, id: renamedArcId(arc.id, from, to) }
-                      : arc,
-              ),
-          }
-        : definition;
-
-/** SQL：arc_id 係 <from>-NN 就換頭（ID 只有細楷英數同 -，GLOB 唔會撞通配） */
+/**
+ * SQL：arc_id 係 <from>-NN 就換頭（ID 只有細楷英數同 -，GLOB 唔會撞通配）；
+ * 同 @903-player/catalog 嘅 renamedArcId（definition 用）同一條規則
+ */
 const ARC_ID_SQL = `CASE WHEN arc_id GLOB ? THEN ? || substr(arc_id, ?) ELSE arc_id END`;
-const arcIdBinds = (from: string, to: string) => [`${from}-[0-9][0-9]`, to, from.length + 1];
+/** GLOB：<from>-NN，N 嘅個數同 catalog 自動編號嘅闊度同一個常數（S-1393） */
+export const arcIdGlob = (from: string): string =>
+    `${from}-${'[0-9]'.repeat(PLACEHOLDER_ARC_WIDTH)}`;
+const arcIdBinds = (from: string, to: string) => [arcIdGlob(from), to, from.length + 1];
 
 /** findings 嘅 arc_id（自動編號）跟住改；要喺 drama_id 改之前 */
 const renameFindingArcsStatement = (
