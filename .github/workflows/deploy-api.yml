@@ -1,7 +1,7 @@
 name: Deploy API
 
 # apps/api（Cloudflare Worker 903-player-api）：main push 而且改咗 Worker、admin SPA 或者佢哋用嘅 catalog package 先跑。
-# 先 build admin（Worker static assets = apps/admin/dist；build 失敗就唔郁 D1，唔會留低半套 deploy），
+# 先跑全 repo lint + type check + unit test（AU-016），再 build admin（Worker static assets = apps/admin/dist；build 失敗就唔郁 D1，唔會留低半套 deploy），
 # 再 apply D1 migration（未 apply 嘅先會跑），檢查 admin build 真係有 index.html，再 deploy Worker（S-808）。
 # Secrets：CLOUDFLARE_API_TOKEN（Workers Scripts / D1 / Workers R2 Storage：Edit，1 年到期）、CLOUDFLARE_ACCOUNT_ID。
 # Worker 自己嘅 secret（GOOGLE_CLIENT_SECRET、SESSION_SECRET）喺 Cloudflare dashboard 設，唔經 CI（見 apps/api/README.md）
@@ -54,8 +54,19 @@ jobs:
             - run: npm ci
               working-directory: .
 
-            # deploy 之前喺 workerd 再跑一次 api test（同 CI 一樣，唔使 Cloudflare 帳戶）
+            # AU-016：deploy 之前喺 repo 根跑同 ci.yml check job 一樣嘅全套檢查（唔使 Cloudflare 帳戶）；
+            # 直接 push main 或者 merge 一個 CI 紅 / 被跳過嘅 PR，都要過咗呢度先會郁 D1 同 Worker。
+            # 全 repo lint（eslint + prettier --check .）
+            - run: npm run lint
+              working-directory: .
+
+            # 全部 workspace（player、admin、catalog、api）嘅 type check
+            - run: npx tsc -b
+              working-directory: .
+
+            # 全部 project：player、admin（jsdom）、catalog、api（Worker test 喺 workerd 跑）、repo scripts
             - run: npm test
+              working-directory: .
 
             # wrangler.toml [assets] directory = ../admin/dist；放喺 migration 之前（S-808）
             - name: Build admin SPA
