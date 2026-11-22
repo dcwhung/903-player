@@ -83,6 +83,7 @@
 | 2026-11-22 | [reviews/2026-11-22_review_p2-tooling-docs.md](reviews/2026-11-22_review_p2-tooling-docs.md)（100 pass，S-1437–S-1440；audit Observation：`.mjs` lint、README / CLAUDE.md QA gate 表 drift、`npm audit fix`（14 → 4，餘下要 `vite-plugin-pwa` major））                                                                         |
 | 2026-11-22 | [reviews/2026-11-22_review_p2-reduced-motion.md](reviews/2026-11-22_review_p2-reduced-motion.md)（Round 1–3 100 pass，S-1447–S-1451 全部關閉；audit Observation：mini player 長按同 view-transition 後備喺減少動態下照郁，player 2.2.2）                                                                                        |
 | 2026-11-22 | [reviews/2026-11-22_review_p2-publish-serialisation.md](reviews/2026-11-22_review_p2-publish-serialisation.md)（Round 1 warn，W-870、S-1457–S-1460；Round 2 warn，W-871；Round 3 100 pass，全部關閉；audit AU-018 發佈序列化（條件 insert + R2 條件寫入、409 `publishConflict`）+ S-1430，api 0.14.1、admin 0.10.1）            |
+| 2026-11-22 | [reviews/2026-11-22_review_p2-admin-reload-history.md](reviews/2026-11-22_review_p2-admin-reload-history.md)（Round 1 100 pass，S-1467–S-1468；Round 2 100 pass，全部關閉；audit AU-024 重讀次序 + `GET /api/entries?detail=1`、AU-025 發佈 / 部署頁進行中狀態同載入失敗，admin 0.10.2、api 0.14.2）                            |
 
 ## QA
 
