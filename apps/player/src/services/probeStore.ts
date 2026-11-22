@@ -1,5 +1,10 @@
 import { showEpisodeId } from '@903-player/catalog';
-import { isRecording, type StoredRecording } from '../data/recordingValidation';
+import { isCatalogComplete } from '../catalog/runtime';
+import {
+    isRecording,
+    isUnknownShowRecording,
+    type StoredRecording,
+} from '../data/recordingValidation';
 import type { Recording } from '../types/recording';
 
 export const PROBE_STORAGE_KEY = '903player:probed:v1';
@@ -42,13 +47,44 @@ const withEpisodeId = (r: StoredRecording): Recording => ({
 const readFound = (value: unknown): Recording[] =>
     Array.isArray(value) ? value.filter(isRecording).map(withEpisodeId) : [];
 
+interface StoredProbeState {
+    found?: unknown;
+    misses?: unknown;
+}
+
+/** storage 入面嘅原始 JSON；冇 / 唔係 object 就 null，壞 JSON 會 throw */
+const parseStored = (): StoredProbeState | null => {
+    const parsed: unknown = JSON.parse(localStorage.getItem(PROBE_STORAGE_KEY) ?? 'null');
+    return typeof parsed === 'object' && parsed !== null ? parsed : null;
+};
+
+/** 只抄已驗證嘅欄位，storage 入面多出嚟嘅嘢唔跟住寫返落去 */
+const toStoredRecording = ({ showId, date, time, url }: StoredRecording): StoredRecording => ({
+    showId,
+    date,
+    time,
+    url,
+});
+
+/**
+ * storage 入面今次 catalog 唔識嘅節目嘅錄音（格式照驗）。readProbeState 唔會交出嚟，
+ * 所以唔會去到 UI / 播放器；只係 writeProbeState 寫返落去用
+ */
+const readUnknownShowFound = (): StoredRecording[] => {
+    try {
+        const found = parseStored()?.found;
+        return Array.isArray(found)
+            ? found.filter(isUnknownShowRecording).map(toStoredRecording)
+            : [];
+    } catch {
+        return [];
+    }
+};
+
 export const readProbeState = (): ProbeState => {
     try {
-        const parsed = JSON.parse(localStorage.getItem(PROBE_STORAGE_KEY) ?? 'null') as {
-            found?: unknown;
-            misses?: unknown;
-        } | null;
-        if (typeof parsed !== 'object' || parsed === null) {
+        const parsed = parseStored();
+        if (parsed === null) {
             return emptyState();
         }
         return {
@@ -60,9 +96,17 @@ export const readProbeState = (): ProbeState => {
     }
 };
 
+/**
+ * state.found 只有今次 catalog 識嘅節目（readProbeState 篩過）。catalog 唔齊（攞唔到 catalog.json、
+ * 退咗去內建資料）時，唔識嘅節目可能只係今次睇唔到，佢哋喺 storage 嘅錄音要照留：過咗回看期嘅再 probe 都攞唔返（AU-027）。
+ * catalog 齊全時唔識 = 真係刪咗，照舊清走，storage 唔會越積越多
+ */
 export const writeProbeState = (state: ProbeState): void => {
     try {
-        localStorage.setItem(PROBE_STORAGE_KEY, JSON.stringify(state));
+        const found = isCatalogComplete()
+            ? state.found
+            : [...state.found, ...readUnknownShowFound()];
+        localStorage.setItem(PROBE_STORAGE_KEY, JSON.stringify({ ...state, found }));
     } catch {
         // 私人瀏覽 / 空間不足：下次再 probe 就得，唔影響今次結果
     }

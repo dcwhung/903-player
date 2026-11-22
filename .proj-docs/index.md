@@ -78,6 +78,7 @@
 | 2026-11-12 | [reviews/2026-11-12_review_phase4-l3-player-banner.md](reviews/2026-11-12_review_phase4-l3-player-banner.md)（100 pass，S-925–S-929；首頁 banner 讀 catalog（remote → snapshot → 內建圖），player v1.34.0）                                                                                                                     |
 | 2026-11-22 | [reviews/2026-11-22_review_p0-audit-fixes_batch.md](reviews/2026-11-22_review_p0-audit-fixes_batch.md)（Round 1 100 pass，S-1391–S-1397；Round 2 100 pass，全部關閉；audit AU-014 `ledger-merge.mjs` maxBuffer + AU-013 admin 改劇集 ID，admin 0.9.4、api 0.13.1）                                                              |
 | 2026-11-22 | [reviews/2026-11-22_review_p1-ci-import_batch.md](reviews/2026-11-22_review_p1-ci-import_batch.md)（Round 1 warn，W-858、S-1398–S-1403；Round 2 100 pass，S-1404；audit AU-017 import 預設只 insert（api 0.13.2）+ AU-015 / AU-016 / AU-019 CI 同 deploy 把關；S-1402 CLAUDE.md 字眼待用戶決定）                                |
+| 2026-11-22 | [reviews/2026-11-22_review_p1-player-progress-probe.md](reviews/2026-11-22_review_p1-player-progress-probe.md)（Round 1 warn，W-859、S-1420–S-1422；Round 2 100 pass，S-1423；Round 3 100 pass，S-1424；audit AU-026 冇播過唔寫進度 + AU-027 fallback 唔刪 probe 記錄，player 2.2.1）                                           |
 
 ## QA
 

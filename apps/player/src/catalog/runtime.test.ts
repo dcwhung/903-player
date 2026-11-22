@@ -183,6 +183,93 @@ describe('catalog runtime', () => {
         });
     });
 
+    // S-1421：probeStore 靠呢個決定清唔清走唔識嘅節目嘅錄音（AU-027）
+    describe('isCatalogComplete', () => {
+        /** 自己話幾時答嘅 fetch */
+        const controlledFetch = () => {
+            let answer: (response: Response) => void = () => undefined;
+            const fetchImpl = vi.fn<typeof fetch>(() => new Promise((r) => (answer = r)));
+            return { fetchImpl, answer: (response: Response) => answer(response) };
+        };
+
+        it('should be complete when initCatalog was never called (feature off)', () => {
+            expect(runtime.isCatalogComplete()).toBe(true);
+        });
+
+        it('should stay complete without initCatalog after a registry was read', () => {
+            runtime.activeShowRegistry();
+            expect(runtime.isCatalogComplete()).toBe(true);
+        });
+
+        it('should be incomplete while the fetch is in flight', async () => {
+            const { fetchImpl, answer } = controlledFetch();
+            const pending = runtime.initCatalog({ url: URL_UNDER_TEST, fetchImpl });
+
+            expect(runtime.isCatalogComplete()).toBe(false);
+
+            answer(jsonResponse(remoteDocument()));
+            await pending;
+        });
+
+        it('should stay incomplete when a registry was read while the fetch was in flight', async () => {
+            const { fetchImpl, answer } = controlledFetch();
+            const pending = runtime.initCatalog({ url: URL_UNDER_TEST, fetchImpl });
+
+            runtime.activeShowRegistry();
+            expect(runtime.isCatalogComplete()).toBe(false);
+            answer(jsonResponse(remoteDocument([extraDrama()])));
+            await pending;
+
+            expect(runtime.isCatalogComplete()).toBe(false);
+        });
+
+        it('should be complete once the remote catalog is loaded', async () => {
+            const fetchImpl = fetchReturning(jsonResponse(remoteDocument()));
+            await runtime.initCatalog({ url: URL_UNDER_TEST, fetchImpl });
+
+            expect(runtime.isCatalogComplete()).toBe(true);
+        });
+
+        it('should be incomplete when the fetch failed', async () => {
+            const fetchImpl = vi.fn<typeof fetch>(() => Promise.reject(new TypeError('offline')));
+            await runtime.initCatalog({ url: URL_UNDER_TEST, fetchImpl });
+
+            expect(runtime.isCatalogComplete()).toBe(false);
+        });
+
+        it('should be incomplete when the fetch timed out', async () => {
+            vi.useFakeTimers();
+            const pending = runtime.initCatalog({ url: URL_UNDER_TEST, fetchImpl: hangingFetch() });
+            await vi.advanceTimersByTimeAsync(CATALOG_FETCH_TIMEOUT_MS);
+            await pending;
+
+            expect(runtime.isCatalogComplete()).toBe(false);
+        });
+
+        it('should stay incomplete when the remote catalog arrives after the timeout', async () => {
+            vi.useFakeTimers();
+            const { fetchImpl, answer } = controlledFetch();
+            const pending = runtime.initCatalog({ url: URL_UNDER_TEST, fetchImpl, timeoutMs: 10 });
+            await vi.advanceTimersByTimeAsync(10);
+            await pending;
+
+            answer(jsonResponse(remoteDocument([extraDrama()])));
+            await vi.advanceTimersByTimeAsync(10);
+
+            expect(runtime.isCatalogComplete()).toBe(false);
+            expect(runtime.activeDramaRegistry().findDrama(EXTRA_ID)).toBeUndefined();
+        });
+
+        it('should not count as reading a registry', async () => {
+            runtime.isCatalogComplete();
+            const fetchImpl = fetchReturning(jsonResponse(remoteDocument()));
+
+            await expect(runtime.initCatalog({ url: URL_UNDER_TEST, fetchImpl })).resolves.toBe(
+                'remote',
+            );
+        });
+    });
+
     describe('activeBanner (Phase 4 L3)', () => {
         const BANNER = {
             standard: 'https://api.example/catalog/v1/img/0123456789abcdef.webp',
