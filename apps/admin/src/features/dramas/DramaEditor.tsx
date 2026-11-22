@@ -9,6 +9,7 @@ import { savedDiscOf } from '../../model/thumbs';
 import { Pill } from '../../ui/Pill';
 import { EditorHeader } from '../editor/EditorHeader';
 import { EditorNotices } from '../editor/EditorNotices';
+import { LeaveGuard } from '../editor/LeaveGuard';
 import { NameRevert } from '../revert/NameRevert';
 import { ArcsTab } from './ArcsTab';
 import { BasicTab } from './BasicTab';
@@ -42,6 +43,7 @@ function DramaEditor({ id, tab }: { id: string; tab: DramaTab }) {
     const definition = editor.draft.definition;
     return (
         <>
+            <LeaveGuard dirty={state.unsaved} />
             <EditorHeader
                 listPath="/dramas"
                 listLabel={t('list.dramas')}

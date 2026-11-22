@@ -9,6 +9,7 @@ import { t } from '../../i18n/t';
 import { nameOf } from '../../model/raw';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { errorMessage } from '../../api/errorMessage';
+import { ownNavigation } from './leaveRules';
 
 /** 刪除 → 成功就返列表；失敗 = error */
 const useDeleteEntry = (entry: LoadedEntry) => {
@@ -27,7 +28,8 @@ const useDeleteEntry = (entry: LoadedEntry) => {
         entries.mutate((list) =>
             list?.filter((item) => item.kind !== entry.kind || item.id !== entry.id),
         );
-        void navigate(`/${entry.kind}`, { replace: true });
+        // 草稿有未儲存改動都唔問（項目已經刪咗，AU-023）
+        void navigate(`/${entry.kind}`, ownNavigation({ replace: true }));
         void refresh();
     };
     return { error, remove };

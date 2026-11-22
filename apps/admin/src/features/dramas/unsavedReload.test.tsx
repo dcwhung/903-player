@@ -4,8 +4,8 @@
  */
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { fakeData, mockApi, resource } from '../../../tests/renderApp';
+import { Route, Routes } from 'react-router-dom';
+import { fakeData, memoryRouter, mockApi, resource } from '../../../tests/renderApp';
 import type { TodoRow } from '../../api/types';
 import { AdminDataContext, type AdminData } from '../../data/AdminData';
 import { ToastProvider } from '../../ui/Toast';
@@ -47,15 +47,18 @@ const renderEditor = (url: string, data: AdminData = fakeData()) => {
     render(
         <AdminDataContext.Provider value={data}>
             <ToastProvider>
-                <MemoryRouter initialEntries={[url]}>
-                    <Routes>
-                        <Route path="/dramas/:id" element={<DramaEditorPage tab="basic" />} />
-                        <Route
-                            path="/dramas/:id/schedule"
-                            element={<DramaEditorPage tab="schedule" />}
-                        />
-                    </Routes>
-                </MemoryRouter>
+                {
+                    memoryRouter(
+                        <Routes>
+                            <Route path="/dramas/:id" element={<DramaEditorPage tab="basic" />} />
+                            <Route
+                                path="/dramas/:id/schedule"
+                                element={<DramaEditorPage tab="schedule" />}
+                            />
+                        </Routes>,
+                        [url],
+                    ).element
+                }
             </ToastProvider>
         </AdminDataContext.Provider>,
     );
