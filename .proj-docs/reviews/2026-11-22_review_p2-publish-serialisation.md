@@ -98,3 +98,98 @@ next_agent: backend-developer
 branch: "fix/api/au-018_publish-serialisation"
 context: "W-870: a publish landing during a restore ships the restored state, then the restore 409s and reverts D1 (reproduced: R2 golden enabled=true, D1 false); fix rollback.ts conflict path + correct test :244-262 + CHANGELOG/README wording, then re-review. S-1430 closed. Suggestions S-1457..S-1460 to clear in-PR or by main agent this session. Integration branch is main; QA e2e:admin after re-review."
 ```
+
+---
+
+# Round 2 — 2026-11-22（re-review `49997dc2..eaf6f1bf`）
+
+- 目標：`eaf6f1bf` fix(api): keep D1 in step with the live catalog when a restore loses (W-870)
+- 範圍：只驗上一輪 W-870 同 S-1457 – S-1460 嘅修正；新 ID 用 `W-871`
+- 總評：⚠️ warn（95/100）。W-870 主路徑已關（test 喺修正前真係紅）；但贏咗嗰次係**選擇發佈**而且剔走咗同一套劇嘅未完成短篇時，`JSON.stringify` 比較整個 definition 對唔上，照樣全部 revert，重現到「線上上架、D1 下架」（W-871）
+
+## Hard Gates（Round 2）
+
+all pass：`npm run lint` exit 0；`npx tsc -b` exit 0；`npm run typecheck -w apps/api` exit 0；`npm test -- …` 同冇列檔嘅 `npx vitest run` 被 reviewer-test-scope hook 擋，改為逐檔跑：admin `src/api/*.test.ts` + `src/features/update/*.test.ts(x)` + `i18n/writtenChinese.test.ts` 25 files / 161 tests、api `publishSerialisation` + `publish` + `revert` + `revertEdgeCases` + `selectivePublish` 5 files / 101 tests 全綠（exit 0）。RED 驗證：將 `rollback.ts` 暫時換返 `49997dc2` 版本，新 test「keep in D1 what the winning publish already shipped」失敗；換返之後 working tree 乾淨。
+
+## 評分結果（Round 2）
+
+| 維度     | 得分   | 滿分    | 備注                                                |
+| -------- | ------ | ------- | --------------------------------------------------- |
+| 正確性   | 20     | 25      | W-871 選擇發佈贏咗、剔走短篇時，還原照樣全部 revert |
+| 安全性   | 20     | 20      | 冇新輸入面                                          |
+| 可維護性 | 20     | 20      | `notShipped` / `revertAfterFailure` 職責清楚        |
+| 測試覆蓋 | 15     | 15      | 兩個次序（apply 前 / 後落地）都有 test，RED 已驗    |
+| 性能     | 10     | 10      | 只喺 409 多讀一次最新 document                      |
+| 代碼風格 | 10     | 10      | lint / prettier 過                                  |
+| **總分** | **95** | **100** |                                                     |
+
+**結果：⚠️ warn**
+
+## 上一輪項目
+
+- W-870 ✅ 關：全量發佈贏咗嗰個路徑 D1 = R2（test 斷言 `storedGolden` = `liveGolden`）；反方向（publish 喺 apply 前落地）全部寫返舊值。比較穩定：贏咗嗰次 document = `JSON.stringify(value)`，definition 係 D1 字串 `JSON.parse` 原樣放入（`publish.ts:156,206`），`Change.definition` 本身係 `JSON.stringify` 輸出，來回 key 次序同字元都唔變。Fallback：`latestPublish` / `JSON.parse` throw → `.catch` 全部 revert；冇 publish → 空 map → 全部 revert，同修正前一樣。並發編輯：`revert` 仍然用 `expected: change.updatedAt`，期間有人儲存就唔寫，唔會蓋走。開發者自己問嘅情況（選擇發佈將成個 entry 換返上次版本）：線上 = 上次版本 ≠ 我哋 → revert，D1 = 還原前狀態，同撞之前一樣，冇問題；「只換走部分短篇」見 W-871
+- S-1457 ✅ 關：README `:165` 記低 `If-None-Match: *` 只喺 miniflare 驗過
+- S-1458 ✅ 關：`errorOf` 409 + `reason: 'publishConflict'` → `PublishConflictError`（排喺 `missing` 判斷之後，唔會搶走 ID 守衛 409）；`failureOf` 同 412 一樣行 `changed`；`PublishPage.test.tsx` 斷言重讀摘要（`reads() === 2`）、冇「發佈失敗」；`publish.conflict` key 已刪、冇殘留引用
+- S-1460 ✅ 關：`history.rollbackConflict` 書面語（`writtenChinese.test.ts` 過）。耦合可以接受：產生 `publishConflict` 嘅只有發佈同還原；發佈頁喺 `failureOf` 已經先攔截，唔經 `errorMessage`，所以而家只有記錄頁會見到呢句。日後新發佈入口如果直接用 `errorMessage` 會出「本次還原」字眼，到時再分開（Observation）
+- S-1459 — 接受，冇改
+
+## 🟡 W-871 贏咗嗰次係選擇發佈、剔走咗同一套劇嘅短篇：還原照樣全部 revert，線上上架、D1 下架
+
+- 位置：`apps/api/src/catalog/rollback.ts:172-179`（`notShipped` 用 `JSON.stringify(live) !== definition` 比較整個 definition）
+- L1：今次 diff 自己寫低嘅合約 —— `apps/api/README.md:165`、`apps/api/CHANGELOG.md:16`「已經帶埋還原嘅上架狀態上線嘅 entry 保持（唔會出現線上上架、D1 下架）」；`rollback.ts:10`「D1 一定跟線上」
+- L2：臨時 test（跑完已刪）：#1 golden 上架、#2 下架；D1 golden 加一個未確認 ID 嘅新短篇（`newArc` finding → `incomplete`）；還原 #1 嘅第一個 D1 batch 完成之後、`commitPublish` 之前，`POST /api/publish { selection: { content: [] } }` → 200；還原 → 409。結果：**R2 golden `enabled: true`（已帶還原上架狀態）、冇新短篇；D1 golden `enabled: false`**。原因：選擇發佈用 `selectArcs` 剔走未完成短篇，線上 definition 同我哋 apply 嘅值只差嗰個短篇，整段比較對唔上 → 當「未上線」→ revert
+- L3：要兩個 admin 同時還原 + 選擇發佈，而且被還原嘅劇有未完成新短篇，機率低；但後果同 W-870 一樣：D1 顯示下架、下次任何發佈靜靜將佢再下架
+- 方案 A（推薦）：只比較還原會改嘅欄位。抽 helper 取 entry `enabled` + 每個短篇（用 id）嘅 `enabled`，只比較兩邊都有嘅短篇（線上冇嘅係選擇發佈剔走，同還原無關）。Trade-off：多一個小 helper；同 `restoredDefinition` 只改 `enabled` 嘅範圍對齊，選擇發佈點剔都唔影響判斷
+- 方案 B：比較線上同還原前 D1（`entry.definition`），線上 = 舊值先 revert。Trade-off：選擇發佈換返「上次版本」時線上 ≠ 舊值亦 ≠ 我哋，會錯誤保持還原值（D1 上架、線上下架），反方向出錯，唔建議
+- 連帶：`publishSerialisation.test.ts` 加「選擇發佈剔走短篇」case（上面 L2 情境，用現有 D1 batch proxy，改為 batch 完成之後先跑 publish）
+
+```ts
+// rollback.ts — W-871 方向（示意）
+const enabledOf = (definition: Json) => ({
+    enabled: definition.enabled,
+    arcs: new Map(
+        arcsOf(definition)
+            .filter(isRecord)
+            .map((arc) => [arc.id, arc.enabled]),
+    ),
+});
+
+/** 線上已經係我哋寫嘅上架狀態（只睇兩邊都有嘅短篇；選擇發佈剔走嘅唔計） */
+const shippedOurs = (live: Json | undefined, ours: Json): boolean => {
+    if (!live) return false;
+    const [shipped, wrote] = [enabledOf(live), enabledOf(ours)];
+    return (
+        shipped.enabled === wrote.enabled &&
+        [...shipped.arcs].every(([id, on]) => !wrote.arcs.has(id) || wrote.arcs.get(id) === on)
+    );
+};
+```
+
+## 🟢 Observation（唔扣分、唔落 backlog）
+
+- 同一組臨時 test 用 `heldPut` 次序（還原已插 publishes 行、卡喺 R2 put）時，選擇發佈嘅「上次發佈」係還原嗰行（之後刪走、從未上線），被剔走嘅未完成短篇以 `enabled: false` 入咗線上 catalog。episode ID 冇被鎖（停用短篇唔計），player 唔顯示；屬「publishes 行先於 R2 寫入」嘅既有設計，唔係今次 diff 引入。由 main agent 判斷要唔要另開 ticket
+- `notShipped` 讀最新 publish 同 `revert` 之間再有第三次 publish 落地，判斷會過時；窗口極窄，同修正前一樣，唔使改
+
+## ✅ 做得好嘅地方（Round 2）
+
+- Test 改為斷言 D1 = R2 內容，唔再釘死錯誤結果；兩個次序都覆蓋，用 D1 batch proxy 控制 interleaving。
+- Fallback 保守：讀唔到贏咗嗰次就回到舊行為，唔會因為收拾失敗而掩蓋原本嘅 409。
+- Admin 端將 409 publishConflict 收入現有 412 重讀摘要流程，冇新增 UI 狀態。
+
+```handoff-receipt
+protocol: 1
+status: warn
+score: 95/100
+stage: T2
+round: 2
+ledger: n/a
+hard_gates:
+  lint: pass
+  type_check: pass
+  tests: pass
+  coverage: "n/a (diff-related admin 25 files / 161 tests, api 5 files / 101 tests green; W-870 test RED-verified against 49997dc2)"
+next_action: invoke_developer
+next_agent: backend-developer
+branch: "fix/api/au-018_publish-serialisation"
+context: "W-870, S-1457, S-1458, S-1460 closed; S-1459 accepted. New W-871: when the winner is a selective publish that drops an incomplete arc of the restored drama, notShipped compares whole definitions, mismatches, and reverts everything (reproduced: R2 golden enabled=true, D1 false). Fix: compare only enabled fields (entry + arcs on both sides) + add the selective-publish test, then re-review. Observation (winner inherits the losing restore's unshipped row as previous publish) is pre-existing; main agent to decide whether to ticket."
+```
