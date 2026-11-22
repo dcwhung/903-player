@@ -1,5 +1,43 @@
 // @vitest-environment node
-import { declarationsOutside } from '../../tests/cssRule';
+import { declarationsOutside, motionLeftOnWhenReduced } from '../../tests/cssRule';
+
+const reduce = (rules: string): string => `@media (prefers-reduced-motion: reduce) { ${rules} }`;
+
+describe('motionLeftOnWhenReduced', () => {
+    it('should report nothing when the reduce block switches off every selector', () => {
+        const css = `.a, .b[data-x='1'] { transition: opacity 1s; }
+            ${reduce(".a,\n .b[data-x='1'] { transition: none; }")}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual([]);
+    });
+
+    it('should report a more specific selector when the reduce block does not repeat it', () => {
+        const css = `.a { transition: opacity 1s; }
+            .a[data-x='1'] { transition: transform 1s; }
+            ${reduce('.a { transition: none; }')}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual([".a[data-x='1'] { transition }"]);
+    });
+
+    it('should tell transition and animation apart when only one is switched off', () => {
+        const css = `.a { animation: spin 1s; } ${reduce('.a { transition: none; }')}`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual(['.a { animation }']);
+    });
+
+    it('should skip motion when it only exists without a reduced motion preference', () => {
+        const css = `@media (prefers-reduced-motion: no-preference) { .a { animation: spin 1s; } }
+            .b { transition: none; }`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual([]);
+    });
+
+    it('should count motion when it sits inside another media query', () => {
+        const css = `@media (max-width: 339px) { .a { transition: opacity 1s; } }`;
+
+        expect(motionLeftOnWhenReduced(css)).toEqual(['.a { transition }']);
+    });
+});
 
 const CSS = `
 :root { --a: 1px; }

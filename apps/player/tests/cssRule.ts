@@ -177,3 +177,43 @@ export const declarationsOutside = (css: string, prelude: string): CssDeclaratio
     });
     return found;
 };
+
+const REDUCED_MOTION_CONTEXT = '@media (prefers-reduced-motion: reduce)';
+const NO_PREFERENCE = 'prefers-reduced-motion: no-preference';
+const MOTION_PROPS: readonly string[] = ['transition', 'animation'];
+
+/** 規則入面符合條件嘅 transition / animation 宣告，每個 selector 一條 `selector { prop }` */
+const motionKeys = (rule: Rule, wanted: (value: string) => boolean): string[] => {
+    const keys: string[] = [];
+    rule.each((node) => {
+        if (node.type !== 'decl' || !MOTION_PROPS.includes(node.prop)) return;
+        if (!wanted(squash(node.value))) return;
+        for (const selector of rule.selectors) keys.push(`${squash(selector)} { ${node.prop} }`);
+    });
+    return keys;
+};
+
+/**
+ * 減少動態時仲會郁嘅規則，寫成 `selector { prop }`（prop = transition / animation）。
+ * `@media (prefers-reduced-motion: reduce)` 入面要有 selector 完全一樣嘅規則將嗰個屬性設做 none 先當熄咗：
+ * selector 一樣 specificity 就一樣，後寫嘅 reduce block 先一定贏。只寫 `.player` 熄唔到
+ * `.player[data-pressing='true']`（0,2,0 贏 0,1,0），jsdom 又睇唔到 cascade，所以直接讀原文。
+ * 寫喺 `prefers-reduced-motion: no-preference` 入面嘅本身已經唔會出現，唔計。
+ */
+export const motionLeftOnWhenReduced = (css: string): string[] => {
+    const root = parse(css);
+    const switchedOff = new Set<string>();
+    root.walkRules((rule) => {
+        if (contextOf(rule) !== REDUCED_MOTION_CONTEXT) return;
+        for (const key of motionKeys(rule, (value) => value === 'none')) switchedOff.add(key);
+    });
+    const left: string[] = [];
+    root.walkRules((rule) => {
+        const context = contextOf(rule);
+        if (context === REDUCED_MOTION_CONTEXT || context?.includes(NO_PREFERENCE)) return;
+        left.push(
+            ...motionKeys(rule, (value) => value !== 'none').filter((key) => !switchedOff.has(key)),
+        );
+    });
+    return left;
+};

@@ -144,8 +144,10 @@
     font-size: var(--font-size-2xs);
 }
 
+/* 減少動態：直接切換。長按嗰條 specificity 高過 .player，要逐條 selector 熄（唔係就照樣慢慢縮） */
 @media (prefers-reduced-motion: reduce) {
     .player,
+    .player[data-pressing='true'],
     .behind {
         transition: none;
     }
