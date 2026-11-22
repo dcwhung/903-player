@@ -26,6 +26,8 @@ const ADMIN_AT = '2026-11-08T18:00:00.000Z';
 const LATER = '2026-11-09T12:00:00.000Z';
 const EVEN_LATER = '2026-11-10T12:00:00.000Z';
 const COMPATIBILITY_DATE = '2026-11-01';
+/** miniflare 第一次起 workerd 好慢（--coverage 之下試過超過 vitest 預設 5 秒） */
+const MINIFLARE_TEST_TIMEOUT_MS = 30_000;
 
 /** migration 拆做逐句（`;` 結尾嗰行為止），去咗 -- 註解 */
 const statements = (sql: string): string[] =>
@@ -104,7 +106,7 @@ describe('planImport', () => {
     });
 });
 
-describe('importSql', () => {
+describe('importSql', { timeout: MINIFLARE_TEST_TIMEOUT_MS }, () => {
     const plan = planImport(scanLibrary());
     const [edited, missing] = plan.entries;
     const ADMIN_DEFINITION = JSON.stringify({ name: 'admin 改過' });
@@ -400,6 +402,88 @@ describe('importLibrary CLI', () => {
                 '--file',
                 join(dir, 'import.sql'),
             ]);
+        });
+
+        const isWrite = (args: string[]) => !args.includes('--json');
+        const fileNames = (entries: readonly (ImportEntry | undefined)[]) =>
+            new Set(entries.flatMap((entry) => Object.values(entry?.images ?? {})));
+        const uploadedFileNames = (calls: string[][]) =>
+            new Set(calls.filter((a) => a[0] === 'r2').map((a) => a[3]?.split('/').at(-1)));
+
+        it('should only upload and record images of the entries it inserts by default', async () => {
+            const calls: string[][] = [];
+            const io = capture();
+            const dir = newOutDir();
+            expect(await run(['--local', '--out-dir', dir], { ...io, exec: execWith(calls) })).toBe(
+                0,
+            );
+            const wanted = fileNames([missing]);
+            expect(wanted.size).toBeGreaterThan(0);
+            expect(wanted.size).toBeLessThan(plan.assets.length);
+            expect(uploadedFileNames(calls)).toEqual(wanted);
+            const sql = sqlOf(dir).split('\n');
+            expect(sql.filter((line) => line.startsWith('INSERT INTO entries'))).toHaveLength(1);
+            expect(sql.filter((line) => line.startsWith('INSERT INTO assets'))).toHaveLength(
+                wanted.size,
+            );
+            expect(io.text().split('\n')[0]).toBe(
+                `${plan.entries.length} entries, ${plan.assets.length} images (${wanted.size} to upload)`,
+            );
+        });
+
+        it('should still upload every missing image with --overwrite', async () => {
+            const calls: string[][] = [];
+            const argv = ['--local', '--overwrite', '--out-dir', newOutDir()];
+            expect(await run(argv, { ...capture(), exec: execWith(calls) })).toBe(0);
+            expect(uploadedFileNames(calls)).toEqual(fileNames(plan.entries));
+        });
+
+        it('should write nothing by default when D1 already has every entry', async () => {
+            const calls: string[][] = [];
+            const io = capture();
+            const exec = (args: string[]) => {
+                calls.push(args);
+                const rows = args.at(-1)?.includes('FROM entries') ? plan.entries.map(asRow) : [];
+                return { status: 0, stdout: JSON.stringify([{ results: rows }]) };
+            };
+            expect(await run(['--local', '--out-dir', newOutDir()], { ...io, exec })).toBe(0);
+            expect(calls.filter(isWrite)).toEqual([]);
+            expect(io.text()).toContain(
+                `entries: 0 to insert, ${plan.entries.length} existing kept (0 differ from the repo library)\n`,
+            );
+        });
+
+        describe.each([
+            { name: 'an empty array', stdout: '[]' },
+            { name: 'a failed result', stdout: '[{"success":false,"error":"x"}]' },
+            { name: 'null results', stdout: '[{"results":null}]' },
+            { name: 'non-JSON text', stdout: 'Proxy error <html>' },
+        ])('when a D1 read returns $name', ({ stdout }) => {
+            const good = JSON.stringify([{ results: [] }]);
+            const failingReads = (calls: string[][]) => (args: string[]) => {
+                calls.push(args);
+                return { status: 0, stdout };
+            };
+            const failingEntriesRead = (calls: string[][]) => (args: string[]) => {
+                calls.push(args);
+                const bad = args.at(-1)?.includes('FROM entries');
+                return { status: 0, stdout: bad ? stdout : good };
+            };
+
+            it.each([
+                { mode: [], exec: failingReads },
+                { mode: ['--overwrite'], exec: failingReads },
+                { mode: [], exec: failingEntriesRead },
+                { mode: ['--overwrite'], exec: failingEntriesRead },
+            ])('should exit 1 before any write (flags: $mode)', async ({ mode, exec }) => {
+                const calls: string[][] = [];
+                const io = capture();
+                const argv = ['--remote', ...mode, '--out-dir', newOutDir()];
+                expect(await run(argv, { ...io, exec: exec(calls) })).toBe(1);
+                expect(calls.filter(isWrite)).toEqual([]);
+                expect(io.text()).toContain('unexpected D1 response');
+                expect(io.text()).not.toContain('entries: ');
+            });
         });
 
         it('should mention --overwrite in the usage text', async () => {

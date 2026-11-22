@@ -7,7 +7,8 @@
  * 1. 掃 library（同 buildCatalogJson.mjs 共用 scanLibrary，唔重寫規則）
  * 2. 每張圖算 SHA-256 → R2 key catalog/v1/img/<前 16 hex>.<ext>
  * 3. 寫 <out-dir>/import.sql：預設 INSERT … ON CONFLICT DO NOTHING（只加未有嘅 entries；D1 已有嘅行係 admin 改過嘅 SSoT，唔郁）
- * 4. 問 D1 已有邊啲圖（assets table）同 entries：淨係上載未有嘅圖（wrangler r2 object put），印出 entries 會點
+ * 4. 問 D1 已有邊啲圖（assets table）同 entries：淨係上載未有嘅圖（wrangler r2 object put；預設只理要加嗰啲 entries 嘅圖），印出 entries 會點
+ *    D1 讀唔到 / 回應形狀唔啱 → exit 1，乜都唔寫
  * 5. 圖上載完先跑 SQL（assets 行 = R2 已經有）
  * --overwrite：entries 改用 ON CONFLICT DO UPDATE，D1 已有而同 repo 唔同嘅行會畀 repo 版本蓋過（admin 嘅改動冇得救返；schedules 唔郁）
  * --dry-run：淨係讀 D1 + 印出要跑嘅指令。要喺 apps/api 跑（wrangler.toml 喺度）。只用 Node 內置 module
@@ -127,15 +128,28 @@ const entryState = (entry, row) => {
     return same ? ENTRY_STATE.unchanged : ENTRY_STATE.changed;
 };
 
+const indexEntries = (rows) => new Map(rows.map((row) => [entryKey(row), row]));
+
 /** repo entries 對 D1 現有行：missing = D1 冇；changed = 有但內容唔同；unchanged = 一樣 */
 export function countEntries(entries, existingRows) {
-    const existing = new Map(existingRows.map((row) => [entryKey(row), row]));
+    const existing = indexEntries(existingRows);
     const counts = { missing: 0, changed: 0, unchanged: 0 };
     entries.forEach((entry) => {
         counts[entryState(entry, existing.get(entryKey(entry)))] += 1;
     });
     return counts;
 }
+
+/** 預設 mode 真係要寫嘅嘢：D1 未有嘅 entries + 佢哋用到嘅圖（保留嘅行唔會引用 repo 圖，唔使上載） */
+const insertOnlyPlan = (plan, existingRows) => {
+    const existing = indexEntries(existingRows);
+    const entries = plan.entries.filter((entry) => !existing.has(entryKey(entry)));
+    const referenced = new Set(entries.flatMap((entry) => Object.values(entry.images)));
+    const assets = plan.assets.filter((asset) =>
+        referenced.has(asset.key.slice(IMAGE_KEY_PREFIX.length)),
+    );
+    return { entries, assets };
+};
 
 const keptSummary = ({ missing, changed, unchanged }) =>
     `entries: ${missing} to insert, ${changed + unchanged} existing kept ` +
@@ -201,11 +215,28 @@ const wrangler = (exec, args) => {
     return result.stdout;
 };
 
-/** 讀 D1（dry run 都會跑）：一句 SELECT 嘅結果行 */
+const parseJson = (text) => {
+    try {
+        return JSON.parse(text);
+    } catch {
+        return undefined;
+    }
+};
+
+/** wrangler d1 execute --json 嘅 stdout → 第一句嘅結果行；形狀唔啱 = undefined */
+const resultRows = (stdout) => {
+    const parsed = parseJson(stdout);
+    const [first] = Array.isArray(parsed) ? parsed : [];
+    const usable = first && first.success !== false && Array.isArray(first.results);
+    return usable ? first.results : undefined;
+};
+
+/** 讀 D1（dry run 都會跑）：一句 SELECT 嘅結果行。讀唔明唔可以當「冇行」，否則 summary 話 0 行但 SQL 照寫（W-858） */
 const queryRows = (exec, mode, sql) => {
     const args = ['d1', 'execute', DATABASE, `--${mode}`, '--json', '--command', sql];
-    const [result] = JSON.parse(wrangler(exec, args));
-    return result?.results ?? [];
+    const rows = resultRows(wrangler(exec, args));
+    if (!rows) throw new WranglerError(`unexpected D1 response to: ${sql}`);
+    return rows;
 };
 
 /** D1 assets table 已有嘅 hash（= R2 已經有，唔使再上載） */
@@ -222,25 +253,32 @@ const writeSql = (plan, { outDir, overwrite }) => {
     return file;
 };
 
-const entrySummary = (plan, options, exec) => {
-    const counts = countEntries(plan.entries, existingEntries(exec, options.mode));
-    return options.overwrite ? overwriteSummary(counts) : keptSummary(counts);
+/** 寫 import.sql（local 檔）；冇嘢要寫就唔使叫 wrangler 跑一個得註解嘅檔 */
+const sqlSteps = (writes, options) => {
+    const sqlFile = writeSql(writes, options);
+    const empty = writes.entries.length === 0 && writes.assets.length === 0;
+    return empty ? [] : [['d1', 'execute', DATABASE, `--${options.mode}`, '--file', sqlFile]];
 };
+
+const entrySummary = (counts, overwrite) =>
+    overwrite ? overwriteSummary(counts) : keptSummary(counts);
 
 const importAll = (options, { out, exec }) => {
     const plan = planImport(scanLibrary());
-    const sqlFile = writeSql(plan, options);
+    // 兩個 D1 讀取都要喺任何寫入（R2 / D1）之前：讀唔到就成個停
     const known = existingHashes(exec, options.mode);
+    const existing = existingEntries(exec, options.mode);
+    const writes = options.overwrite ? plan : insertOnlyPlan(plan, existing);
     const uploads = uploadCommands(
-        plan.assets.filter((a) => !known.has(a.hash)),
+        writes.assets.filter((a) => !known.has(a.hash)),
         options.mode,
     );
-    const steps = [...uploads, ['d1', 'execute', DATABASE, `--${options.mode}`, '--file', sqlFile]];
+    const steps = [...uploads, ...sqlSteps(writes, options)];
     // 第一行格式 import-catalog.yml 嘅 Summary 會 grep，唔好改
     out(
         `${plan.entries.length} entries, ${plan.assets.length} images (${uploads.length} to upload)\n`,
     );
-    out(entrySummary(plan, options, exec));
+    out(entrySummary(countEntries(plan.entries, existing), options.overwrite));
     steps.forEach((args) => {
         out(`wrangler ${args.join(' ')}\n`);
         if (!options.dryRun) wrangler(exec, args);
