@@ -5,6 +5,7 @@ export interface Resource<T> {
     data: T | undefined;
     error: Error | undefined;
     loading: boolean;
+    /** 連續叫：只有最新嗰次嘅結果會寫入 data / error（較舊嘅遲返嚟都唔會蓋過，AU-024） */
     reload: () => Promise<T | undefined>;
     /**
      * 即刻改已載入嘅 data（唔重讀；例如刪除後先喺列表拎走，之後 reload 照覆蓋）。
@@ -15,6 +16,19 @@ export interface Resource<T> {
 
 const asError = (error: unknown) => (error instanceof Error ? error : new Error(String(error)));
 
+/**
+ * Reload token（AU-024，同 useCropSession 嘅做法）：每次開始 reload 遞增；
+ * 回傳嘅 isLatest() 喺之後再有 reload 開始就變 false，遲返嚟嘅舊結果唔寫入 state
+ */
+const useReloadToken = () => {
+    const tokenRef = useRef(0);
+    return useCallback(() => {
+        tokenRef.current += 1;
+        const token = tokenRef.current;
+        return () => token === tokenRef.current;
+    }, []);
+};
+
 export const useResource = <T>(loader: () => Promise<T>, auto = true): Resource<T> => {
     const [state, setState] = useState<{ data?: T; error?: Error; loading: boolean }>({
         loading: auto,
@@ -23,17 +37,19 @@ export const useResource = <T>(loader: () => Promise<T>, auto = true): Resource<
     useEffect(() => {
         loaderRef.current = loader;
     }, [loader]);
+    const beginReload = useReloadToken();
     const reload = useCallback(async () => {
+        const isLatest = beginReload();
         setState((s) => ({ ...s, loading: true }));
         try {
             const data = await loaderRef.current();
-            setState({ data, loading: false });
+            if (isLatest()) setState({ data, loading: false });
             return data;
         } catch (error) {
-            setState((s) => ({ ...s, error: asError(error), loading: false }));
+            if (isLatest()) setState((s) => ({ ...s, error: asError(error), loading: false }));
             return undefined;
         }
-    }, []);
+    }, [beginReload]);
     const mutate = useCallback((update: (data: T | undefined) => T | undefined) => {
         setState((s) => ({ ...s, data: update(s.data) }));
     }, []);
