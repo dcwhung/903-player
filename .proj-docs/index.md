@@ -82,6 +82,7 @@
 | 2026-11-22 | [reviews/2026-11-22_review_p1-admin-draft-consistency.md](reviews/2026-11-22_review_p1-admin-draft-consistency.md)（Round 1 95 pass，S-1430–S-1435；Round 2 96 pass，S-1436；全部關閉，S-1430 轉去 AU-018；audit AU-020 – AU-023 admin 草稿一致性，admin 0.10.0、api 0.14.0）                                                   |
 | 2026-11-22 | [reviews/2026-11-22_review_p2-tooling-docs.md](reviews/2026-11-22_review_p2-tooling-docs.md)（100 pass，S-1437–S-1440；audit Observation：`.mjs` lint、README / CLAUDE.md QA gate 表 drift、`npm audit fix`（14 → 4，餘下要 `vite-plugin-pwa` major））                                                                         |
 | 2026-11-22 | [reviews/2026-11-22_review_p2-reduced-motion.md](reviews/2026-11-22_review_p2-reduced-motion.md)（Round 1–3 100 pass，S-1447–S-1451 全部關閉；audit Observation：mini player 長按同 view-transition 後備喺減少動態下照郁，player 2.2.2）                                                                                        |
+| 2026-11-22 | [reviews/2026-11-22_review_p2-publish-serialisation.md](reviews/2026-11-22_review_p2-publish-serialisation.md)（Round 1 warn，W-870、S-1457–S-1460；Round 2 warn，W-871；Round 3 100 pass，全部關閉；audit AU-018 發佈序列化（條件 insert + R2 條件寫入、409 `publishConflict`）+ S-1430，api 0.14.1、admin 0.10.1）            |
 
 ## QA
 

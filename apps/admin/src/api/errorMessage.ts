@@ -1,9 +1,10 @@
 /*
  * 畫面顯示用嘅錯誤文字：session 過期（401）、改劇 ID 後短篇 ID 重複（409 + arcId，W-711）、
- * 有排程嘅短篇改 ID（409 + reason: 'arcScheduled'，S-804）用中文講清楚，其他照 server / Error 訊息
+ * 有排程嘅短篇改 ID（409 + reason: 'arcScheduled'，S-804）、還原撞正另一次發佈（PublishConflictError，
+ * AU-018；確認發佈頁自己重讀摘要、唔經呢度，見 usePublish）用中文講清楚，其他照 server / Error 訊息
  */
 import { t } from '../i18n/t';
-import { ApiError, UnauthorizedError } from './client';
+import { ApiError, PublishConflictError, UnauthorizedError } from './client';
 
 const CONFLICT = 409;
 /** server 擋「有排程嘅短篇改 ID」嘅 409 body.reason（api 合約，S-804） */
@@ -17,6 +18,7 @@ const conflictMessage = (body: Record<string, unknown>): string | undefined => {
 
 export const errorMessage = (error: unknown): string => {
     if (error instanceof UnauthorizedError) return t('editor.sessionExpired');
+    if (error instanceof PublishConflictError) return t('history.rollbackConflict');
     const conflict =
         error instanceof ApiError && error.status === CONFLICT
             ? conflictMessage(error.body)

@@ -727,6 +727,7 @@ export const zhHK = {
         failed: '失敗：{error}，播放器仍用 #{id}',
         rollback: '還原',
         rollbackTo: '還原至 #{id}',
+        rollbackConflict: '另一次發佈或還原剛剛完成或仍在進行，本次還原未能完成，請稍後再試。',
         confirmTitle: '還原至 #{id}？',
         confirmBody: '還原至 #{id}：當時上架的內容會恢復上架，之後新增的會設為下架。',
         confirmNote: '只會還原上架狀態；名稱、簡介、圖片、集數及排程會維持目前版本。',

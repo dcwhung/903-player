@@ -1,4 +1,4 @@
-import { ApiError, UnauthorizedError } from './client';
+import { ApiError, PublishConflictError, UnauthorizedError } from './client';
 import { errorMessage } from './errorMessage';
 
 describe('errorMessage', () => {
@@ -28,5 +28,15 @@ describe('errorMessage', () => {
             reason: 'arcScheduled',
         });
         expect(errorMessage(error)).toBe('此短篇已有排程，請先移除排程再修改 ID。');
+    });
+
+    it('should explain a restore that lost to another publish, without asking to reload (AU-018, S-1460)', () => {
+        const error = new PublishConflictError(409, 'another publish finished or is in progress', {
+            error: 'another publish finished or is in progress',
+            reason: 'publishConflict',
+        });
+        expect(errorMessage(error)).toBe(
+            '另一次發佈或還原剛剛完成或仍在進行，本次還原未能完成，請稍後再試。',
+        );
     });
 });

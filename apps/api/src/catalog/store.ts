@@ -42,6 +42,8 @@ export interface NewPublish {
     dramaCount: number;
     episodeCount: number;
     rollbackOf: number | null;
+    /** caller 砌 document 時讀到嘅最新 ok publish id（null = 未發佈過）；insert 時要仲係佢（AU-018） */
+    base: number | null;
 }
 
 const SUMMARY_COLUMNS =
@@ -198,11 +200,17 @@ export const markPublishFailed = async (
         .run();
 };
 
-export const insertPublish = async (db: D1Database, row: NewPublish): Promise<PublishRow> => {
-    const inserted = await db
+/**
+ * 條件 insert（AU-018）：同一句 SQL 入面對返「最新 ok publish 仲係 base」，所以兩個重疊嘅 publish
+ * 只有一個寫到；另一個（base 已經過時）回 null、冇寫任何嘢
+ */
+export const insertPublish = (db: D1Database, row: NewPublish): Promise<PublishRow | null> =>
+    db
         .prepare(
             `INSERT INTO publishes (created_at, created_by, hash, document, episode_ids, show_count,
-             drama_count, episode_count, rollback_of) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             drama_count, episode_count, rollback_of)
+             SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?
+             WHERE (SELECT id FROM publishes ${LATEST_OK_PUBLISH}) IS ?
              RETURNING ${SUMMARY_COLUMNS}`,
         )
         .bind(
@@ -215,11 +223,9 @@ export const insertPublish = async (db: D1Database, row: NewPublish): Promise<Pu
             row.dramaCount,
             row.episodeCount,
             row.rollbackOf,
+            row.base,
         )
         .first<PublishRow>();
-    if (!inserted) throw new Error('publish insert returned no row');
-    return inserted;
-};
 
 /** 新到舊（唔包 document，admin 上下架記錄用） */
 export const listPublishes = async (db: D1Database): Promise<PublishRow[]> =>

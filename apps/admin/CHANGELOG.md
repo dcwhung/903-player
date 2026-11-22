@@ -2,6 +2,13 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.10.1 — 2026-11-22
+
+### Fixed
+
+- 發佈撞正另一次發佈（api 0.14.1 嘅 `409 publishConflict`，AU-018）：確認發佈頁同 412 一樣自動重讀摘要並提示內容已變更，檢查後再撳一次，唔使自己重新載入
+- 還原撞正另一次發佈：上下架記錄顯示書面語提示「另一次發佈或還原剛剛完成或仍在進行，本次還原未能完成，請稍後再試。」，唔再顯示 server 嘅英文訊息
+
 ## 0.10.0 — 2026-11-22
 
 草稿一致性（2026-11-22 codebase audit AU-020 至 AU-023）。

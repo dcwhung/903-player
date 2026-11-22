@@ -2,6 +2,21 @@
 
 版本跟 SemVer。0.8.0 之前嘅變更見 git log（`apps/api/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.14.1 — 2026-11-22
+
+Publish 序列化（2026-11-22 codebase audit AU-018、review S-1430）。冇 D1 migration；冇獨立嘅鎖，所以冇「鎖放唔返」嘅情況。
+
+### Fixed
+
+- 兩個重疊嘅 publish（或者 publish 撞還原）只有一個會落地，R2 嘅 `catalog.json` 同 D1「最新 ok publish」唔會再唔夾：
+    - `commitPublish` 要傳 `base`（砌 document 時讀到嘅最新 ok publish id）；最新 ok publish 已經唔係 `base` 就唔寫
+    - `publishes` 嘅 insert 改成條件 insert（同一句 SQL 對返最新 ok publish 仲係 `base`），輸咗嗰個乜都冇寫
+    - R2 寫入帶條件（commit 開頭讀到嘅 etag 要未變；當時未有 object 就要而家都未有），條件唔啱就刪返啱啱記嗰行
+- 輸咗嗰個 request 回 `409 { error: 'another publish finished or is in progress; reload and try again', reason: 'publishConflict' }`（冇 `missing`，同 ID 守衛嘅 409 分得開）；`POST /api/publish`（`?force=1` 都一樣）同 `POST /api/publishes/:id/rollback` 都係
+- 還原輸咗（409）時 D1 跟線上：贏咗嗰次 publish 冇帶上線嘅 entry 寫返舊 definition；已經帶埋還原嘅上架狀態上線嘅 entry 保持（唔會出現線上上架、D1 下架）。即係還原冇記錄成 `rollback_of` 行，但佢嘅上架狀態可能已經由贏咗嗰次 publish 發佈
+    - 判斷「已經帶上線」只比較還原會改嘅欄位（entry 同兩邊都有嘅短篇嘅 `enabled`），唔比較成個 definition：贏咗嗰次係選擇發佈、剔走咗同一套劇嘅未完成短篇時，都唔會誤判做未上線而寫返舊值（W-871）
+- `unchanged` 要 R2 `catalog.json` 嘅 `customMetadata.hash` 等於最新 ok publish 嘅 hash 先成立：publish 記咗行但 R2 冇寫到（Worker 中途死咗）之後，同一份內容再發佈會真係寫 R2，唔再回 `unchanged`
+
 ## 0.14.0 — 2026-11-22
 
 確認發佈版本守衛（2026-11-22 codebase audit AU-021）。舊 client 照用得：`fingerprint` 可以唔傳。

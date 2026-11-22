@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fakeData, renderAt, resource } from '../../../tests/renderApp';
-import { ValidationError, VersionConflictError } from '../../api/client';
+import { PublishConflictError, ValidationError, VersionConflictError } from '../../api/client';
 import { getChanges, publish } from '../../api/publishEndpoints';
 import type { ChangeItem } from '@903-player/catalog';
 import type {
@@ -364,6 +364,22 @@ describe('PublishPage', () => {
                 );
                 expect(screen.queryByText('other page')).not.toBeInTheDocument();
                 expect(screen.queryByRole('button', { name: '重新載入' })).not.toBeInTheDocument();
+                expect(reads()).toBe(2);
+            });
+
+            it('should re-read the summary the same way when another publish won the race (409 publishConflict, S-1458)', async () => {
+                vi.mocked(publish).mockRejectedValue(
+                    new PublishConflictError(409, 'another publish finished or is in progress', {
+                        reason: 'publishConflict',
+                    }),
+                );
+                const reads = () => vi.mocked(getChanges).mock.calls.length;
+                await openAndPublish();
+
+                expect(await screen.findByRole('alert')).toHaveTextContent(
+                    '內容已於其他視窗或裝置變更，以下已更新為最新的變更，請檢查後再次發佈。',
+                );
+                expect(screen.queryByText(/發佈失敗/)).not.toBeInTheDocument();
                 expect(reads()).toBe(2);
             });
 
