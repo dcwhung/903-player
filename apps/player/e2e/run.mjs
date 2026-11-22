@@ -228,7 +228,6 @@ const metrics = [];
 /** 今日節目頁：播放器（卡 → 指示點）佔高、清單行數 */
 const todayMetrics = [];
 const WHEEL_PX = 400;
-const SWIPE_FROM_PX = 120;
 // 同 tokens.css 嘅 --player-disc-min 一致：預設 160px，好矮（≤ SHORT_HEIGHT_PX）120px
 const DISC_MIN_PX = 160;
 const SHORT_DISC_MIN_PX = 120;

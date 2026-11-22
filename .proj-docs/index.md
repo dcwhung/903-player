@@ -80,6 +80,9 @@
 | 2026-11-22 | [reviews/2026-11-22_review_p1-ci-import_batch.md](reviews/2026-11-22_review_p1-ci-import_batch.md)（Round 1 warn，W-858、S-1398–S-1403；Round 2 100 pass，S-1404；audit AU-017 import 預設只 insert（api 0.13.2）+ AU-015 / AU-016 / AU-019 CI 同 deploy 把關；S-1402 CLAUDE.md 字眼待用戶決定）                                |
 | 2026-11-22 | [reviews/2026-11-22_review_p1-player-progress-probe.md](reviews/2026-11-22_review_p1-player-progress-probe.md)（Round 1 warn，W-859、S-1420–S-1422；Round 2 100 pass，S-1423；Round 3 100 pass，S-1424；audit AU-026 冇播過唔寫進度 + AU-027 fallback 唔刪 probe 記錄，player 2.2.1）                                           |
 | 2026-11-22 | [reviews/2026-11-22_review_p1-admin-draft-consistency.md](reviews/2026-11-22_review_p1-admin-draft-consistency.md)（Round 1 95 pass，S-1430–S-1435；Round 2 96 pass，S-1436；全部關閉，S-1430 轉去 AU-018；audit AU-020 – AU-023 admin 草稿一致性，admin 0.10.0、api 0.14.0）                                                   |
+| 2026-11-22 | [reviews/2026-11-22_review_p2-tooling-docs.md](reviews/2026-11-22_review_p2-tooling-docs.md)（100 pass，S-1437–S-1440；audit Observation：`.mjs` lint、README / CLAUDE.md QA gate 表 drift、`npm audit fix`（14 → 4，餘下要 `vite-plugin-pwa` major））                                                                         |
+| 2026-11-22 | [reviews/2026-11-22_review_p2-reduced-motion.md](reviews/2026-11-22_review_p2-reduced-motion.md)（Round 1–3 100 pass，S-1447–S-1451 全部關閉；audit Observation：mini player 長按同 view-transition 後備喺減少動態下照郁，player 2.2.2）                                                                                        |
+| 2026-11-22 | [reviews/2026-11-22_review_p2-publish-serialisation.md](reviews/2026-11-22_review_p2-publish-serialisation.md)（Round 1 warn，W-870、S-1457–S-1460；Round 2 warn，W-871；Round 3 100 pass，全部關閉；audit AU-018 發佈序列化（條件 insert + R2 條件寫入、409 `publishConflict`）+ S-1430，api 0.14.1、admin 0.10.1）            |
 
 ## QA
 
