@@ -234,28 +234,76 @@ describe('POST /api/publish serialisation (AU-018)', () => {
 });
 
 describe('POST /api/publishes/:id/rollback serialisation (AU-018)', () => {
-    const goldenEnabled = async () => {
-        const definition = await env.DB.prepare(
-            "SELECT definition FROM entries WHERE kind = 'dramas' AND id = 'golden'",
-        ).first<string>('definition');
-        return (JSON.parse(definition ?? '{}') as Json).enabled;
+    const GOLDEN = "SELECT definition FROM entries WHERE kind = 'dramas' AND id = 'golden'";
+
+    const storedGolden = async () =>
+        JSON.parse((await env.DB.prepare(GOLDEN).first<string>('definition')) ?? '{}') as Json;
+
+    const liveGolden = async () => {
+        const object = await env.CATALOG.get(KEY);
+        const document = JSON.parse((await object?.text()) ?? '{}') as { dramas: Json[] };
+        return document.dramas.find((entry) => entry.id === 'golden')?.definition as Json;
     };
 
-    it('should answer 409 and put D1 back when a publish lands during the restore', async () => {
+    /** #1 golden 上架、#2 golden 下架；還原 #1 = golden 上返架 */
+    const unlistedAfterFirst = async () => {
         await adminPost('/api/publish');
         await putEntry('dramas', 'golden', { ...drama(3), enabled: false });
         await adminPost('/api/publish');
+    };
+
+    /** 還原寫 D1（第一個 batch）之前行 before 一次 */
+    const beforeApply = (before: () => Promise<unknown>) => {
+        let done = false;
+        const db = new Proxy(env.DB, {
+            get: (target, key) => {
+                if (key !== 'batch') {
+                    const value = Reflect.get(target, key) as unknown;
+                    return typeof value === 'function' ? value.bind(target) : value;
+                }
+                return async (statements: D1PreparedStatement[]) => {
+                    if (!done) {
+                        done = true;
+                        await before();
+                    }
+                    return target.batch(statements);
+                };
+            },
+        });
+        return { ...env, DB: db };
+    };
+
+    const publishMeanwhile = async () => {
+        await rename('Meanwhile');
+        expect((await post('/api/publish')).status).toBe(200);
+    };
+
+    it('should answer 409 and keep in D1 what the winning publish already shipped (W-870)', async () => {
+        await unlistedAfterFirst();
         const held = heldPut();
         const restore = post('/api/publishes/1/rollback', held.bindings);
         await held.reached;
-        await rename('Meanwhile');
-        expect((await post('/api/publish')).status).toBe(200);
+        // 還原已經寫咗 D1：呢個 publish 帶埋還原嘅上架狀態上線
+        await publishMeanwhile();
         held.release();
         const lost = await restore;
         expect(lost.status).toBe(409);
         expect(await lost.json()).toMatchObject(CONFLICT_BODY);
-        expect(await goldenEnabled()).toBe(false);
+        expect((await liveGolden()).enabled).not.toBe(false);
+        expect(await storedGolden()).toEqual(await liveGolden());
         expect((await rows()).map((r) => r.id)).toEqual([1, 2, 4]);
+        await expectInStep();
+    });
+
+    it('should answer 409 and put D1 back when the winning publish shipped the old state (W-870)', async () => {
+        await unlistedAfterFirst();
+        // publish 喺還原寫 D1 之前落地：線上仲係下架
+        const lost = await post('/api/publishes/1/rollback', beforeApply(publishMeanwhile));
+        expect(lost.status).toBe(409);
+        expect(await lost.json()).toMatchObject(CONFLICT_BODY);
+        expect((await liveGolden()).enabled).toBe(false);
+        expect(await storedGolden()).toEqual(await liveGolden());
+        expect((await rows()).map((r) => r.id)).toEqual([1, 2, 3]);
         await expectInStep();
     });
 

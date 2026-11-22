@@ -6,7 +6,8 @@
  * 只改 `enabled`（節目、劇、短篇三層）；內容欄位（名、簡介、圖、集數、排程日期）保持而家嘅：
  * 還原集數會令鎖咗嘅 ID 消失，排程日期由 schedules 表計，淨改 definition 會唔夾。draft 唔郁。
  * 驗證 + ID 守衛喺寫 D1 之前先試；D1 一個 batch（樂觀鎖 + bump updated_at）；
- * 發佈 throw / 被拒就用另一個 batch 寫返舊 definition
+ * 發佈 throw / 被拒就用另一個 batch 寫返舊 definition；輸咗畀另一個 publish（409）時，
+ * 贏咗嗰次已經帶上線嘅值保持（W-870），D1 一定跟線上
  */
 import { getBanner } from '../banner/store';
 import { getBranding } from '../branding/store';
@@ -15,6 +16,7 @@ import { isRecord, type Json } from '../content/http';
 import {
     commitPublish,
     documentFromEntries,
+    PublishConflictError,
     missingEpisodeIds,
     validateDocument,
     type PublishEnv,
@@ -163,6 +165,36 @@ const apply = async (db: D1Database, changes: readonly Change[]): Promise<boolea
     throw new RollbackConflictError('entries changed during rollback, try again');
 };
 
+/**
+ * 還原輸咗畀另一個 publish（W-870）：贏咗嗰次由 D1 砌 document，可能已經帶埋我哋寫入嘅上架狀態上線。
+ * 回每個 change 係咪仲要寫返舊值：線上 definition 已經係我哋寫嗰個值 → false（保持，D1 = 線上）
+ */
+const notShipped = async (db: D1Database, changes: readonly Change[]): Promise<boolean[]> => {
+    const winner = await latestPublish(db);
+    const live = winner ? snapshotDefinitions(winner.document) : new Map<string, Json>();
+    return changes.map(
+        ({ entry, definition }) =>
+            JSON.stringify(live.get(keyOf(entry.kind, entry.id))) !== definition,
+    );
+};
+
+/** 發佈 throw 之後收拾 D1；讀唔到贏咗嗰次就當全部未上線（全部寫返舊值，同以前一樣） */
+const revertAfterFailure = async (
+    db: D1Database,
+    error: unknown,
+    { changes, applied }: { changes: readonly Change[]; applied: readonly boolean[] },
+): Promise<void> => {
+    const pending =
+        error instanceof PublishConflictError
+            ? await notShipped(db, changes).catch(() => changes.map(() => true))
+            : changes.map(() => true);
+    await revert(
+        db,
+        changes,
+        applied.map((ok, i) => ok && pending[i] === true),
+    );
+};
+
 /** 改完之後嘅 document（驗證）+ ID 守衛：寫 D1 之前先試，唔過就乜都唔寫 */
 const preflight = async (env: RollbackEnv, rows: ReturnType<typeof rowsAfter>, force: boolean) => {
     const validated = validateDocument(
@@ -183,7 +215,8 @@ const preflight = async (env: RollbackEnv, rows: ReturnType<typeof rowsAfter>, f
 /**
  * 還原 #id：null = 冇呢次 publish。#id 唔係 ok throw RollbackNotRestorableError（409）；
  * 驗證唔過 throw PublishValidationError（422）；ID 守衛唔過回 rejected（409）；全部都喺寫 D1 之前。
- * 期間有另一個 publish 落地 → commitPublish throw PublishConflictError（409，AU-018），D1 寫返舊值。
+ * 期間有另一個 publish 落地 → commitPublish throw PublishConflictError（409，AU-018）：
+ * 贏咗嗰次冇帶上線嘅 entry 寫返舊值，已經帶上線嘅保持（W-870）。
  * R2 寫咗之後 purge cache 失敗唔會 throw（commitPublish 只 log，S-814），所以 revert 只會喺
  * R2 未寫 / 被拒時發生，D1 同已上線 catalog 唔會唔夾
  */
@@ -207,7 +240,7 @@ export const rollbackToPublish = async (
         if (outcome.kind === 'rejected') await revert(env.DB, changes, applied);
         return outcome;
     } catch (error) {
-        await revert(env.DB, changes, applied);
+        await revertAfterFailure(env.DB, error, { changes, applied });
         throw error;
     }
 };
