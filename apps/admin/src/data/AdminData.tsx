@@ -3,9 +3,9 @@
  * 掃描完先讀其他嘢（掃描會寫 D1）
  */
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
-import { getEntry, getTodos, listEntries } from '../api/endpoints';
+import { getEntry, getTodos, listEntriesDetail } from '../api/endpoints';
 import { getChanges } from '../api/publishEndpoints';
-import type { ChangesResponse, LoadedEntry, TodosResponse } from '../api/types';
+import type { ChangesResponse, EntryListItem, LoadedEntry, TodosResponse } from '../api/types';
 import { useResource, type Resource } from './useResource';
 import { useScan, type ScanState } from './useScan';
 
@@ -21,13 +21,25 @@ export interface AdminData {
 
 export const AdminDataContext = createContext<AdminData | null>(null);
 
-/** 列表嘅 published / publishedArcs（成個列表一次計）併入每個 entry */
+/** detail=1 回應嘅全文；舊 API（淨係列表欄位）先要逐個 GET */
+const detailOf = async (item: EntryListItem): Promise<LoadedEntry> => {
+    const { kind, id, definition, images, publishedVersion } = item;
+    if (!definition || !images) return getEntry(kind, id);
+    const detail = { definition, images, draft: item.draft, updatedAt: item.updatedAt };
+    const etag = item.etag ?? null;
+    return { kind, id, ...detail, etag, ...(publishedVersion ? { publishedVersion } : {}) };
+};
+
+/**
+ * 全部 entry 一個 request（GET /api/entries?detail=1，AU-024）；
+ * 列表嘅 published / publishedArcs（成個列表一次計）併入每個 entry
+ */
 export const loadAllEntries = async (): Promise<LoadedEntry[]> =>
     Promise.all(
-        (await listEntries()).map(async (e) => ({
-            ...(await getEntry(e.kind, e.id)),
-            published: e.published,
-            publishedArcs: e.publishedArcs,
+        (await listEntriesDetail()).map(async (item) => ({
+            ...(await detailOf(item)),
+            published: item.published,
+            publishedArcs: item.publishedArcs,
         })),
     );
 

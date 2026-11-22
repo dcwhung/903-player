@@ -22,6 +22,17 @@ export interface EntrySummary {
     publishedArcs?: string[];
 }
 
+/**
+ * GET /api/entries?detail=1（api 0.14.2）每個 entry：列表欄位 + 全文 + etag（= 單一 entry GET 嘅 ETag header）+
+ * publishedVersion（最新 ok publish 嘅版本，null = 從未發佈）。舊 API 唔識 detail → 淨係列表欄位
+ */
+export interface EntryListItem extends EntrySummary {
+    definition?: RawDefinition;
+    images?: ImageMap;
+    etag?: string;
+    publishedVersion?: PublishedVersion | null;
+}
+
 export interface EntryDetail {
     definition: RawDefinition;
     images: ImageMap;
