@@ -307,7 +307,7 @@ body {
 }
 /* 4 欄闊、兩行高 = 32:9；空 h1 冇內容高度，要靠 aspect-ratio 撐起兩行 */
 /*
- * 橫額成行（細視窗、桌面、iPad）用闊版橫額 design/banner-wide.webp（2000 × 400，5:1），
+ * 橫額成行（細視窗、桌面、iPad）用闊版橫額 _design_/banner-wide.webp（2000 × 400，5:1），
  * 內容集中喺中間，兩邊係天空同雲，比例唔同時 cover 只會裁走兩邊天空；底色用圖邊緣天藍
  */
 .banner { grid-column: span 4; margin: 0; background: #4fa3e3 var(--img-wide) center / cover no-repeat; }
@@ -437,16 +437,16 @@ td code, p code { font-size: 12px; background: #0b0d0f; padding: 1px 5px; border
 <script>
 (() => {
     const IMG = {
-        badgirl: '../../src/catalog/shows/library/badgirl/tile.webp',
-        gongzi: '../../src/catalog/shows/library/gongzi/tile.webp',
-        wanni: '../../src/catalog/shows/library/wanni/tile.webp',
-        sunnyday: '../../src/catalog/shows/library/sunnyday/tile.webp',
-        westair: '../../src/catalog/shows/library/westair/tile.webp',
-        waves: '../../src/catalog/shows/library/waves/tile.webp',
-        lalala: '../../src/catalog/shows/library/lalala/tile.webp',
-        banner: '../banner.webp',
-        bannerWide: '../banner-wide.webp',
-        todayTile: '../today-tile.webp',
+        badgirl: '../../apps/player/src/catalog/shows/library/badgirl/tile.webp',
+        gongzi: '../../apps/player/src/catalog/shows/library/gongzi/tile.webp',
+        wanni: '../../apps/player/src/catalog/shows/library/wanni/tile.webp',
+        sunnyday: '../../apps/player/src/catalog/shows/library/sunnyday/tile.webp',
+        westair: '../../apps/player/src/catalog/shows/library/westair/tile.webp',
+        waves: '../../apps/player/src/catalog/shows/library/waves/tile.webp',
+        lalala: '../../apps/player/src/catalog/shows/library/lalala/tile.webp',
+        banner: '../../_design_/banner.webp',
+        bannerWide: '../../_design_/banner-wide.webp',
+        todayTile: '../../_design_/today-tile.webp',
     };
     // src/config/showThemes.ts
     const THEMES = {

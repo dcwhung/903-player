@@ -18,7 +18,7 @@ interface ShowTileProps {
 
 /**
  * 主頁掣：節目用節目圖（冇文字，靠 aria-label）；
- * 今日節目用插畫底圖（原圖喺 design/today-tile.webp），「今日節目」字放喺中間米色帶
+ * 今日節目用插畫底圖（原圖喺 _design_/today-tile.webp），「今日節目」字放喺中間米色帶
  */
 export const ShowTile = ({
     label,

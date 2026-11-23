@@ -190,8 +190,8 @@ th { background: var(--shell-panel); font-weight: 600; }
 .art7 { background: linear-gradient(135deg, #d36aa8, #7b3f9a); }
 .art-today { background: linear-gradient(180deg, #8fd0ff, #4aa0e0); color: #2f4560; text-shadow: none; justify-content: center; align-items: center; }
 .art-drama { background: linear-gradient(135deg, #f4a6c0, #8e6bc4 60%, #2f7b74); justify-content: center; align-items: center; font-size: 14px; }
-.art-chi { background: center / cover url(../dramas/chisee.webp), #ffe805; }
-.art-c18 { background: center / cover url(../dramas/c18.jpg), #503b28; }
+.art-chi { background: center / cover url(./chisee.webp), #ffe805; }
+.art-c18 { background: center / cover url(./c18.jpg), #503b28; }
 /* 方案 A：真圖已經有劇名，唔使再疊字 */
 .tile.art-real { aspect-ratio: 2 / 1; font-size: 0; }
 .tile.art-real .meta { top: auto; bottom: 8px; }
@@ -233,9 +233,9 @@ th { background: var(--shell-panel); font-weight: 600; }
  * 劇集碟面：同 app 嘅 Disc 一樣，劇集圖 cover 成隻碟（16:9 圖裁中間正方），
  * 上面疊坑紋、四邊暗角同中心軸孔，似一隻印咗圖嘅 picture disc
  */
-.phone.chi .disc, .phone.chiy .disc, .phone.chio .disc { --art: url(../dramas/chisee.webp); --art-pos: 46% 50%; }
+.phone.chi .disc, .phone.chiy .disc, .phone.chio .disc { --art: url(./chisee.webp); --art-pos: 46% 50%; }
 /* 18樓C座：劇名橫跨圖闊約六成，cover 會切走「十」同「座」，改用 145% 闊、上下用圖嘅暖啡補 */
-.phone.c18a .disc { --art: url(../dramas/c18.jpg); --art-pos: 50% 50%; --art-size: 145% auto; --art-fill: #4f3c2b; }
+.phone.c18a .disc { --art: url(./c18.jpg); --art-pos: 50% 50%; --art-size: 145% auto; --art-fill: #4f3c2b; }
 .phone.chi .disc, .phone.chiy .disc, .phone.chio .disc, .phone.c18a .disc {
     background:
         radial-gradient(circle, #111 0 3%, rgb(0 0 0 / 50%) 3.2% 5%, transparent 5.5%),

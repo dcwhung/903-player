@@ -139,7 +139,7 @@
     --arc-chip-height: calc(32px * var(--ui-scale));
     /*
      * 「全部短篇」一覽表：最高佔畫面幾多、遮罩、拉柄闊、每行高、碟面圓環大細、疊喺頁面上面嘅層；
-     * 行高同碟面跟 design/previews/arc-sheet-cover-preview.html（--row-height 64px、--thumb 52px，S-488）
+     * 行高同碟面跟 _mockups_/arc-sheet-cover/index.html（--row-height 64px、--thumb 52px，S-488）
      */
     --arc-sheet-max-height: 78%;
     --arc-sheet-scrim: rgb(0 0 0 / 40%);

@@ -1,6 +1,6 @@
 # Test Plan — coming-soon
 
-- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）。2026-11-07 Phase 0b 起 `@903-player/catalog` 檔寫全 path `packages/catalog/…`
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`_design_/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）。2026-11-07 Phase 0b 起 `@903-player/catalog` 檔寫全 path `packages/catalog/…`
 - Chain: P8 #6 即將上架 / 快將下架：drama.json `addedAt` / `episodeDates` / `removedAt`（三層）→ date-aware catalog + pure selector → 主頁劇集格（H2 / E1 字尾、左上角琥珀下架字、新劇灰格排最尾）、繼續收聽 LC2、劇集頁 chips（虛線 + ⏱、LK1）、全集一覽表（S1 組、LS2）、集數清單（未上架摺埋、LE1）、收藏 tab（已下架灰行、LB1）、最近收聽 LR1、舊 URL 返主頁 + Toast、書架排位下架前後唔郁（W-531）
 - AC（Design Origin `_mockups_/coming-soon/index.html`；review `.proj-docs/reviews/2026-11-05_review_coming-soon.md`）:
     - AC-1 ① 三個位置都顯示：主頁格 H2 字尾「N 個短篇 · 新短篇 X 上架」、chips 虛線 + ⏱ 排最尾、一覽表最底「即將上架」組

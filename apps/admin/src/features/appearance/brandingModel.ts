@@ -88,7 +88,7 @@ export const iconUrls = (icon: BrandingIcon | null): IconPreviewUrls =>
 /** 內建圖示嘅底色（apps/player/scripts/generateIcons.mjs ICON_BACKGROUND，maskable / apple-touch 填四角） */
 export const BUILT_IN_ICON_BACKGROUND = '#98bdde';
 
-/** 內建原圖（design/app-icon.png 嘅副本，appIcon.node.test 鎖住）：重新裁切內建圖示時用 */
+/** 內建原圖（apps/player/assets/app-icon.png 嘅副本，appIcon.node.test 鎖住）：重新裁切內建圖示時用 */
 const BUILT_IN_SOURCE_NAME = 'app-icon.png';
 
 /** 重新裁切：去邊度攞原圖（url）、dialog 顯示嘅檔名、dialog 起點 */

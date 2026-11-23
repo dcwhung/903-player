@@ -92,7 +92,7 @@ const SheetList = ({ listRef, groups, upcoming, info, rowProps }: SheetListProps
  * 撳行轉去嗰個短篇，撳右邊掣直接播（續聽 / 未收聽 / ↺ 重聽）。
  * 頂部劇集 banner（G1，有圖先出）。閂：✕ 掣、撳遮罩、Escape，或者向下拉（banner / grab bar / header；
  * 清單捲到頂都得，直版橫版一樣）。開 / 閂都由底滑上 / 滑落（useSheetPresence + SheetMotion.module.css）。
- * 見 design/previews/drama-flow-preview.html；橫版 docked 見 landscape-list-left-preview.html
+ * 見 _mockups_/drama-flow/index.html；橫版 docked 見 _mockups_/landscape-list-left/index.html
  */
 export const ArcSheet = ({
     open,

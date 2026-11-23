@@ -165,7 +165,7 @@ const createContainerApi = (
 
 /**
  * mini player 手勢：平時左右掃轉節目；長按（唔郁）0.25 秒浮起之後，左滑（似 iOS 鎖屏通知）關閉：
- * 拉過一半闊度放手即關，拉少少就停喺度露出「關閉」掣。見 design/previews/swipe-dismiss-preview.html
+ * 拉過一半闊度放手即關，拉少少就停喺度露出「關閉」掣。見 _mockups_/swipe-dismiss/index.html
  *
  * @param onDismiss `closing` 係終態：onDismiss 必須令 MiniPlayer unmount（useMiniPlayer 回 null）；
  *   再出現時係新 session（useBox(newSession())），呢個 hook 唔會自己 reset

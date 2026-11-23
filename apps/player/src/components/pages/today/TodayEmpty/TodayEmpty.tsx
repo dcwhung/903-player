@@ -13,7 +13,7 @@ import styles from './TodayEmpty.module.css';
 
 /**
  * 今日節目全部未上架：卡疊嘅位改為灰色 player ring + 冇節目圖嘅唱片（唔可以撳），
- * 上架之後 probe 搵到就自動換返卡疊（見 design/previews/unavailable-preview.html）。
+ * 上架之後 probe 搵到就自動換返卡疊（見 _mockups_/unavailable/index.html）。
  * 唔用 role="status"：入頁就喺度，唔係動態通知；用標題做 region 名
  */
 export const TodayEmpty = () => {
