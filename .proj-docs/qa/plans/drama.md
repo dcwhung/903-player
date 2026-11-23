@@ -1,6 +1,6 @@
 # Test Plan — drama
 
-- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）。2026-11-07 Phase 0b 起 `@903-player/catalog` 檔寫全 path `packages/catalog/…`
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`_design_/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）。2026-11-07 Phase 0b 起 `@903-player/catalog` 檔寫全 path `packages/catalog/…`
 - Chain: 廣播劇：dramas registry / JSON、書架 DramaShelf、劇集頁（每日 / 系列）、ArcPicker / ArcSheet 全集表、NEW 標記
 - AC:
     - AC-1 書架 focus / 拖拉（.tickets/completed/0001-0200/CUI-0002.md、CUI-0004.md）

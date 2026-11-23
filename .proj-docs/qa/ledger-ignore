@@ -9,3 +9,8 @@ apps/player/scripts/arcCover/*
 
 # QA ledger 合併工具（S-866）：只喺 merge 撞 ledger 時本機跑，唔入 build；`ledger-merge.test.mjs` 由 root `npm test`（`@903-player/repo-scripts` project）跑
 scripts/qa/*
+
+# 設計 mockup / 原稿（2026-11-23 由 design/ 搬出）：只供 review，唔入 build / test；design/ 已刪，留住 glob 等 merge-base 未過嗰陣唔出 UNCOVERED
+_mockups_/*
+_design_/*
+design/*

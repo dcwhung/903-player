@@ -1,6 +1,6 @@
 # Test Plan — catalog-data
 
-- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）。2026-11-07 Phase 0b 起 `@903-player/catalog` 檔寫全 path `packages/catalog/…`
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`_design_/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）。2026-11-07 Phase 0b 起 `@903-player/catalog` 檔寫全 path `packages/catalog/…`
 - Chain: 節目資料：shows registry / JSON、錄音列表 RecordingsProvider、audio probe、catalog reader / schema、日期 utils
 - AC:
     - AC-1 probe 只加原站真係有嘅新一集，唔理未知節目（e2e「先驗 probe 同 audio host」）

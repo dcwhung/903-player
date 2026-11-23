@@ -1,6 +1,6 @@
 # Test Plan — player-core
 
-- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`design/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）。2026-11-07 Phase 0b 起 `@903-player/catalog` 檔寫全 path `packages/catalog/…`
+- Paths（2026-11-07 Phase 0a monorepo 起）：code / test / script / schema path 一律相對 `apps/player/`（ledger 寫全 path）；`.proj-docs/`、`.tickets/`、`_mockups_/`、`_design_/` 仍喺 repo root。指令喺 repo root 跑（root `vitest.config.ts` projects，`npm test -- <path>` 係子字串 filter）。2026-11-07 Phase 0b 起 `@903-player/catalog` 檔寫全 path `packages/catalog/…`
 - Chain: 播放核心：AudioController、PlayerProvider / usePlayer、stall watchdog、進度儲存、Media Session、續播 / 已收聽
 - AC:
     - AC-1 極慢網 / metadata 未到唔亂 reload（.tickets/completed/0001-0200/CUI-0011.md、CUI-0014.md）
