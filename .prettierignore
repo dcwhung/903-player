@@ -2,7 +2,14 @@ dist
 coverage
 node_modules
 package-lock.json
-# 設計 preview（Artifact 用，內嵌 base64 節目圖）
-design/previews
+# 設計 preview（Artifact 用，內嵌 base64 節目圖；原本喺已刪嘅 design 資料夾），照舊唔 format
+_mockups_/arc-sheet-cover
+_mockups_/drama-flow
+_mockups_/landscape
+_mockups_/landscape-list-left
+_mockups_/radio-drama
+_mockups_/splash
+_mockups_/swipe-dismiss
+_mockups_/unavailable
 
 .claude/worktrees/

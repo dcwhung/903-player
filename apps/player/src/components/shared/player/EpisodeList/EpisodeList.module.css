@@ -220,7 +220,7 @@
     color: var(--color-text);
 }
 
-/* 未上架：撳唔到；日子變淡、進度條變虛線、冇播放掣（見 design/previews/unavailable-preview.html） */
+/* 未上架：撳唔到；日子變淡、進度條變虛線、冇播放掣（見 _mockups_/unavailable/index.html） */
 .unavailable {
     cursor: default;
 }

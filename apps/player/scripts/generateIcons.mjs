@@ -1,4 +1,4 @@
-// 由 design/app-icon.png 重新生成 public/ 入面嘅 PWA icon（同 admin 卡上內建 maskable 預覽）：node scripts/generateIcons.mjs
+// 由 assets/app-icon.png 重新生成 public/ 入面嘅 PWA icon（同 admin 卡上內建 maskable 預覽）：node scripts/generateIcons.mjs
 // 用 Playwright（devDependency，e2e 已經用緊）嘅 Chromium 縮放同截圖，唔使另外裝圖片工具。
 // 有 ImageMagick（magick / convert）就順手做無損壓縮（去 metadata、最高 zlib 壓縮），冇就跳過。
 import { execFileSync } from 'node:child_process';
@@ -8,8 +8,8 @@ import { chromium } from 'playwright';
 import { chromiumExecutablePath } from './chromiumLaunch.mjs';
 import { centerSquareCrop, ICON_BACKGROUND } from './iconLayout.mjs';
 
-// design/ 留喺 repo 根（設計原檔，唔係 build input）
-const SOURCE = fileURLToPath(new URL('../../../design/app-icon.png', import.meta.url));
+// assets/app-icon.png：icon 嘅開發原圖（generateIcons 同 test 讀佢，唔係 Vite build input）
+const SOURCE = fileURLToPath(new URL('../assets/app-icon.png', import.meta.url));
 const OUT_DIR = fileURLToPath(new URL('../public/', import.meta.url));
 // admin「App 外觀」卡用內建圖示時嘅 Android 預覽（唔由 admin 直接引用 player 路徑，所以生成一份副本）
 const ADMIN_ICON_DIR = fileURLToPath(new URL('../../admin/src/assets/icon/', import.meta.url));

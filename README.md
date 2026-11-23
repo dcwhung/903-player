@@ -12,7 +12,7 @@
 - 未上架：probe 試過但原站未有（404）嘅集數照列出，灰色、冇播放掣、撳唔到；播放器、日子條、卡疊、mini player 只用播得到嘅
 - 橫版（打橫而且 ≥ 640px 闊，`src/config/layout.ts`）：節目頁 / 今日節目頁左播放器、右清單（唔出日子條，唱片用盡左欄）；
   主頁一頁放晒（手機打橫橫額入格 5 欄 × 2 行，其他橫額成行用闊版圖 + 4 欄）；
-  闊 ≥ 1024px 字同掣 × 1.3、iPad 打橫 × 1.5（`--ui-scale`）。Preview：`design/previews/landscape-preview.html`
+  闊 ≥ 1024px 字同掣 × 1.3、iPad 打橫 × 1.5（`--ui-scale`）。Preview：`_mockups_/landscape/index.html`
 - 廣播劇（`src/catalog/dramas/library/<id>/drama.json`，見下面「資料檔」）：主頁廣播劇 tab 一行一套劇；全部用淺色主題（頁頂狀態列墊深色帶，iOS 白字睇得清），碟面用劇集圖
     - 芝See菇Bi Family（短篇劇集）：唱片下面「現正播放：短篇 · 第 N 集」（暫停講「已暫停」、揀短篇載入咗未開始講「下一集」，清單行同樣講「已暫停 / 未開始」）+ 短篇 chips 左右掃，揀短篇換集數清單（冇播放時順便載入嗰個短篇嘅續聽集，唔自動播，碟面同時間跟住轉；播緊就淨係換清單）（有集名大字顯示集名，冇就顯示「第 N 集」）；入頁揀中上次聽緊嗰集（聽完就下一集），撳播放先播：未播時碟面係嗰集嘅短篇碟面、唱片兩邊時間同弧形顯示續播位置 / 總長（未聽過嗰集就 --:--）、唱片下面 / chips 上面講「繼續收聽：短篇 · 第 N 集 · 集名」（第一次入未聽過就係黑碟 +「揀一個短篇開始收聽」）；集數同集名之間一律用「 · 」分隔（chips 上面、mini player、鎖屏、主頁「繼續收聽」）；一集播完自動接下一集（播完一個短篇接下一個短篇，最後一集播完就停）；「☰ 全集」釘住 chips 最左，打開全集一覽表（分組：播放中 → 新上架 → 未聽完 → 已聽完；圓環 = 聽完幾多集；右邊掣續聽 / 播未收聽 / ↺ 重聽；✕ / 遮罩 / Escape 或者向下拉閂，直版橫版都得），短篇 chips 同一次序；集數清單照集數次序（聽完嘅留喺原位），入頁 / 轉短篇即刻捲到播緊（或者下一集）嗰集，放喺清單頂、露出半行上一集，向上捲睇返之前集數；自動播下一集就順滑捲過去；轉畫面（打橫 / 打直）都會重新捲返播緊嗰集；新短篇（catalog `addedAt`）上架 14 日內有「新」；主頁劇集格：未聽過 / 播緊時只有短篇數（右下），聽過未播緊就喺圖底出「繼續收聽」掣（短篇數移去右上；直版疊卡撳暗咗嘅卡任何位置都係先 focus），有未聽過嘅新短篇左上角出「新」
     - 黃金少年（短篇劇集，`arcUnit: "season"`）：4 季 126 集，主頁角落「全 4 季」，碟面跟播緊（或者暫停時揀咗）嗰季（每季一張 `arcs/season-N/disc.webp`），未揀季時用系列碟面 `disc.webp`
@@ -22,8 +22,8 @@
     - 短篇圖：每個短篇有正方形碟面（`arcs/<短篇>/disc.webp`）同長方形圖（`arcs/<短篇>/tile.webp`，16:9 1216×684，`drama.json` arc `tile`）；長方形圖暫時未用，留底防將來要。芝See 嘅短篇喺 R2 冇 cover，兩樣都冇
     - 18 樓 C 座（每日劇集，⚠️ 暫時停用：`src/catalog/dramas/library/c18/drama.json` `enabled: false`，主頁唔出、劇集頁當搵唔到）：同節目頁一樣嘅日子條 + 集數清單，日子條只排有集數嘅日子，重播舊集標「重溫」
     - 播緊廣播劇返主頁唔會停，mini player 改為顯示嗰套劇
-    - 集數清單喺每套劇嘅 `drama.json`：芝See 係真清單（12 個短篇、97 集）、黃金少年 4 季 126 集、森美小儀系列 7 個短篇 109 集、少爺占系列 2 個短篇 38 集、蘭茜夫人劇場 3 個短篇 100 集，錄音喺 Cloudflare R2（`DRAMA_AUDIO_BASE`，`<劇集 folder>/<短篇>/<原檔名>`，檔名由 template 砌）；18樓C座 ⚠️ 仲係假資料，錄音未 host，撳播放會一直「連線中…」。Preview：`design/previews/radio-drama-preview.html`
-- 主頁 mini player：左右掃轉今日節目；長按 0.25 秒浮起（副題換做「‹‹ 滑動關閉」）之後左滑關閉（似 iOS 鎖屏通知：過一半闊度即關，拉少少露出「⏻ 關閉」掣），關閉 = 停播 + 收起，之後再開始播先出返（唔記落 localStorage，重開 app 照出）；讀屏 / 鍵盤有「關閉播放器」掣。Preview：`design/previews/swipe-dismiss-preview.html`
+    - 集數清單喺每套劇嘅 `drama.json`：芝See 係真清單（12 個短篇、97 集）、黃金少年 4 季 126 集、森美小儀系列 7 個短篇 109 集、少爺占系列 2 個短篇 38 集、蘭茜夫人劇場 3 個短篇 100 集，錄音喺 Cloudflare R2（`DRAMA_AUDIO_BASE`，`<劇集 folder>/<短篇>/<原檔名>`，檔名由 template 砌）；18樓C座 ⚠️ 仲係假資料，錄音未 host，撳播放會一直「連線中…」。Preview：`_mockups_/radio-drama/index.html`
+- 主頁 mini player：左右掃轉今日節目；長按 0.25 秒浮起（副題換做「‹‹ 滑動關閉」）之後左滑關閉（似 iOS 鎖屏通知：過一半闊度即關，拉少少露出「⏻ 關閉」掣），關閉 = 停播 + 收起，之後再開始播先出返（唔記落 localStorage，重開 app 照出）；讀屏 / 鍵盤有「關閉播放器」掣。Preview：`_mockups_/swipe-dismiss/index.html`
 - 自動續播（進度存喺本機 localStorage）、鎖屏 / 耳機控制、深色 + 跟系統淺色
 
 ## 架構
@@ -160,7 +160,7 @@ npx playwright install chromium
 ### App icon
 
 `public/` 入面嘅 icon（`icon-192`、`icon-512`、`icon-maskable-512`、`apple-touch-icon` 180、`favicon` 64）
-全部由 `design/app-icon.png`（repo 根）生成。改咗原圖之後執行：
+全部由 `apps/player/assets/app-icon.png` 生成。改咗原圖之後執行：
 
 ```bash
 node apps/player/scripts/generateIcons.mjs
@@ -241,7 +241,11 @@ GitHub repo → **Settings → Pages → Build and deployment → Source** 揀 *
 
 ## 目錄
 
-以下 path 相對 `apps/player/`（`design/`、`_mockups_/`、`.proj-docs/` 留喺 repo 根）。
+以下 path 相對 `apps/player/`（`_mockups_/`、`_design_/`、`.proj-docs/` 留喺 repo 根）。
+
+- `_mockups_/<feature>/index.html`：俾用戶睇 UI 嘅設計 preview（圖檔放同一個 folder），app 唔會讀
+- `_design_/`：設計原圖（橫額、今日節目底圖、splash 底圖），app 用自己嘅副本或者處理過嘅版本，唔會讀
+- `assets/app-icon.png`：app icon 開發原圖，`scripts/generateIcons.mjs` 由佢生成 `public/` 嘅 icon
 
 | 路徑                      | 用途                                                                                                                                                                                                                                                                                                                              |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

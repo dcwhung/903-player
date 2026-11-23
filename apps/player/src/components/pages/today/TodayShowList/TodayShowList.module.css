@@ -139,7 +139,7 @@
     color: var(--color-title);
 }
 
-/* 未上架：撳唔到；唱片變灰變淡、節目名變淡、冇播放掣（見 design/previews/unavailable-preview.html） */
+/* 未上架：撳唔到；唱片變灰變淡、節目名變淡、冇播放掣（見 _mockups_/unavailable/index.html） */
 .unavailable {
     cursor: default;
 }

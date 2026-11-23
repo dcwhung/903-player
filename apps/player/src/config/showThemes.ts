@@ -2,7 +2,7 @@ import type { ShowTheme } from '@903-player/catalog';
 import { LAUNCH_THEME_COLOR } from './launchTheme';
 
 /**
- * 主頁色調：跟 app icon（design/app-icon.png）——柔藍底、奶油色泥膠字、黃色點綴。
+ * 主頁色調：跟 app icon（apps/player/assets/app-icon.png）——柔藍底、奶油色泥膠字、黃色點綴。
  * NEUTRAL_THEME 仲係 :root 同搵唔到節目時嘅後備，所以另開一個，唔改中性色。
  * bg 係漸變頂色（漸變本身見 tokens.css --home-bg-*）；app 喺主頁啟動，所以同時係啟動色。
  */

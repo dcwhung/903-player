@@ -9,7 +9,7 @@ import { decodePng, type PngPixels } from './pngPixels.ts';
 
 const read = (relative: string) => decodePng(readFileSync(new URL(relative, import.meta.url)));
 
-const SOURCE = read('../../../design/app-icon.png');
+const SOURCE = read('../assets/app-icon.png');
 const BUILT_IN_MASKABLE = {
     'player public/icon-maskable-512.png': '../public/icon-maskable-512.png',
     'admin assets/icon/icon-maskable-192.png': '../../admin/src/assets/icon/icon-maskable-192.png',
