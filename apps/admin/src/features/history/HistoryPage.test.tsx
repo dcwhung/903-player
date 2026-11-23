@@ -112,3 +112,163 @@ describe('HistoryPage redeploy', () => {
         expect(api.mock.calls.filter(([url]) => url === '/api/publishes')).toHaveLength(1);
     });
 });
+
+/** 指定 URL 嘅回應扣住，叫 release 先放行（睇進行中狀態） */
+const holdRoute = (api: ReturnType<typeof mockApi>, url: string) => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+    const respond = api.getMockImplementation();
+    if (!respond) throw new Error('mockApi has no implementation');
+    api.mockImplementation(async (input, init) => {
+        if (input === url) await gate;
+        return respond(input, init);
+    });
+    return release;
+};
+
+const callsTo = (api: ReturnType<typeof mockApi>, url: string) =>
+    api.mock.calls.filter(([input]) => input === url);
+
+const ROLLBACK_1 = '/api/publishes/1/rollback';
+const DEPLOY_2 = '/api/publishes/2/deploy';
+const threeRows = () => ({ body: { publishes: [row(3, true), row(2, false), row(1, false)] } });
+const rolledBack = () => ({ body: { publish: row(4, true) } });
+
+const confirmRollbackTo1 = async () => {
+    await userEvent.click(await screen.findByRole('button', { name: '還原至 #1' }));
+    await userEvent.click(screen.getByRole('button', { name: '還原' }));
+};
+
+/** AU-025：進行中唔可以再撳、成功有 toast */
+describe('HistoryPage busy state', () => {
+    it('should disable the 還原 buttons while a rollback is running', async () => {
+        const api = mockApi({
+            'GET /api/publishes': threeRows,
+            [`POST ${ROLLBACK_1}`]: rolledBack,
+        });
+        const release = holdRoute(api, ROLLBACK_1);
+        renderAt('/history', '/history', <HistoryPage />);
+        await confirmRollbackTo1();
+        expect(screen.getByRole('button', { name: '還原至 #1' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: '還原至 #2' })).toBeDisabled();
+        expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+        await userEvent.click(screen.getByRole('button', { name: '還原至 #2' }));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        release();
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: '還原至 #2' })).toBeEnabled(),
+        );
+        expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'false');
+        expect(callsTo(api, ROLLBACK_1)).toHaveLength(1);
+    });
+
+    it('should toast once the rollback has published a new version', async () => {
+        mockApi({ 'GET /api/publishes': threeRows, [`POST ${ROLLBACK_1}`]: rolledBack });
+        renderAt('/history', '/history', <HistoryPage />);
+        await confirmRollbackTo1();
+        expect(await screen.findByText('已還原至 #1')).toBeInTheDocument();
+    });
+
+    it('should show the failure, without a success toast, when the rollback fails', async () => {
+        mockApi({
+            'GET /api/publishes': threeRows,
+            [`POST ${ROLLBACK_1}`]: () => ({ status: 500, body: { error: 'boom' } }),
+        });
+        renderAt('/history', '/history', <HistoryPage />);
+        await confirmRollbackTo1();
+        expect(await screen.findByRole('alert')).toHaveTextContent(/^還原失敗：/);
+        expect(screen.queryByText('已還原至 #1')).not.toBeInTheDocument();
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: '還原至 #1' })).toBeEnabled(),
+        );
+    });
+
+    it('should disable 重新部署 and 還原 while a redeploy is running', async () => {
+        const api = mockApi({
+            'GET /api/publishes': () => ({ body: { publishes: [failedDeploy(2), row(1, false)] } }),
+            [`POST ${DEPLOY_2}`]: () => ({
+                body: { deploy: 'triggered', deployRequestedAt: '2026-11-13T10:05:00.000Z' },
+            }),
+        });
+        const release = holdRoute(api, DEPLOY_2);
+        renderAt('/history', '/history', <HistoryPage />);
+        const redeployButton = await screen.findByRole('button', { name: '重新部署 #2' });
+        await userEvent.click(redeployButton);
+        expect(redeployButton).toBeDisabled();
+        expect(screen.getByRole('button', { name: '還原至 #1' })).toBeDisabled();
+        await userEvent.click(redeployButton);
+        release();
+        expect(await screen.findByText('已重新開始部署 #2')).toBeInTheDocument();
+        expect(callsTo(api, DEPLOY_2)).toHaveLength(1);
+    });
+});
+
+/** AU-025：載入失敗唔當係「未有記錄」 */
+describe('HistoryPage load errors', () => {
+    it('should show the load error instead of the empty state, and retry', async () => {
+        let failing = true;
+        const api = mockApi({
+            'GET /api/publishes': () =>
+                failing
+                    ? { status: 500, body: { error: 'boom' } }
+                    : { body: { publishes: [row(1, true)] } },
+        });
+        renderAt('/history', '/history', <HistoryPage />);
+        expect(await screen.findByRole('alert')).toHaveTextContent(/^載入失敗：/);
+        expect(screen.queryByText('尚未有發佈記錄。')).not.toBeInTheDocument();
+        failing = false;
+        await userEvent.click(screen.getByRole('button', { name: '重試' }));
+        expect(await screen.findByText('使用中')).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(callsTo(api, '/api/publishes')).toHaveLength(2);
+    });
+
+    it('should explain an expired session when the list cannot load', async () => {
+        mockApi({ 'GET /api/publishes': () => ({ status: 401, body: { error: 'unauthorized' } }) });
+        renderAt('/history', '/history', <HistoryPage />);
+        expect(await screen.findByRole('alert')).toHaveTextContent(/^載入失敗：/);
+        expect(screen.queryByText('尚未有發佈記錄。')).not.toBeInTheDocument();
+    });
+
+    /** 冇 data 又讀唔到：唔出空表頭 /「共 0 次」（睇落似「讀到、零記錄」） */
+    it('should hide the table and the count when nothing could be loaded', async () => {
+        let failing = true;
+        mockApi({
+            'GET /api/publishes': () =>
+                failing
+                    ? { status: 500, body: { error: 'boom' } }
+                    : { body: { publishes: [row(1, true)] } },
+        });
+        renderAt('/history', '/history', <HistoryPage />);
+        await screen.findByRole('alert');
+        expect(screen.queryByRole('table')).not.toBeInTheDocument();
+        expect(screen.queryByText(/^共 \d+ 次$/)).not.toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: '發佈 / 部署' })).toBeInTheDocument();
+        failing = false;
+        await userEvent.click(screen.getByRole('button', { name: '重試' }));
+        expect(await screen.findByRole('table')).toBeInTheDocument();
+        expect(screen.getByText('共 1 次')).toBeInTheDocument();
+    });
+
+    it('should keep the loaded table and count when a later reload fails', async () => {
+        let failing = false;
+        mockApi({
+            'GET /api/publishes': () =>
+                failing
+                    ? { status: 500, body: { error: 'boom' } }
+                    : { body: { publishes: [failedDeploy(2)] } },
+            [`POST ${DEPLOY_2}`]: () => ({
+                body: { deploy: 'triggered', deployRequestedAt: null },
+            }),
+        });
+        renderAt('/history', '/history', <HistoryPage />);
+        const redeployButton = await screen.findByRole('button', { name: '重新部署 #2' });
+        failing = true;
+        await userEvent.click(redeployButton);
+        expect(await screen.findByRole('alert')).toHaveTextContent(/^載入失敗：/);
+        expect(screen.getByRole('table')).toBeInTheDocument();
+        expect(screen.getByText('共 1 次')).toBeInTheDocument();
+    });
+});

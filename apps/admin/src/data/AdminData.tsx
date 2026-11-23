@@ -3,9 +3,9 @@
  * 掃描完先讀其他嘢（掃描會寫 D1）
  */
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
-import { getEntry, getTodos, listEntries } from '../api/endpoints';
+import { getTodos, listEntriesDetail } from '../api/endpoints';
 import { getChanges } from '../api/publishEndpoints';
-import type { ChangesResponse, LoadedEntry, TodosResponse } from '../api/types';
+import type { ChangesResponse, EntryListItem, LoadedEntry, TodosResponse } from '../api/types';
 import { useResource, type Resource } from './useResource';
 import { useScan, type ScanState } from './useScan';
 
@@ -21,15 +21,30 @@ export interface AdminData {
 
 export const AdminDataContext = createContext<AdminData | null>(null);
 
-/** 列表嘅 published / publishedArcs（成個列表一次計）併入每個 entry */
+/** detail=1 回應嘅一個 entry → LoadedEntry（publishedVersion null = 從未發佈，唔帶） */
+const loadedOf = (item: EntryListItem): LoadedEntry => {
+    const { kind, id, definition, images, draft, updatedAt, etag, publishedVersion } = item;
+    const { published, publishedArcs } = item;
+    const loaded = {
+        kind,
+        id,
+        definition,
+        images,
+        draft,
+        updatedAt,
+        etag,
+        published,
+        publishedArcs,
+    };
+    return publishedVersion ? { ...loaded, publishedVersion } : loaded;
+};
+
+/**
+ * 全部 entry 一個 request（GET /api/entries?detail=1，AU-024）；
+ * 列表嘅 published / publishedArcs（成個列表一次計）併入每個 entry
+ */
 export const loadAllEntries = async (): Promise<LoadedEntry[]> =>
-    Promise.all(
-        (await listEntries()).map(async (e) => ({
-            ...(await getEntry(e.kind, e.id)),
-            published: e.published,
-            publishedArcs: e.publishedArcs,
-        })),
-    );
+    (await listEntriesDetail()).map(loadedOf);
 
 export function AdminDataProvider({ children }: { children: ReactNode }) {
     const todos = useResource(getTodos, false);

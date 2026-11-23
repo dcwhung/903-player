@@ -8,7 +8,7 @@ import type {
     DramaSources,
     EntryResponse,
     EntryKind,
-    EntrySummary,
+    EntryListItem,
     ImageMap,
     LoadedEntry,
     PublishSummary,
@@ -35,8 +35,9 @@ export const scanAll = async () =>
 
 export const getTodos = async () => (await request<TodosResponse>('/api/todos')).data;
 
-export const listEntries = async () =>
-    (await request<{ entries: EntrySummary[] }>('/api/entries')).data.entries;
+/** 全部 entry 連全文，一個 request（AU-024） */
+export const listEntriesDetail = async () =>
+    (await request<{ entries: EntryListItem[] }>('/api/entries?detail=1')).data.entries;
 
 /** published（api 0.11.0）改名 publishedVersion：列表併入嘅 published（有冇上過架）唔會蓋走佢 */
 export const getEntry = async (kind: EntryKind, id: string): Promise<LoadedEntry> => {

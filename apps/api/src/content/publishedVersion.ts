@@ -79,3 +79,12 @@ export const loadPublishedSource = async (
     kind: CatalogKind,
     id: string,
 ): Promise<PublishedSource | null> => sourceIn(await latestDocument(db), kind, id);
+
+/**
+ * 成批查（GET /api/entries?detail=1，AU-024）：最新 document 只讀一次，
+ * 回傳嘅 lookup 逐個 entry 查都唔再掂 D1
+ */
+export const loadPublishedLookup = async (db: D1Database) => {
+    const document = await latestDocument(db);
+    return (kind: CatalogKind, id: string): PublishedSource | null => sourceIn(document, kind, id);
+};
