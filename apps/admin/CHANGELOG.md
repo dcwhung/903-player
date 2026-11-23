@@ -2,6 +2,14 @@
 
 版本跟 SemVer。0.1.0 之前嘅變更見 git log（`apps/admin/package.json` 嘅 version bump commit）同 `.proj-docs/deploys/`。
 
+## 0.10.3 — 2026-11-23
+
+Repo 整理：app icon 開發原圖由已刪嘅 repo 根 design 資料夾搬去 `apps/player/assets/app-icon.png`（介面冇改變）。
+
+### Changed
+
+- `appIcon.node.test` 改為對比 `apps/player/assets/app-icon.png`；內建圖示（`src/assets/icon/app-icon.png`）內容不變
+
 ## 0.10.2 — 2026-11-22
 
 重讀次序同發佈 / 部署頁修正（2026-11-22 codebase audit AU-024、AU-025）。
